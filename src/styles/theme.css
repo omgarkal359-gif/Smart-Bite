@@ -1,0 +1,47 @@
+:root {
+  /* Color Palette (KFC Authentic) */
+  --primary-navy: #E4002B; /* Repurposed to KFC Red globally */
+  --bg-soft-gray: #FFFFFF; /* Pure white backgrounds */
+  --success-green: #22C55E;
+  --warning-amber: #202124; /* Repurposed to Dark Charcoal */
+  --error-red: #E4002B; 
+  --text-dark: #202124;
+  --text-muted: #757575;
+  --white: #FFFFFF;
+  --black: #000000;
+  
+  /* Glassmorphism -> Flat & Clean */
+  --glass-bg: #FFFFFF;
+  --glass-border: #E0E0E0; /* Subtle grey border */
+  --backdrop-blur: none;
+  
+  /* Standardized Depth (Flatter UI) */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.1);
+  --shadow-2xl: 0 8px 32px rgba(0, 0, 0, 0.12);
+  
+  /* Gradients */
+  --gradient-primary: linear-gradient(135deg, #E4002B 0%, #D00027 100%);
+
+  /* Typography */
+  --font-heading: 'Oswald', sans-serif;
+  --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+  
+  /* Layout */
+  --border-radius-sm: 8px;
+  --border-radius-md: 16px;
+  --border-radius-lg: 24px;
+  --border-radius-xl: 32px;
+}
+
+/* Dark Mode Variables for Vendor Dashboard (Power-Saver) */
+[data-theme='dark'] {
+  --bg-soft-gray: #000000;
+  --text-dark: #FFFFFF;
+  --text-muted: #94A3B8;
+  --white: #121212;
+  --black: #FFFFFF;
+  --glass-bg: #121212;
+  --glass-border: #333333;
+}

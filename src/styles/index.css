@@ -1,0 +1,88 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-body);
+  background-color: var(--bg-soft-gray);
+  color: var(--text-dark);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-family: inherit;
+}
+
+/* Utility Classes */
+.glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  border-radius: var(--border-radius-md);
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* Mobile-First Layout Container */
+.mobile-layout {
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100vh;
+  background-color: var(--bg-soft-gray);
+  box-shadow: 0 0 40px rgba(0,0,0,0.05);
+  position: relative;
+  overflow-x: hidden;
+}
+
+[data-theme='dark'] .mobile-layout {
+  background-color: #000;
+  color: #fff;
+}
+
+/* Bottom Navigation Buffer */
+.pb-nav {
+  padding-bottom: 80px;
+}
+
+/* Typography Utilities */
+.heading-1 {
+  font-family: var(--font-heading);
+  font-size: 3rem;
+  font-weight: 800; /* extrabold */
+  letter-spacing: -0.05em; /* tracking-tighter */
+  text-transform: uppercase;
+  color: var(--text-dark);
+}
+
+.heading-2 {
+  font-family: var(--font-heading);
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.05em;
+  text-transform: uppercase;
+  color: var(--text-dark);
+}
+
+.text-muted {
+  color: var(--text-muted);
+  font-weight: 500;
+}

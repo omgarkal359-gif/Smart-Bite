@@ -1,0 +1,214 @@
+/* Menu V20 Styles */
+.menu-header-v20 {
+  padding-bottom: 0;
+}
+
+.diet-filters {
+  display: flex;
+  gap: 8px;
+}
+
+.diet-btn {
+  padding: 6px 12px;
+  border-radius: 16px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--white);
+  border: 1px solid var(--glass-border);
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.diet-btn.active {
+  background: var(--primary-navy);
+  color: var(--white);
+  border-color: var(--primary-navy);
+}
+
+.diet-btn.veg.active {
+  background: var(--success-green);
+  border-color: var(--success-green);
+}
+
+.diet-btn.non-veg.active {
+  background: var(--error-red);
+  border-color: var(--error-red);
+}
+
+.menu-grid-v20 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  padding: 16px 20px 100px 20px; /* padding-bottom for cart */
+}
+
+.food-card {
+  background: var(--white);
+  border-radius: 16px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  position: relative;
+  border: 1px solid var(--glass-border);
+}
+
+.food-card.out-of-stock {
+  opacity: 0.5;
+  filter: grayscale(0.8);
+}
+
+.food-img-wrapper {
+  background: var(--bg-soft-gray);
+  border-radius: 12px;
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  margin-bottom: 12px;
+  position: relative;
+}
+
+.diet-indicator {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  border: 2px solid currentColor;
+}
+
+.diet-indicator.veg { color: var(--success-green); }
+.diet-indicator.non-veg { color: var(--error-red); }
+
+.food-info h3 {
+  font-family: var(--font-heading);
+  font-size: 1.1rem;
+  text-transform: uppercase;
+  line-height: 1.2;
+  margin-bottom: 4px;
+  height: 2.4em; /* clamp to 2 lines approx */
+  overflow: hidden;
+}
+
+.food-info .price {
+  font-weight: 700;
+  font-size: 1rem;
+  margin-bottom: 8px;
+}
+
+.stock-warning {
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: var(--warning-amber);
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.add-btn-v20 {
+  width: 100%;
+  padding: 8px;
+  background: rgba(230, 57, 70, 0.1);
+  color: var(--error-red);
+  font-weight: 800;
+  border-radius: 8px;
+  font-size: 0.875rem;
+}
+
+.add-btn-v20:disabled {
+  background: var(--bg-soft-gray);
+  color: var(--text-muted);
+}
+
+.qty-controls-v20 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-soft-gray);
+  border-radius: 8px;
+  padding: 4px;
+}
+
+.qty-controls-v20 .qty-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: var(--white);
+  color: var(--error-red);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.qty-controls-v20 .qty-value {
+  font-weight: 800;
+  font-size: 0.875rem;
+}
+
+.floating-cart-v20 {
+  position: fixed;
+  bottom: 80px; /* Above bottom nav */
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 40px);
+  max-width: 440px;
+  background: var(--text-dark);
+  color: white;
+  padding: 16px;
+  border-radius: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 60;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+
+.cart-summary {
+  display: flex;
+  flex-direction: column;
+}
+
+.cart-summary .cart-total {
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.cart-summary .cart-count {
+  font-size: 0.75rem;
+  font-weight: 700;
+  opacity: 0.8;
+  letter-spacing: 1px;
+}
+
+.checkout-btn {
+  font-family: var(--font-heading);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 12px 24px;
+  width: auto;
+}
+
+.cart-badge-v20 {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: var(--error-red);
+  color: white;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 800;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
