@@ -1,0 +1,138 @@
+/* V20 Shop Directory Styles */
+.shop-main-content {
+  padding: 0 20px 20px 20px;
+}
+
+.hero-carousel-wrapper {
+  margin-bottom: 24px;
+}
+
+.hero-card {
+  height: 160px;
+  border-radius: 16px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  color: white;
+  background: linear-gradient(135deg, var(--error-red) 0%, #b91c1c 100%);
+  box-shadow: 0 10px 24px rgba(230, 57, 70, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-card::after {
+  content: '';
+  position: absolute;
+  top: -50px;
+  right: -50px;
+  width: 150px;
+  height: 150px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 50%;
+}
+
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: white;
+  color: var(--error-red);
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  margin-bottom: auto;
+  align-self: flex-start;
+}
+
+.hero-content h2 {
+  font-family: var(--font-heading);
+  font-size: 2rem;
+  line-height: 1.1;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.hero-content p {
+  font-weight: 500;
+  font-size: 0.875rem;
+  opacity: 0.9;
+}
+
+.shop-list-vertical {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.shop-card-v2 {
+  display: flex;
+  padding: 16px;
+  gap: 16px;
+  cursor: pointer;
+  border: 1px solid var(--glass-border);
+}
+
+.shop-card-v2.offline {
+  opacity: 0.6;
+  filter: grayscale(1);
+}
+
+.shop-image-placeholder {
+  width: 80px;
+  height: 80px;
+  background: var(--bg-soft-gray);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--primary-navy);
+  font-family: var(--font-heading);
+}
+
+.shop-card-right {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.shop-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.shop-name-v2 {
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.rating-v2 {
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: rgba(245, 158, 11, 0.1);
+  color: var(--warning-amber);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.shop-category-v2 {
+  font-size: 0.875rem;
+  margin-top: 2px;
+  margin-bottom: 12px;
+}
+
+.shop-footer-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}

@@ -1,0 +1,156 @@
+/* Profile Styles */
+.profile-container {
+  padding-top: 20px;
+}
+
+.profile-main {
+  padding: 0 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 24px;
+}
+
+.avatar-placeholder {
+  width: 80px;
+  height: 80px;
+  background: rgba(26, 82, 118, 0.1);
+  color: var(--primary-navy);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.user-details h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.section-title {
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 12px;
+  padding-left: 4px;
+}
+
+.settings-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  cursor: pointer;
+}
+
+.settings-item-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 600;
+}
+
+.toggle-switch {
+  width: 44px;
+  height: 24px;
+  background: var(--glass-border);
+  border-radius: 12px;
+  position: relative;
+  transition: background 0.3s ease;
+}
+
+.toggle-switch::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  background: var(--white);
+  border-radius: 50%;
+  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.toggle-switch.active {
+  background: var(--success-green);
+}
+
+.toggle-switch.active::after {
+  transform: translateX(20px);
+}
+
+.history-card {
+  padding: 16px;
+  margin-bottom: 12px;
+}
+
+.history-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 0.875rem;
+}
+
+.order-id {
+  font-weight: 700;
+}
+
+.order-date {
+  color: var(--text-muted);
+}
+
+.history-body-v20 {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.history-thumb {
+  width: 48px;
+  height: 48px;
+  background: var(--bg-soft-gray);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+}
+
+.history-details {
+  flex: 1;
+}
+
+.history-details p {
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.history-details .price {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+.status-badge.success {
+  background: rgba(34, 197, 94, 0.1);
+  color: var(--success-green);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.btn-logout {
+  color: var(--error-red);
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+.btn-logout:hover {
+  background: rgba(239, 68, 68, 0.05);
+}

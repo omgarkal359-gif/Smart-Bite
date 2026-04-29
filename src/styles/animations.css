@@ -1,0 +1,88 @@
+/* Fluid/Spring Physics Transitions */
+.transition-spring {
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.transition-smooth {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Shimmer Animation for Skeleton Loaders */
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s infinite linear;
+  background: linear-gradient(to right, #e2e8f0 4%, #cbd5e1 25%, #e2e8f0 36%);
+  background-size: 1000px 100%;
+}
+
+[data-theme='dark'] .animate-shimmer {
+  background: linear-gradient(to right, #1e293b 4%, #334155 25%, #1e293b 36%);
+  background-size: 1000px 100%;
+}
+
+/* Staggered List Entrance */
+@keyframes slideUpFade {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-stagger-item {
+  opacity: 0;
+  animation: slideUpFade 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+/* Generate delay classes for up to 10 items */
+.stagger-delay-1 { animation-delay: 0.05s; }
+.stagger-delay-2 { animation-delay: 0.10s; }
+.stagger-delay-3 { animation-delay: 0.15s; }
+.stagger-delay-4 { animation-delay: 0.20s; }
+.stagger-delay-5 { animation-delay: 0.25s; }
+.stagger-delay-6 { animation-delay: 0.30s; }
+.stagger-delay-7 { animation-delay: 0.35s; }
+.stagger-delay-8 { animation-delay: 0.40s; }
+
+/* Pulsing Ready Status */
+@keyframes pulseGlow {
+  0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 2s infinite;
+}
+
+/* Haptic tap feedback simulation */
+.tap-effect:active {
+  transform: scale(0.97);
+}
+
+/* Page Transitions */
+@keyframes slideUpPage {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.page-transition {
+  animation: slideUpPage 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
