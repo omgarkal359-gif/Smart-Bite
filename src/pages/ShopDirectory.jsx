@@ -87,11 +87,11 @@ const ShopDirectory = () => {
               />
               <div className="hero-parallax-overlay" />
               <div className="hero-parallax-content">
-                <span className="text-white text-xs font-bold uppercase tracking-wider mb-1 block opacity-80 flex items-center gap-1"><Flame size={12}/> Trending Now</span>
-                <h2 className="heading-1 text-white" style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>
+                <span className="text-white text-xs font-bold uppercase tracking-wider mb-1 block flex items-center gap-1" style={{ color: 'white' }}><Flame size={12}/> Trending Now</span>
+                <h2 className="heading-1 text-white" style={{ fontSize: '2.5rem', marginBottom: '0.5rem', color: 'white' }}>
                   {TRENDING_SLIDES[currentSlide].title}
                 </h2>
-                <p className="text-white opacity-90">{TRENDING_SLIDES[currentSlide].subtitle}</p>
+                <p className="text-white" style={{ color: 'white' }}>{TRENDING_SLIDES[currentSlide].subtitle}</p>
               </div>
             </motion.div>
           </AnimatePresence>
@@ -103,27 +103,6 @@ const ShopDirectory = () => {
           </div>
         </div>
 
-        {/* Recent Order Tile */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.1 }}
-          className="recent-order-widget"
-          onClick={() => navigate('/student/orders')}
-        >
-          <div className="recent-order-bg" style={{ backgroundImage: `url(${MOCK_RECENT_ORDER.img})` }} />
-          <div className="recent-order-overlay" />
-          <div className="recent-order-content flex justify-between items-center w-full">
-            <div>
-              <span className="text-white text-xs font-bold uppercase tracking-wider mb-1 block opacity-80">Reorder</span>
-              <h3 className="font-heading text-white text-2xl font-black">{MOCK_RECENT_ORDER.item}</h3>
-              <p className="text-white text-sm opacity-90">{MOCK_RECENT_ORDER.shop}</p>
-            </div>
-            <button className="bg-[#E4002B] text-white rounded-full p-3 shadow-lg hover:scale-105 transition-transform animate-pulse">
-              <ChevronRight size={24} />
-            </button>
-          </div>
-        </motion.div>
 
         <h2 className="heading-2 section-title-home mb-4">Popular Spots</h2>
 
@@ -148,7 +127,7 @@ const ShopDirectory = () => {
                 style={isHero ? { gridColumn: 'span 2' } : {}}
               >
                 <GlassCard 
-                  className={`shop-card-v21 ${isHero ? 'hero' : 'square'} tap-effect shadow-sm ${!shop.online ? 'opacity-70' : ''}`}
+                  className={`shop-card-v21 ${isHero ? 'hero' : 'square'} tap-effect shadow-2xl ${!shop.online ? 'opacity-70' : ''}`}
                   onClick={() => shop.online && navigate(`/student/shop/${shop.id}`)}
                 >
                   <div className="shop-img-container shadow-sm">

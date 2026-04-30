@@ -69,14 +69,14 @@ const VendorDashboard = () => {
       <main className="kds-main">
         {/* Revenue Dashboard */}
         <div className="kds-revenue-row">
-          <div className="revenue-card shadow-md">
+          <div className="revenue-card shadow-2xl">
             <div className="rev-icon online"><Smartphone size={24} /></div>
             <div className="rev-info">
               <span className="rev-label">Online UPI</span>
               <span className="rev-amount">₹{onlineRev}</span>
             </div>
           </div>
-          <div className="revenue-card shadow-md">
+          <div className="revenue-card shadow-2xl">
             <div className="rev-icon cash"><Banknote size={24} /></div>
             <div className="rev-info">
               <span className="rev-label">Cash Pending</span>
@@ -128,7 +128,7 @@ const VendorDashboard = () => {
                   {ticket.status === 'pending_cash' ? (
                     <motion.button 
                       whileTap={{ scale: 0.95 }}
-                      className="jumbo-btn confirm-cash shadow-md"
+                      className="jumbo-btn confirm-cash shadow-2xl"
                       onClick={() => handleConfirmCash(ticket.id)}
                     >
                       <Banknote size={24} /> CONFIRM CASH
@@ -136,7 +136,7 @@ const VendorDashboard = () => {
                   ) : (
                     <motion.button 
                       whileTap={{ scale: 0.95 }}
-                      className="jumbo-btn mark-ready shadow-md"
+                      className="jumbo-btn mark-ready shadow-2xl"
                       onClick={() => handleMarkReady(ticket.id)}
                     >
                       <CheckCircle size={24} /> MARK READY
