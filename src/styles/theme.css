@@ -1,28 +1,32 @@
 :root {
-  /* Color Palette (KFC Authentic) */
-  --primary-navy: #E4002B; /* Repurposed to KFC Red globally */
-  --bg-soft-gray: #FFFFFF; /* Pure white backgrounds */
+  /* Color Palette (KFC Red Theme) */
+  --primary-navy: #E4002B; /* Kept variable name for compatibility, but it's KFC Red */
+  --accent-amber: #F59E0B;
+  --bg-soft-gray: #F8FAFC; /* Background */
+  --surface-white: #FFFFFF; /* Surface */
+  
   --success-green: #22C55E;
-  --warning-amber: #202124; /* Repurposed to Dark Charcoal */
+  --warning-amber: #F59E0B;
   --error-red: #E4002B; 
-  --text-dark: #202124;
-  --text-muted: #757575;
+  --text-dark: #1E293B;
+  --text-muted: #64748B;
   --white: #FFFFFF;
   --black: #000000;
   
-  /* Glassmorphism -> Flat & Clean */
-  --glass-bg: #FFFFFF;
-  --glass-border: #E0E0E0; /* Subtle grey border */
-  --backdrop-blur: none;
+  /* Glassmorphism */
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.5);
+  --backdrop-blur: blur(20px);
   
-  /* Standardized Depth (Flatter UI) */
+  /* Standardized Depth (High Contrast) */
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.08);
-  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.1);
-  --shadow-2xl: 0 8px 32px rgba(0, 0, 0, 0.12);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 10px 24px rgba(0, 0, 0, 0.12);
+  --shadow-2xl: 0 16px 40px rgba(0, 0, 0, 0.2); 
   
   /* Gradients */
-  --gradient-primary: linear-gradient(135deg, #E4002B 0%, #D00027 100%);
+  --gradient-primary: linear-gradient(135deg, #E4002B 0%, #B00020 100%);
+  --gradient-amber: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
 
   /* Typography */
   --font-heading: 'Oswald', sans-serif;
@@ -31,17 +35,18 @@
   /* Layout */
   --border-radius-sm: 8px;
   --border-radius-md: 16px;
-  --border-radius-lg: 24px;
+  --border-radius-lg: 24px; /* rounded-3xl equivalent */
   --border-radius-xl: 32px;
 }
 
 /* Dark Mode Variables for Vendor Dashboard (Power-Saver) */
 [data-theme='dark'] {
   --bg-soft-gray: #000000;
+  --surface-white: #121212;
   --text-dark: #FFFFFF;
   --text-muted: #94A3B8;
   --white: #121212;
   --black: #FFFFFF;
-  --glass-bg: #121212;
+  --glass-bg: rgba(18, 18, 18, 0.8);
   --glass-border: #333333;
 }
