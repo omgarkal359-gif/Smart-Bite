@@ -116,23 +116,32 @@ const ShopDirectory = () => {
           ) : (
             MOCK_SHOPS.map((shop, index) => {
               const isHero = index === 0;
+              // Check real-time status from localStorage (synced with vendor)
+              const savedStatus = localStorage.getItem(`shop_status_SHOP-0${shop.id}`);
+              const isOnline = savedStatus ? savedStatus === 'OPEN' : shop.online;
+
               return (
               <motion.div
                 key={shop.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05, type: 'spring', stiffness: 100, damping: 15 }}
-                whileHover={{ scale: 1.02 }}
+                whileHover={isOnline ? { scale: 1.02 } : {}}
                 className={isHero ? "col-span-2" : "col-span-1"}
                 style={isHero ? { gridColumn: 'span 2' } : {}}
               >
                 <GlassCard 
-                  className={`shop-card-v21 ${isHero ? 'hero' : 'square'} tap-effect shadow-2xl ${!shop.online ? 'opacity-70' : ''}`}
-                  onClick={() => shop.online && navigate(`/student/shop/${shop.id}`)}
+                  className={`shop-card-v21 ${isHero ? 'hero' : 'square'} tap-effect shadow-2xl ${!isOnline ? 'opacity-40 grayscale pointer-events-none' : ''}`}
+                  onClick={() => isOnline && navigate(`/student/shop/${shop.id}`)}
                 >
                   <div className="shop-img-container shadow-sm">
                     <img src={shop.img} alt={shop.name} className="shop-hd-img" />
                     {!isHero && <div className="shop-logo-badge absolute bottom-1 right-1 w-6 h-6 text-xs">{shop.logo}</div>}
+                    {!isOnline && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-[2px]">
+                        <span className="bg-white text-black px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter">Temporarily Closed</span>
+                      </div>
+                    )}
                   </div>
                   
                   <div className="shop-card-right">
@@ -143,12 +152,12 @@ const ShopDirectory = () => {
                     <p className="shop-category-v21 text-muted text-sm">{shop.category}</p>
                     
                     <div className="shop-footer-row mt-auto pt-2">
-                      <span className={`flex items-center gap-1 text-xs font-bold ${shop.online ? 'text-green-600' : 'text-gray-400'}`}>
-                        {shop.online ? <Wifi size={10} /> : <WifiOff size={10} />}
-                        {shop.online ? 'Online' : 'Offline'}
+                      <span className={`flex items-center gap-1 text-xs font-bold ${isOnline ? 'text-green-600' : 'text-gray-400'}`}>
+                        {isOnline ? <Wifi size={10} /> : <WifiOff size={10} />}
+                        {isOnline ? 'Online' : 'Offline'}
                       </span>
                       
-                      {shop.busyMode && isHero && (
+                      {shop.busyMode && isHero && isOnline && (
                         <span className="flex items-center gap-1 text-xs font-bold text-[#E4002B] animate-pulse">
                           <Clock size={10} /> +{shop.waitTime}m
                         </span>

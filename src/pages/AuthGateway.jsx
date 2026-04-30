@@ -52,7 +52,11 @@ const AuthGateway = () => {
         triggerError('Invalid PRN. Must be 10 digits.');
         return;
       }
-      if (persistLogin) localStorage.setItem('sgu_token', 'mock_jwt_token_12345');
+      const userData = { role: 'student', prn: formData.prn };
+      if (persistLogin) {
+        localStorage.setItem('sgu_token', 'mock_jwt_token_12345');
+        localStorage.setItem('sgu_user', JSON.stringify(userData));
+      }
       setToastMsg('OTP Sent Successfully!');
       setTimeout(() => navigate('/student'), 1000);
     } 
@@ -61,6 +65,9 @@ const AuthGateway = () => {
         triggerError('Invalid Credentials');
         return;
       }
+      const userData = { role: 'owner', shopId: formData.shopId };
+      localStorage.setItem('sgu_token', 'mock_vendor_token_67890');
+      localStorage.setItem('sgu_user', JSON.stringify(userData));
       navigate('/vendor');
     }
     else if (activeTab === 'guest') {
@@ -68,6 +75,8 @@ const AuthGateway = () => {
         triggerError('Name is required');
         return;
       }
+      const userData = { role: 'guest', name: formData.name };
+      localStorage.setItem('sgu_user', JSON.stringify(userData));
       navigate('/student');
     }
   };
