@@ -28,7 +28,7 @@ const InteractiveMenu = () => {
   const [activeCategory, setActiveCategory] = useState(CATEGORIES[0]);
   const [cart, setCart] = useState({});
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
-  const [dietFilter, setDietFilter] = useState('all'); 
+  const [dietFilter, setDietFilter] = useState('all');
 
   const [inventory, setInventory] = useState(MOCK_INVENTORY);
   const [isLoading, setIsLoading] = useState(true);
@@ -70,13 +70,13 @@ const InteractiveMenu = () => {
     if (totalCartItems > 0 && !isCheckoutOpen) {
       // We could use context to trigger checkout, but let's just trigger it via floating button
     }
-  }, [totalCartItems]);
+  }, [totalCartItems, isCheckoutOpen]);
 
   return (
     <div className="menu-container page-transition">
       <header className="menu-header-v21">
         <h2 className="heading-2">Shop #{shopId}</h2>
-        
+
         {/* Diet Filters */}
         <div className="diet-filters mt-4">
           <button className={`diet-btn ${dietFilter === 'all' ? 'active' : ''}`} onClick={() => setDietFilter('all')}>
@@ -92,12 +92,12 @@ const InteractiveMenu = () => {
 
         <div className="category-scroll-wrapper">
           {CATEGORIES.map(cat => (
-            <button 
+            <button
               key={cat}
               className={`category-pill-v21 tap-effect ${activeCategory === cat ? 'active' : ''}`}
               onClick={() => setActiveCategory(cat)}
             >
-              {CAT_ICONS[cat] || <Flame size={16}/>}
+              {CAT_ICONS[cat] || <Flame size={16} />}
               <span>{cat}</span>
             </button>
           ))}
@@ -107,7 +107,7 @@ const InteractiveMenu = () => {
       <main className="menu-grid-v21">
         <AnimatePresence mode="popLayout">
           {isLoading ? (
-             [1, 2, 3, 4].map(i => (
+            [1, 2, 3, 4].map(i => (
               <motion.div key={`skel-${i}`} className="food-card-v21 shadow-lg skeleton" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.1 }}>
                 <div className="skeleton-food-img" />
                 <div className="p-3">
@@ -115,66 +115,66 @@ const InteractiveMenu = () => {
                   <div className="skeleton-text w-1/2" />
                 </div>
               </motion.div>
-             ))
+            ))
           ) : (
             filteredInventory.map((item, index) => {
               const isFeatured = index === 0;
               return (
-              <motion.div
-                key={item.id}
-                layout
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                transition={{ type: "spring", stiffness: 100, damping: 15, delay: index * 0.05 }}
-                whileHover={{ y: -5 }}
-                className={`food-card-v21 shadow-sm ${item.stock === 0 ? 'out-of-stock' : ''} ${isFeatured ? 'featured' : ''}`}
-              >
-                <div className="food-img-wrapper-v21">
-                  <img src={item.img} alt={item.name} className="food-hd-img" />
-                  
-                  {/* KFC Add Button positioned over the image */}
-                  {cart[item.id] ? (
-                    <div className="qty-controls-v21 shadow-md" style={{ position: 'absolute', bottom: '8px', right: '8px', zIndex: 10 }}>
-                      <motion.button whileTap={{ scale: 0.9 }} className="qty-btn" onClick={() => handleRemoveFromCart(item)}>
-                        -
-                      </motion.button>
-                      <span className="qty-value">{cart[item.id]}</span>
-                      <motion.button whileTap={{ scale: 0.9 }} className="qty-btn" onClick={() => handleAddToCart(item)} disabled={item.stock === 0}>
+                <motion.div
+                  key={item.id}
+                  layout
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  transition={{ type: "spring", stiffness: 100, damping: 15, delay: index * 0.05 }}
+                  whileHover={{ y: -5 }}
+                  className={`food-card-v21 shadow-sm ${item.stock === 0 ? 'out-of-stock' : ''} ${isFeatured ? 'featured' : ''}`}
+                >
+                  <div className="food-img-wrapper-v21">
+                    <img src={item.img} alt={item.name} className="food-hd-img" />
+
+                    {/* KFC Add Button positioned over the image */}
+                    {cart[item.id] ? (
+                      <div className="qty-controls-v21 shadow-md" style={{ position: 'absolute', bottom: '8px', right: '8px', zIndex: 10 }}>
+                        <motion.button whileTap={{ scale: 0.9 }} className="qty-btn" onClick={() => handleRemoveFromCart(item)}>
+                          -
+                        </motion.button>
+                        <span className="qty-value">{cart[item.id]}</span>
+                        <motion.button whileTap={{ scale: 0.9 }} className="qty-btn" onClick={() => handleAddToCart(item)} disabled={item.stock === 0}>
+                          +
+                        </motion.button>
+                      </div>
+                    ) : (
+                      <motion.button
+                        whileTap={{ scale: 0.8 }}
+                        className="kfc-add-btn"
+                        onClick={() => handleAddToCart(item)}
+                        disabled={item.stock === 0}
+                      >
                         +
                       </motion.button>
-                    </div>
-                  ) : (
-                    <motion.button 
-                      whileTap={{ scale: 0.8 }}
-                      className="kfc-add-btn" 
-                      onClick={() => handleAddToCart(item)}
-                      disabled={item.stock === 0}
-                    >
-                      +
-                    </motion.button>
-                  )}
-                </div>
-                
-                <div className="food-info-v21">
-                  <h3>{item.name}</h3>
-                  <p className="food-desc-v21">Enjoy the authentic taste of freshly prepared {item.name.toLowerCase()} with signature herbs.</p>
-                  
-                  <div className="food-bottom-row" style={{ marginTop: 'auto', paddingTop: '8px' }}>
-                    <div className="flex items-center gap-2">
-                      <div className={`diet-indicator-v21 ${item.isVeg ? 'veg' : 'non-veg'}`} style={{ marginTop: 0 }} />
-                      <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>
-                        {item.isVeg ? 'Veg' : 'Non Veg'}
-                      </span>
-                    </div>
-                    <p className="price-v21">₹{item.price}</p>
+                    )}
                   </div>
-                  
-                  {item.stock > 0 && item.stock <= 5 && (
-                    <span className="stock-warning mt-2 block" style={{ fontSize: '0.7rem' }}>Only {item.stock} left</span>
-                  )}
-                </div>
-              </motion.div>
+
+                  <div className="food-info-v21">
+                    <h3>{item.name}</h3>
+                    <p className="food-desc-v21">Enjoy the authentic taste of freshly prepared {item.name.toLowerCase()} with signature herbs.</p>
+
+                    <div className="food-bottom-row" style={{ marginTop: 'auto', paddingTop: '8px' }}>
+                      <div className="flex items-center gap-2">
+                        <div className={`diet-indicator-v21 ${item.isVeg ? 'veg' : 'non-veg'}`} style={{ marginTop: 0 }} />
+                        <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+                          {item.isVeg ? 'Veg' : 'Non Veg'}
+                        </span>
+                      </div>
+                      <p className="price-v21">₹{item.price}</p>
+                    </div>
+
+                    {item.stock > 0 && item.stock <= 5 && (
+                      <span className="stock-warning mt-2 block" style={{ fontSize: '0.7rem' }}>Only {item.stock} left</span>
+                    )}
+                  </div>
+                </motion.div>
               );
             })
           )}
@@ -182,7 +182,7 @@ const InteractiveMenu = () => {
       </main>
 
       {totalCartItems > 0 && (
-        <motion.div 
+        <motion.div
           className="global-cart-trigger"
           initial={{ y: 100 }}
           animate={{ y: 0 }}
@@ -194,9 +194,9 @@ const InteractiveMenu = () => {
         </motion.div>
       )}
 
-      <CheckoutDrawer 
-        isOpen={isCheckoutOpen} 
-        onClose={() => setIsCheckoutOpen(false)} 
+      <CheckoutDrawer
+        isOpen={isCheckoutOpen}
+        onClose={() => setIsCheckoutOpen(false)}
         cart={cart}
         inventory={inventory}
       />
