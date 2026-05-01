@@ -19,7 +19,7 @@ const LoginPage = () => {
   const [guestMobile, setGuestMobile] = useState('');
 
   useEffect(() => {
-    const savedSession = localStorage.getItem('userSession');
+    const savedSession = localStorage.getItem('sgu_user');
     if (savedSession) {
       console.log('Auto-logging in saved user:', JSON.parse(savedSession));
     }
@@ -39,15 +39,14 @@ const LoginPage = () => {
       setTimeout(() => {
         setIsLoading(false);
         setIsSuccess(true);
-        if (rememberMe) {
-          localStorage.setItem('userSession', JSON.stringify({
-            role,
-            id: role === 'Student' ? studentId : shopId,
-            timestamp: new Date().toISOString()
-          }));
-        } else {
-          localStorage.removeItem('userSession');
-        }
+        const normalizedRole = role === 'Shop Owner' ? 'owner' : role === 'Student' ? 'student' : 'guest';
+        localStorage.setItem('sgu_user', JSON.stringify({
+          role: normalizedRole,
+          id: role === 'Student' ? studentId : shopId,
+          shopId: role === 'Shop Owner' ? shopId : null,
+          timestamp: new Date().toISOString(),
+          rememberMe: rememberMe
+        }));
         setTimeout(() => {
           setIsSuccess(false);
           if (role === 'Student' || role === 'Guest') {
