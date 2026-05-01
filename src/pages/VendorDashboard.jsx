@@ -171,7 +171,7 @@ const VendorDashboard = () => {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             className="elite-ctrl-btn exit" 
-            onClick={() => navigate('/student')}
+            onClick={() => navigate('/login')}
           >
             <LogOut size={18} /> <span>EXIT</span>
           </motion.button>

@@ -1,6 +1,5 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import AuthGateway from './pages/AuthGateway';
 import ShopDirectory from './pages/ShopDirectory';
 import InteractiveMenu from './pages/InteractiveMenu';
 import DigitalReceiptTracker from './pages/DigitalReceiptTracker';
@@ -10,14 +9,15 @@ import AdminControlCenter from './pages/AdminControlCenter';
 import UserProfile from './pages/UserProfile';
 import SearchPage from './pages/SearchPage';
 import OrdersPage from './pages/OrdersPage';
+import LoginPage from './pages/LoginPage';
 import { MobileLayout } from './components/layout/MobileLayout';
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Navigate to="/auth" replace />} />
-        <Route path="/auth" element={<AuthGateway />} />
+        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="/login" element={<LoginPage />} />
         
         {/* Student Routes with Mobile Layout wrapper */}
         <Route path="/student" element={<MobileLayout />}>
