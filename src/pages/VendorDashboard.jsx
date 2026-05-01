@@ -35,7 +35,7 @@ const VendorDashboard = () => {
   useEffect(() => {
     const userData = localStorage.getItem('sgu_user');
     if (!userData) {
-      navigate('/auth');
+      navigate('/login');
       return;
     }
     const parsedUser = JSON.parse(userData);
@@ -171,7 +171,10 @@ const VendorDashboard = () => {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             className="elite-ctrl-btn exit" 
-            onClick={() => navigate('/login')}
+            onClick={() => {
+              localStorage.removeItem('sgu_user');
+              navigate('/login');
+            }}
           >
             <LogOut size={18} /> <span>EXIT</span>
           </motion.button>
