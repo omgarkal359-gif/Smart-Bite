@@ -60,7 +60,7 @@ const VendorDashboard = () => {
           <button className={`kds-btn ${isPowerSaver ? 'active' : ''}`} onClick={() => setIsPowerSaver(!isPowerSaver)}>
             <Power size={18} /> OLED Saver
           </button>
-          <button className="kds-btn danger" onClick={() => navigate('/auth')}>
+          <button className="kds-btn danger" onClick={() => navigate('/login')}>
             <LogOut size={18} /> Exit
           </button>
         </div>

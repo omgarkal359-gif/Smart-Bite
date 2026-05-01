@@ -38,7 +38,7 @@ const AdminControlCenter = () => {
             <p className="text-muted" style={{ fontSize: '0.875rem' }}>System Control Center</p>
           </div>
         </div>
-        <button className="btn-icon" onClick={() => navigate('/auth')}>
+        <button className="btn-icon" onClick={() => navigate('/login')}>
           <LogOut size={20} />
         </button>
       </header>
