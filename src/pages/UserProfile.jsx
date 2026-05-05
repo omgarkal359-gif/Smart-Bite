@@ -18,7 +18,7 @@ const UserProfile = () => {
 
   const handleLogout = () => {
     localStorage.removeItem('sgu_token');
-    navigate('/auth');
+    navigate('/login');
   };
 
   return (
