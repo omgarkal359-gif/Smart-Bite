@@ -9,7 +9,7 @@ export const FOOD_COURT = {
     // ── 1. Southern Delight ──────────────────────────────────
     {
       id: "mangales-snacks",
-      name: "Southern Delight ",
+      name: "Southern Delight(Mangale Snacks)",
       tagline: "The Perfect BITE, Every Time...",
       logo: "🥘",
       online: true,
