@@ -17,9 +17,9 @@ const MOCK_RECENT_ORDER = {
 };
 
 const TRENDING_SLIDES = [
-  { id: 1, title: 'CRISPY BUCKET', subtitle: 'Flat 20% OFF today only!', img: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=800&q=80&fm=webp' },
-  { id: 2, title: 'SPICY WINGS', subtitle: 'Buy 1 Get 1 Free', img: 'https://images.unsplash.com/photo-1608039829572-78524f79c4c7?auto=format&fit=crop&w=800&q=80&fm=webp' },
-  { id: 3, title: 'CHEESE BURGER', subtitle: 'Combo meal starting ₹199', img: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=800&q=80&fm=webp' },
+  { id: 1, title: 'JUMBO MISAL', subtitle: 'Mangale\'s Snacks • The Perfect Bite!', img: 'https://images.unsplash.com/photo-1585937421612-70a008356fbe?auto=format&fit=crop&w=800&q=80&fm=webp' },
+  { id: 2, title: 'DAVANGIRI LONI DOSA', subtitle: 'Narayan • Authentic South Indian', img: 'https://images.unsplash.com/photo-1589301760014-d929f39ce9b1?auto=format&fit=crop&w=800&q=80&fm=webp' },
+  { id: 3, title: 'HAKKA NOODLES', subtitle: 'Oodles of Noodles • Best Indo-Chinese', img: 'https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&w=800&q=80&fm=webp' },
 ];
 
 const SkeletonCard = ({ isHero }) => (
