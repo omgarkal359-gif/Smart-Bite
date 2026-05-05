@@ -83,11 +83,11 @@ const ShopDirectory = () => {
               />
               <div className="hero-parallax-overlay" />
               <div className="hero-parallax-content">
-                <span className="text-white text-xs font-bold uppercase tracking-wider mb-1 block opacity-80 flex items-center gap-1"><Flame size={12}/> Trending Now</span>
-                <h2 className="heading-1 text-white" style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>
+                <span className="text-white text-xs font-bold uppercase tracking-wider mb-1 block flex items-center gap-1" style={{ color: 'white' }}><Flame size={12}/> Trending Now</span>
+                <h2 className="heading-1 text-white" style={{ fontSize: '2.5rem', marginBottom: '0.5rem', color: 'white' }}>
                   {TRENDING_SLIDES[currentSlide].title}
                 </h2>
-                <p className="text-white opacity-90">{TRENDING_SLIDES[currentSlide].subtitle}</p>
+                <p className="text-white" style={{ color: 'white' }}>{TRENDING_SLIDES[currentSlide].subtitle}</p>
               </div>
             </motion.div>
           </AnimatePresence>
@@ -99,27 +99,6 @@ const ShopDirectory = () => {
           </div>
         </div>
 
-        {/* Recent Order Tile */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.1 }}
-          className="recent-order-widget"
-          onClick={() => navigate('/student/orders')}
-        >
-          <div className="recent-order-bg" style={{ backgroundImage: `url(${MOCK_RECENT_ORDER.img})` }} />
-          <div className="recent-order-overlay" />
-          <div className="recent-order-content flex justify-between items-center w-full">
-            <div>
-              <span className="text-white text-xs font-bold uppercase tracking-wider mb-1 block opacity-80">Reorder</span>
-              <h3 className="font-heading text-white text-2xl font-black">{MOCK_RECENT_ORDER.item}</h3>
-              <p className="text-white text-sm opacity-90">{MOCK_RECENT_ORDER.shop}</p>
-            </div>
-            <button className="bg-[#E4002B] text-white rounded-full p-3 shadow-lg hover:scale-105 transition-transform animate-pulse">
-              <ChevronRight size={24} />
-            </button>
-          </div>
-        </motion.div>
 
         <h2 className="heading-2 section-title-home mb-4">Popular Spots</h2>
 
@@ -133,23 +112,32 @@ const ShopDirectory = () => {
           ) : (
             MOCK_SHOPS.map((shop, index) => {
               const isHero = index === 0;
+              // Check real-time status from localStorage (synced with vendor)
+              const savedStatus = localStorage.getItem(`shop_status_SHOP-0${shop.id}`);
+              const isOnline = savedStatus ? savedStatus === 'OPEN' : shop.online;
+
               return (
               <motion.div
                 key={shop.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05, type: 'spring', stiffness: 100, damping: 15 }}
-                whileHover={{ scale: 1.02 }}
+                whileHover={isOnline ? { scale: 1.02 } : {}}
                 className={isHero ? "col-span-2" : "col-span-1"}
                 style={isHero ? { gridColumn: 'span 2' } : {}}
               >
                 <GlassCard 
-                  className={`shop-card-v21 ${isHero ? 'hero' : 'square'} tap-effect shadow-sm ${!shop.online ? 'opacity-70' : ''}`}
-                  onClick={() => shop.online && navigate(`/student/shop/${shop.id}`)}
+                  className={`shop-card-v21 ${isHero ? 'hero' : 'square'} tap-effect shadow-2xl ${!isOnline ? 'opacity-40 grayscale pointer-events-none' : ''}`}
+                  onClick={() => isOnline && navigate(`/student/shop/${shop.id}`)}
                 >
                   <div className="shop-img-container shadow-sm">
                     <img src={shop.img} alt={shop.name} className="shop-hd-img" />
                     {!isHero && <div className="shop-logo-badge absolute bottom-1 right-1 w-6 h-6 text-xs">{shop.logo}</div>}
+                    {!isOnline && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-[2px]">
+                        <span className="bg-white text-black px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter">Temporarily Closed</span>
+                      </div>
+                    )}
                   </div>
                   
                   <div className="shop-card-right">
@@ -160,12 +148,12 @@ const ShopDirectory = () => {
                     <p className="shop-category-v21 text-muted text-sm">{shop.category}</p>
                     
                     <div className="shop-footer-row mt-auto pt-2">
-                      <span className={`flex items-center gap-1 text-xs font-bold ${shop.online ? 'text-green-600' : 'text-gray-400'}`}>
-                        {shop.online ? <Wifi size={10} /> : <WifiOff size={10} />}
-                        {shop.online ? 'Online' : 'Offline'}
+                      <span className={`flex items-center gap-1 text-xs font-bold ${isOnline ? 'text-green-600' : 'text-gray-400'}`}>
+                        {isOnline ? <Wifi size={10} /> : <WifiOff size={10} />}
+                        {isOnline ? 'Online' : 'Offline'}
                       </span>
                       
-                      {shop.busyMode && isHero && (
+                      {shop.busyMode && isHero && isOnline && (
                         <span className="flex items-center gap-1 text-xs font-bold text-[#E4002B] animate-pulse">
                           <Clock size={10} /> +{shop.waitTime}m
                         </span>

@@ -12,33 +12,39 @@ const PublicOrderBoard = () => {
   const [preparing, setPreparing] = useState(INITIAL_PREPARING);
   const [ready, setReady] = useState(INITIAL_READY);
 
-  // Simulate socket-driven updates
-  useEffect(() => {
-    const interval = setInterval(() => {
-      // Pick a random preparing order to move to ready
-      if (preparing.length > 0) {
-        setPreparing(prev => {
-          const next = [...prev];
-          const moved = next.shift();
-          
-          setReady(r => {
-            const nextReady = [moved, ...r];
-            if (nextReady.length > 6) nextReady.pop(); // keep max 6
-            return nextReady;
-          });
-          
-          // Add a new preparing order
-          next.push(Math.max(...next, ...ready) + 1);
-          return next;
-        });
-      }
-    }, 5000); // Update every 5 seconds for simulation
+  const [isClosed, setIsClosed] = useState(false);
 
-    return () => clearInterval(interval);
-  }, [preparing, ready]);
+  useEffect(() => {
+    // Sync with shop status
+    const savedStatus = localStorage.getItem('shop_status_SHOP-01');
+    if (savedStatus === 'CLOSED') setIsClosed(true);
+    
+    // Poll for status changes (simulating real-time)
+    const statusInterval = setInterval(() => {
+      const currentStatus = localStorage.getItem('shop_status_SHOP-01');
+      setIsClosed(currentStatus === 'CLOSED');
+    }, 2000);
+
+    return () => clearInterval(statusInterval);
+  }, []);
 
   return (
-    <div className="tv-board-container">
+    <div className={`tv-board-container ${isClosed ? 'grayscale opacity-50' : ''}`}>
+      <AnimatePresence>
+        {isClosed && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/60 backdrop-blur-md"
+          >
+            <div className="text-center">
+              <h1 className="text-white font-black text-8xl uppercase tracking-tighter mb-4" style={{ fontFamily: "'Oswald', sans-serif" }}>Temporarily Closed</h1>
+              <p className="text-amber-400 text-3xl font-bold uppercase tracking-widest">We'll be back soon!</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       <div className="tv-header">
         <div className="tv-logo">SGU SmartBite</div>
         <div className="tv-time">

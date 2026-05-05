@@ -9,7 +9,7 @@ export const BottomNav = () => {
     <nav className="bottom-nav shadow-2xl">
       <NavLink to="/student" end className={({ isActive }) => `nav-item tap-effect ${isActive ? 'active' : ''}`}>
         {({ isActive }) => (
-          <motion.div className="nav-icon-wrapper" animate={{ scale: isActive ? 1.1 : 1 }}>
+          <motion.div className="nav-icon-wrapper" animate={{ scale: isActive ? 1.1 : 1 }} whileTap={{ scale: 0.9 }}>
             <Compass size={24} />
             <span>Explore</span>
           </motion.div>
@@ -17,7 +17,7 @@ export const BottomNav = () => {
       </NavLink>
       <NavLink to="/student/search" className={({ isActive }) => `nav-item tap-effect ${isActive ? 'active' : ''}`}>
         {({ isActive }) => (
-          <motion.div className="nav-icon-wrapper" animate={{ scale: isActive ? 1.1 : 1 }}>
+          <motion.div className="nav-icon-wrapper" animate={{ scale: isActive ? 1.1 : 1 }} whileTap={{ scale: 0.9 }}>
             <Search size={24} />
             <span>Search</span>
           </motion.div>
@@ -25,7 +25,7 @@ export const BottomNav = () => {
       </NavLink>
       <NavLink to="/student/orders" className={({ isActive }) => `nav-item tap-effect ${isActive ? 'active' : ''}`}>
         {({ isActive }) => (
-          <motion.div className="nav-icon-wrapper" animate={{ scale: isActive ? 1.1 : 1 }}>
+          <motion.div className="nav-icon-wrapper" animate={{ scale: isActive ? 1.1 : 1 }} whileTap={{ scale: 0.9 }}>
             <Receipt size={24} />
             <span>Orders</span>
           </motion.div>
@@ -33,7 +33,7 @@ export const BottomNav = () => {
       </NavLink>
       <NavLink to="/student/profile" className={({ isActive }) => `nav-item tap-effect ${isActive ? 'active' : ''}`}>
         {({ isActive }) => (
-          <motion.div className="nav-icon-wrapper" animate={{ scale: isActive ? 1.1 : 1 }}>
+          <motion.div className="nav-icon-wrapper" animate={{ scale: isActive ? 1.1 : 1 }} whileTap={{ scale: 0.9 }}>
             <User size={24} />
             <span>Profile</span>
           </motion.div>
