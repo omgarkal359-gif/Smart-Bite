@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Leaf, Flame, Pizza, Coffee, Sandwich } from 'lucide-react';
 import { CheckoutDrawer } from '../components/ui/CheckoutDrawer';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getItemsByStall, getCategoriesByStall, FOOD_COURT } from '../data/foodCourtDB';
+import { useCart } from '../context/CartContext';
 import './pages.css';
 import './menu_v21.css';
 
@@ -15,6 +16,9 @@ const CAT_ICONS = {
 
 const InteractiveMenu = () => {
   const { shopId } = useParams();
+  const [searchParams] = useSearchParams();
+  const highlightId = searchParams.get('highlight');
+  const targetCategory = searchParams.get('category');
 
   // Derive data from the food court database
   const stallItems = useMemo(() => getItemsByStall(shopId), [shopId]);
@@ -22,7 +26,7 @@ const InteractiveMenu = () => {
   const stallInfo = useMemo(() => FOOD_COURT.stalls.find(s => s.id === shopId), [shopId]);
 
   const [activeCategory, setActiveCategory] = useState('');
-  const [cart, setCart] = useState({});
+  const { cart, addToCart, removeFromCart, totalItems } = useCart();
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
 
   const [inventory, setInventory] = useState([]);
@@ -30,31 +34,49 @@ const InteractiveMenu = () => {
 
   // Set initial category & inventory when stall loads
   useEffect(() => {
-    if (CATEGORIES.length > 0) {
+    if (targetCategory && CATEGORIES.includes(targetCategory)) {
+      setActiveCategory(targetCategory);
+    } else if (CATEGORIES.length > 0) {
       setActiveCategory(CATEGORIES[0]);
     }
     setInventory(stallItems);
-  }, [shopId, CATEGORIES, stallItems]);
+  }, [shopId, CATEGORIES, stallItems, targetCategory]);
+
+  useEffect(() => {
+    if (highlightId && !isLoading) {
+      setTimeout(() => {
+        const el = document.getElementById(`dish-${highlightId}`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          el.style.border = '2px solid var(--primary-color, #E4002B)';
+          el.style.transform = 'scale(1.02)';
+          el.style.boxShadow = '0 10px 25px rgba(228, 0, 43, 0.2)';
+          el.style.transition = 'all 0.5s ease-in-out';
+          setTimeout(() => {
+            el.style.border = '';
+            el.style.transform = '';
+            el.style.boxShadow = '';
+          }, 2000);
+        }
+      }, 300);
+    }
+  }, [highlightId, isLoading, activeCategory]);
 
   useEffect(() => {
     const timer = setTimeout(() => setIsLoading(false), 1200);
     return () => clearTimeout(timer);
   }, []);
 
-  const handleAddToCart = (item) => {
+  const handleAddToCartClick = (item) => {
     if (item.stock > 0) {
-      setCart(prev => ({ ...prev, [item.id]: (prev[item.id] || 0) + 1 }));
+      addToCart(item);
       setInventory(prev => prev.map(i => i.id === item.id ? { ...i, stock: i.stock - 1 } : i));
     }
   };
 
-  const handleRemoveFromCart = (item) => {
-    if (cart[item.id] > 0) {
-      setCart(prev => {
-        const newCart = { ...prev, [item.id]: prev[item.id] - 1 };
-        if (newCart[item.id] === 0) delete newCart[item.id];
-        return newCart;
-      });
+  const handleRemoveFromCartClick = (item) => {
+    if (cart[item.id] && cart[item.id].quantity > 0) {
+      removeFromCart(item.id);
       setInventory(prev => prev.map(i => i.id === item.id ? { ...i, stock: i.stock + 1 } : i));
     }
   };
@@ -63,15 +85,12 @@ const InteractiveMenu = () => {
     return item.category === activeCategory;
   });
 
-  // Calculate cart
-  const totalCartItems = Object.values(cart).reduce((a, b) => a + b, 0);
-
   // Expose global checkout via local state for this shop
   useEffect(() => {
-    if (totalCartItems > 0 && !isCheckoutOpen) {
+    if (totalItems > 0 && !isCheckoutOpen) {
       // We could use context to trigger checkout, but let's just trigger it via floating button
     }
-  }, [totalCartItems, isCheckoutOpen]);
+  }, [totalItems, isCheckoutOpen]);
 
   return (
     <div className="menu-container page-transition">
@@ -110,6 +129,7 @@ const InteractiveMenu = () => {
               return (
                 <motion.div
                   key={item.id}
+                  id={`dish-${item.id}`}
                   layout
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -124,11 +144,11 @@ const InteractiveMenu = () => {
                     {/* KFC Add Button positioned over the image */}
                     {cart[item.id] ? (
                       <div className="qty-controls-v21 shadow-md" style={{ position: 'absolute', bottom: '8px', right: '8px', zIndex: 10 }}>
-                        <motion.button whileTap={{ scale: 0.9 }} className="qty-btn" onClick={() => handleRemoveFromCart(item)}>
+                        <motion.button whileTap={{ scale: 0.9 }} className="qty-btn" onClick={() => handleRemoveFromCartClick(item)}>
                           -
                         </motion.button>
-                        <span className="qty-value">{cart[item.id]}</span>
-                        <motion.button whileTap={{ scale: 0.9 }} className="qty-btn" onClick={() => handleAddToCart(item)} disabled={item.stock === 0}>
+                        <span className="qty-value">{cart[item.id].quantity}</span>
+                        <motion.button whileTap={{ scale: 0.9 }} className="qty-btn" onClick={() => handleAddToCartClick(item)} disabled={item.stock === 0}>
                           +
                         </motion.button>
                       </div>
@@ -136,7 +156,7 @@ const InteractiveMenu = () => {
                       <motion.button
                         whileTap={{ scale: 0.8 }}
                         className="kfc-add-btn"
-                        onClick={() => handleAddToCart(item)}
+                        onClick={() => handleAddToCartClick(item)}
                         disabled={item.stock === 0}
                       >
                         +
@@ -163,7 +183,7 @@ const InteractiveMenu = () => {
         </AnimatePresence>
       </main>
 
-      {totalCartItems > 0 && (
+      {totalItems > 0 && (
         <motion.div
           className="global-cart-trigger"
           initial={{ y: 100 }}
@@ -171,7 +191,7 @@ const InteractiveMenu = () => {
           exit={{ y: 100 }}
         >
           <button className="btn-primary-v21 tap-effect shadow-2xl" onClick={() => setIsCheckoutOpen(true)}>
-            Checkout ({totalCartItems} items)
+            Checkout ({totalItems} items)
           </button>
         </motion.div>
       )}

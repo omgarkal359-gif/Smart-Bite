@@ -15,14 +15,7 @@ export const BottomNav = () => {
           </motion.div>
         )}
       </NavLink>
-      <NavLink to="/student/search" className={({ isActive }) => `nav-item tap-effect ${isActive ? 'active' : ''}`}>
-        {({ isActive }) => (
-          <motion.div className="nav-icon-wrapper" animate={{ scale: isActive ? 1.1 : 1 }} whileTap={{ scale: 0.9 }}>
-            <Search size={24} />
-            <span>Search</span>
-          </motion.div>
-        )}
-      </NavLink>
+
       <NavLink to="/student/orders" className={({ isActive }) => `nav-item tap-effect ${isActive ? 'active' : ''}`}>
         {({ isActive }) => (
           <motion.div className="nav-icon-wrapper" animate={{ scale: isActive ? 1.1 : 1 }} whileTap={{ scale: 0.9 }}>
