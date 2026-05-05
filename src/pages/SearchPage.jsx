@@ -31,24 +31,28 @@ const SearchPage = () => {
           <div>
             <h3 className="section-title-home text-gray-500 mb-4" style={{ fontSize: '1rem' }}>Popular Categories</h3>
             <div className="flex flex-wrap gap-3">
-              <GlassCard className="tap-effect flex items-center gap-2 px-5 py-3 rounded-2xl shadow-sm border font-extrabold" style={{ borderColor: 'var(--glass-border)', color: 'var(--text-dark)', background: 'var(--white)' }} onClick={() => setQuery('Pizza')}>
-                <Pizza size={18} /> Pizzas
+              <GlassCard className="tap-effect flex items-center gap-2 px-5 py-3 rounded-2xl shadow-sm border font-extrabold" style={{ borderColor: 'var(--glass-border)', color: 'var(--text-dark)', background: 'var(--white)' }} onClick={() => setQuery('Dosa')}>
+                🥞 Dosa
               </GlassCard>
-              <GlassCard className="tap-effect flex items-center gap-2 px-5 py-3 rounded-2xl shadow-sm border font-extrabold" style={{ borderColor: 'var(--glass-border)', color: 'var(--text-dark)', background: 'var(--white)' }} onClick={() => setQuery('Burger')}>
-                <Sandwich size={18} /> Burgers
+              <GlassCard className="tap-effect flex items-center gap-2 px-5 py-3 rounded-2xl shadow-sm border font-extrabold" style={{ borderColor: 'var(--glass-border)', color: 'var(--text-dark)', background: 'var(--white)' }} onClick={() => setQuery('Noodles')}>
+                🍜 Noodles
               </GlassCard>
-              <GlassCard className="tap-effect flex items-center gap-2 px-5 py-3 rounded-2xl shadow-sm border font-extrabold" style={{ borderColor: 'var(--glass-border)', color: 'var(--text-dark)', background: 'var(--white)' }} onClick={() => setQuery('Coffee')}>
-                <Coffee size={18} /> Beverages
+              <GlassCard className="tap-effect flex items-center gap-2 px-5 py-3 rounded-2xl shadow-sm border font-extrabold" style={{ borderColor: 'var(--glass-border)', color: 'var(--text-dark)', background: 'var(--white)' }} onClick={() => setQuery('Tea')}>
+                <Coffee size={18} /> Tea & Coffee
               </GlassCard>
-              <GlassCard className="tap-effect flex items-center gap-2 px-5 py-3 rounded-2xl shadow-md font-extrabold" style={{ background: 'var(--error-red)', color: 'white' }} onClick={() => setQuery('Chicken')}>
-                <Flame size={18} /> Trending
+              <GlassCard className="tap-effect flex items-center gap-2 px-5 py-3 rounded-2xl shadow-md font-extrabold" style={{ background: 'var(--error-red)', color: 'white' }} onClick={() => setQuery('Misal')}>
+                <Flame size={18} /> Misal
               </GlassCard>
             </div>
           </div>
-        ) : (
+        ) : (() => {
+          const results = searchFoodItems(query).slice(0, 20);
+          return (
           <div className="flex flex-col gap-4">
-            <h3 className="section-title-home text-gray-500 mb-2" style={{ fontSize: '1rem' }}>Search Results</h3>
-            {MOCK_RESULTS.filter(r => r.name.toLowerCase().includes(query.toLowerCase())).map((item, index) => (
+            <h3 className="section-title-home text-gray-500 mb-2" style={{ fontSize: '1rem' }}>
+              {results.length} result{results.length !== 1 ? 's' : ''} found
+            </h3>
+            {results.map((item, index) => (
               <motion.div 
                 key={item.id} 
                 initial={{ opacity: 0, y: 10 }}
@@ -57,17 +61,13 @@ const SearchPage = () => {
               >
                 <GlassCard 
                   className="shop-card-v21 tap-effect shadow-sm"
-                  onClick={() => navigate('/student/shop/1')}
+                  onClick={() => navigate(`/student/shop/${item.stallId}`)}
                 >
-                  <div className="shop-img-container shadow-sm" style={{ width: '80px', height: '80px', flexShrink: 0 }}>
-                    <img src={item.img} alt={item.name} className="shop-hd-img" />
-                  </div>
-                  
-                  <div className="shop-card-right" style={{ padding: '8px 12px' }}>
+                  <div className="shop-card-right" style={{ padding: '8px 12px', width: '100%' }}>
                     <div className="shop-header-row">
                       <h4 className="shop-name-v21" style={{ color: 'var(--text-dark)' }}>{item.name}</h4>
                     </div>
-                    <p className="shop-category-v21 text-muted">{item.shop}</p>
+                    <p className="shop-category-v21 text-muted">{item.stallName} · {item.category}</p>
                     <div className="shop-footer-row mt-2">
                       <span className="font-heading font-black text-xl" style={{ color: 'var(--text-dark)' }}>₹{item.price}</span>
                     </div>
@@ -76,7 +76,8 @@ const SearchPage = () => {
               </motion.div>
             ))}
           </div>
-        )}
+          );
+        })()}
       </main>
     </div>
   );
