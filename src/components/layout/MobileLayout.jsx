@@ -3,11 +3,11 @@ import { Outlet, useNavigate } from 'react-router-dom';
 import { BottomNav } from './BottomNav';
 import { ShoppingCart } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useCart } from '../../context/CartContext';
 
 export const MobileLayout = () => {
   const navigate = useNavigate();
-  // Mock global cart count
-  const cartCount = 3; 
+  const { totalItems } = useCart();
 
   return (
     <div className="mobile-layout pb-nav page-transition bg-soft-gray">
@@ -20,14 +20,14 @@ export const MobileLayout = () => {
         <button className="global-cart-btn tap-effect" onClick={() => navigate('/student/orders')}>
           <ShoppingCart size={22} />
           <AnimatePresence>
-            {cartCount > 0 && (
+            {totalItems > 0 && (
               <motion.span 
                 className="global-cart-badge"
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 exit={{ scale: 0 }}
               >
-                {cartCount}
+                {totalItems}
               </motion.span>
             )}
           </AnimatePresence>

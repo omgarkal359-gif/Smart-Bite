@@ -6,7 +6,7 @@ export const FOOD_COURT = {
   name: "Food Court of SGU",
   stalls: [
 
-    // ── 1. Southern Delight ──────────────────────────────────
+    // ── 1. Southern Delight(Mangale Snacks) ──────────────────────────────────
     {
       id: "mangales-snacks",
       name: "Southern Delight(Mangale Snacks)",
@@ -21,7 +21,7 @@ export const FOOD_COURT = {
           name: "Thalipeeth",
           items: [
             { name: "Dahi Thalipeeth", price: 50, isVeg: true },
-            { name: "Sejwan Thalipeeth", price: 60, isVeg: true },
+            { name: "Schezwan Thalipeeth", price: 60, isVeg: true },
             { name: "Paneer Thalipeeth", price: 70, isVeg: true },
             { name: "Cheese Thalipeeth", price: 80, isVeg: true },
             { name: "Cheese Paneer Thalipeeth", price: 90, isVeg: true },
