@@ -24,7 +24,6 @@ const InteractiveMenu = () => {
   const [activeCategory, setActiveCategory] = useState('');
   const [cart, setCart] = useState({});
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
-  const [dietFilter, setDietFilter] = useState('all');
 
   const [inventory, setInventory] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -61,9 +60,7 @@ const InteractiveMenu = () => {
   };
 
   const filteredInventory = inventory.filter(item => {
-    const matchesSearch = item.category === activeCategory;
-    const matchesDiet = dietFilter === 'all' ? true : (dietFilter === 'veg' ? item.isVeg : !item.isVeg);
-    return matchesSearch && matchesDiet;
+    return item.category === activeCategory;
   });
 
   // Calculate cart
@@ -81,20 +78,7 @@ const InteractiveMenu = () => {
       <header className="menu-header-v21">
         <h2 className="heading-2">{stallInfo ? stallInfo.name : `Shop #${shopId}`}</h2>
         
-        {/* Diet Filters */}
-        <div className="diet-filters mt-4">
-          <button className={`diet-btn ${dietFilter === 'all' ? 'active' : ''}`} onClick={() => setDietFilter('all')}>
-            All
-          </button>
-          <button className={`diet-btn veg ${dietFilter === 'veg' ? 'active' : ''}`} onClick={() => setDietFilter('veg')}>
-            <Leaf size={14} /> Veg
-          </button>
-          <button className={`diet-btn non-veg ${dietFilter === 'non-veg' ? 'active' : ''}`} onClick={() => setDietFilter('non-veg')}>
-            <Flame size={14} /> Non-Veg
-          </button>
-        </div>
-
-        <div className="category-scroll-wrapper">
+        <div className="category-scroll-wrapper mt-4">
           {CATEGORIES.map(cat => (
             <button
               key={cat}
@@ -165,12 +149,6 @@ const InteractiveMenu = () => {
                     <p className="food-desc-v21">Enjoy the authentic taste of freshly prepared {item.name.toLowerCase()} with signature herbs.</p>
 
                     <div className="food-bottom-row" style={{ marginTop: 'auto', paddingTop: '8px' }}>
-                      <div className="flex items-center gap-2">
-                        <div className={`diet-indicator-v21 ${item.isVeg ? 'veg' : 'non-veg'}`} style={{ marginTop: 0 }} />
-                        <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>
-                          {item.isVeg ? 'Veg' : 'Non Veg'}
-                        </span>
-                      </div>
                       <p className="price-v21">₹{item.price}</p>
                     </div>
 

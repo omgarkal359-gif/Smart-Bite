@@ -6,10 +6,10 @@ export const FOOD_COURT = {
   name: "Food Court of SGU",
   stalls: [
 
-    // ── 1. Mangale's Snacks ──────────────────────────────────
+    // ── 1. Southern Delight ──────────────────────────────────
     {
       id: "mangales-snacks",
-      name: "Mangale's Snacks",
+      name: "Southern Delight ",
       tagline: "The Perfect BITE, Every Time...",
       logo: "🥘",
       online: true,
@@ -195,11 +195,11 @@ export const FOOD_COURT = {
       ],
     },
 
-    // ── 3. Garam Garam (Today's Special) ─────────────────────
+    // ── 3. Rohit Vadewale ─────────────────────
     {
-      id: "garam-garam",
-      name: "Garam Garam Aloo Paratha",
-      tagline: "Today's Special – fresh & fasting friendly",
+      id: "rohit-vadewale",
+      name: "Rohit Vadewale",
+      tagline: "Garam Garam Aloo Paratha & Today's Special",
       logo: "🥟",
       online: true,
       rating: 4.1,
