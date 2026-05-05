@@ -3,15 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { GlassCard } from '../components/ui/GlassCard';
 import { Clock, Wifi, WifiOff, Search, ChevronRight, Flame } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { SHOPS } from '../data/foodCourtDB';
 import './pages.css';
 import './home_v21.css';
 
-const MOCK_SHOPS = [
-  { id: 1, name: 'Pizza Paradise', category: 'Italian', online: true, busyMode: true, waitTime: 25, rating: 4.8, img: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=400&q=80&fm=webp', logo: '🍕' },
-  { id: 2, name: 'Burger Joint', category: 'Fast Food', online: true, busyMode: false, waitTime: 10, rating: 4.5, img: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=400&q=80&fm=webp', logo: '🍔' },
-  { id: 3, name: 'Healthy Bites', category: 'Salads', online: true, busyMode: false, waitTime: 5, rating: 4.9, img: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=400&q=80&fm=webp', logo: '🥗' },
-  { id: 4, name: 'Spicy Wok', category: 'Chinese', online: false, busyMode: false, waitTime: 0, rating: 4.2, img: 'https://images.unsplash.com/photo-1541658016709-82535e94bc69?auto=format&fit=crop&w=400&q=80&fm=webp', logo: '🍜' },
-];
+const MOCK_SHOPS = SHOPS;
 
 const MOCK_RECENT_ORDER = {
   id: 'ORD-1045',

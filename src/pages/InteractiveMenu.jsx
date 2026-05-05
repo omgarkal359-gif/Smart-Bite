@@ -1,19 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Leaf, Flame, Pizza, Coffee, Sandwich } from 'lucide-react';
 import { CheckoutDrawer } from '../components/ui/CheckoutDrawer';
 import { motion, AnimatePresence } from 'framer-motion';
+import { getItemsByStall, getCategoriesByStall, FOOD_COURT } from '../data/foodCourtDB';
 import './pages.css';
 import './menu_v21.css';
-
-const MOCK_INVENTORY = [
-  { id: 1, name: 'Margherita Pizza', category: 'Pizzas', price: 150, stock: 10, isVeg: true, img: 'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?auto=format&fit=crop&w=300&q=80&fm=webp' },
-  { id: 2, name: 'Pepperoni Blast', category: 'Pizzas', price: 200, stock: 0, isVeg: false, img: 'https://images.unsplash.com/photo-1628840042765-356cda07504e?auto=format&fit=crop&w=300&q=80&fm=webp' },
-  { id: 3, name: 'BBQ Chicken', category: 'Pizzas', price: 250, stock: 5, isVeg: false, img: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=300&q=80&fm=webp' },
-  { id: 4, name: 'Classic Burger', category: 'Burgers', price: 100, stock: 15, isVeg: false, img: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=300&q=80&fm=webp' },
-  { id: 5, name: 'Cheese Burger', category: 'Burgers', price: 120, stock: 8, isVeg: false, img: 'https://images.unsplash.com/photo-1586190848861-99aa4a171e90?auto=format&fit=crop&w=300&q=80&fm=webp' },
-  { id: 6, name: 'Veggie Burger', category: 'Burgers', price: 110, stock: 20, isVeg: true, img: 'https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=300&q=80&fm=webp' },
-];
 
 const CAT_ICONS = {
   'Pizzas': <Pizza size={16} />,
@@ -21,17 +13,29 @@ const CAT_ICONS = {
   'Beverages': <Coffee size={16} />
 };
 
-const CATEGORIES = [...new Set(MOCK_INVENTORY.map(item => item.category))];
-
 const InteractiveMenu = () => {
   const { shopId } = useParams();
-  const [activeCategory, setActiveCategory] = useState(CATEGORIES[0]);
+
+  // Derive data from the food court database
+  const stallItems = useMemo(() => getItemsByStall(shopId), [shopId]);
+  const CATEGORIES = useMemo(() => getCategoriesByStall(shopId), [shopId]);
+  const stallInfo = useMemo(() => FOOD_COURT.stalls.find(s => s.id === shopId), [shopId]);
+
+  const [activeCategory, setActiveCategory] = useState('');
   const [cart, setCart] = useState({});
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [dietFilter, setDietFilter] = useState('all'); 
 
-  const [inventory, setInventory] = useState(MOCK_INVENTORY);
+  const [inventory, setInventory] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Set initial category & inventory when stall loads
+  useEffect(() => {
+    if (CATEGORIES.length > 0) {
+      setActiveCategory(CATEGORIES[0]);
+    }
+    setInventory(stallItems);
+  }, [shopId, CATEGORIES, stallItems]);
 
   useEffect(() => {
     const timer = setTimeout(() => setIsLoading(false), 1200);
@@ -75,7 +79,7 @@ const InteractiveMenu = () => {
   return (
     <div className="menu-container page-transition">
       <header className="menu-header-v21">
-        <h2 className="heading-2">Shop #{shopId}</h2>
+        <h2 className="heading-2">{stallInfo ? stallInfo.name : `Shop #${shopId}`}</h2>
         
         {/* Diet Filters */}
         <div className="diet-filters mt-4">

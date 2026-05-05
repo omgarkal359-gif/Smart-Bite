@@ -1,15 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Flame, Pizza, Sandwich, Coffee } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { GlassCard } from '../components/ui/GlassCard';
+import { searchFoodItems } from '../data/foodCourtDB';
 import './home_v21.css';
-
-const MOCK_RESULTS = [
-  { id: 1, name: 'Margherita Pizza', shop: 'Pizza Paradise', price: 150, img: 'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?auto=format&fit=crop&w=300&q=80&fm=webp' },
-  { id: 4, name: 'Classic Burger', shop: 'Burger Joint', price: 100, img: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=300&q=80&fm=webp' },
-  { id: 3, name: 'BBQ Chicken Pizza', shop: 'Pizza Paradise', price: 250, img: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=300&q=80&fm=webp' },
-];
 
 const SearchPage = () => {
   const navigate = useNavigate();
