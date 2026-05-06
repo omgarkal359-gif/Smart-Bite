@@ -26,7 +26,7 @@ const InteractiveMenu = () => {
   const stallInfo = useMemo(() => FOOD_COURT.stalls.find(s => s.id === shopId), [shopId]);
 
   const [activeCategory, setActiveCategory] = useState('');
-  const { cart, addToCart, removeFromCart, totalItems, setIsCheckoutOpen } = useCart();
+  const { cart, addToCart, removeFromCart, totalItems, isCheckoutOpen, setIsCheckoutOpen, clearCart } = useCart();
 
   const [inventory, setInventory] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -212,6 +212,20 @@ const InteractiveMenu = () => {
           </button>
         </motion.div>
       )}
+
+      <AnimatePresence>
+        {isCheckoutOpen && (
+          <CheckoutDrawer 
+            isOpen={isCheckoutOpen} 
+            onClose={() => setIsCheckoutOpen(false)} 
+            cart={cart}
+            onComplete={() => {
+              clearCart();
+              setIsCheckoutOpen(false);
+            }}
+          />
+        )}
+      </AnimatePresence>
 
     </div>
   );

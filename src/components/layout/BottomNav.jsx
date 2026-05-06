@@ -1,10 +1,12 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Compass, Search, Receipt, User } from 'lucide-react';
+import { Compass, Search, Receipt, User, ShoppingCart } from 'lucide-react';
+import { useCart } from '../../context/CartContext';
 import { motion } from 'framer-motion';
 import './layout.css';
 
 export const BottomNav = () => {
+  const { totalItems } = useCart();
   return (
     <nav className="bottom-nav shadow-2xl">
       <NavLink to="/student" end className={({ isActive }) => `nav-item tap-effect ${isActive ? 'active' : ''}`}>
@@ -21,6 +23,17 @@ export const BottomNav = () => {
           <motion.div className="nav-icon-wrapper" animate={{ scale: isActive ? 1.1 : 1 }} whileTap={{ scale: 0.9 }}>
             <Receipt size={24} />
             <span>Orders</span>
+          </motion.div>
+        )}
+      </NavLink>
+      <NavLink to="/student/cart" className={({ isActive }) => `nav-item tap-effect ${isActive ? 'active' : ''}`}>
+        {({ isActive }) => (
+          <motion.div className="nav-icon-wrapper relative" animate={{ scale: isActive ? 1.1 : 1 }} whileTap={{ scale: 0.9 }}>
+            <ShoppingCart size={24} />
+            {totalItems > 0 && (
+              <span className="cart-badge-v21">{totalItems}</span>
+            )}
+            <span>Cart</span>
           </motion.div>
         )}
       </NavLink>
