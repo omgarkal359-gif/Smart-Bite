@@ -13,6 +13,13 @@ const MOCK_ORDERS = [
 
 const OrdersPage = () => {
   const navigate = useNavigate();
+  const [orders, setOrders] = React.useState([]);
+
+  React.useEffect(() => {
+    const savedOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
+    // Combine saved orders with some mock ones for variety
+    setOrders([...savedOrders, ...MOCK_ORDERS.slice(1)]);
+  }, []);
 
   return (
     <div className="directory-container page-transition">
@@ -20,7 +27,7 @@ const OrdersPage = () => {
         <h2 className="heading-2 section-title-home mb-6">My Orders</h2>
         
         <div className="flex flex-col gap-4">
-          {MOCK_ORDERS.map((order, i) => (
+          {orders.map((order, i) => (
             <motion.div 
               key={order.id}
               initial={{ opacity: 0, y: 20 }}

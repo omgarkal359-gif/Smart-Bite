@@ -110,7 +110,7 @@ const VendorDashboard = () => {
       <header className={`kds-header shadow-lg ${shopStatus === 'CLOSED' ? 'closed' : ''}`}>
         <div className="kds-header-left flex items-center gap-8">
           <div className="flex flex-col">
-            <h1 className="heading-2 text-white text-3xl" style={{ margin: 0 }}>{user?.shopId || 'SHOP #01'} COMMAND</h1>
+            <h1 className="heading-2 text-white text-3xl" style={{ margin: 0 }}>{user?.shopId || 'mangales-snacks'} COMMAND</h1>
             <div className="heartbeat-monitor mt-1" style={{ padding: '4px 12px' }}>
               <Activity size={14} color={heartbeat ? '#22C55E' : '#94A3B8'} className={heartbeat ? 'pulse' : ''} />
               <span className="text-white opacity-80 text-[10px] uppercase font-black tracking-widest">Live Operations</span>
@@ -191,7 +191,7 @@ const VendorDashboard = () => {
         <div className="command-grid">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="elite-card command-card">
             <div className="flex justify-between items-start">
-              <span className="command-label">Today's Orders</span>
+              <span className="command-label">Today&apos;s Orders</span>
               <Hash size={20} className="text-navy-400" />
             </div>
             <span className="command-value">{metrics.totalOrders}</span>
@@ -200,7 +200,7 @@ const VendorDashboard = () => {
 
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="elite-card command-card">
             <div className="flex justify-between items-start">
-              <span className="command-label">Today's Revenue</span>
+              <span className="command-label">Today&apos;s Revenue</span>
               <TrendingUp size={20} className="text-green-500" />
             </div>
             <span className="command-value">₹{metrics.totalRevenue}</span>

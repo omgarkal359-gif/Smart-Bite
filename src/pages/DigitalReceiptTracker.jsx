@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { GlassCard } from '../components/ui/GlassCard';
 import { Button } from '../components/ui/Button';
 import { ArrowLeft, QrCode, CheckCircle, Clock, ChefHat, BellRing, Download, Mail } from 'lucide-react';
@@ -14,16 +14,22 @@ const STATUS_STEPS = [
 ];
 
 const DigitalReceiptTracker = () => {
+  const { orderId } = useParams();
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(0);
+  const [order, setOrder] = useState(null);
 
   useEffect(() => {
+    const savedOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
+    const foundOrder = savedOrders.find(o => o.id === orderId);
+    setOrder(foundOrder);
+
     const timers = [
       setTimeout(() => setCurrentStep(1), 3000), // Move to prep
       setTimeout(() => setCurrentStep(2), 8000), // Move to ready
     ];
     return () => timers.forEach(t => clearTimeout(t));
-  }, []);
+  }, [orderId]);
 
   return (
     <div className="tracker-container-v21 page-transition">
@@ -32,7 +38,7 @@ const DigitalReceiptTracker = () => {
           <button className="btn-icon tap-effect" onClick={() => navigate('/student')}>
             <ArrowLeft size={24} />
           </button>
-          <h1 className="heading-2">Order #SGU21</h1>
+          <h1 className="heading-2">Order #{orderId}</h1>
           <div style={{ width: 40 }} />
         </div>
       </header>
@@ -49,8 +55,14 @@ const DigitalReceiptTracker = () => {
               <div className="qr-wrapper-v21">
                 <QrCode size={120} color="var(--primary-navy)" />
               </div>
-              <p className="heading-2 mt-4">#SGU21</p>
+              <p className="heading-2 mt-4">#{orderId}</p>
               <p className="text-muted">Show code at the counter</p>
+              {order && (
+                <div className="order-summary-v21 mt-4 p-4 border-t border-dashed w-full text-left">
+                  <p className="font-bold text-sm mb-2">{order.items}</p>
+                  <p className="font-black text-lg">Total: ₹{order.total}</p>
+                </div>
+              )}
             </div>
 
             <div className="timeline-v21">

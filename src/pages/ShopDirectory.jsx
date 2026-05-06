@@ -48,7 +48,7 @@ const ShopDirectory = () => {
   }, []);
 
   useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 1200);
+    const timer = setTimeout(() => setIsLoading(false), 500);
     return () => clearTimeout(timer);
   }, []);
 
@@ -86,6 +86,7 @@ const ShopDirectory = () => {
           </div>
         )}
 
+
         {query ? (
           (() => {
             const results = searchFoodItems(query).slice(0, 20);
@@ -113,6 +114,7 @@ const ShopDirectory = () => {
                         <div className="shop-footer-row mt-2">
                           <span className="font-heading font-black text-xl" style={{ color: 'var(--text-dark)' }}>₹{item.price}</span>
                         </div>
+
                       </div>
                     </GlassCard>
                   </motion.div>
