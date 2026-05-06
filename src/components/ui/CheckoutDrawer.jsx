@@ -6,7 +6,7 @@ import confetti from 'canvas-confetti';
 import { useCart } from '../../context/CartContext';
 import './checkout.css';
 
-export const CheckoutDrawer = ({ isOpen, onClose, cart, inventory }) => {
+export const CheckoutDrawer = ({ isOpen, onClose, cart, inventory, onComplete }) => {
   const navigate = useNavigate();
   const { addToCart, removeFromCart, clearCart } = useCart();
   const [step, setStep] = useState(1);
@@ -86,13 +86,16 @@ export const CheckoutDrawer = ({ isOpen, onClose, cart, inventory }) => {
         return `${item.quantity}x ${item.name}`;
       }).join(', ');
 
+      const firstItem = Object.values(cart)[0];
       const newOrder = {
         id: `SGU-${Math.floor(1000 + Math.random() * 9000)}`,
         status: 'prep',
         total: totalCartValue,
         items: orderItems,
+        stallId: firstItem?.stallId || 'general',
+        stallName: firstItem?.stallName || 'Food Court',
         time: 'Just now',
-        img: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=300&q=80',
+        img: firstItem?.img || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=300&q=80',
         timestamp: new Date().toISOString()
       };
 
@@ -102,6 +105,7 @@ export const CheckoutDrawer = ({ isOpen, onClose, cart, inventory }) => {
       setTimeout(() => {
         clearCart();
         onClose();
+        if (typeof onComplete === 'function') onComplete();
         navigate(`/student/order/${newOrder.id}`);
       }, 3000);
     }, 2000);
