@@ -15,6 +15,7 @@ export const CartProvider = ({ children }) => {
     const savedCart = localStorage.getItem('sgu_cart');
     return savedCart ? JSON.parse(savedCart) : {};
   });
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
 
   useEffect(() => {
     localStorage.setItem('sgu_cart', JSON.stringify(cart));
@@ -33,10 +34,12 @@ export const CartProvider = ({ children }) => {
   const removeFromCart = (itemId) => {
     setCart(prev => {
       const newCart = { ...prev };
-      if (newCart[itemId].quantity > 1) {
-        newCart[itemId].quantity -= 1;
-      } else {
-        delete newCart[itemId];
+      if (newCart[itemId]) {
+        if (newCart[itemId].quantity > 1) {
+          newCart[itemId].quantity -= 1;
+        } else {
+          delete newCart[itemId];
+        }
       }
       return newCart;
     });
@@ -49,7 +52,7 @@ export const CartProvider = ({ children }) => {
   const totalPrice = Object.values(cart).reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
   return (
-    <CartContext.Provider value={{ cart, addToCart, removeFromCart, clearCart, totalItems, totalPrice }}>
+    <CartContext.Provider value={{ cart, addToCart, removeFromCart, clearCart, totalItems, totalPrice, isCheckoutOpen, setIsCheckoutOpen }}>
       {children}
     </CartContext.Provider>
   );

@@ -4,9 +4,11 @@ import { BottomNav } from './BottomNav';
 import { ShoppingCart, Compass, Receipt, User } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCart } from '../../context/CartContext';
+import { CheckoutDrawer } from '../ui/CheckoutDrawer';
+
 export const MobileLayout = () => {
   const navigate = useNavigate();
-  const { totalItems } = useCart();
+  const { totalItems, cart, isCheckoutOpen, setIsCheckoutOpen } = useCart();
 
   return (
     <div className="mobile-layout pb-nav page-transition bg-soft-gray">
@@ -29,7 +31,7 @@ export const MobileLayout = () => {
           </NavLink>
         </nav>
 
-        <button className="global-cart-btn tap-effect" onClick={() => navigate('/student/cart')}>
+        <button className="global-cart-btn tap-effect" onClick={() => setIsCheckoutOpen(true)}>
           <ShoppingCart size={22} />
           <AnimatePresence>
             {totalItems > 0 && (
