@@ -15,18 +15,6 @@
   margin-bottom: 16px;
 }
 
-.category-scroll-wrapper {
-  display: flex;
-  overflow-x: auto;
-  gap: 12px;
-  padding-bottom: 8px;
-  scrollbar-width: none; /* Firefox */
-}
-
-.category-scroll-wrapper::-webkit-scrollbar {
-  display: none; /* Chrome/Safari */
-}
-
 .diet-btn {
   padding: 8px 16px;
   border-radius: 20px;
