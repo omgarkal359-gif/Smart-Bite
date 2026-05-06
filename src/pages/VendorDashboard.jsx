@@ -21,8 +21,8 @@ const COMPLETED_TICKETS_MOCK = [
 
 const VendorDashboard = () => {
   const navigate = useNavigate();
-  const [tickets, setTickets] = useState(MOCK_TICKETS);
-  const [completedTickets, setCompletedTickets] = useState(COMPLETED_TICKETS_MOCK);
+  const [tickets, setTickets] = useState([]);
+  const [completedTickets, setCompletedTickets] = useState([]);
   const [isPowerSaver, setIsPowerSaver] = useState(false);
   const [isBusyMode, setIsBusyMode] = useState(false);
   const [heartbeat, setHeartbeat] = useState(true);
@@ -30,6 +30,46 @@ const VendorDashboard = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [user, setUser] = useState(null);
   const [showConfetti, setShowConfetti] = useState(false);
+
+  // Sync with LocalStorage Orders
+  useEffect(() => {
+    const loadOrders = () => {
+      const allOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
+      const userData = JSON.parse(localStorage.getItem('sgu_user') || '{}');
+      
+      // Filter orders for THIS shop that are NOT completed yet
+      // (Simplified: we use 'prep' and 'pending_cash' as active states)
+      const shopOrders = allOrders.filter(order => 
+        order.stallId === userData.shopId && 
+        (order.status === 'prep' || order.status === 'pending_cash')
+      ).map(order => ({
+        ...order,
+        // Convert string items "2x Pizza, 1x Coke" back to array if needed for the UI
+        items: typeof order.items === 'string' ? order.items.split(', ') : order.items
+      }));
+
+      setTickets(shopOrders);
+
+      // Load completed orders for metrics
+      const doneOrders = allOrders.filter(order => 
+        order.stallId === userData.shopId && order.status === 'completed'
+      );
+      setCompletedTickets(doneOrders);
+    };
+
+    loadOrders();
+    
+    // Polling for new orders every 5 seconds
+    const interval = setInterval(loadOrders, 5000);
+    
+    // Also listen for storage events from other tabs
+    window.addEventListener('storage', loadOrders);
+    
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('storage', loadOrders);
+    };
+  }, []);
 
   // Security Gate & Session Check
   useEffect(() => {
@@ -75,11 +115,27 @@ const VendorDashboard = () => {
   };
 
   const handleMarkReady = (id) => {
+    const allOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
+    const updatedOrders = allOrders.map(order => 
+      order.id === id ? { ...order, status: 'completed', completed_at: new Date().toISOString() } : order
+    );
+    localStorage.setItem('sgu_orders', JSON.stringify(updatedOrders));
+    
+    // Trigger immediate UI update
+    setTickets(prev => prev.filter(t => t.id !== id));
     const ticket = tickets.find(t => t.id === id);
     if (ticket) {
-      setCompletedTickets([...completedTickets, { ...ticket, completed_at: new Date().toISOString() }]);
-      setTickets(prev => prev.filter(t => t.id !== id));
+      setCompletedTickets(prev => [...prev, { ...ticket, status: 'completed', completed_at: new Date().toISOString() }]);
     }
+  };
+
+  const handleConfirmCash = (id) => {
+    const allOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
+    const updatedOrders = allOrders.map(order => 
+      order.id === id ? { ...order, status: 'prep' } : order
+    );
+    localStorage.setItem('sgu_orders', JSON.stringify(updatedOrders));
+    setTickets(prev => prev.map(t => t.id === id ? { ...t, status: 'prep' } : t));
   };
 
   return (
@@ -275,7 +331,7 @@ const VendorDashboard = () => {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     className={`jumbo-btn ${ticket.status === 'pending_cash' ? 'bg-amber-500' : 'bg-green-500'}`}
-                    onClick={() => ticket.status === 'pending_cash' ? setTickets(prev => prev.map(t => t.id === ticket.id ? {...t, status: 'prep'} : t)) : handleMarkReady(ticket.id)}
+                    onClick={() => ticket.status === 'pending_cash' ? handleConfirmCash(ticket.id) : handleMarkReady(ticket.id)}
                   >
                     <CheckCircle size={20} />
                     {ticket.status === 'pending_cash' ? 'CONFIRM CASH' : 'READY TO SERVE'}
