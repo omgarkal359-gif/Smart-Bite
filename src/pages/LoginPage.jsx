@@ -169,7 +169,7 @@ const LoginPage = () => {
                   />
                   Remember Me
                 </label>
-                <a href="#" className="login-link">Forgot Password?</a>
+                <button type="button" onClick={() => alert('Forgot Password feature is coming soon!')} className="login-link bg-transparent border-none p-0 cursor-pointer">Forgot Password?</button>
               </div>
             </>
           )}
@@ -227,7 +227,7 @@ const LoginPage = () => {
           {/* --- REGISTER LINK --- */}
           {role !== 'Guest' && (
             <div className="login-register-text">
-              Don&apos;t have an account? <a href="#" className="login-link">Register</a>
+              Don&apos;t have an account? <button type="button" onClick={() => alert('Registration is currently handled by the administrator.')} className="login-link bg-transparent border-none p-0 cursor-pointer">Register</button>
             </div>
           )}
 

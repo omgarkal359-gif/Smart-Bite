@@ -3,11 +3,11 @@ import { Outlet, useNavigate } from 'react-router-dom';
 import { BottomNav } from './BottomNav';
 import { ShoppingCart } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useCart } from '../../context/CartContext';
 
 export const MobileLayout = () => {
   const navigate = useNavigate();
-  // Mock global cart count
-  const cartCount = 3; 
+  const { totalItems: cartCount } = useCart(); 
 
   return (
     <div className="mobile-layout pb-nav page-transition bg-soft-gray">

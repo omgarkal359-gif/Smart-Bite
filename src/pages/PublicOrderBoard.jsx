@@ -16,12 +16,12 @@ const PublicOrderBoard = () => {
 
   useEffect(() => {
     // Sync with shop status
-    const savedStatus = localStorage.getItem('shop_status_SHOP-01');
+    const savedStatus = localStorage.getItem('shop_status_mangales-snacks');
     if (savedStatus === 'CLOSED') setIsClosed(true);
     
     // Poll for status changes (simulating real-time)
     const statusInterval = setInterval(() => {
-      const currentStatus = localStorage.getItem('shop_status_SHOP-01');
+      const currentStatus = localStorage.getItem('shop_status_mangales-snacks');
       setIsClosed(currentStatus === 'CLOSED');
     }, 2000);
 
