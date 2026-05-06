@@ -10,8 +10,10 @@ const LoginPage = () => {
 
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
   const navigate = useNavigate();
 
+  const [studentName, setStudentName] = useState('');
   const [studentId, setStudentId] = useState('');
   const [shopId, setShopId] = useState('');
   const [password, setPassword] = useState('');
@@ -26,27 +28,56 @@ const LoginPage = () => {
   }, [navigate]);
 
   const isFormValid = () => {
-    if (role === 'Student') return studentId.trim() !== '' && password.trim() !== '';
+    if (role === 'Student') return studentName.trim() !== '' && studentId.trim() !== '' && password.trim() !== '';
     if (role === 'Shop Owner') return shopId.trim() !== '' && password.trim() !== '';
     if (role === 'Guest') return guestName.trim() !== '' && guestMobile.trim() !== '';
+    return true;
+  };
+
+  const validateFormat = () => {
+    setErrorMsg('');
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const phoneRegex = /^\d{10}$/;
+
+    if (role === 'Student') {
+      if (!emailRegex.test(studentId) && !phoneRegex.test(studentId)) {
+        setErrorMsg('Invalid format: Please enter a valid Email or 10-digit Mobile Number.');
+        return false;
+      }
+    } else if (role === 'Guest') {
+      if (!phoneRegex.test(guestMobile)) {
+        setErrorMsg('Invalid format: Please enter a valid 10-digit Mobile Number.');
+        return false;
+      }
+    } else if (role === 'Shop Owner') {
+      const isDigitsOnly = /^\d+$/.test(shopId);
+      if (isDigitsOnly && shopId.length !== 10 && shopId.length > 5) {
+        setErrorMsg('Invalid format: Mobile Number should be 10 digits.');
+        return false;
+      }
+    }
     return true;
   };
 
   const handleLogin = (e) => {
     e.preventDefault();
     if (isFormValid()) {
+      if (!validateFormat()) return;
+
       setIsLoading(true);
       setTimeout(() => {
         setIsLoading(false);
         setIsSuccess(true);
         const normalizedRole = role === 'Shop Owner' ? 'owner' : role === 'Student' ? 'student' : 'guest';
-        localStorage.setItem('sgu_user', JSON.stringify({
+        const userData = {
           role: normalizedRole,
-          id: role === 'Student' ? studentId : shopId,
+          name: role === 'Guest' ? guestName : (role === 'Student' ? studentName : 'Shop Owner'),
+          id: role === 'Student' ? studentId : (role === 'Guest' ? guestMobile : shopId),
           shopId: role === 'Shop Owner' ? shopId : null,
           timestamp: new Date().toISOString(),
           rememberMe: rememberMe
-        }));
+        };
+        localStorage.setItem('sgu_user', JSON.stringify(userData));
         setTimeout(() => {
           setIsSuccess(false);
           if (role === 'Student' || role === 'Guest') {
@@ -77,9 +108,11 @@ const LoginPage = () => {
               type="button"
               onClick={() => {
                 setRole(r);
+                setStudentName('');
                 setStudentId('');
                 setShopId('');
                 setPassword('');
+                setErrorMsg('');
               }}
               className={`login-tab ${role === r ? 'active' : 'inactive'}`}
             >
@@ -93,20 +126,36 @@ const LoginPage = () => {
 
           {/* --- STUDENT FIELDS --- */}
           {role === 'Student' && (
-            <div className="login-form-group">
+            <>
+              <div className="login-form-group">
+                <label className="login-label">Full Name</label>
+                <div className="login-input-wrapper">
+                  <User className="login-icon" size={20} />
+                  <input
+                    type="text"
+                    value={studentName}
+                    onChange={(e) => { setStudentName(e.target.value); setErrorMsg(''); }}
+                    placeholder="Enter your full name"
+                    className="login-input"
+                    required
+                  />
+                </div>
+              </div>
+              <div className="login-form-group">
               <label className="login-label">Email / Mobile</label>
               <div className="login-input-wrapper">
                 <Mail className="login-icon" size={20} />
                 <input
                   type="text"
                   value={studentId}
-                  onChange={(e) => setStudentId(e.target.value)}
+                  onChange={(e) => { setStudentId(e.target.value); setErrorMsg(''); }}
                   placeholder="Enter Email / Mobile"
                   className="login-input"
                   required
                 />
               </div>
             </div>
+            </>
           )}
 
           {/* --- SHOP OWNER FIELDS --- */}
@@ -118,7 +167,7 @@ const LoginPage = () => {
                 <input
                   type="text"
                   value={shopId}
-                  onChange={(e) => setShopId(e.target.value)}
+                  onChange={(e) => { setShopId(e.target.value); setErrorMsg(''); }}
                   placeholder="Enter Mobile OR Shop ID"
                   className="login-input"
                   required
@@ -192,7 +241,7 @@ const LoginPage = () => {
                   <input
                     type="text"
                     value={guestMobile}
-                    onChange={(e) => setGuestMobile(e.target.value)}
+                    onChange={(e) => { setGuestMobile(e.target.value); setErrorMsg(''); }}
                     placeholder="Enter mobile number"
                     className="login-input"
                     required
@@ -203,6 +252,13 @@ const LoginPage = () => {
                 </p>
               </div>
             </>
+          )}
+
+          {/* --- ERROR NOTIFICATION --- */}
+          {errorMsg && (
+            <div style={{ color: '#E4002B', fontSize: '0.875rem', textAlign: 'center', marginBottom: '16px', fontWeight: '600', backgroundColor: '#FEE2E2', padding: '10px', borderRadius: '8px', border: '1px solid #FECACA' }}>
+              {errorMsg}
+            </div>
           )}
 
           {/* --- SUBMIT BUTTON --- */}

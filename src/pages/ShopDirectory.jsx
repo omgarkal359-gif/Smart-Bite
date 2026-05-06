@@ -18,7 +18,7 @@ const MOCK_RECENT_ORDER = {
 
 const TRENDING_SLIDES = [
   { id: 1, title: 'JUMBO MISAL', subtitle: 'Mangale\'s Snacks • The Perfect Bite!', img: 'https://images.unsplash.com/photo-1585937421612-70a008356fbe?auto=format&fit=crop&w=800&q=80&fm=webp' },
-  { id: 2, title: 'DAVANGIRI LONI DOSA', subtitle: 'Narayan • Authentic South Indian', img: 'https://images.unsplash.com/photo-1589301760014-d929f39ce9b1?auto=format&fit=crop&w=800&q=80&fm=webp' },
+  { id: 2, title: 'DAVANGIRI LONI DOSA', subtitle: 'Narayana • Authentic South Indian', img: 'https://images.unsplash.com/photo-1589301760014-d929f39ce9b1?auto=format&fit=crop&w=800&q=80&fm=webp' },
   { id: 3, title: 'HAKKA NOODLES', subtitle: 'Oodles of Noodles • Best Indo-Chinese', img: 'https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&w=800&q=80&fm=webp' },
 ];
 
@@ -57,17 +57,34 @@ const ShopDirectory = () => {
       <main className="shop-main-content pt-4">
         
         {/* Functional Search Bar */}
-        <div className="relative mb-6">
-          <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={24} />
-          <input 
-            type="text" 
-            placeholder="What are you craving?" 
-            className="w-full pl-14 pr-4 py-4 rounded-2xl border-2 focus:outline-none transition-all text-lg font-bold"
-            style={{ background: 'var(--white)', color: 'var(--text-dark)', borderColor: 'var(--glass-border)' }}
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
-        </div>
+        {isLoading ? (
+          <div className="skeleton" style={{ width: '100%', height: '60px', borderRadius: '16px', marginBottom: '24px', marginTop: '8px', background: 'linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%)', backgroundSize: '200% 100%', animation: 'shimmer 1.5s infinite linear' }} />
+        ) : (
+          <div style={{ position: 'relative', marginBottom: '24px', marginTop: '8px' }}>
+            <div style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', zIndex: 2, pointerEvents: 'none', display: 'flex' }}>
+              <Search color="#94A3B8" size={24} />
+            </div>
+            <input 
+              type="text" 
+              placeholder="What are you craving?" 
+              style={{ 
+                width: '100%', 
+                padding: '16px 16px 16px 52px', 
+                borderRadius: '16px', 
+                border: '2px solid #E2E8F0', 
+                outline: 'none', 
+                fontSize: '1.1rem', 
+                fontWeight: '600',
+                background: 'var(--white)', 
+                color: 'var(--text-dark)',
+                boxShadow: 'var(--shadow-sm)',
+                transition: 'all 0.3s ease'
+              }}
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+          </div>
+        )}
 
         {query ? (
           (() => {
@@ -105,40 +122,47 @@ const ShopDirectory = () => {
           })()
         ) : (
           <>
-            {/* Auto-Scrolling Hero Slideshow */}
-            <div className="hero-slideshow-wrapper shadow-2xl">
-              <AnimatePresence>
-                <motion.div
-                  key={currentSlide}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 1 }}
-                  className="hero-slide"
-                >
-                  <div 
-                    className="hero-bg-image"
-                    style={{ backgroundImage: `url(${TRENDING_SLIDES[currentSlide].img})` }}
-                  />
-                  <div className="hero-parallax-overlay" />
-                  <div className="hero-parallax-content">
-                    <span className="text-white text-xs font-bold uppercase tracking-wider mb-1 block flex items-center gap-1" style={{ color: 'white' }}><Flame size={12}/> Trending Now</span>
-                    <h2 className="heading-1 text-white" style={{ fontSize: '2.5rem', marginBottom: '0.5rem', color: 'white' }}>
-                      {TRENDING_SLIDES[currentSlide].title}
-                    </h2>
-                    <p className="text-white" style={{ color: 'white' }}>{TRENDING_SLIDES[currentSlide].subtitle}</p>
-                  </div>
-                </motion.div>
-              </AnimatePresence>
-              
-              <div className="slide-indicators">
-                {TRENDING_SLIDES.map((_, idx) => (
-                  <div key={idx} className={`slide-dot ${idx === currentSlide ? 'active' : ''}`} />
-                ))}
+            {isLoading ? (
+              <div className="skeleton" style={{ width: '100%', height: '200px', borderRadius: '24px', marginBottom: '24px', background: 'linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%)', backgroundSize: '200% 100%', animation: 'shimmer 1.5s infinite linear' }} />
+            ) : (
+              <div className="hero-slideshow-wrapper shadow-2xl">
+                <AnimatePresence>
+                  <motion.div
+                    key={currentSlide}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 1 }}
+                    className="hero-slide"
+                  >
+                    <div 
+                      className="hero-bg-image"
+                      style={{ backgroundImage: `url(${TRENDING_SLIDES[currentSlide].img})` }}
+                    />
+                    <div className="hero-parallax-overlay" />
+                    <div className="hero-parallax-content">
+                      <span className="text-white text-xs font-bold uppercase tracking-wider mb-1 block flex items-center gap-1" style={{ color: 'white' }}><Flame size={12}/> Trending Now</span>
+                      <h2 className="heading-1 text-white" style={{ fontSize: '2.5rem', marginBottom: '0.5rem', color: 'white' }}>
+                        {TRENDING_SLIDES[currentSlide].title}
+                      </h2>
+                      <p className="text-white" style={{ color: 'white' }}>{TRENDING_SLIDES[currentSlide].subtitle}</p>
+                    </div>
+                  </motion.div>
+                </AnimatePresence>
+                
+                <div className="slide-indicators">
+                  {TRENDING_SLIDES.map((_, idx) => (
+                    <div key={idx} className={`slide-dot ${idx === currentSlide ? 'active' : ''}`} />
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
-            <h2 className="heading-2 section-title-home mb-4">Popular Spots</h2>
+            {isLoading ? (
+              <div className="skeleton mb-4" style={{ width: '150px', height: '32px', borderRadius: '8px', background: 'linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%)', backgroundSize: '200% 100%', animation: 'shimmer 1.5s infinite linear' }} />
+            ) : (
+              <h2 className="heading-2 section-title-home mb-4">Popular Spots</h2>
+            )}
 
             <div className="shop-bento-grid">
               {isLoading ? (

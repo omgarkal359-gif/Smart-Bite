@@ -17,7 +17,7 @@
 .drawer-content-v20 {
   width: 100%;
   max-width: 480px; /* match mobile layout */
-  background: var(--bg-soft-gray);
+  background: #FFFFFF;
   border-radius: 24px 24px 0 0;
   padding: 24px;
   max-height: 90vh;

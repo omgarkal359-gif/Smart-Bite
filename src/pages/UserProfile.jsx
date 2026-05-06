@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GlassCard } from '../components/ui/GlassCard';
 import { Button } from '../components/ui/Button';
@@ -9,6 +9,14 @@ import './profile.css';
 const UserProfile = () => {
   const navigate = useNavigate();
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [userData, setUserData] = useState(null);
+
+  useEffect(() => {
+    const savedSession = localStorage.getItem('sgu_user');
+    if (savedSession) {
+      setUserData(JSON.parse(savedSession));
+    }
+  }, []);
 
   const toggleTheme = () => {
     setIsDarkMode(!isDarkMode);
@@ -34,9 +42,8 @@ const UserProfile = () => {
             <User size={40} />
           </div>
           <div className="user-details">
-            <h2>Omkar Garg</h2>
-            <p className="text-muted">PRN: 21010101</p>
-            <p className="text-muted">+91 9876543210</p>
+            <h2 style={{ textTransform: 'capitalize' }}>{userData?.name || 'SGU User'}</h2>
+            <p className="text-muted">{userData?.id || '+91 -'}</p>
           </div>
         </GlassCard>
 

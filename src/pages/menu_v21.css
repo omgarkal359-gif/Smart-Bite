@@ -15,6 +15,18 @@
   margin-bottom: 16px;
 }
 
+.category-scroll-wrapper {
+  display: flex;
+  overflow-x: auto;
+  gap: 12px;
+  padding-bottom: 8px;
+  scrollbar-width: none; /* Firefox */
+}
+
+.category-scroll-wrapper::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
+}
+
 .diet-btn {
   padding: 8px 16px;
   border-radius: 20px;
@@ -309,4 +321,17 @@
   font-size: 1rem;
   letter-spacing: 0.5px;
   box-shadow: var(--shadow-md);
+}
+
+/* --- RESPONSIVE DESKTOP OVERRIDES --- */
+@media (min-width: 768px) {
+  .menu-grid-v21 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .menu-grid-v21 {
+    grid-template-columns: repeat(4, 1fr);
+  }
 }
