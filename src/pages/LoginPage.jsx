@@ -21,7 +21,13 @@ const LoginPage = () => {
   useEffect(() => {
     const savedSession = localStorage.getItem('sgu_user');
     if (savedSession) {
-      console.log('Auto-logging in saved user:', JSON.parse(savedSession));
+      const parsedUser = JSON.parse(savedSession);
+      console.log('Auto-logging in saved user:', parsedUser);
+      if (parsedUser.role === 'student' || parsedUser.role === 'guest') {
+        navigate('/student');
+      } else if (parsedUser.role === 'owner') {
+        navigate('/vendor');
+      }
     }
   }, [navigate]);
 
@@ -221,7 +227,7 @@ const LoginPage = () => {
           {/* --- REGISTER LINK --- */}
           {role !== 'Guest' && (
             <div className="login-register-text">
-              Don't have an account? <a href="#" className="login-link">Register</a>
+              Don&apos;t have an account? <a href="#" className="login-link">Register</a>
             </div>
           )}
 

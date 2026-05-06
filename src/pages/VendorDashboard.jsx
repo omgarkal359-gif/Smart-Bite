@@ -191,7 +191,7 @@ const VendorDashboard = () => {
         <div className="command-grid">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="elite-card command-card">
             <div className="flex justify-between items-start">
-              <span className="command-label">Today's Orders</span>
+              <span className="command-label">Today&apos;s Orders</span>
               <Hash size={20} className="text-navy-400" />
             </div>
             <span className="command-value">{metrics.totalOrders}</span>
@@ -200,7 +200,7 @@ const VendorDashboard = () => {
 
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="elite-card command-card">
             <div className="flex justify-between items-start">
-              <span className="command-label">Today's Revenue</span>
+              <span className="command-label">Today&apos;s Revenue</span>
               <TrendingUp size={20} className="text-green-500" />
             </div>
             <span className="command-value">₹{metrics.totalRevenue}</span>
