@@ -111,7 +111,7 @@ export const FOOD_COURT = {
           name: "Momos (4 Pcs)",
           items: [
             { name: "Fried Momos", price: 50, isVeg: true },
-            { name: "Tandoor Flavor Momos", price: 60, isVeg: true },
+            { name: "Tandoor Momos", price: 60, isVeg: true },
             { name: "Steamy Momos", price: 70, isVeg: true },
             { name: "Steamed Tandoor Momos", price: 70, isVeg: true },
             { name: "Cheese Momos (Fried)", price: 80, isVeg: true },
@@ -195,11 +195,11 @@ export const FOOD_COURT = {
       ],
     },
 
-    // ── 3. Rohit Vadewale ─────────────────────
+    // ── 3. Rohit Wadewale ─────────────────────
     {
-      id: "rohit-vadewale",
-      name: "Rohit Vadewale",
-      tagline: "Garam Garam Aloo Paratha & Today's Special",
+      id: "rohit-wadewale",
+      name: "Rohit Wadewale",
+      tagline: "Authentic Maharashtrian Snacks",
       logo: "🥟",
       online: true,
       rating: 4.1,
@@ -207,19 +207,93 @@ export const FOOD_COURT = {
       img: "https://images.unsplash.com/photo-1567337710282-00832b415979?auto=format&fit=crop&w=400&q=80",
       categories: [
         {
-          name: "Today's Special",
+          name: "Breakfast",
           items: [
-            { name: "Modak", price: 40, isVeg: true },
-            { name: "Mutter Karanji", price: 50, isVeg: true },
+            { name: "Poha", price: 30, isVeg: true },
+            { name: "Upama", price: 30, isVeg: true },
+            { name: "Poha-Upama Combo", price: 40, isVeg: true },
+            { name: "Pineapple Shira", price: 30, isVeg: true },
           ],
         },
         {
-          name: "Fasting Special",
+          name: "Samosa Chaat",
           items: [
-            { name: "Sabudana Vada", price: 45, isVeg: true },
-            { name: "Fries", price: 60, isVeg: true },
+            { name: "Punjabi Samosa", price: 49, isVeg: true },
+            { name: "Dahi Samosa", price: 60, isVeg: true },
           ],
         },
+        {
+          name: "Fast (Upwaas)",
+          items: [
+            { name: "Sabu Khichadi", price: 60, isVeg: true },
+            { name: "Sabu Khichadi (Masala)", price: 70, isVeg: true },
+            { name: "Sabu Thalipeeth", price: 60, isVeg: true },
+            { name: "Sabudana Wada", price: 55, isVeg: true },
+            { name: "Sabudana Wada (Masala)", price: 70, isVeg: true },
+            { name: "Classic Fries", price: 60, isVeg: true },
+            { name: "Peri Peri Fries", price: 70, isVeg: true },
+          ],
+        },
+        {
+          name: "Pavbhaji",
+          items: [
+            { name: "Pavbhaji", price: 80, isVeg: true },
+            { name: "Cheese Pavbhaji", price: 110, isVeg: true },
+            { name: "Butter Cheese Pavbhaji", price: 110, isVeg: true },
+          ],
+        },
+        {
+          name: "Wadapav",
+          items: [
+            { name: "Classic Wadapav", price: 25, isVeg: true },
+            { name: "Corn Wadapav", price: 49, isVeg: true },
+            { name: "Paneer Wadapav", price: 49, isVeg: true },
+            { name: "Mix Veg Wadapav", price: 35, isVeg: true },
+            { name: "Special Wadapav", price: 45, isVeg: true },
+            { name: "Peri Peri Wadapav", price: 45, isVeg: true },
+            { name: "Cheese Wadapav", price: 45, isVeg: true },
+            { name: "Batata Wada Chutney", price: 20, isVeg: true },
+          ],
+        },
+        {
+          name: "Our Speciality",
+          items: [
+            { name: "Jhataka Wada with Cheese", price: 119, isVeg: true },
+          ],
+        },
+        {
+          name: "Rohit Special",
+          items: [
+            { name: "Kothimbir Vadi (5 Pcs)", price: 55, isVeg: true },
+            { name: "Puran Poli (Single)", price: 50, isVeg: true },
+            { name: "Aloo Paratha", price: 60, isVeg: true },
+            { name: "Beetroot Paratha", price: 60, isVeg: true },
+            { name: "Shenga Poli", price: 55, isVeg: true },
+            { name: "Palak Dal Khichadi", price: 119, isVeg: true },
+          ],
+        },
+        {
+          name: "Bhaji",
+          items: [
+            { name: "Bread Pattice", price: 30, isVeg: true },
+            { name: "Tari Cutwada (Single)", price: 45, isVeg: true },
+            { name: "Tari Cutwada (Double)", price: 65, isVeg: true },
+            { name: "Palak Bhaji", price: 35, isVeg: true },
+            { name: "Moong Bhaji", price: 45, isVeg: true },
+            { name: "Kanda Bhaji", price: 40, isVeg: true },
+            { name: "Batata Bhaji", price: 40, isVeg: true },
+            { name: "Mirchi Bhaji", price: 40, isVeg: true },
+            { name: "Mutter Karanji", price: 55, isVeg: true },
+            { name: "Modak", price: 40, isVeg: true },
+          ],
+        },
+      ],
+      extras: [
+        { name: "Extra Pav (Single)", price: 5, isVeg: true },
+        { name: "Extra Pav (Jodi)", price: 10, isVeg: true },
+        { name: "Extra Butter Pav (Single)", price: 10, isVeg: true },
+        { name: "Extra Butter Pav (Jodi)", price: 15, isVeg: true },
+        { name: "Extra cheese", price: 20, isVeg: true },
       ],
     },
 
@@ -303,10 +377,10 @@ export const FOOD_COURT = {
       ],
     },
 
-    // ── 5. Narayan (South Indian Special) ────────────────────
+    // ── 5. Narayana (South Indian Special) ────────────────────
     {
-      id: "narayan",
-      name: "Narayan",
+      id: "narayana",
+      name: "Narayana",
       tagline: "South Indian Special",
       logo: "🥞",
       online: true,
@@ -416,6 +490,82 @@ export const FOOD_COURT = {
       extras: [
         { name: "Extra Cheese", price: 10, isVeg: true },
         { name: "Parcel Charge", price: 5, isVeg: true },
+      ],
+    },
+    // ── 6. Cool Cravings (Cool Junction) ──────────────────────────────────────────
+    {
+      id: "cool-cravings",
+      name: "Cool Cravings",
+      tagline: "Cold Coffee, Shakes & Mojitos",
+      logo: "🥤",
+      online: true,
+      rating: 4.6,
+      contact: [],
+      img: "https://images.unsplash.com/photo-1461023058943-07fcbe16d735?auto=format&fit=crop&w=400&q=80",
+      categories: [
+        {
+          name: "Cold Coffee",
+          items: [
+            { name: "Cold Coffee", price: 50, isVeg: true },
+            { name: "Cold Coffee with Crush", price: 65, isVeg: true },
+            { name: "Thick Cold Coffee", price: 100, isVeg: true },
+            { name: "Nutella Cold Coffee", price: 105, isVeg: true },
+            { name: "Hazelnut Cold Coffee", price: 105, isVeg: true },
+            { name: "Cold Coffee with Icecream", price: 90, isVeg: true },
+          ],
+        },
+        {
+          name: "Mojito",
+          items: [
+            { name: "Mint Mojito", price: 65, isVeg: true },
+            { name: "Green Mojito", price: 65, isVeg: true },
+            { name: "Citrus Punch Mojito", price: 65, isVeg: true },
+            { name: "Blue Coraco", price: 65, isVeg: true },
+          ],
+        },
+        {
+          name: "Shakes",
+          items: [
+            { name: "Strawberry Shakes", price: 75, isVeg: true },
+            { name: "Mango Shakes", price: 75, isVeg: true },
+            { name: "Blueberry Shakes", price: 75, isVeg: true },
+            { name: "Butterscotch Shakes", price: 75, isVeg: true },
+            { name: "Vanilla Shakes", price: 75, isVeg: true },
+            { name: "Rose shakes", price: 75, isVeg: true },
+            { name: "Chocolate shakes", price: 75, isVeg: true },
+            { name: "Oreo shakes", price: 80, isVeg: true },
+            { name: "Kitkat shakes", price: 80, isVeg: true },
+            { name: "Hazelnut shakes", price: 75, isVeg: true },
+            { name: "Nutella shakes", price: 80, isVeg: true },
+            { name: "Falooda shakes", price: 75, isVeg: true },
+          ],
+        },
+        {
+          name: "Lassi",
+          items: [
+            { name: "Plain Lassi", price: 40, isVeg: true },
+            { name: "Strawberry Lassi", price: 40, isVeg: true },
+            { name: "Pineapple Lassi", price: 40, isVeg: true },
+            { name: "Butterscotch Lassi", price: 40, isVeg: true },
+            { name: "Rose Lassi", price: 40, isVeg: true },
+            { name: "Mango Lassi", price: 50, isVeg: true },
+            { name: "Blueberry Lassi", price: 50, isVeg: true },
+          ],
+        },
+        {
+          name: "Butter Milk",
+          items: [
+            { name: "Plain Taak", price: 15, isVeg: true },
+            { name: "Masala Taak", price: 20, isVeg: true },
+          ],
+        },
+        {
+          name: "Sharbat",
+          items: [
+            { name: "Limbu Sharbat", price: 20, isVeg: true },
+            { name: "Kokam Sharbat", price: 20, isVeg: true },
+          ],
+        },
       ],
     },
   ],

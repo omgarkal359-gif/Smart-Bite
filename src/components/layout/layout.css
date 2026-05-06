@@ -112,3 +112,43 @@
 body {
   background-color: var(--bg-soft-gray);
 }
+
+/* --- RESPONSIVE DESKTOP OVERRIDES --- */
+.desktop-nav {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .bottom-nav {
+    display: none; /* Hide bottom nav on desktop */
+  }
+  
+  .global-fixed-header {
+    max-width: 1200px;
+    padding: 0 40px;
+  }
+
+  .desktop-nav {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+  }
+
+  .desktop-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-muted);
+    font-weight: 600;
+    font-size: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease;
+    text-decoration: none;
+  }
+
+  .desktop-nav-item:hover,
+  .desktop-nav-item.active {
+    color: var(--primary-navy);
+  }
+}

@@ -14,9 +14,8 @@ export const CheckoutDrawer = ({ isOpen, onClose, cart, inventory }) => {
 
   if (!isOpen) return null;
 
-  const totalCartValue = Object.entries(cart).reduce((total, [id, qty]) => {
-    const item = inventory.find(i => i.id === parseInt(id));
-    return total + (item ? item.price * qty : 0);
+  const totalCartValue = Object.values(cart).reduce((total, item) => {
+    return total + (item.price * item.quantity);
   }, 0);
 
   const triggerConfetti = () => {
@@ -107,17 +106,13 @@ export const CheckoutDrawer = ({ isOpen, onClose, cart, inventory }) => {
               <motion.div key="step1" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
                 <div className="receipt-preview-v20 shadow-md">
                   <div className="item-list-v20">
-                    {Object.entries(cart).map(([id, qty]) => {
-                      const item = inventory.find(i => i.id === parseInt(id));
-                      if (!item) return null;
-                      return (
-                        <div key={id} className="receipt-item-v20">
-                          <span className="qty-badge">{qty}x</span>
-                          <span className="item-name">{item.name}</span>
-                          <span className="item-price">₹{item.price * qty}</span>
-                        </div>
-                      );
-                    })}
+                    {Object.values(cart).map((item) => (
+                      <div key={item.id} className="receipt-item-v20">
+                        <span className="qty-badge">{item.quantity}x</span>
+                        <span className="item-name">{item.name}</span>
+                        <span className="item-price">₹{item.price * item.quantity}</span>
+                      </div>
+                    ))}
                   </div>
                   <div className="receipt-total-v20">
                     <span>To Pay</span>

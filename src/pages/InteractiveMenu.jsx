@@ -26,8 +26,7 @@ const InteractiveMenu = () => {
   const stallInfo = useMemo(() => FOOD_COURT.stalls.find(s => s.id === shopId), [shopId]);
 
   const [activeCategory, setActiveCategory] = useState('');
-  const { cart, addToCart, removeFromCart, totalItems } = useCart();
-  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  const { cart, addToCart, removeFromCart, totalItems, setIsCheckoutOpen } = useCart();
 
   const [inventory, setInventory] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -87,10 +86,10 @@ const InteractiveMenu = () => {
 
   // Expose global checkout via local state for this shop
   useEffect(() => {
-    if (totalItems > 0 && !isCheckoutOpen) {
-      // We could use context to trigger checkout, but let's just trigger it via floating button
+    if (totalItems > 0) {
+      // Trigger floating button logic if needed
     }
-  }, [totalItems, isCheckoutOpen]);
+  }, [totalItems]);
 
   return (
     <div className="menu-container page-transition">
@@ -185,23 +184,26 @@ const InteractiveMenu = () => {
 
       {totalItems > 0 && (
         <motion.div
-          className="global-cart-trigger"
+          className="floating-cart-v21"
+          style={{ background: '#FFFFFF', position: 'fixed', bottom: '80px', left: '50%', transform: 'translateX(-50%)', width: 'calc(100% - 40px)', maxWidth: '440px', padding: '12px 16px', borderRadius: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 60, boxShadow: 'var(--shadow-lg)', border: '1px solid var(--glass-border)' }}
           initial={{ y: 100 }}
           animate={{ y: 0 }}
           exit={{ y: 100 }}
         >
-          <button className="btn-primary-v21 tap-effect shadow-2xl" onClick={() => setIsCheckoutOpen(true)}>
-            Checkout ({totalItems} items)
+          <div className="cart-summary-v21">
+            <span className="cart-total" style={{ fontFamily: 'var(--font-heading)', fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-dark)' }}>
+              {totalItems} item{totalItems > 1 ? 's' : ''} added
+            </span>
+          </div>
+          <button 
+            className="checkout-btn-v21 tap-effect shadow-md" 
+            style={{ background: '#E4002B', color: 'white', padding: '12px 24px', borderRadius: '12px', fontFamily: 'var(--font-heading)', textTransform: 'uppercase', fontSize: '1rem', letterSpacing: '0.5px' }}
+            onClick={() => setIsCheckoutOpen(true)}
+          >
+            Checkout
           </button>
         </motion.div>
       )}
-
-      <CheckoutDrawer
-        isOpen={isCheckoutOpen}
-        onClose={() => setIsCheckoutOpen(false)}
-        cart={cart}
-        inventory={inventory}
-      />
     </div>
   );
 };

@@ -267,3 +267,22 @@
 .shop-card-v21.square .shop-name-v21 {
   font-size: 1rem;
 }
+
+/* --- RESPONSIVE DESKTOP OVERRIDES --- */
+@media (min-width: 768px) {
+  .shop-bento-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .shop-card-v21.hero {
+    grid-column: span 3;
+  }
+}
+
+@media (min-width: 1024px) {
+  .shop-bento-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  .shop-card-v21.hero {
+    grid-column: span 2;
+  }
+}
