@@ -17,7 +17,7 @@ export const MobileLayout = () => {
           SGU
         </div>
         
-        <button className="global-cart-btn tap-effect" onClick={() => navigate('/student/orders')}>
+        <button className="global-cart-btn tap-effect" onClick={() => navigate('/student/cart')}>
           <ShoppingCart size={22} />
           <AnimatePresence>
             {cartCount > 0 && (

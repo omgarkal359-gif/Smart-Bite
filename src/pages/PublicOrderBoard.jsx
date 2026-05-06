@@ -40,7 +40,7 @@ const PublicOrderBoard = () => {
           >
             <div className="text-center">
               <h1 className="text-white font-black text-8xl uppercase tracking-tighter mb-4" style={{ fontFamily: "'Oswald', sans-serif" }}>Temporarily Closed</h1>
-              <p className="text-amber-400 text-3xl font-bold uppercase tracking-widest">We'll be back soon!</p>
+              <p className="text-amber-400 text-3xl font-bold uppercase tracking-widest">We&apos;ll be back soon!</p>
             </div>
           </motion.div>
         )}
