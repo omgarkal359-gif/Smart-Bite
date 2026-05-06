@@ -2,13 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GlassCard } from '../components/ui/GlassCard';
 import { Button } from '../components/ui/Button';
-import { LogOut, User, Moon, Sun, Settings, Clock, ChevronRight } from 'lucide-react';
+import { LogOut, User, Clock } from 'lucide-react';
 import './pages.css';
 import './profile.css';
 
 const UserProfile = () => {
   const navigate = useNavigate();
-  const [isDarkMode, setIsDarkMode] = useState(false);
   const [userData, setUserData] = useState(null);
 
   useEffect(() => {
@@ -17,12 +16,6 @@ const UserProfile = () => {
       setUserData(JSON.parse(savedSession));
     }
   }, []);
-
-  const toggleTheme = () => {
-    setIsDarkMode(!isDarkMode);
-    // In a real app, this would be set in a Context or directly on the document root
-    document.querySelector('.mobile-layout').setAttribute('data-theme', !isDarkMode ? 'dark' : 'light');
-  };
 
   const handleLogout = () => {
     localStorage.removeItem('sgu_token');
@@ -47,50 +40,13 @@ const UserProfile = () => {
           </div>
         </GlassCard>
 
-        {/* Settings Toggle */}
-        <div className="settings-section animate-stagger-item stagger-delay-2">
-          <h3 className="section-title text-muted">Preferences</h3>
-          <GlassCard className="settings-card tap-effect transition-smooth" onClick={toggleTheme}>
-            <div className="settings-item-left">
-              {isDarkMode ? <Moon size={20} /> : <Sun size={20} />}
-              <span>{isDarkMode ? 'Dark Mode' : 'Light Mode'}</span>
-            </div>
-            <div className={`toggle-switch ${isDarkMode ? 'active' : ''}`} />
-          </GlassCard>
-        </div>
-
         {/* Order History */}
         <div className="history-section animate-stagger-item stagger-delay-3">
           <h3 className="section-title text-muted">Recent Orders</h3>
           
-          <GlassCard className="history-card tap-effect transition-smooth">
-            <div className="history-header">
-              <span className="order-id">SGU-24-001</span>
-              <span className="order-date">Today, 10:45 AM</span>
-            </div>
-            <div className="history-body-v20">
-              <div className="history-thumb">🍕</div>
-              <div className="history-details">
-                <p>Pizza Paradise</p>
-                <span className="price">₹150</span>
-              </div>
-              <span className="status-badge success">Delivered</span>
-            </div>
-          </GlassCard>
-
-          <GlassCard className="history-card tap-effect transition-smooth">
-            <div className="history-header">
-              <span className="order-id">SGU-24-000</span>
-              <span className="order-date">Yesterday, 1:20 PM</span>
-            </div>
-            <div className="history-body-v20">
-              <div className="history-thumb">🍔</div>
-              <div className="history-details">
-                <p>Burger Joint</p>
-                <span className="price">₹220</span>
-              </div>
-              <span className="status-badge success">Delivered</span>
-            </div>
+          <GlassCard className="history-card" style={{ textAlign: 'center', padding: '32px 16px' }}>
+            <Clock size={32} style={{ color: 'var(--text-muted)', marginBottom: '8px', opacity: 0.4 }} />
+            <p style={{ fontWeight: 600, color: 'var(--text-muted)', fontSize: '0.9rem' }}>No orders yet</p>
           </GlassCard>
         </div>
 

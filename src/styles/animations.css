@@ -23,10 +23,6 @@
   background-size: 1000px 100%;
 }
 
-[data-theme='dark'] .animate-shimmer {
-  background: linear-gradient(to right, #1e293b 4%, #334155 25%, #1e293b 36%);
-  background-size: 1000px 100%;
-}
 
 /* Staggered List Entrance */
 @keyframes slideUpFade {
