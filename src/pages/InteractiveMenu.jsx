@@ -4,6 +4,7 @@ import { Leaf, Flame, Pizza, Coffee, Sandwich } from 'lucide-react';
 import { CheckoutDrawer } from '../components/ui/CheckoutDrawer';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getItemsByStall, getCategoriesByStall, FOOD_COURT } from '../data/foodCourtDB';
+import { useCart } from '../context/CartContext';
 import './pages.css';
 import './menu_v21.css';
 
@@ -22,7 +23,7 @@ const InteractiveMenu = () => {
   const stallInfo = useMemo(() => FOOD_COURT.stalls.find(s => s.id === shopId), [shopId]);
 
   const [activeCategory, setActiveCategory] = useState('');
-  const [cart, setCart] = useState({});
+  const { cart: globalCart, addToCart, removeFromCart, totalItems: totalCartItems } = useCart();
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
 
   const [inventory, setInventory] = useState([]);
@@ -37,24 +38,20 @@ const InteractiveMenu = () => {
   }, [shopId, CATEGORIES, stallItems]);
 
   useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 1200);
+    const timer = setTimeout(() => setIsLoading(false), 500);
     return () => clearTimeout(timer);
   }, []);
 
   const handleAddToCart = (item) => {
     if (item.stock > 0) {
-      setCart(prev => ({ ...prev, [item.id]: (prev[item.id] || 0) + 1 }));
+      addToCart(item);
       setInventory(prev => prev.map(i => i.id === item.id ? { ...i, stock: i.stock - 1 } : i));
     }
   };
 
   const handleRemoveFromCart = (item) => {
-    if (cart[item.id] > 0) {
-      setCart(prev => {
-        const newCart = { ...prev, [item.id]: prev[item.id] - 1 };
-        if (newCart[item.id] === 0) delete newCart[item.id];
-        return newCart;
-      });
+    if (globalCart[item.id]?.quantity > 0) {
+      removeFromCart(item.id);
       setInventory(prev => prev.map(i => i.id === item.id ? { ...i, stock: i.stock + 1 } : i));
     }
   };
@@ -62,9 +59,6 @@ const InteractiveMenu = () => {
   const filteredInventory = inventory.filter(item => {
     return item.category === activeCategory;
   });
-
-  // Calculate cart
-  const totalCartItems = Object.values(cart).reduce((a, b) => a + b, 0);
 
   // Expose global checkout via local state for this shop
   useEffect(() => {
@@ -119,15 +113,23 @@ const InteractiveMenu = () => {
                   className={`food-card-v21 shadow-sm ${item.stock === 0 ? 'out-of-stock' : ''} ${isFeatured ? 'featured' : ''}`}
                 >
                   <div className="food-img-wrapper-v21">
-                    <img src={item.img} alt={item.name} className="food-hd-img" />
+                    <img 
+                      src={item.img || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&q=80'} 
+                      alt={item.name} 
+                      className="food-hd-img" 
+                      onError={(e) => {
+                        e.target.onerror = null; 
+                        e.target.src = 'https://images.unsplash.com/photo-1495147466023-ac5c588e2e94?auto=format&fit=crop&w=400&q=80'; // Sweet treat placeholder
+                      }}
+                    />
 
                     {/* KFC Add Button positioned over the image */}
-                    {cart[item.id] ? (
+                    {globalCart[item.id] ? (
                       <div className="qty-controls-v21 shadow-md" style={{ position: 'absolute', bottom: '8px', right: '8px', zIndex: 10 }}>
                         <motion.button whileTap={{ scale: 0.9 }} className="qty-btn" onClick={() => handleRemoveFromCart(item)}>
                           -
                         </motion.button>
-                        <span className="qty-value">{cart[item.id]}</span>
+                        <span className="qty-value">{globalCart[item.id].quantity}</span>
                         <motion.button whileTap={{ scale: 0.9 }} className="qty-btn" onClick={() => handleAddToCart(item)} disabled={item.stock === 0}>
                           +
                         </motion.button>
@@ -179,7 +181,7 @@ const InteractiveMenu = () => {
       <CheckoutDrawer
         isOpen={isCheckoutOpen}
         onClose={() => setIsCheckoutOpen(false)}
-        cart={cart}
+        cart={globalCart}
         inventory={inventory}
       />
     </div>

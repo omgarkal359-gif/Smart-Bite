@@ -10,11 +10,14 @@ import UserProfile from './pages/UserProfile';
 import SearchPage from './pages/SearchPage';
 import OrdersPage from './pages/OrdersPage';
 import LoginPage from './pages/LoginPage';
+import CartPage from './pages/CartPage';
 import { MobileLayout } from './components/layout/MobileLayout';
+import { CartProvider } from './context/CartContext';
 
 function App() {
   return (
-    <BrowserRouter>
+    <CartProvider>
+      <BrowserRouter>
       <Routes>
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<LoginPage />} />
@@ -27,13 +30,16 @@ function App() {
           <Route path="profile" element={<UserProfile />} />
           <Route path="search" element={<SearchPage />} /> 
           <Route path="orders" element={<OrdersPage />} />
+          <Route path="cart" element={<CartPage />} />
         </Route>
         
         <Route path="/vendor" element={<VendorDashboard />} />
+        <Route path="/owner/dashboard" element={<Navigate to="/vendor" replace />} />
         <Route path="/board" element={<PublicOrderBoard />} />
         <Route path="/admin" element={<AdminControlCenter />} />
       </Routes>
     </BrowserRouter>
+    </CartProvider>
   );
 }
 

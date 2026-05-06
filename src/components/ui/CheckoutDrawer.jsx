@@ -14,9 +14,8 @@ export const CheckoutDrawer = ({ isOpen, onClose, cart, inventory }) => {
 
   if (!isOpen) return null;
 
-  const totalCartValue = Object.entries(cart).reduce((total, [id, qty]) => {
-    const item = inventory.find(i => i.id === parseInt(id));
-    return total + (item ? item.price * qty : 0);
+  const totalCartValue = Object.values(cart).reduce((total, item) => {
+    return total + (item.price * item.quantity);
   }, 0);
 
   const triggerConfetti = () => {
@@ -72,9 +71,28 @@ export const CheckoutDrawer = ({ isOpen, onClose, cart, inventory }) => {
       setIsProcessing(false);
       setStep(4); // Success step
       triggerConfetti();
+
+      // Save to localStorage
+      const orderItems = Object.values(cart).map(item => {
+        return `${item.quantity}x ${item.name}`;
+      }).join(', ');
+
+      const newOrder = {
+        id: `SGU-${Math.floor(1000 + Math.random() * 9000)}`,
+        status: 'prep',
+        total: totalCartValue,
+        items: orderItems,
+        time: 'Just now',
+        img: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=300&q=80',
+        timestamp: new Date().toISOString()
+      };
+
+      const existingOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
+      localStorage.setItem('sgu_orders', JSON.stringify([newOrder, ...existingOrders]));
+
       setTimeout(() => {
         onClose();
-        navigate('/student/order/SGU-ULTIMATE');
+        navigate(`/student/order/${newOrder.id}`);
       }, 3000);
     }, 2000);
   };
@@ -107,14 +125,12 @@ export const CheckoutDrawer = ({ isOpen, onClose, cart, inventory }) => {
               <motion.div key="step1" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
                 <div className="receipt-preview-v20 shadow-md">
                   <div className="item-list-v20">
-                    {Object.entries(cart).map(([id, qty]) => {
-                      const item = inventory.find(i => i.id === parseInt(id));
-                      if (!item) return null;
+                    {Object.values(cart).map((item) => {
                       return (
-                        <div key={id} className="receipt-item-v20">
-                          <span className="qty-badge">{qty}x</span>
+                        <div key={item.id} className="receipt-item-v20">
+                          <span className="qty-badge">{item.quantity}x</span>
                           <span className="item-name">{item.name}</span>
-                          <span className="item-price">₹{item.price * qty}</span>
+                          <span className="item-price">₹{item.price * item.quantity}</span>
                         </div>
                       );
                     })}
