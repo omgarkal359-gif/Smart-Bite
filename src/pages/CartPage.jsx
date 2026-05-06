@@ -24,6 +24,8 @@ const CartPage = () => {
         status: paymentMode === 'cash' ? 'pending_cash' : 'prep',
         total: totalPrice,
         items: cartItems.map(item => `${item.quantity}x ${item.name}`).join(', '),
+        stallId: cartItems[0]?.stallId || 'general',
+        stallName: cartItems[0]?.stallName || 'Food Court',
         time: 'Just now',
         img: cartItems[0]?.img || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=300&q=80',
         timestamp: new Date().toISOString(),

@@ -175,7 +175,7 @@ const ShopDirectory = () => {
                 MOCK_SHOPS.map((shop, index) => {
                   const isHero = index === 0;
                   // Check real-time status from localStorage (synced with vendor)
-                  const savedStatus = localStorage.getItem(`shop_status_SHOP-0${shop.id}`);
+                  const savedStatus = localStorage.getItem(`shop_status_${shop.id}`);
                   const isOnline = savedStatus ? savedStatus === 'OPEN' : shop.online;
 
                   return (
