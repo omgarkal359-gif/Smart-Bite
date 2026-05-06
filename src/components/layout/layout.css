@@ -59,12 +59,15 @@
 }
 
 .sgu-sharp-logo {
-  font-family: var(--font-heading);
-  font-size: 1.75rem;
-  font-weight: 800;
-  color: var(--primary-navy);
-  letter-spacing: -1px;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.sgu-logo-img {
+  height: 44px;
+  width: auto;
+  object-fit: contain;
 }
 
 .global-cart-btn {

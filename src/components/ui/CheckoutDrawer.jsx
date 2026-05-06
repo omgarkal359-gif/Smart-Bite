@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { X, Utensils, ShoppingBag, Banknote, Smartphone, CheckCircle, ArrowRight } from 'lucide-react';
+import { X, Utensils, ShoppingBag, Banknote, Smartphone, CheckCircle, ArrowRight, Trash2, Plus, Minus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
+import { useCart } from '../../context/CartContext';
 import './checkout.css';
 
 export const CheckoutDrawer = ({ isOpen, onClose, cart, inventory }) => {
   const navigate = useNavigate();
+  const { addToCart, removeFromCart, clearCart } = useCart();
   const [step, setStep] = useState(1);
   const [diningMode, setDiningMode] = useState('dine_in'); // dine_in | takeaway
   const [paymentMode, setPaymentMode] = useState('upi'); // upi | cash
@@ -14,9 +16,16 @@ export const CheckoutDrawer = ({ isOpen, onClose, cart, inventory }) => {
 
   if (!isOpen) return null;
 
-  const totalCartValue = Object.values(cart).reduce((total, item) => {
+  const cartItems = Object.values(cart);
+  const totalCartValue = cartItems.reduce((total, item) => {
     return total + (item.price * item.quantity);
   }, 0);
+
+  // Auto-close if cart becomes empty
+  if (cartItems.length === 0 && step === 1) {
+    setTimeout(() => onClose(), 100);
+    return null;
+  }
 
   const triggerConfetti = () => {
     const duration = 3 * 1000;
@@ -91,6 +100,7 @@ export const CheckoutDrawer = ({ isOpen, onClose, cart, inventory }) => {
       localStorage.setItem('sgu_orders', JSON.stringify([newOrder, ...existingOrders]));
 
       setTimeout(() => {
+        clearCart();
         onClose();
         navigate(`/student/order/${newOrder.id}`);
       }, 3000);
@@ -125,11 +135,58 @@ export const CheckoutDrawer = ({ isOpen, onClose, cart, inventory }) => {
               <motion.div key="step1" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
                 <div className="receipt-preview-v20 shadow-md">
                   <div className="item-list-v20">
-                    {Object.values(cart).map((item) => (
-                      <div key={item.id} className="receipt-item-v20">
-                        <span className="qty-badge">{item.quantity}x</span>
-                        <span className="item-name">{item.name}</span>
-                        <span className="item-price">₹{item.price * item.quantity}</span>
+                    {cartItems.map((item) => (
+                      <div key={item.id} className="receipt-item-v20" style={{ alignItems: 'center', gap: '10px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                          <button 
+                            className="tap-effect"
+                            onClick={() => removeFromCart(item.id)}
+                            style={{
+                              width: '28px', height: '28px', borderRadius: '50%',
+                              background: 'var(--bg-soft-gray)', border: '1px solid #E2E8F0',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              cursor: 'pointer', color: 'var(--text-muted)',
+                            }}
+                          >
+                            <Minus size={14} />
+                          </button>
+                          <span style={{ 
+                            fontFamily: 'var(--font-heading)', fontWeight: 800, 
+                            fontSize: '1rem', minWidth: '20px', textAlign: 'center',
+                            color: 'var(--text-dark)',
+                          }}>{item.quantity}</span>
+                          <button 
+                            className="tap-effect"
+                            onClick={() => addToCart(item)}
+                            style={{
+                              width: '28px', height: '28px', borderRadius: '50%',
+                              background: 'var(--bg-soft-gray)', border: '1px solid #E2E8F0',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              cursor: 'pointer', color: 'var(--text-dark)',
+                            }}
+                          >
+                            <Plus size={14} />
+                          </button>
+                        </div>
+                        <span className="item-name" style={{ flex: 1, fontWeight: 600 }}>{item.name}</span>
+                        <span className="item-price" style={{ fontWeight: 700, marginRight: '8px' }}>₹{item.price * item.quantity}</span>
+                        <button
+                          className="tap-effect"
+                          onClick={() => {
+                            // Remove all of this item
+                            for (let i = 0; i < item.quantity; i++) {
+                              removeFromCart(item.id);
+                            }
+                          }}
+                          style={{
+                            width: '28px', height: '28px', borderRadius: '8px',
+                            background: 'rgba(228, 0, 43, 0.08)', border: 'none',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            cursor: 'pointer', color: '#E4002B', flexShrink: 0,
+                          }}
+                        >
+                          <Trash2 size={14} />
+                        </button>
                       </div>
                     ))}
                   </div>
@@ -138,6 +195,19 @@ export const CheckoutDrawer = ({ isOpen, onClose, cart, inventory }) => {
                     <span>₹{totalCartValue}</span>
                   </div>
                 </div>
+                {/* Clear All button */}
+                <button 
+                  onClick={() => { clearCart(); onClose(); }}
+                  style={{
+                    width: '100%', padding: '10px', marginTop: '12px',
+                    background: 'none', border: '1px solid rgba(228, 0, 43, 0.2)',
+                    borderRadius: '10px', color: '#E4002B', fontWeight: 700,
+                    fontSize: '0.85rem', cursor: 'pointer', display: 'flex',
+                    alignItems: 'center', justifyContent: 'center', gap: '6px',
+                  }}
+                >
+                  <Trash2 size={14} /> Clear Entire Cart
+                </button>
               </motion.div>
             )}
 

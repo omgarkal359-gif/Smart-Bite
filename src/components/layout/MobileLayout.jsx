@@ -5,6 +5,7 @@ import { ShoppingCart, Compass, Receipt, User } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCart } from '../../context/CartContext';
 import { CheckoutDrawer } from '../ui/CheckoutDrawer';
+import sguLogo from '../../assets/sgu-logo.jpg';
 
 export const MobileLayout = () => {
   const navigate = useNavigate();
@@ -15,7 +16,7 @@ export const MobileLayout = () => {
       {/* Global Fixed Header */}
       <header className="global-fixed-header">
         <div className="sgu-sharp-logo" onClick={() => navigate('/student')}>
-          SGU
+          <img src={sguLogo} alt="SGU Logo" className="sgu-logo-img" />
         </div>
         
         {/* Desktop Navigation Links */}

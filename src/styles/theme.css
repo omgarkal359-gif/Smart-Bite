@@ -8,8 +8,8 @@
   --success-green: #22C55E;
   --warning-amber: #F59E0B;
   --error-red: #E4002B; 
-  --text-dark: #1E293B;
-  --text-muted: #64748B;
+  --text-dark: #000000;
+  --text-muted: #111827;
   --white: #FFFFFF;
   --black: #000000;
   
@@ -39,14 +39,3 @@
   --border-radius-xl: 32px;
 }
 
-/* Dark Mode Variables for Vendor Dashboard (Power-Saver) */
-[data-theme='dark'] {
-  --bg-soft-gray: #000000;
-  --surface-white: #121212;
-  --text-dark: #FFFFFF;
-  --text-muted: #94A3B8;
-  --white: #121212;
-  --black: #FFFFFF;
-  --glass-bg: rgba(18, 18, 18, 0.8);
-  --glass-border: #333333;
-}

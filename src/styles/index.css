@@ -56,11 +56,6 @@ button {
   transition: max-width 0.3s ease;
 }
 
-[data-theme='dark'] .mobile-layout {
-  background-color: #000;
-  color: #fff;
-}
-
 /* Responsive Overrides */
 @media (min-width: 768px) {
   .mobile-layout {

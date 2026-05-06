@@ -1,15 +1,9 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Clock, CheckCircle } from 'lucide-react';
+import { Clock, CheckCircle, ShoppingBag } from 'lucide-react';
 import { GlassCard } from '../components/ui/GlassCard';
 import './home_v21.css';
-
-const MOCK_ORDERS = [
-  { id: 'SGU-ULTIMATE', status: 'prep', total: 340, items: '2x Margherita Pizza, 1x Coke', time: 'Just now', img: 'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?auto=format&fit=crop&w=300&q=80&fm=webp' },
-  { id: 'SGU-002', status: 'ready', total: 160, items: '1x Classic Burger', time: '1 hour ago', img: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=300&q=80&fm=webp' },
-  { id: 'SGU-001', status: 'completed', total: 250, items: '1x BBQ Chicken Pizza', time: 'Yesterday', img: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=300&q=80&fm=webp' }
-];
 
 const OrdersPage = () => {
   const navigate = useNavigate();
@@ -17,8 +11,7 @@ const OrdersPage = () => {
 
   React.useEffect(() => {
     const savedOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
-    // Combine saved orders with some mock ones for variety
-    setOrders([...savedOrders, ...MOCK_ORDERS.slice(1)]);
+    setOrders(savedOrders);
   }, []);
 
   return (
@@ -27,6 +20,24 @@ const OrdersPage = () => {
         <h2 className="heading-2 section-title-home mb-6">My Orders</h2>
         
         <div className="flex flex-col gap-4">
+          {orders.length === 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '60px 20px',
+                textAlign: 'center',
+              }}
+            >
+              <ShoppingBag size={56} style={{ color: 'var(--text-muted)', marginBottom: '16px', opacity: 0.4 }} />
+              <p style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-dark)', marginBottom: '6px' }}>No orders yet</p>
+              <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Your orders will appear here once you place one.</p>
+            </motion.div>
+          )}
           {orders.map((order, i) => (
             <motion.div 
               key={order.id}
@@ -37,39 +48,92 @@ const OrdersPage = () => {
               <GlassCard 
                 className={`shop-card-v21 tap-effect shadow-sm transition-all ${order.status === 'completed' ? 'opacity-75' : ''}`}
                 style={{ 
-                  borderLeft: order.status === 'prep' ? '6px solid #E4002B' : order.status === 'ready' ? '6px solid var(--success-green)' : '1px solid #EEEEEE' 
+                  borderLeft: order.status === 'prep' ? '6px solid #E4002B' : order.status === 'ready' ? '6px solid var(--success-green)' : '1px solid #EEEEEE',
+                  padding: '16px',
+                  gap: '16px',
                 }}
                 onClick={() => navigate(`/student/order/${order.id}`)}
               >
-                <div className="shop-img-container shadow-sm" style={{ width: '100px', flexShrink: 0 }}>
-                  <img src={order.img} alt="Order" className="shop-hd-img" />
+                <div className="shop-img-container shadow-sm" style={{ width: '90px', height: '90px', flexShrink: 0, borderRadius: '12px' }}>
+                  <img src={order.img} alt="Order" className="shop-hd-img" style={{ borderRadius: '10px' }} />
                 </div>
 
-                <div className="shop-card-right flex flex-col justify-between" style={{ padding: '12px' }}>
-                  <div>
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="font-heading font-black text-xl tracking-tight" style={{ color: 'var(--text-dark)' }}>{order.id}</span>
-                      <span className="font-bold text-gray-500 text-xs tracking-wider uppercase">{order.time}</span>
-                    </div>
-                    <p className="font-bold text-gray-700 text-sm">{order.items}</p>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px', padding: '4px 0' }}>
+                  {/* Order ID & Time */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ 
+                      fontFamily: 'var(--font-heading)', 
+                      fontWeight: 800, 
+                      fontSize: '1.15rem', 
+                      color: 'var(--text-dark)',
+                      letterSpacing: '-0.5px',
+                    }}>{order.id}</span>
+                    <span style={{ 
+                      fontWeight: 700, 
+                      fontSize: '0.7rem', 
+                      color: 'var(--text-muted)', 
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px',
+                    }}>{order.time}</span>
                   </div>
-                  
-                  <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-100">
-                    <span className="font-heading font-black text-xl" style={{ color: 'var(--text-dark)' }}>₹{order.total}</span>
+
+                  {/* Items */}
+                  <p style={{ 
+                    fontWeight: 600, 
+                    fontSize: '0.85rem', 
+                    color: '#64748B',
+                    lineHeight: '1.4',
+                  }}>{order.items}</p>
+
+                  {/* Price & Status */}
+                  <div style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center',
+                    borderTop: '1px solid #F1F5F9',
+                    paddingTop: '8px',
+                    marginTop: '2px',
+                  }}>
+                    <span style={{ 
+                      fontFamily: 'var(--font-heading)', 
+                      fontWeight: 800, 
+                      fontSize: '1.2rem', 
+                      color: 'var(--text-dark)' 
+                    }}>₹{order.total}</span>
                     
                     {order.status === 'prep' && (
-                      <span className="flex items-center gap-1 text-white font-extrabold text-xs bg-[#E4002B] px-2 py-1 rounded-full shadow-sm uppercase tracking-wide">
-                        <Clock size={12} /> Preparing
+                      <span style={{
+                        display: 'inline-flex', alignItems: 'center', gap: '4px',
+                        background: '#E4002B', color: 'white',
+                        fontWeight: 800, fontSize: '0.65rem',
+                        padding: '4px 10px', borderRadius: '20px',
+                        textTransform: 'uppercase', letterSpacing: '0.5px',
+                        boxShadow: '0 2px 8px rgba(228, 0, 43, 0.3)',
+                      }}>
+                        <Clock size={11} /> Preparing
                       </span>
                     )}
                     {order.status === 'ready' && (
-                      <span className="flex items-center gap-1 text-white font-extrabold text-xs bg-[#22C55E] px-2 py-1 rounded-full shadow-sm uppercase tracking-wide">
-                        <CheckCircle size={12} /> Pick up Now
+                      <span style={{
+                        display: 'inline-flex', alignItems: 'center', gap: '4px',
+                        background: '#22C55E', color: 'white',
+                        fontWeight: 800, fontSize: '0.65rem',
+                        padding: '4px 10px', borderRadius: '20px',
+                        textTransform: 'uppercase', letterSpacing: '0.5px',
+                        boxShadow: '0 2px 8px rgba(34, 197, 94, 0.3)',
+                      }}>
+                        <CheckCircle size={11} /> Pick up Now
                       </span>
                     )}
                     {order.status === 'completed' && (
-                      <span className="flex items-center gap-1 text-gray-600 font-extrabold text-xs bg-gray-100 px-2 py-1 rounded-full uppercase tracking-wide">
-                        <CheckCircle size={12} /> Completed
+                      <span style={{
+                        display: 'inline-flex', alignItems: 'center', gap: '4px',
+                        background: '#F1F5F9', color: '#64748B',
+                        fontWeight: 800, fontSize: '0.65rem',
+                        padding: '4px 10px', borderRadius: '20px',
+                        textTransform: 'uppercase', letterSpacing: '0.5px',
+                      }}>
+                        <CheckCircle size={11} /> Completed
                       </span>
                     )}
                   </div>
@@ -84,3 +148,4 @@ const OrdersPage = () => {
 };
 
 export default OrdersPage;
+
