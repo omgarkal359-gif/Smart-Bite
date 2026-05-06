@@ -71,9 +71,28 @@ export const CheckoutDrawer = ({ isOpen, onClose, cart, inventory }) => {
       setIsProcessing(false);
       setStep(4); // Success step
       triggerConfetti();
+
+      // Save to localStorage
+      const orderItems = Object.values(cart).map(item => {
+        return `${item.quantity}x ${item.name}`;
+      }).join(', ');
+
+      const newOrder = {
+        id: `SGU-${Math.floor(1000 + Math.random() * 9000)}`,
+        status: 'prep',
+        total: totalCartValue,
+        items: orderItems,
+        time: 'Just now',
+        img: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=300&q=80',
+        timestamp: new Date().toISOString()
+      };
+
+      const existingOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
+      localStorage.setItem('sgu_orders', JSON.stringify([newOrder, ...existingOrders]));
+
       setTimeout(() => {
         onClose();
-        navigate('/student/order/SGU-ULTIMATE');
+        navigate(`/student/order/${newOrder.id}`);
       }, 3000);
     }, 2000);
   };

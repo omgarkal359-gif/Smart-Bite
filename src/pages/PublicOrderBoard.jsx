@@ -16,12 +16,12 @@ const PublicOrderBoard = () => {
 
   useEffect(() => {
     // Sync with shop status
-    const savedStatus = localStorage.getItem('shop_status_SHOP-01');
+    const savedStatus = localStorage.getItem('shop_status_mangales-snacks');
     if (savedStatus === 'CLOSED') setIsClosed(true);
     
     // Poll for status changes (simulating real-time)
     const statusInterval = setInterval(() => {
-      const currentStatus = localStorage.getItem('shop_status_SHOP-01');
+      const currentStatus = localStorage.getItem('shop_status_mangales-snacks');
       setIsClosed(currentStatus === 'CLOSED');
     }, 2000);
 
@@ -40,7 +40,7 @@ const PublicOrderBoard = () => {
           >
             <div className="text-center">
               <h1 className="text-white font-black text-8xl uppercase tracking-tighter mb-4" style={{ fontFamily: "'Oswald', sans-serif" }}>Temporarily Closed</h1>
-              <p className="text-amber-400 text-3xl font-bold uppercase tracking-widest">We'll be back soon!</p>
+              <p className="text-amber-400 text-3xl font-bold uppercase tracking-widest">We&apos;ll be back soon!</p>
             </div>
           </motion.div>
         )}

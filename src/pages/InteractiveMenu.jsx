@@ -26,7 +26,8 @@ const InteractiveMenu = () => {
   const stallInfo = useMemo(() => FOOD_COURT.stalls.find(s => s.id === shopId), [shopId]);
 
   const [activeCategory, setActiveCategory] = useState('');
-  const { cart, addToCart, removeFromCart, totalItems, setIsCheckoutOpen } = useCart();
+  const { cart, addToCart, removeFromCart, totalItems } = useCart();
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
 
   const [inventory, setInventory] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -62,7 +63,7 @@ const InteractiveMenu = () => {
   }, [highlightId, isLoading, activeCategory]);
 
   useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 1200);
+    const timer = setTimeout(() => setIsLoading(false), 500);
     return () => clearTimeout(timer);
   }, []);
 
@@ -138,7 +139,15 @@ const InteractiveMenu = () => {
                   className={`food-card-v21 shadow-sm ${item.stock === 0 ? 'out-of-stock' : ''} ${isFeatured ? 'featured' : ''}`}
                 >
                   <div className="food-img-wrapper-v21">
-                    <img src={item.img} alt={item.name} className="food-hd-img" />
+                    <img 
+                      src={item.img || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&q=80'} 
+                      alt={item.name} 
+                      className="food-hd-img" 
+                      onError={(e) => {
+                        e.target.onerror = null; 
+                        e.target.src = 'https://images.unsplash.com/photo-1495147466023-ac5c588e2e94?auto=format&fit=crop&w=400&q=80'; // Sweet treat placeholder
+                      }}
+                    />
 
                     {/* KFC Add Button positioned over the image */}
                     {cart[item.id] ? (
@@ -204,6 +213,12 @@ const InteractiveMenu = () => {
           </button>
         </motion.div>
       )}
+      <CheckoutDrawer
+        isOpen={isCheckoutOpen}
+        onClose={() => setIsCheckoutOpen(false)}
+        cart={cart}
+        inventory={inventory}
+      />
     </div>
   );
 };

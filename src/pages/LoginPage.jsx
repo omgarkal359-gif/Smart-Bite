@@ -23,7 +23,13 @@ const LoginPage = () => {
   useEffect(() => {
     const savedSession = localStorage.getItem('sgu_user');
     if (savedSession) {
-      console.log('Auto-logging in saved user:', JSON.parse(savedSession));
+      const parsedUser = JSON.parse(savedSession);
+      console.log('Auto-logging in saved user:', parsedUser);
+      if (parsedUser.role === 'student' || parsedUser.role === 'guest') {
+        navigate('/student');
+      } else if (parsedUser.role === 'owner') {
+        navigate('/vendor');
+      }
     }
   }, [navigate]);
 
@@ -212,7 +218,7 @@ const LoginPage = () => {
                   />
                   Remember Me
                 </label>
-                <a href="#" className="login-link">Forgot Password?</a>
+                <button type="button" onClick={() => alert('Forgot Password feature is coming soon!')} className="login-link bg-transparent border-none p-0 cursor-pointer">Forgot Password?</button>
               </div>
             </>
           )}
@@ -277,7 +283,7 @@ const LoginPage = () => {
           {/* --- REGISTER LINK --- */}
           {role !== 'Guest' && (
             <div className="login-register-text">
-              Don't have an account? <a href="#" className="login-link">Register</a>
+              Don&apos;t have an account? <button type="button" onClick={() => alert('Registration is currently handled by the administrator.')} className="login-link bg-transparent border-none p-0 cursor-pointer">Register</button>
             </div>
           )}
 

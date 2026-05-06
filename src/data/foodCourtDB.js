@@ -15,13 +15,13 @@ export const FOOD_COURT = {
       online: true,
       rating: 4.6,
       contact: ["8805682020", "9372221444"],
-      img: "https://images.unsplash.com/photo-1601050690117-94f5f6fa8bd7?auto=format&fit=crop&w=400&q=80",
+      img: "https://images.unsplash.com/photo-1589302168068-964664d93dc0?auto=format&fit=crop&w=800&q=80",
       categories: [
         {
           name: "Thalipeeth",
           items: [
             { name: "Dahi Thalipeeth", price: 50, isVeg: true },
-            { name: "Schezwan Thalipeeth", price: 60, isVeg: true },
+            { name: "Sejwan Thalipeeth", price: 60, isVeg: true },
             { name: "Paneer Thalipeeth", price: 70, isVeg: true },
             { name: "Cheese Thalipeeth", price: 80, isVeg: true },
             { name: "Cheese Paneer Thalipeeth", price: 90, isVeg: true },
@@ -31,7 +31,7 @@ export const FOOD_COURT = {
         {
           name: "Misal",
           items: [
-            { name: "Misal", price: 50, isVeg: true },
+            { name: "Misal", price: 50, isVeg: true, img: "https://images.unsplash.com/photo-1585937421612-70a008356fbe?auto=format&fit=crop&w=400&q=80" },
             { name: "Dahi Misal", price: 60, isVeg: true },
             { name: "Cheese Misal", price: 70, isVeg: true },
             { name: "Extra Bread", price: 10, isVeg: true },
@@ -158,7 +158,7 @@ export const FOOD_COURT = {
         {
           name: "Tea's",
           items: [
-            { name: "Gulacha Basundi Tea", price: 10, isVeg: true },
+            { name: "Gulacha Basundi Tea", price: 10, isVeg: true, img: "https://images.unsplash.com/photo-1594631252845-29fc458695d1?auto=format&fit=crop&w=400&q=80" },
             { name: "Black Tea", price: 15, isVeg: true },
             { name: "Jumbo Tea", price: 20, isVeg: true },
             { name: "Irani Tea", price: 20, isVeg: true },
@@ -171,7 +171,7 @@ export const FOOD_COURT = {
         {
           name: "Coffee",
           items: [
-            { name: "Coffee", price: 20, isVeg: true },
+            { name: "Coffee", price: 20, isVeg: true, img: "https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=400&q=80" },
             { name: "Black Coffee", price: 15, isVeg: true },
             { name: "Hazelnut Coffee", price: 20, isVeg: true },
             { name: "Butterscotch Coffee", price: 20, isVeg: true },
@@ -331,7 +331,7 @@ export const FOOD_COURT = {
         {
           name: "Noodles",
           items: [
-            { name: "Hakka Noodles", price: 50, isVeg: true },
+            { name: "Hakka Noodles", price: 50, isVeg: true, img: "https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&w=400&q=80" },
             { name: "Garlic Noodles", price: 60, isVeg: true },
             { name: "Singapuri Noodles", price: 60, isVeg: true },
             { name: "Hong Kong Noodles", price: 60, isVeg: true },
@@ -407,7 +407,7 @@ export const FOOD_COURT = {
             { name: "Cheese Dosa", price: 60, isVeg: true },
             { name: "Paneer Cheese Dosa", price: 80, isVeg: true },
             { name: "Spong Loni Dosa", price: 80, isVeg: true },
-            { name: "Davangiri Loni Dosa", price: 90, isVeg: true },
+            { name: "Davangiri Loni Dosa", price: 90, isVeg: true, img: "https://images.unsplash.com/photo-1589301760014-d929f39ce9b1?auto=format&fit=crop&w=400&q=80" },
             { name: "Mysore Masala Dosa", price: 90, isVeg: true },
             { name: "Ghee Podi Dosa", price: 100, isVeg: true },
           ],

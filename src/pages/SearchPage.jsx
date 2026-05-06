@@ -62,14 +62,26 @@ const SearchPage = () => {
                 <GlassCard 
                   className="shop-card-v21 tap-effect shadow-sm"
                   onClick={() => navigate(`/student/shop/${item.stallId}`)}
+                  style={{ padding: '8px' }}
                 >
-                  <div className="shop-card-right" style={{ padding: '8px 12px', width: '100%' }}>
+                  <div className="shop-img-container" style={{ width: '80px', height: '80px', borderRadius: '12px' }}>
+                    <img 
+                      src={item.img || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=200&q=80'} 
+                      alt={item.name} 
+                      className="shop-hd-img" 
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = 'https://images.unsplash.com/photo-1495147466023-ac5c588e2e94?auto=format&fit=crop&w=200&q=80';
+                      }}
+                    />
+                  </div>
+                  <div className="shop-card-right" style={{ padding: '4px 12px', flex: 1 }}>
                     <div className="shop-header-row">
-                      <h4 className="shop-name-v21" style={{ color: 'var(--text-dark)' }}>{item.name}</h4>
+                      <h4 className="shop-name-v21" style={{ color: 'var(--text-dark)', fontSize: '1rem' }}>{item.name}</h4>
                     </div>
-                    <p className="shop-category-v21 text-muted">{item.stallName} · {item.category}</p>
+                    <p className="shop-category-v21 text-muted" style={{ fontSize: '0.75rem' }}>{item.stallName} · {item.category}</p>
                     <div className="shop-footer-row mt-2">
-                      <span className="font-heading font-black text-xl" style={{ color: 'var(--text-dark)' }}>₹{item.price}</span>
+                      <span className="font-heading font-black text-lg" style={{ color: 'var(--text-dark)' }}>₹{item.price}</span>
                     </div>
                   </div>
                 </GlassCard>
