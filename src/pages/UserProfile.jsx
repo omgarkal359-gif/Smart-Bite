@@ -19,6 +19,8 @@ const UserProfile = () => {
 
   const handleLogout = () => {
     localStorage.removeItem('sgu_token');
+    localStorage.removeItem('sgu_user');
+    localStorage.removeItem('sgu_cart'); // Clear cart on logout for security
     navigate('/login');
   };
 
