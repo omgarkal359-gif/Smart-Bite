@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { GlassCard } from '../components/ui/GlassCard';
 import { Button } from '../components/ui/Button';
 import { Clock, Volume2, Power, LogOut, CheckCircle, Banknote, Activity, Smartphone, Utensils, ShoppingBag, Settings, Menu, RefreshCw, X, TrendingUp, Hash, CreditCard } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MenuEditor } from '../components/vendor/MenuEditor';
+import { SHOPS } from '../data/foodCourtDB';
 import './pages.css';
 import './vendor.css';
 
@@ -21,39 +22,48 @@ const VendorDashboard = () => {
   const [heartbeat, setHeartbeat] = useState(true);
   const [shopStatus, setShopStatus] = useState('OPEN'); // OPEN | CLOSED
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const { shopId: urlShopId } = useParams();
   const [user, setUser] = useState(null);
   const [showConfetti, setShowConfetti] = useState(false);
+  
+  // Determine target shop ID (URL takes priority, then user profile)
+  const targetShopId = urlShopId || user?.shopId;
+  const currentShop = SHOPS.find(s => s.id === targetShopId);
 
   // Sync with LocalStorage Orders
+  const loadOrders = useCallback(() => {
+    const allOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
+    
+    // Filter orders for THIS shop that are NOT completed yet
+    const shopOrders = allOrders.filter(order => 
+      order.stallId === targetShopId && 
+      (order.status === 'prep' || order.status === 'pending_cash' || order.status === 'placed' || order.status === 'preparing' || order.status === 'ready')
+    ).map(order => ({
+      ...order,
+      items: typeof order.items === 'string' ? order.items.split(', ') : order.items
+    }));
+
+    // Only update state if data changed to avoid re-renders
+    setTickets(prev => {
+      if (JSON.stringify(prev) === JSON.stringify(shopOrders)) return prev;
+      return shopOrders;
+    });
+
+    // Load completed orders for metrics
+    const doneOrders = allOrders.filter(order => 
+      order.stallId === targetShopId && order.status === 'completed'
+    );
+    setCompletedTickets(prev => {
+      if (JSON.stringify(prev) === JSON.stringify(doneOrders)) return prev;
+      return doneOrders;
+    });
+  }, [targetShopId]);
+
   useEffect(() => {
-    const loadOrders = () => {
-      const allOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
-      const userData = JSON.parse(localStorage.getItem('sgu_user') || '{}');
-      
-      // Filter orders for THIS shop that are NOT completed yet
-      // (Simplified: we use 'prep' and 'pending_cash' as active states)
-      const shopOrders = allOrders.filter(order => 
-        order.stallId === userData.shopId && 
-        (order.status === 'prep' || order.status === 'pending_cash')
-      ).map(order => ({
-        ...order,
-        // Convert string items "2x Pizza, 1x Coke" back to array if needed for the UI
-        items: typeof order.items === 'string' ? order.items.split(', ') : order.items
-      }));
-
-      setTickets(shopOrders);
-
-      // Load completed orders for metrics
-      const doneOrders = allOrders.filter(order => 
-        order.stallId === userData.shopId && order.status === 'completed'
-      );
-      setCompletedTickets(doneOrders);
-    };
-
     loadOrders();
     
-    // Polling for new orders every 5 seconds
-    const interval = setInterval(loadOrders, 5000);
+    // Polling for new orders every 2 seconds for "instant" updates
+    const interval = setInterval(loadOrders, 2000);
     
     // Also listen for storage events from other tabs
     window.addEventListener('storage', loadOrders);
@@ -62,7 +72,7 @@ const VendorDashboard = () => {
       clearInterval(interval);
       window.removeEventListener('storage', loadOrders);
     };
-  }, []);
+  }, [targetShopId]);
 
   // Security Gate & Session Check
   useEffect(() => {
@@ -107,29 +117,30 @@ const VendorDashboard = () => {
     }
   };
 
-  const handleMarkReady = (id) => {
+  const handleUpdateStatus = (id, newStatus) => {
     const allOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
     const updatedOrders = allOrders.map(order => 
-      order.id === id ? { ...order, status: 'completed', completed_at: new Date().toISOString() } : order
+      order.id === id ? { 
+        ...order, 
+        status: newStatus, 
+        completed_at: newStatus === 'completed' ? new Date().toISOString() : order.completed_at 
+      } : order
     );
     localStorage.setItem('sgu_orders', JSON.stringify(updatedOrders));
     
-    // Trigger immediate UI update
-    setTickets(prev => prev.filter(t => t.id !== id));
-    const ticket = tickets.find(t => t.id === id);
-    if (ticket) {
-      setCompletedTickets(prev => [...prev, { ...ticket, status: 'completed', completed_at: new Date().toISOString() }]);
+    // Immediate UI update for the local state
+    if (newStatus === 'completed') {
+      setTickets(prev => prev.filter(t => t.id !== id));
+      const ticket = tickets.find(t => t.id === id);
+      if (ticket) {
+        setCompletedTickets(prev => [...prev, { ...ticket, status: 'completed', completed_at: new Date().toISOString() }]);
+      }
+    } else {
+      setTickets(prev => prev.map(t => t.id === id ? { ...t, status: newStatus } : t));
     }
   };
 
-  const handleConfirmCash = (id) => {
-    const allOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
-    const updatedOrders = allOrders.map(order => 
-      order.id === id ? { ...order, status: 'prep' } : order
-    );
-    localStorage.setItem('sgu_orders', JSON.stringify(updatedOrders));
-    setTickets(prev => prev.map(t => t.id === id ? { ...t, status: 'prep' } : t));
-  };
+  const handleConfirmCash = (id) => handleUpdateStatus(id, 'placed');
 
   return (
     <div className={`vendor-kds-container page-transition ${isPowerSaver ? 'power-saver' : ''}`}>
@@ -159,7 +170,7 @@ const VendorDashboard = () => {
       <header className={`kds-header shadow-lg ${shopStatus === 'CLOSED' ? 'closed' : ''}`}>
         <div className="kds-header-left flex items-center gap-8">
           <div className="flex flex-col">
-            <h1 className="heading-2 text-white text-3xl" style={{ margin: 0 }}>Shop COMMAND</h1>
+            <h1 className="heading-2 text-white text-3xl" style={{ margin: 0 }}>{currentShop?.name || 'Shop'} COMMAND</h1>
             <div className="heartbeat-monitor mt-1" style={{ padding: '4px 12px' }}>
               <Activity size={14} color={heartbeat ? '#22C55E' : '#94A3B8'} className={heartbeat ? 'pulse' : ''} />
               <span className="text-white opacity-80 text-[10px] uppercase font-black tracking-widest">Live Operations</span>
@@ -222,7 +233,8 @@ const VendorDashboard = () => {
             className="elite-ctrl-btn exit" 
             onClick={() => {
               localStorage.removeItem('sgu_user');
-              navigate('/login');
+              localStorage.removeItem('sgu_token');
+              navigate('/login', { replace: true });
             }}
           >
             <LogOut size={18} /> <span>EXIT</span>
@@ -288,7 +300,10 @@ const VendorDashboard = () => {
                 className={`elite-card kds-ticket ${ticket.status === 'pending_cash' ? 'border-amber-400 border-2' : ''}`}
               >
                 <div className="ticket-header">
-                  <span className="ticket-id text-2xl">{ticket.id}</span>
+                  <div className="flex flex-col">
+                    <span className="ticket-id text-2xl">{ticket.id}</span>
+                    <span className="text-[10px] font-black text-navy-400 uppercase tracking-widest">{ticket.customerName || 'Standard Order'}</span>
+                  </div>
                   <span className="ticket-time text-red-500 font-black uppercase text-xs tracking-tighter">{ticket.time}</span>
                 </div>
                 
@@ -315,19 +330,40 @@ const VendorDashboard = () => {
                       <span className="text-[10px] text-slate-400 font-black uppercase block">Order Total</span>
                       <span className="text-xl font-black text-navy-900">₹{ticket.total}</span>
                     </div>
-                    <span className={`text-[10px] font-black px-2 py-1 rounded ${ticket.status === 'prep' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'}`}>
-                      {ticket.status === 'prep' ? 'IN PROGRESS' : 'AWAITING CASH'}
+                    <span className={`text-[10px] font-black px-2 py-1 rounded ${
+                      ticket.status === 'preparing' ? 'bg-blue-100 text-blue-700' : 
+                      ticket.status === 'ready' ? 'bg-green-100 text-green-700' :
+                      ticket.status === 'placed' ? 'bg-purple-100 text-purple-700' :
+                      'bg-amber-100 text-amber-700'
+                    }`}>
+                      {ticket.status === 'preparing' ? 'PREPARING' : 
+                       ticket.status === 'ready' ? 'READY' :
+                       ticket.status === 'placed' ? 'NEW ORDER' :
+                       'AWAITING CASH'}
                     </span>
                   </div>
 
                   <motion.button 
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    className={`jumbo-btn ${ticket.status === 'pending_cash' ? 'bg-amber-500' : 'bg-green-500'}`}
-                    onClick={() => ticket.status === 'pending_cash' ? handleConfirmCash(ticket.id) : handleMarkReady(ticket.id)}
+                    className={`jumbo-btn ${
+                      ticket.status === 'pending_cash' ? 'bg-amber-500' : 
+                      ticket.status === 'placed' ? 'bg-purple-600' :
+                      ticket.status === 'preparing' ? 'bg-blue-600' :
+                      'bg-green-500'
+                    }`}
+                    onClick={() => {
+                      if (ticket.status === 'pending_cash') handleConfirmCash(ticket.id);
+                      else if (ticket.status === 'placed') handleUpdateStatus(ticket.id, 'preparing');
+                      else if (ticket.status === 'preparing') handleUpdateStatus(ticket.id, 'ready');
+                      else handleUpdateStatus(ticket.id, 'completed');
+                    }}
                   >
                     <CheckCircle size={20} />
-                    {ticket.status === 'pending_cash' ? 'CONFIRM CASH' : 'READY TO SERVE'}
+                    {ticket.status === 'pending_cash' ? 'CONFIRM CASH' : 
+                     ticket.status === 'placed' ? 'START PREPARING' :
+                     ticket.status === 'preparing' ? 'MARK AS READY' :
+                     'MARK COMPLETED'}
                   </motion.button>
                 </div>
               </motion.div>
@@ -347,10 +383,9 @@ const VendorDashboard = () => {
               exit={{ x: '100%' }} 
               transition={{ type: 'spring', damping: 30, stiffness: 300 }}
               className="management-sidebar open shadow-2xl"
-              style={{ background: '#F8FAFC' }}
             >
               <div className="flex justify-between items-center mb-8 border-b pb-6">
-                <h2 className="heading-1 text-3xl font-black text-navy-900" style={{ margin: 0 }}>OPERATIONS</h2>
+                <h2 className="heading-2 text-3xl text-navy-900" style={{ margin: 0 }}>OPERATIONS</h2>
                 <button className="p-3 hover:bg-slate-200 rounded-full transition-colors" onClick={() => setIsSidebarOpen(false)}>
                   <X size={28} />
                 </button>
