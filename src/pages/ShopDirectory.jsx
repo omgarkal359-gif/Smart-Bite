@@ -220,6 +220,16 @@ const ShopDirectory = () => {
                               <Clock size={10} /> +{shop.waitTime}m
                             </span>
                           )}
+
+                          <button 
+                            className="bg-navy-900 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-tighter hover:bg-accent-amber hover:text-navy-900 transition-colors z-10"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/vendor/${shop.id}`);
+                            }}
+                          >
+                            Dashboard
+                          </button>
                         </div>
                       </div>
                     </GlassCard>

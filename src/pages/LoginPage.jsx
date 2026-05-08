@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff, User, Lock, Store, Mail, Phone, Loader2, CheckCircle2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { SHOPS } from '../data/foodCourtDB';
 import './LoginPage.css'; // Importing pure CSS
 
 const LoginPage = () => {
@@ -76,11 +77,18 @@ const LoginPage = () => {
       setTimeout(() => {
         const normalizedRole = role === 'Shop Owner' ? 'owner' : role === 'Student' ? 'student' : 'guest';
         
-        // --- RESTRICTED VENDOR LOGIN ---
+        // --- RESTRICTED VENDOR LOGIN (Relaxed for Demo) ---
         if (role === 'Shop Owner') {
-          if (shopId !== '1111111111' || password !== '12345') {
+          const shopExists = SHOPS.some(s => s.id === shopId);
+          if (!shopExists && shopId !== '1111111111') {
             setIsLoading(false);
-            setErrorMsg('Invalid Vendor Credentials. Access Denied.');
+            setErrorMsg('Invalid Vendor Credentials. Shop ID not found.');
+            return;
+          }
+          // Allow '12345' as a universal demo password
+          if (password !== '12345') {
+            setIsLoading(false);
+            setErrorMsg('Incorrect Password.');
             return;
           }
         }

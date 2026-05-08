@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { GlassCard } from '../components/ui/GlassCard';
 import { Button } from '../components/ui/Button';
 import { Clock, Volume2, Power, LogOut, CheckCircle, Banknote, Activity, Smartphone, Utensils, ShoppingBag, Settings, Menu, RefreshCw, X, TrendingUp, Hash, CreditCard } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MenuEditor } from '../components/vendor/MenuEditor';
+import { SHOPS } from '../data/foodCourtDB';
 import './pages.css';
 import './vendor.css';
 
@@ -28,8 +29,13 @@ const VendorDashboard = () => {
   const [heartbeat, setHeartbeat] = useState(true);
   const [shopStatus, setShopStatus] = useState('OPEN'); // OPEN | CLOSED
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const { shopId: urlShopId } = useParams();
   const [user, setUser] = useState(null);
   const [showConfetti, setShowConfetti] = useState(false);
+  
+  // Determine target shop ID (URL takes priority, then user profile)
+  const targetShopId = urlShopId || user?.shopId;
+  const currentShop = SHOPS.find(s => s.id === targetShopId);
 
   // Sync with LocalStorage Orders
   useEffect(() => {
@@ -38,13 +44,11 @@ const VendorDashboard = () => {
       const userData = JSON.parse(localStorage.getItem('sgu_user') || '{}');
       
       // Filter orders for THIS shop that are NOT completed yet
-      // (Simplified: we use 'prep' and 'pending_cash' as active states)
       const shopOrders = allOrders.filter(order => 
-        order.stallId === userData.shopId && 
+        order.stallId === targetShopId && 
         (order.status === 'prep' || order.status === 'pending_cash')
       ).map(order => ({
         ...order,
-        // Convert string items "2x Pizza, 1x Coke" back to array if needed for the UI
         items: typeof order.items === 'string' ? order.items.split(', ') : order.items
       }));
 
@@ -52,7 +56,7 @@ const VendorDashboard = () => {
 
       // Load completed orders for metrics
       const doneOrders = allOrders.filter(order => 
-        order.stallId === userData.shopId && order.status === 'completed'
+        order.stallId === targetShopId && order.status === 'completed'
       );
       setCompletedTickets(doneOrders);
     };
@@ -166,7 +170,7 @@ const VendorDashboard = () => {
       <header className={`kds-header shadow-lg ${shopStatus === 'CLOSED' ? 'closed' : ''}`}>
         <div className="kds-header-left flex items-center gap-8">
           <div className="flex flex-col">
-            <h1 className="heading-2 text-white text-3xl" style={{ margin: 0 }}>Shop COMMAND</h1>
+            <h1 className="heading-2 text-white text-3xl" style={{ margin: 0 }}>{currentShop?.name || 'Shop'} COMMAND</h1>
             <div className="heartbeat-monitor mt-1" style={{ padding: '4px 12px' }}>
               <Activity size={14} color={heartbeat ? '#22C55E' : '#94A3B8'} className={heartbeat ? 'pulse' : ''} />
               <span className="text-white opacity-80 text-[10px] uppercase font-black tracking-widest">Live Operations</span>
