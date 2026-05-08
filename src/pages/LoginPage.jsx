@@ -29,6 +29,8 @@ const LoginPage = () => {
         navigate('/student');
       } else if (parsedUser.role === 'owner') {
         navigate('/vendor');
+      } else if (parsedUser.role === 'admin') {
+        navigate('/admin');
       }
     }
   }, [navigate]);

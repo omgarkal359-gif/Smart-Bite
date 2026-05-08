@@ -14,14 +14,16 @@ const UserProfile = () => {
     const savedSession = localStorage.getItem('sgu_user');
     if (savedSession) {
       setUserData(JSON.parse(savedSession));
+    } else {
+      navigate('/login', { replace: true });
     }
-  }, []);
+  }, [navigate]);
 
   const handleLogout = () => {
     localStorage.removeItem('sgu_token');
     localStorage.removeItem('sgu_user');
     localStorage.removeItem('sgu_cart'); // Clear cart on logout for security
-    navigate('/login');
+    navigate('/login', { replace: true });
   };
 
   return (
