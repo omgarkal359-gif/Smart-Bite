@@ -34,6 +34,7 @@ function App() {
         </Route>
         
         <Route path="/vendor" element={<VendorDashboard />} />
+        <Route path="/vendor/:shopId" element={<VendorDashboard />} />
         <Route path="/owner/dashboard" element={<Navigate to="/vendor" replace />} />
         <Route path="/board" element={<PublicOrderBoard />} />
         <Route path="/admin" element={<AdminControlCenter />} />
