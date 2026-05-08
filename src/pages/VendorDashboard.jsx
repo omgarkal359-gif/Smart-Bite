@@ -229,7 +229,8 @@ const VendorDashboard = () => {
             className="elite-ctrl-btn exit" 
             onClick={() => {
               localStorage.removeItem('sgu_user');
-              navigate('/login');
+              localStorage.removeItem('sgu_token');
+              navigate('/login', { replace: true });
             }}
           >
             <LogOut size={18} /> <span>EXIT</span>
