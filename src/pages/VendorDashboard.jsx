@@ -8,16 +8,9 @@ import { MenuEditor } from '../components/vendor/MenuEditor';
 import './pages.css';
 import './vendor.css';
 
-const MOCK_TICKETS = [
-  { id: 'SGU-001', items: ['2x Margherita Pizza', '1x Coke'], total: 340, time: '2 mins ago', type: 'Dine-In', payment: 'Online UPI', status: 'prep', created_at: new Date().toISOString() },
-  { id: 'SGU-002', items: ['1x Classic Burger', '1x Fries'], total: 160, time: '5 mins ago', type: 'Takeaway', payment: 'Cash', status: 'pending_cash', created_at: new Date().toISOString() },
-  { id: 'SGU-003', items: ['3x Spicy Wings'], total: 450, time: '8 mins ago', type: 'Dine-In', payment: 'Online UPI', status: 'prep', created_at: new Date().toISOString() },
-  { id: 'SGU-004', items: ['1x Cold Coffee'], total: 70, time: '12 mins ago', type: 'Takeaway', payment: 'Online UPI', status: 'prep', created_at: new Date().toISOString() },
-];
+const MOCK_TICKETS = [];
 
-const COMPLETED_TICKETS_MOCK = [
-  { id: 'SGU-000', total: 520, payment: 'Online UPI', completed_at: new Date().toISOString() },
-];
+const COMPLETED_TICKETS_MOCK = [];
 
 const VendorDashboard = () => {
   const navigate = useNavigate();

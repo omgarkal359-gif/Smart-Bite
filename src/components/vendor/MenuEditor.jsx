@@ -2,11 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, X, Upload, Check, Edit2, Trash2, Camera, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const MOCK_MENU = [
-  { id: 1, name: 'Margherita Pizza', price: 299, category: 'Main', img: 'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?auto=format&fit=crop&w=400&q=80&fm=webp' },
-  { id: 2, name: 'Classic Burger', price: 159, category: 'Main', img: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=400&q=80&fm=webp' },
-  { id: 3, name: 'Cold Coffee', price: 99, category: 'Beverages', img: 'https://images.unsplash.com/photo-1517701604599-bb29b565090c?auto=format&fit=crop&w=400&q=80&fm=webp' },
-];
+const MOCK_MENU = [];
 
 const FloatingInput = ({ label, ...props }) => (
   <div className="floating-label-group">

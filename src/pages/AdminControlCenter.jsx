@@ -83,18 +83,7 @@ const AdminControlCenter = () => {
           <GlassCard className="admin-card mb-4 animate-stagger-item stagger-delay-3">
             <h3>Shop Downtime Logs</h3>
             <ul className="downtime-list">
-              <li>
-                <span className="shop-name">Spicy Wok</span>
-                <span className="downtime text-error">Offline (20m)</span>
-              </li>
-              <li>
-                <span className="shop-name">Taco Fiesta</span>
-                <span className="downtime text-error">Offline (1h 5m)</span>
-              </li>
-              <li>
-                <span className="shop-name">Cafe Mocha</span>
-                <span className="downtime text-success">Recovered</span>
-              </li>
+              <p className="text-muted text-sm">No recent downtime events.</p>
             </ul>
           </GlassCard>
         </div>
