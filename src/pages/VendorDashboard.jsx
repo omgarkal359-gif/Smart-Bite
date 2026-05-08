@@ -355,10 +355,9 @@ const VendorDashboard = () => {
               exit={{ x: '100%' }} 
               transition={{ type: 'spring', damping: 30, stiffness: 300 }}
               className="management-sidebar open shadow-2xl"
-              style={{ background: '#F8FAFC' }}
             >
               <div className="flex justify-between items-center mb-8 border-b pb-6">
-                <h2 className="heading-1 text-3xl font-black text-navy-900" style={{ margin: 0 }}>OPERATIONS</h2>
+                <h2 className="heading-2 text-3xl text-navy-900" style={{ margin: 0 }}>OPERATIONS</h2>
                 <button className="p-3 hover:bg-slate-200 rounded-full transition-colors" onClick={() => setIsSidebarOpen(false)}>
                   <X size={28} />
                 </button>
