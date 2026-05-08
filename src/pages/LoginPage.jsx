@@ -98,7 +98,7 @@ const LoginPage = () => {
         
         const userData = {
           role: normalizedRole,
-          name: role === 'Shop Owner' ? 'Shlok Sutar' : (role === 'Guest' ? guestName : studentName),
+          name: role === 'Shop Owner' ? (SHOPS.find(s => s.id === shopId)?.name || 'Owner') : (role === 'Guest' ? guestName : studentName),
           id: role === 'Student' ? studentId : (role === 'Guest' ? guestMobile : shopId),
           shopId: role === 'Shop Owner' ? shopId : null,
           timestamp: new Date().toISOString(),

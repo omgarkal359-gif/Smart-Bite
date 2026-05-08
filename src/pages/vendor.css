@@ -511,18 +511,18 @@ select.floating-input {
 .kds-main {
   flex: 1;
   padding: 32px;
-  overflow: hidden;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
-  min-height: 0; /* Allow flex shrink */
+  min-height: 0;
 }
 
 .kds-ticket-scroll {
   display: flex;
   gap: 24px;
-  padding: 20px 10px;
+  padding: 20px 10px 40px 10px;
   overflow-x: auto;
-  overflow-y: hidden;
+  overflow-y: visible;
   flex: 1;
   align-items: flex-start;
   scrollbar-width: thin;
@@ -532,6 +532,7 @@ select.floating-input {
 .kds-ticket {
   min-width: 360px;
   max-width: 400px;
+  min-height: 500px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -539,8 +540,7 @@ select.floating-input {
   border: 2px solid transparent;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
-  max-height: 100%;
-  padding: 20px !important;
+  padding: 24px !important;
 }
 
 .ticket-header {

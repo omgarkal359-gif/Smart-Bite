@@ -9,7 +9,7 @@ import './tracker.css';
 
 const STATUS_STEPS = [
   { id: 'placed', label: 'Order Placed', icon: Clock },
-  { id: 'prep', label: 'Preparing', icon: ChefHat },
+  { id: 'preparing', label: 'Preparing', icon: ChefHat },
   { id: 'ready', label: 'Ready for Pickup', icon: CheckCircle },
 ];
 
@@ -20,15 +20,31 @@ const DigitalReceiptTracker = () => {
   const [order, setOrder] = useState(null);
 
   useEffect(() => {
-    const savedOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
-    const foundOrder = savedOrders.find(o => o.id === orderId);
-    setOrder(foundOrder);
+    const fetchOrderStatus = () => {
+      const savedOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
+      const foundOrder = savedOrders.find(o => o.id === orderId);
+      if (foundOrder) {
+        setOrder(foundOrder);
+        // Map status to step index
+        if (foundOrder.status === 'placed') setCurrentStep(0);
+        else if (foundOrder.status === 'preparing') setCurrentStep(1);
+        else if (foundOrder.status === 'ready') setCurrentStep(2);
+        else if (foundOrder.status === 'completed') setCurrentStep(2); // Keep at ready or handle completion
+      }
+    };
 
-    const timers = [
-      setTimeout(() => setCurrentStep(1), 3000), // Move to prep
-      setTimeout(() => setCurrentStep(2), 8000), // Move to ready
-    ];
-    return () => timers.forEach(t => clearTimeout(t));
+    fetchOrderStatus();
+    
+    // Poll for status updates every 2 seconds
+    const interval = setInterval(fetchOrderStatus, 2000);
+    
+    // Also listen for storage events from other tabs
+    window.addEventListener('storage', fetchOrderStatus);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('storage', fetchOrderStatus);
+    };
   }, [orderId]);
 
   return (
