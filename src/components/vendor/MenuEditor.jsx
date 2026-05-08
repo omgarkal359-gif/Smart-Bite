@@ -179,7 +179,11 @@ export const MenuEditor = () => {
                     </div>
                     
                     <div className="menu-item-details">
-                      <h4 className="heading-2 item-name">{item.name}</h4>
+                      <input 
+                        className="item-name-input"
+                        value={item.name}
+                        onChange={(e) => handleUpdate(item.id, 'name', e.target.value)}
+                      />
                       <div className="item-meta">
                         <span className="category-tag">{item.category}</span>
                         <div className="price-edit">
