@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { GlassCard } from '../components/ui/GlassCard';
 import { Button } from '../components/ui/Button';
@@ -38,33 +38,39 @@ const VendorDashboard = () => {
   const currentShop = SHOPS.find(s => s.id === targetShopId);
 
   // Sync with LocalStorage Orders
+  const loadOrders = useCallback(() => {
+    const allOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
+    
+    // Filter orders for THIS shop that are NOT completed yet
+    const shopOrders = allOrders.filter(order => 
+      order.stallId === targetShopId && 
+      (order.status === 'prep' || order.status === 'pending_cash' || order.status === 'placed' || order.status === 'preparing' || order.status === 'ready')
+    ).map(order => ({
+      ...order,
+      items: typeof order.items === 'string' ? order.items.split(', ') : order.items
+    }));
+
+    // Only update state if data changed to avoid re-renders
+    setTickets(prev => {
+      if (JSON.stringify(prev) === JSON.stringify(shopOrders)) return prev;
+      return shopOrders;
+    });
+
+    // Load completed orders for metrics
+    const doneOrders = allOrders.filter(order => 
+      order.stallId === targetShopId && order.status === 'completed'
+    );
+    setCompletedTickets(prev => {
+      if (JSON.stringify(prev) === JSON.stringify(doneOrders)) return prev;
+      return doneOrders;
+    });
+  }, [targetShopId]);
+
   useEffect(() => {
-    const loadOrders = () => {
-      const allOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
-      const userData = JSON.parse(localStorage.getItem('sgu_user') || '{}');
-      
-      // Filter orders for THIS shop that are NOT completed yet
-      const shopOrders = allOrders.filter(order => 
-        order.stallId === targetShopId && 
-        (order.status === 'prep' || order.status === 'pending_cash')
-      ).map(order => ({
-        ...order,
-        items: typeof order.items === 'string' ? order.items.split(', ') : order.items
-      }));
-
-      setTickets(shopOrders);
-
-      // Load completed orders for metrics
-      const doneOrders = allOrders.filter(order => 
-        order.stallId === targetShopId && order.status === 'completed'
-      );
-      setCompletedTickets(doneOrders);
-    };
-
     loadOrders();
     
-    // Polling for new orders every 5 seconds
-    const interval = setInterval(loadOrders, 5000);
+    // Polling for new orders every 2 seconds for "instant" updates
+    const interval = setInterval(loadOrders, 2000);
     
     // Also listen for storage events from other tabs
     window.addEventListener('storage', loadOrders);
@@ -73,7 +79,7 @@ const VendorDashboard = () => {
       clearInterval(interval);
       window.removeEventListener('storage', loadOrders);
     };
-  }, []);
+  }, [targetShopId]);
 
   // Security Gate & Session Check
   useEffect(() => {
@@ -118,29 +124,30 @@ const VendorDashboard = () => {
     }
   };
 
-  const handleMarkReady = (id) => {
+  const handleUpdateStatus = (id, newStatus) => {
     const allOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
     const updatedOrders = allOrders.map(order => 
-      order.id === id ? { ...order, status: 'completed', completed_at: new Date().toISOString() } : order
+      order.id === id ? { 
+        ...order, 
+        status: newStatus, 
+        completed_at: newStatus === 'completed' ? new Date().toISOString() : order.completed_at 
+      } : order
     );
     localStorage.setItem('sgu_orders', JSON.stringify(updatedOrders));
     
-    // Trigger immediate UI update
-    setTickets(prev => prev.filter(t => t.id !== id));
-    const ticket = tickets.find(t => t.id === id);
-    if (ticket) {
-      setCompletedTickets(prev => [...prev, { ...ticket, status: 'completed', completed_at: new Date().toISOString() }]);
+    // Immediate UI update for the local state
+    if (newStatus === 'completed') {
+      setTickets(prev => prev.filter(t => t.id !== id));
+      const ticket = tickets.find(t => t.id === id);
+      if (ticket) {
+        setCompletedTickets(prev => [...prev, { ...ticket, status: 'completed', completed_at: new Date().toISOString() }]);
+      }
+    } else {
+      setTickets(prev => prev.map(t => t.id === id ? { ...t, status: newStatus } : t));
     }
   };
 
-  const handleConfirmCash = (id) => {
-    const allOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
-    const updatedOrders = allOrders.map(order => 
-      order.id === id ? { ...order, status: 'prep' } : order
-    );
-    localStorage.setItem('sgu_orders', JSON.stringify(updatedOrders));
-    setTickets(prev => prev.map(t => t.id === id ? { ...t, status: 'prep' } : t));
-  };
+  const handleConfirmCash = (id) => handleUpdateStatus(id, 'placed');
 
   return (
     <div className={`vendor-kds-container page-transition ${isPowerSaver ? 'power-saver' : ''}`}>
@@ -300,7 +307,10 @@ const VendorDashboard = () => {
                 className={`elite-card kds-ticket ${ticket.status === 'pending_cash' ? 'border-amber-400 border-2' : ''}`}
               >
                 <div className="ticket-header">
-                  <span className="ticket-id text-2xl">{ticket.id}</span>
+                  <div className="flex flex-col">
+                    <span className="ticket-id text-2xl">{ticket.id}</span>
+                    <span className="text-[10px] font-black text-navy-400 uppercase tracking-widest">{ticket.customerName || 'Standard Order'}</span>
+                  </div>
                   <span className="ticket-time text-red-500 font-black uppercase text-xs tracking-tighter">{ticket.time}</span>
                 </div>
                 
@@ -327,19 +337,40 @@ const VendorDashboard = () => {
                       <span className="text-[10px] text-slate-400 font-black uppercase block">Order Total</span>
                       <span className="text-xl font-black text-navy-900">₹{ticket.total}</span>
                     </div>
-                    <span className={`text-[10px] font-black px-2 py-1 rounded ${ticket.status === 'prep' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'}`}>
-                      {ticket.status === 'prep' ? 'IN PROGRESS' : 'AWAITING CASH'}
+                    <span className={`text-[10px] font-black px-2 py-1 rounded ${
+                      ticket.status === 'preparing' ? 'bg-blue-100 text-blue-700' : 
+                      ticket.status === 'ready' ? 'bg-green-100 text-green-700' :
+                      ticket.status === 'placed' ? 'bg-purple-100 text-purple-700' :
+                      'bg-amber-100 text-amber-700'
+                    }`}>
+                      {ticket.status === 'preparing' ? 'PREPARING' : 
+                       ticket.status === 'ready' ? 'READY' :
+                       ticket.status === 'placed' ? 'NEW ORDER' :
+                       'AWAITING CASH'}
                     </span>
                   </div>
 
                   <motion.button 
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    className={`jumbo-btn ${ticket.status === 'pending_cash' ? 'bg-amber-500' : 'bg-green-500'}`}
-                    onClick={() => ticket.status === 'pending_cash' ? handleConfirmCash(ticket.id) : handleMarkReady(ticket.id)}
+                    className={`jumbo-btn ${
+                      ticket.status === 'pending_cash' ? 'bg-amber-500' : 
+                      ticket.status === 'placed' ? 'bg-purple-600' :
+                      ticket.status === 'preparing' ? 'bg-blue-600' :
+                      'bg-green-500'
+                    }`}
+                    onClick={() => {
+                      if (ticket.status === 'pending_cash') handleConfirmCash(ticket.id);
+                      else if (ticket.status === 'placed') handleUpdateStatus(ticket.id, 'preparing');
+                      else if (ticket.status === 'preparing') handleUpdateStatus(ticket.id, 'ready');
+                      else handleUpdateStatus(ticket.id, 'completed');
+                    }}
                   >
                     <CheckCircle size={20} />
-                    {ticket.status === 'pending_cash' ? 'CONFIRM CASH' : 'READY TO SERVE'}
+                    {ticket.status === 'pending_cash' ? 'CONFIRM CASH' : 
+                     ticket.status === 'placed' ? 'START PREPARING' :
+                     ticket.status === 'preparing' ? 'MARK AS READY' :
+                     'MARK COMPLETED'}
                   </motion.button>
                 </div>
               </motion.div>
