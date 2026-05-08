@@ -74,13 +74,9 @@ const LoginPage = () => {
       setTimeout(() => {
         const normalizedRole = role === 'Shop Owner' ? 'owner' : role === 'Student' ? 'student' : 'guest';
         
-        // --- RESTRICTED VENDOR LOGIN ---
+        // --- VENDOR LOGIN ---
         if (role === 'Shop Owner') {
-          if (shopId !== '1111111111' || password !== '12345') {
-            setIsLoading(false);
-            setErrorMsg('Invalid Vendor Credentials. Access Denied.');
-            return;
-          }
+          // Additional validation for vendors could be added here
         }
 
         setIsLoading(false);
@@ -88,7 +84,7 @@ const LoginPage = () => {
         
         const userData = {
           role: normalizedRole,
-          name: role === 'Shop Owner' ? 'Shlok Sutar' : (role === 'Guest' ? guestName : studentName),
+          name: role === 'Shop Owner' ? 'Stall Owner' : (role === 'Guest' ? guestName : studentName),
           id: role === 'Student' ? studentId : (role === 'Guest' ? guestMobile : shopId),
           shopId: role === 'Shop Owner' ? shopId : null,
           timestamp: new Date().toISOString(),

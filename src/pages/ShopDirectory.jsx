@@ -9,18 +9,9 @@ import './home_v21.css';
 
 const MOCK_SHOPS = SHOPS;
 
-const MOCK_RECENT_ORDER = {
-  id: 'ORD-1045',
-  shop: 'Pizza Paradise',
-  item: 'Margherita Pizza',
-  img: 'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?auto=format&fit=crop&w=400&q=80&fm=webp'
-};
+const MOCK_RECENT_ORDER = null;
 
-const TRENDING_SLIDES = [
-  { id: 1, title: 'JUMBO MISAL', subtitle: 'Mangale\'s Snacks • The Perfect Bite!', img: 'https://images.unsplash.com/photo-1585937421612-70a008356fbe?auto=format&fit=crop&w=800&q=80&fm=webp' },
-  { id: 2, title: 'DAVANGIRI LONI DOSA', subtitle: 'Narayana • Authentic South Indian', img: 'https://images.unsplash.com/photo-1589301760014-d929f39ce9b1?auto=format&fit=crop&w=800&q=80&fm=webp' },
-  { id: 3, title: 'HAKKA NOODLES', subtitle: 'Oodles of Noodles • Best Indo-Chinese', img: 'https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&w=800&q=80&fm=webp' },
-];
+const TRENDING_SLIDES = [];
 
 const SkeletonCard = ({ isHero }) => (
   <div className={`shop-card-v21 skeleton ${isHero ? 'hero' : 'square'}`}>
