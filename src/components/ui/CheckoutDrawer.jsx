@@ -81,32 +81,47 @@ export const CheckoutDrawer = ({ isOpen, onClose, cart, inventory, onComplete })
       setStep(4); // Success step
       triggerConfetti();
 
-      // Save to localStorage
-      const orderItems = Object.values(cart).map(item => {
-        return `${item.quantity}x ${item.name}`;
-      }).join(', ');
-
-      const firstItem = Object.values(cart)[0];
-      const newOrder = {
-        id: `SGU-${Math.floor(1000 + Math.random() * 9000)}`,
-        status: 'prep',
-        total: totalCartValue,
-        items: orderItems,
-        stallId: firstItem?.stallId || 'general',
-        stallName: firstItem?.stallName || 'Food Court',
-        time: 'Just now',
-        img: firstItem?.img || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=300&q=80',
-        timestamp: new Date().toISOString()
-      };
-
+      const userData = JSON.parse(localStorage.getItem('sgu_user') || '{}');
       const existingOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
-      localStorage.setItem('sgu_orders', JSON.stringify([newOrder, ...existingOrders]));
+      
+      // Group cart items by stallId
+      const itemsByStall = cartItems.reduce((acc, item) => {
+        if (!acc[item.stallId]) acc[item.stallId] = [];
+        acc[item.stallId].push(item);
+        return acc;
+      }, {});
+
+      const newOrders = Object.entries(itemsByStall).map(([stallId, items]) => {
+        const stallTotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        const orderItemsStr = items.map(item => `${item.quantity}x ${item.name}`).join(', ');
+        const firstItem = items[0];
+        
+        return {
+          id: `SGU-${Math.floor(1000 + Math.random() * 9000)}`,
+          status: 'placed',
+          total: stallTotal,
+          items: orderItemsStr,
+          stallId: stallId,
+          stallName: firstItem?.stallName || 'Food Court',
+          customerName: userData.name || 'Guest User',
+          type: diningMode === 'dine_in' ? 'Dine-In' : 'Takeaway',
+          payment: paymentMode === 'upi' ? 'Online UPI' : 'Cash',
+          time: 'Just now',
+          img: firstItem?.img || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=300&q=80',
+          timestamp: new Date().toISOString()
+        };
+      });
+
+      localStorage.setItem('sgu_orders', JSON.stringify([...newOrders, ...existingOrders]));
 
       setTimeout(() => {
         clearCart();
         onClose();
         if (typeof onComplete === 'function') onComplete();
-        navigate(`/student/order/${newOrder.id}`);
+        // Navigate to the first new order's tracker
+        if (newOrders.length > 0) {
+          navigate(`/student/order/${newOrders[0].id}`);
+        }
       }, 3000);
     }, 2000);
   };

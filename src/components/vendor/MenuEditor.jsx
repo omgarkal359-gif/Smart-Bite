@@ -53,12 +53,12 @@ export const MenuEditor = () => {
 
   return (
     <div className="menu-editor-container">
-      <div className="flex justify-between items-center mb-8">
-        <h2 className="heading-2 text-2xl text-navy-900" style={{ margin: 0 }}>Catalog Editor</h2>
+      <div className="menu-editor-header">
+        <h2 className="heading-2 editor-title">Catalog Editor</h2>
         <motion.button 
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm transition-all shadow-lg ${isAdding ? 'bg-red-50 text-red-600' : 'bg-primary-navy text-white'}`}
+          className={`btn-toggle-add ${isAdding ? 'cancel' : 'add'}`}
           onClick={() => setIsAdding(!isAdding)}
         >
           {isAdding ? <X size={20} /> : <Plus size={20} />}
@@ -76,14 +76,13 @@ export const MenuEditor = () => {
             className="elite-card overflow-hidden mb-8"
             onSubmit={handleAddItem}
           >
-            <h3 className="heading-2 text-lg mb-6 text-slate-800">New Item Details</h3>
+            <h3 className="heading-2 form-title">New Item Details</h3>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="form-grid">
               <FloatingInput 
                 label="Item Name (e.g. Triple Cheese)"
                 value={newItem.name}
                 onChange={(e) => setNewItem({...newItem, name: e.target.value})}
-                style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 700 }}
               />
               <FloatingInput 
                 label="Price (₹)"
@@ -115,20 +114,20 @@ export const MenuEditor = () => {
               onChange={handleFileChange} 
             />
             <div 
-              className={`drop-zone mt-4 min-h-[160px] flex flex-col items-center justify-center border-4 border-dashed border-slate-100 rounded-2xl transition-all relative overflow-hidden cursor-pointer ${isUploading ? 'shimmer' : ''}`}
+              className={`drop-zone ${isUploading ? 'shimmer' : ''}`}
               onClick={() => fileInputRef.current.click()}
             >
               {newItem.img ? (
-                <img src={newItem.img} className="absolute inset-0 w-full h-full object-cover" />
+                <img src={newItem.img} className="preview-image" />
               ) : isUploading ? (
-                <Loader2 size={40} className="text-navy-500 animate-spin" />
+                <Loader2 size={40} className="upload-spinner" />
               ) : (
                 <>
-                  <div className="w-16 h-16 bg-navy-50 rounded-full flex items-center justify-center mb-3">
-                    <Camera size={32} className="text-navy-600" />
+                  <div className="upload-icon-wrapper">
+                    <Camera size={32} />
                   </div>
-                  <p className="text-sm font-black text-navy-900 uppercase tracking-widest">Upload Photo</p>
-                  <p className="text-xs text-slate-400 font-bold">DRAG & DROP OR TAP</p>
+                  <p className="upload-text">Upload Photo</p>
+                  <p className="upload-hint">DRAG & DROP OR TAP</p>
                 </>
               )}
             </div>
@@ -137,7 +136,7 @@ export const MenuEditor = () => {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               type="submit" 
-              className="w-full bg-green-500 text-white font-black py-5 rounded-2xl mt-8 shadow-xl hover:bg-green-600 transition-colors uppercase tracking-widest"
+              className="btn-publish-menu"
             >
               Publish to Menu
             </motion.button>
@@ -152,13 +151,13 @@ export const MenuEditor = () => {
           
           return (
             <div key={cat} className="category-section">
-              <div className="flex items-center gap-4 mb-6">
-                <h3 className="heading-2 text-xl text-navy-800 m-0">{cat}</h3>
-                <div className="h-[2px] flex-1 bg-slate-100 rounded-full" />
-                <span className="text-xs font-black text-slate-400 uppercase tracking-widest">{catItems.length} Items</span>
+              <div className="category-header">
+                <h3 className="heading-2 category-title">{cat}</h3>
+                <div className="title-separator" />
+                <span className="item-count">{catItems.length} Items</span>
               </div>
               
-              <div className="grid grid-cols-1 gap-4">
+              <div className="items-grid">
                 {catItems.map((item, index) => (
                   <motion.div 
                     layout
@@ -176,7 +175,11 @@ export const MenuEditor = () => {
                     </div>
                     
                     <div className="menu-item-details">
-                      <h4 className="heading-2 item-name">{item.name}</h4>
+                      <input 
+                        className="item-name-input"
+                        value={item.name}
+                        onChange={(e) => handleUpdate(item.id, 'name', e.target.value)}
+                      />
                       <div className="item-meta">
                         <span className="category-tag">{item.category}</span>
                         <div className="price-edit">

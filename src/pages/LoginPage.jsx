@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff, User, Lock, Store, Mail, Phone, Loader2, CheckCircle2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { SHOPS } from '../data/foodCourtDB';
 import './LoginPage.css'; // Importing pure CSS
 
 const LoginPage = () => {
@@ -29,6 +30,8 @@ const LoginPage = () => {
         navigate('/student');
       } else if (parsedUser.role === 'owner') {
         navigate('/vendor');
+      } else if (parsedUser.role === 'admin') {
+        navigate('/admin');
       }
     }
   }, [navigate]);
@@ -84,7 +87,7 @@ const LoginPage = () => {
         
         const userData = {
           role: normalizedRole,
-          name: role === 'Shop Owner' ? 'Stall Owner' : (role === 'Guest' ? guestName : studentName),
+          name: role === 'Shop Owner' ? (SHOPS.find(s => s.id === shopId)?.name || 'Stall Owner') : (role === 'Guest' ? guestName : studentName),
           id: role === 'Student' ? studentId : (role === 'Guest' ? guestMobile : shopId),
           shopId: role === 'Shop Owner' ? shopId : null,
           timestamp: new Date().toISOString(),

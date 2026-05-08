@@ -11,6 +11,24 @@ const AdminControlCenter = () => {
   const navigate = useNavigate();
   const [blacklistPrn, setBlacklistPrn] = useState('');
 
+  React.useEffect(() => {
+    const userData = localStorage.getItem('sgu_user');
+    if (!userData) {
+      navigate('/login');
+      return;
+    }
+    const parsedUser = JSON.parse(userData);
+    if (parsedUser.role !== 'admin') {
+      navigate('/login');
+    }
+  }, [navigate]);
+
+  const handleLogout = () => {
+    localStorage.removeItem('sgu_user');
+    localStorage.removeItem('sgu_token');
+    navigate('/login', { replace: true });
+  };
+
   const handleGlobalWipe = () => {
     const confirm = window.confirm("CRITICAL WARNING: This will flush all active queues globally. Continue?");
     if (confirm) {
@@ -38,7 +56,7 @@ const AdminControlCenter = () => {
             <p className="text-muted" style={{ fontSize: '0.875rem' }}>System Control Center</p>
           </div>
         </div>
-        <button className="btn-icon" onClick={() => navigate('/login')}>
+        <button className="btn-icon" onClick={handleLogout} title="Logout">
           <LogOut size={20} />
         </button>
       </header>
