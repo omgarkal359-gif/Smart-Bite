@@ -55,27 +55,9 @@ export const CheckoutDrawer = ({ isOpen, onClose, cart, inventory, onComplete })
     frame();
   };
 
-  const handleCheckout = () => {
-    if (step < 3) {
-      setStep(step + 1);
-      return;
-    }
-
+  const submitOrder = () => {
     setIsProcessing(true);
     
-    if (paymentMode === 'upi') {
-      // Step 4: UPI Intent
-      const upiLink = `upi://pay?pa=SGU_VPA@bank&pn=SGUFoodCourt&am=${totalCartValue}&cu=INR`;
-      
-      // Simulate Deep Link Click
-      const link = document.createElement('a');
-      link.href = upiLink;
-      link.target = '_blank';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
-
     // Submit order to API
     const userData = JSON.parse(localStorage.getItem('sgu_user') || '{}');
     const orderPayload = {
@@ -117,6 +99,41 @@ export const CheckoutDrawer = ({ isOpen, onClose, cart, inventory, onComplete })
       });
   };
 
+  const handleCheckout = () => {
+    if (step < 3) {
+      setStep(step + 1);
+      return;
+    }
+
+    if (step === 3 && paymentMode === 'upi') {
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
+      
+      const firstItem = cartItems[0] || {};
+      const shopVpa = firstItem.stallId ? `${firstItem.stallId.replace('-', '')}@bank` : 'sgu_foodcourt@bank';
+      const shopName = firstItem.stallName || 'SGU Food Court';
+      const upiLink = `upi://pay?pa=${shopVpa}&pn=${encodeURIComponent(shopName)}&am=${totalCartValue}&cu=INR`;
+
+      if (isMobile) {
+        // Mobile flow: Redirect to GPay/PhonePe deep link
+        const link = document.createElement('a');
+        link.href = upiLink;
+        link.target = '_blank';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Immediately submit the order
+        submitOrder();
+      } else {
+        // Laptop/Desktop flow: Show the custom QR code instead
+        setStep(3.5);
+      }
+      return;
+    }
+
+    submitOrder();
+  };
+
   return (
     <div className="drawer-overlay-v22 blur-20px" onClick={!isProcessing ? onClose : undefined}>
       <motion.div 
@@ -132,6 +149,7 @@ export const CheckoutDrawer = ({ isOpen, onClose, cart, inventory, onComplete })
             {step === 1 && '1. Cart Summary'}
             {step === 2 && '2. Dining Mode'}
             {step === 3 && '3. Payment Options'}
+            {step === 3.5 && 'Scan QR to Pay'}
             {step === 4 && 'Order Confirmed!'}
           </h2>
           {!isProcessing && step < 4 && (
@@ -272,6 +290,29 @@ export const CheckoutDrawer = ({ isOpen, onClose, cart, inventory, onComplete })
               </motion.div>
             )}
 
+            {step === 3.5 && (
+              <motion.div key="step3_5" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="flex flex-col items-center text-center py-4">
+                <div className="bg-white p-4 rounded-3xl shadow-lg border border-solid border-slate-100 mb-4" style={{ display: 'inline-block' }}>
+                  <img 
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
+                      `upi://pay?pa=${(cartItems[0]?.stallId || 'general').replace('-', '')}@bank&pn=${encodeURIComponent(cartItems[0]?.stallName || 'SGU Food Court')}&am=${totalCartValue}&cu=INR`
+                    )}`} 
+                    alt="Payment QR" 
+                    style={{ width: 180, height: 180, display: 'block' }}
+                  />
+                </div>
+                <h3 className="font-bold text-navy-900 text-lg mb-1">{cartItems[0]?.stallName || 'SGU Food Court'}</h3>
+                <p className="text-xs text-slate-400 font-bold mb-4">UPI VPA: {(cartItems[0]?.stallId || 'general').replace('-', '')}@bank</p>
+                <div className="bg-slate-50 p-3 rounded-2xl w-full flex justify-between items-center mb-4 border border-solid border-slate-100">
+                  <span className="text-xs text-slate-500 font-bold uppercase">Amount to Scan</span>
+                  <span className="text-xl font-black text-[#E4002B]">₹{totalCartValue}</span>
+                </div>
+                <p className="text-[11px] text-slate-400 font-medium px-4">
+                  Please open any UPI app (GPay, PhonePe, Paytm) on your phone and scan the QR code above to complete your payment.
+                </p>
+              </motion.div>
+            )}
+
             {step === 4 && (
               <motion.div key="step4" initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="success-state shadow-lg py-8 flex flex-col gap-4">
                 <CheckCircle size={64} color="white" /> 
@@ -294,7 +335,7 @@ export const CheckoutDrawer = ({ isOpen, onClose, cart, inventory, onComplete })
               >
                 {isProcessing ? 'Processing...' : (
                   <>
-                    {step < 3 ? 'Continue' : `PAY ₹${totalCartValue}`} 
+                    {step < 3 ? 'Continue' : step === 3.5 ? 'Verify & Place Order' : `PAY ₹${totalCartValue}`} 
                     <ArrowRight size={20} className="ml-2" />
                   </>
                 )}

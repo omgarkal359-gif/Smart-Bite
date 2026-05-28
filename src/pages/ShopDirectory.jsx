@@ -13,9 +13,9 @@ const MOCK_SHOPS = SHOPS;
 const MOCK_RECENT_ORDER = null;
 
 const TRENDING_SLIDES = [
-  { id: 1, title: 'CRISPY BUCKET', subtitle: 'Flat 20% OFF today only!', img: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=800&q=80&fm=webp' },
-  { id: 2, title: 'SPICY WINGS', subtitle: 'Buy 1 Get 1 Free', img: 'https://images.unsplash.com/photo-1608039829572-78524f79c4c7?auto=format&fit=crop&w=800&q=80&fm=webp' },
-  { id: 3, title: 'CHEESE BURGER', subtitle: 'Combo meal starting ₹199', img: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=800&q=80&fm=webp' },
+  { id: 1, title: 'MASALA DOSA', subtitle: 'Authentic South Indian Special · Combo at ₹99!', img: 'https://images.unsplash.com/photo-1668236543090-82eba5ee5976?auto=format&fit=crop&w=800&q=80' },
+  { id: 2, title: 'PANEER WADAPAV', subtitle: 'Mumbai style flavor with grilled paneer!', img: 'https://images.unsplash.com/photo-1601050690117-94f5f6fa8bd7?auto=format&fit=crop&w=800&q=80' },
+  { id: 3, title: 'CHEESY THALIPEETH', subtitle: 'Hot multi-grain flatbread with extra cheese!', img: 'https://images.unsplash.com/photo-1626132647523-66f5bf380027?auto=format&fit=crop&w=800&q=80' },
 ];
 
 const SkeletonCard = ({ isHero }) => (

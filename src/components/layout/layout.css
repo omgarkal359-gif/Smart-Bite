@@ -123,6 +123,19 @@
   font-weight: 900;
   border: 2px solid white;
   box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  transition: all 0.3s ease;
+}
+
+.cart-badge-v21.glowing-active-badge {
+  background: var(--primary-navy, #1A5276);
+  box-shadow: 0 0 0 3px rgba(26, 82, 118, 0.35);
+  animation: pulse-blue-active 2s infinite ease-in-out;
+}
+
+@keyframes pulse-blue-active {
+  0% { box-shadow: 0 0 0 0 rgba(26, 82, 118, 0.65); }
+  70% { box-shadow: 0 0 0 8px rgba(26, 82, 118, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(26, 82, 118, 0); }
 }
 
 .global-content-area {

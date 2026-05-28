@@ -23,6 +23,7 @@ const VendorDashboard = () => {
   const [heartbeat, setHeartbeat] = useState(true);
   const [shopStatus, setShopStatus] = useState('OPEN'); // OPEN | CLOSED
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [activeSidebarTab, setActiveSidebarTab] = useState('menu'); // 'menu' | 'history'
   const { shopId: urlShopId } = useParams();
   const [user, setUser] = useState(null);
   const [showConfetti, setShowConfetti] = useState(false);
@@ -37,12 +38,12 @@ const VendorDashboard = () => {
     try {
       const allOrders = await api.getStallOrders(targetShopId);
       
-      const active = allOrders.filter(order => order.status !== 'completed').map(order => ({
+      const active = allOrders.filter(order => order.status !== 'completed' && order.status !== 'ready').map(order => ({
         ...order,
         items: typeof order.items === 'string' ? order.items.split(', ') : order.items
       }));
 
-      const done = allOrders.filter(order => order.status === 'completed');
+      const done = allOrders.filter(order => order.status === 'completed' || order.status === 'ready');
 
       setTickets(active);
       setCompletedTickets(done);
@@ -72,17 +73,32 @@ const VendorDashboard = () => {
     };
 
     const handleStatusUpdate = (updatedOrder) => {
-      if (updatedOrder.status === 'completed') {
+      if (updatedOrder.status === 'completed' || updatedOrder.status === 'ready') {
         setTickets(prev => prev.filter(t => t.id !== updatedOrder.id));
         setCompletedTickets(prev => {
-          if (prev.some(t => t.id === updatedOrder.id)) return prev;
-          return [updatedOrder, ...prev];
+          const formatted = {
+            ...updatedOrder,
+            items: typeof updatedOrder.items === 'string' ? updatedOrder.items.split(', ') : updatedOrder.items
+          };
+          if (prev.some(t => t.id === updatedOrder.id)) {
+            return prev.map(t => t.id === updatedOrder.id ? formatted : t);
+          }
+          return [formatted, ...prev];
         });
       } else {
-        setTickets(prev => prev.map(t => t.id === updatedOrder.id ? { 
-          ...t, 
-          status: updatedOrder.status 
-        } : t));
+        setTickets(prev => {
+          if (prev.some(t => t.id === updatedOrder.id)) {
+            return prev.map(t => t.id === updatedOrder.id ? { 
+              ...t, 
+              status: updatedOrder.status 
+            } : t);
+          }
+          const formatted = {
+            ...updatedOrder,
+            items: typeof updatedOrder.items === 'string' ? updatedOrder.items.split(', ') : updatedOrder.items
+          };
+          return [formatted, ...prev];
+        });
       }
     };
 
@@ -167,11 +183,16 @@ const VendorDashboard = () => {
     try {
       await api.updateOrderStatus(id, newStatus);
       
-      if (newStatus === 'completed') {
+      if (newStatus === 'completed' || newStatus === 'ready') {
         setTickets(prev => prev.filter(t => t.id !== id));
         const ticket = tickets.find(t => t.id === id);
         if (ticket) {
-          setCompletedTickets(prev => [...prev, { ...ticket, status: 'completed', timestamp: new Date().toISOString() }]);
+          setCompletedTickets(prev => {
+            if (prev.some(t => t.id === id)) {
+              return prev.map(t => t.id === id ? { ...t, status: newStatus } : t);
+            }
+            return [{ ...ticket, status: newStatus, timestamp: new Date().toISOString() }, ...prev];
+          });
         }
       } else {
         setTickets(prev => prev.map(t => t.id === id ? { ...t, status: newStatus } : t));
@@ -384,28 +405,46 @@ const VendorDashboard = () => {
                     </span>
                   </div>
 
-                  <motion.button 
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className={`jumbo-btn ${
-                      ticket.status === 'pending_cash' ? 'bg-amber-500' : 
-                      ticket.status === 'placed' ? 'bg-purple-600' :
-                      ticket.status === 'preparing' ? 'bg-blue-600' :
-                      'bg-green-500'
-                    }`}
-                    onClick={() => {
-                      if (ticket.status === 'pending_cash') handleConfirmCash(ticket.id);
-                      else if (ticket.status === 'placed') handleUpdateStatus(ticket.id, 'preparing');
-                      else if (ticket.status === 'preparing') handleUpdateStatus(ticket.id, 'ready');
-                      else handleUpdateStatus(ticket.id, 'completed');
-                    }}
-                  >
-                    <CheckCircle size={20} />
-                    {ticket.status === 'pending_cash' ? 'CONFIRM CASH' : 
-                     ticket.status === 'placed' ? 'START PREPARING' :
-                     ticket.status === 'preparing' ? 'MARK AS READY' :
-                     'MARK COMPLETED'}
-                  </motion.button>
+                  {(ticket.status === 'placed' || ticket.status === 'preparing' || ticket.status === 'pending_cash') && (
+                    <div className="flex gap-2 w-full">
+                      <motion.button 
+                        whileHover={{ scale: ticket.status === 'preparing' ? 1 : 1.03 }}
+                        whileTap={{ scale: ticket.status === 'preparing' ? 1 : 0.97 }}
+                        disabled={ticket.status === 'preparing'}
+                        className={`flex-1 flex items-center justify-center gap-2 py-3 px-3 rounded-xl font-black text-[11px] uppercase tracking-wider cursor-pointer transition-all border border-solid ${
+                          ticket.status === 'preparing' 
+                            ? 'bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed' 
+                            : 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100'
+                        }`}
+                        onClick={() => handleUpdateStatus(ticket.id, 'preparing')}
+                      >
+                        <Clock size={14} color={ticket.status === 'preparing' ? '#94A3B8' : '#DC2626'} />
+                        Preparing
+                      </motion.button>
+
+                      <motion.button 
+                        whileHover={{ scale: 1.03 }}
+                        whileTap={{ scale: 0.97 }}
+                        className="flex-1 flex items-center justify-center gap-2 py-3 px-3 rounded-xl font-black text-[11px] uppercase tracking-wider bg-green-50 text-green-600 border border-solid border-green-200 hover:bg-green-100 cursor-pointer transition-all"
+                        onClick={() => handleUpdateStatus(ticket.id, 'ready')}
+                      >
+                        <CheckCircle size={14} color="#16A34A" />
+                        Ready
+                      </motion.button>
+                    </div>
+                  )}
+
+                  {ticket.status === 'ready' && (
+                    <motion.button 
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className="jumbo-btn bg-green-500"
+                      onClick={() => handleUpdateStatus(ticket.id, 'completed')}
+                    >
+                      <CheckCircle size={20} />
+                      MARK COMPLETED
+                    </motion.button>
+                  )}
                 </div>
               </motion.div>
             ))}
@@ -425,13 +464,93 @@ const VendorDashboard = () => {
               transition={{ type: 'spring', damping: 30, stiffness: 300 }}
               className="management-sidebar open shadow-2xl"
             >
-              <div className="flex justify-between items-center mb-8 border-b pb-6">
+              <div className="flex justify-between items-center mb-6 border-b pb-4">
                 <h2 className="heading-2 text-3xl text-navy-900" style={{ margin: 0 }}>OPERATIONS</h2>
                 <button className="p-3 hover:bg-slate-200 rounded-full transition-colors" onClick={() => setIsSidebarOpen(false)}>
                   <X size={28} />
                 </button>
               </div>
-              <MenuEditor shopId={targetShopId} />
+
+              {/* Tab Selector */}
+              <div className="flex gap-2 mb-6 border-b pb-4">
+                <button 
+                  className={`flex-1 py-3 rounded-xl font-bold text-xs uppercase tracking-wider cursor-pointer border-none transition-all ${
+                    activeSidebarTab === 'menu' 
+                      ? 'bg-[#1A5276] text-white shadow-md' 
+                      : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                  }`}
+                  onClick={() => setActiveSidebarTab('menu')}
+                >
+                  Menu Editor
+                </button>
+                <button 
+                  className={`flex-1 py-3 rounded-xl font-bold text-xs uppercase tracking-wider cursor-pointer border-none transition-all ${
+                    activeSidebarTab === 'history' 
+                      ? 'bg-[#1A5276] text-white shadow-md' 
+                      : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                  }`}
+                  onClick={() => setActiveSidebarTab('history')}
+                >
+                  Order History ({completedTickets.length})
+                </button>
+              </div>
+
+              {activeSidebarTab === 'menu' && (
+                <MenuEditor shopId={targetShopId} />
+              )}
+
+              {activeSidebarTab === 'history' && (
+                <div className="flex flex-col gap-4">
+                  <h3 className="text-xl font-bold text-navy-900 mb-2">Ready & Completed Orders</h3>
+                  {completedTickets.length === 0 ? (
+                    <p className="text-slate-400 font-medium text-center py-8">No completed or ready orders yet.</p>
+                  ) : (
+                    completedTickets.map((order) => (
+                      <GlassCard 
+                        key={order.id}
+                        style={{
+                          padding: '16px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '8px',
+                          background: 'rgba(255, 255, 255, 0.95)',
+                          borderLeft: order.status === 'ready' ? '6px solid var(--success-green)' : '6px solid #94A3B8',
+                          boxShadow: '0 4px 15px rgba(0, 0, 0, 0.05)',
+                        }}
+                      >
+                        <div className="flex justify-between items-center">
+                          <span className="font-bold text-md text-navy-900">{order.id}</span>
+                          <span className="text-[10px] font-bold text-slate-400 uppercase">
+                            {new Date(order.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </div>
+                        
+                        <p className="text-xs font-semibold text-slate-600 my-1">
+                          {typeof order.items === 'string' 
+                            ? order.items 
+                            : Array.isArray(order.items) 
+                              ? order.items.map(i => typeof i === 'string' ? i : `${i.quantity}x ${i.name}`).join(', ') 
+                              : ''}
+                        </p>
+
+                        <div className="flex justify-between items-center pt-2 border-t border-dashed border-slate-100 mt-1">
+                          <span className="font-bold text-navy-900">₹{order.total}</span>
+                          <div className="flex gap-2">
+                            <span className="text-[9px] font-black uppercase bg-slate-100 text-slate-600 px-2 py-1 rounded">
+                              {order.payment}
+                            </span>
+                            <span className={`text-[9px] font-black uppercase px-2 py-1 rounded ${
+                              order.status === 'ready' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'
+                            }`}>
+                              {order.status}
+                            </span>
+                          </div>
+                        </div>
+                      </GlassCard>
+                    ))
+                  )}
+                </div>
+              )}
             </motion.div>
           </>
         )}
