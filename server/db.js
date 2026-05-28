@@ -139,7 +139,7 @@ export async function initDatabase() {
     for (const sid of stallIds) {
       await db.run(
         'INSERT INTO users (username, name, password, role, shopId) VALUES (?, ?, ?, ?, ?)',
-        [sid, `${sid.replace('-', ' ')} Owner`, 'password', 'owner', sid]
+        [sid, `${sid.replace('-', ' ')} Owner`, '000000000', 'owner', sid]
       );
     }
   }

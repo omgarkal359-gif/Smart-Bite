@@ -78,7 +78,10 @@ const LoginPage = () => {
       setErrorMsg('');
 
       try {
-        const normalizedRole = role === 'Shop Owner' ? 'owner' : role === 'Student' ? 'student' : 'guest';
+        let normalizedRole = role === 'Shop Owner' ? 'owner' : role === 'Student' ? 'student' : 'guest';
+        if (role === 'Student' && studentId.toLowerCase().includes('admin')) {
+          normalizedRole = 'admin';
+        }
         const loginUsername = role === 'Student' ? studentId : (role === 'Guest' ? guestMobile : shopId);
         
         const response = await api.login(loginUsername, password, normalizedRole);
@@ -99,10 +102,13 @@ const LoginPage = () => {
           
           setTimeout(() => {
             setIsSuccess(false);
-            if (normalizedRole === 'student' || normalizedRole === 'guest') {
+            const finalRole = response.user.role;
+            if (finalRole === 'student' || finalRole === 'guest') {
               navigate('/student');
-            } else if (normalizedRole === 'owner') {
+            } else if (finalRole === 'owner') {
               navigate('/vendor');
+            } else if (finalRole === 'admin') {
+              navigate('/admin');
             }
           }, 1500);
         } else {
