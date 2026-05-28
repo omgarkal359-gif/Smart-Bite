@@ -1,31 +1,71 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Utensils, CheckCircle } from 'lucide-react';
+import { api, socket } from '../api';
 import './pages.css';
 import './board.css';
 
-// Mock initial data
-const INITIAL_PREPARING = [101, 102, 104, 105, 107, 108];
-const INITIAL_READY = [98, 99, 100];
-
 const PublicOrderBoard = () => {
-  const [preparing, setPreparing] = useState(INITIAL_PREPARING);
-  const [ready, setReady] = useState(INITIAL_READY);
-
+  const [preparing, setPreparing] = useState([]);
+  const [ready, setReady] = useState([]);
   const [isClosed, setIsClosed] = useState(false);
 
   useEffect(() => {
-    // Sync with shop status
-    const savedStatus = localStorage.getItem('shop_status_mangales-snacks');
-    if (savedStatus === 'CLOSED') setIsClosed(true);
-    
-    // Poll for status changes (simulating real-time)
-    const statusInterval = setInterval(() => {
-      const currentStatus = localStorage.getItem('shop_status_mangales-snacks');
-      setIsClosed(currentStatus === 'CLOSED');
-    }, 2000);
+    async function loadQueue() {
+      try {
+        const activeOrders = await api.getOrderQueue();
+        updateQueueStates(activeOrders);
+      } catch (err) {
+        console.error('Failed to load queue board:', err);
+      }
+    }
 
-    return () => clearInterval(statusInterval);
+    function updateQueueStates(orders) {
+      const prepList = orders
+        .filter(o => o.status === 'placed' || o.status === 'preparing' || o.status === 'pending_cash')
+        .map(o => o.id.replace('SGU-', ''));
+      
+      const readyList = orders
+        .filter(o => o.status === 'ready')
+        .map(o => o.id.replace('SGU-', ''));
+
+      setPreparing(prepList);
+      setReady(readyList);
+    }
+
+    loadQueue();
+
+    // Check if food court has online stalls
+    async function checkStallsStatus() {
+      try {
+        const stalls = await api.getStalls();
+        const onlineCount = stalls.filter(s => s.online === 1 || s.online === true).length;
+        setIsClosed(onlineCount === 0);
+      } catch (err) {
+        console.error('Failed to load stall statuses:', err);
+      }
+    }
+    checkStallsStatus();
+
+    // Join real-time queue broadcasts
+    socket.emit('join', 'public-board');
+    socket.emit('join', 'student');
+
+    const handleQueueUpdate = (updatedOrders) => {
+      updateQueueStates(updatedOrders);
+    };
+
+    const handleStallStatusUpdate = () => {
+      checkStallsStatus();
+    };
+
+    socket.on('queue_update', handleQueueUpdate);
+    socket.on('stall_status_update', handleStallStatusUpdate);
+
+    return () => {
+      socket.off('queue_update', handleQueueUpdate);
+      socket.off('stall_status_update', handleStallStatusUpdate);
+    };
   }, []);
 
   return (

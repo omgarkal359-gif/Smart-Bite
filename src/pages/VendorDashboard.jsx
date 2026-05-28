@@ -6,6 +6,7 @@ import { Clock, Volume2, Power, LogOut, CheckCircle, Banknote, Activity, Smartph
 import { motion, AnimatePresence } from 'framer-motion';
 import { MenuEditor } from '../components/vendor/MenuEditor';
 import { SHOPS } from '../data/foodCourtDB';
+import { api, socket } from '../api';
 import './pages.css';
 import './vendor.css';
 
@@ -30,49 +31,69 @@ const VendorDashboard = () => {
   const targetShopId = urlShopId || user?.shopId;
   const currentShop = SHOPS.find(s => s.id === targetShopId);
 
-  // Sync with LocalStorage Orders
-  const loadOrders = useCallback(() => {
-    const allOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
-    
-    // Filter orders for THIS shop that are NOT completed yet
-    const shopOrders = allOrders.filter(order => 
-      order.stallId === targetShopId && 
-      (order.status === 'prep' || order.status === 'pending_cash' || order.status === 'placed' || order.status === 'preparing' || order.status === 'ready')
-    ).map(order => ({
-      ...order,
-      items: typeof order.items === 'string' ? order.items.split(', ') : order.items
-    }));
+  // Sync with Backend Orders
+  const loadOrders = useCallback(async () => {
+    if (!targetShopId) return;
+    try {
+      const allOrders = await api.getStallOrders(targetShopId);
+      
+      const active = allOrders.filter(order => order.status !== 'completed').map(order => ({
+        ...order,
+        items: typeof order.items === 'string' ? order.items.split(', ') : order.items
+      }));
 
-    // Only update state if data changed to avoid re-renders
-    setTickets(prev => {
-      if (JSON.stringify(prev) === JSON.stringify(shopOrders)) return prev;
-      return shopOrders;
-    });
+      const done = allOrders.filter(order => order.status === 'completed');
 
-    // Load completed orders for metrics
-    const doneOrders = allOrders.filter(order => 
-      order.stallId === targetShopId && order.status === 'completed'
-    );
-    setCompletedTickets(prev => {
-      if (JSON.stringify(prev) === JSON.stringify(doneOrders)) return prev;
-      return doneOrders;
-    });
+      setTickets(active);
+      setCompletedTickets(done);
+    } catch (err) {
+      console.error('Failed to load stall orders:', err);
+    }
   }, [targetShopId]);
 
   useEffect(() => {
+    if (!targetShopId) return;
+
     loadOrders();
     
-    // Polling for new orders every 2 seconds for "instant" updates
-    const interval = setInterval(loadOrders, 2000);
-    
-    // Also listen for storage events from other tabs
-    window.addEventListener('storage', loadOrders);
-    
-    return () => {
-      clearInterval(interval);
-      window.removeEventListener('storage', loadOrders);
+    // Join room for this vendor
+    socket.emit('join', `vendor-${targetShopId}`);
+
+    const handleNewOrder = (newOrder) => {
+      setTickets(prev => {
+        if (prev.some(t => t.id === newOrder.id)) return prev;
+        // Format item split
+        const formatted = {
+          ...newOrder,
+          items: typeof newOrder.items === 'string' ? newOrder.items.split(', ') : newOrder.items
+        };
+        return [formatted, ...prev];
+      });
     };
-  }, [targetShopId]);
+
+    const handleStatusUpdate = (updatedOrder) => {
+      if (updatedOrder.status === 'completed') {
+        setTickets(prev => prev.filter(t => t.id !== updatedOrder.id));
+        setCompletedTickets(prev => {
+          if (prev.some(t => t.id === updatedOrder.id)) return prev;
+          return [updatedOrder, ...prev];
+        });
+      } else {
+        setTickets(prev => prev.map(t => t.id === updatedOrder.id ? { 
+          ...t, 
+          status: updatedOrder.status 
+        } : t));
+      }
+    };
+
+    socket.on('order_new', handleNewOrder);
+    socket.on('order_status_update', handleStatusUpdate);
+
+    return () => {
+      socket.off('order_new', handleNewOrder);
+      socket.off('order_status_update', handleStatusUpdate);
+    };
+  }, [targetShopId, loadOrders]);
 
   // Security Gate & Session Check
   useEffect(() => {
@@ -88,14 +109,22 @@ const VendorDashboard = () => {
     }
     setUser(parsedUser);
 
-    const savedStatus = localStorage.getItem(`shop_status_${parsedUser.shopId}`);
-    if (savedStatus) setShopStatus(savedStatus);
-  }, [navigate]);
+    // Initial stall status load
+    api.getStalls()
+      .then(stalls => {
+        const stall = stalls.find(s => s.id === (urlShopId || parsedUser.shopId));
+        if (stall) {
+          setShopStatus(stall.online === 1 || stall.online === true ? 'OPEN' : 'CLOSED');
+          setIsBusyMode(stall.busyMode === 1 || stall.busyMode === true);
+        }
+      })
+      .catch(console.error);
+  }, [navigate, urlShopId]);
 
   // Today's Metrics Calculation
   const metrics = useMemo(() => {
     const today = new Date().toDateString();
-    const todayCompleted = completedTickets.filter(t => new Date(t.completed_at).toDateString() === today);
+    const todayCompleted = completedTickets.filter(t => new Date(t.timestamp).toDateString() === today);
     
     const totalOrders = todayCompleted.length + tickets.length;
     const totalRevenue = todayCompleted.reduce((sum, t) => sum + t.total, 0);
@@ -105,38 +134,50 @@ const VendorDashboard = () => {
     return { totalOrders, totalRevenue, cashRevenue, upiRevenue };
   }, [tickets, completedTickets]);
 
-  const handleToggleShop = () => {
+  const handleToggleShop = async () => {
     const newStatus = shopStatus === 'OPEN' ? 'CLOSED' : 'OPEN';
-    setShopStatus(newStatus);
-    if (newStatus === 'OPEN') {
-      setShowConfetti(true);
-      setTimeout(() => setShowConfetti(false), 3000);
-    }
-    if (user?.shopId) {
-      localStorage.setItem(`shop_status_${user.shopId}`, newStatus);
+    try {
+      if (targetShopId) {
+        await api.updateStallStatus(targetShopId, { online: newStatus === 'OPEN' });
+      }
+      setShopStatus(newStatus);
+      if (newStatus === 'OPEN') {
+        setShowConfetti(true);
+        setTimeout(() => setShowConfetti(false), 3000);
+      }
+    } catch (err) {
+      alert('Failed to update shop status: ' + err.message);
     }
   };
 
-  const handleUpdateStatus = (id, newStatus) => {
-    const allOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
-    const updatedOrders = allOrders.map(order => 
-      order.id === id ? { 
-        ...order, 
-        status: newStatus, 
-        completed_at: newStatus === 'completed' ? new Date().toISOString() : order.completed_at 
-      } : order
-    );
-    localStorage.setItem('sgu_orders', JSON.stringify(updatedOrders));
-    
-    // Immediate UI update for the local state
-    if (newStatus === 'completed') {
-      setTickets(prev => prev.filter(t => t.id !== id));
-      const ticket = tickets.find(t => t.id === id);
-      if (ticket) {
-        setCompletedTickets(prev => [...prev, { ...ticket, status: 'completed', completed_at: new Date().toISOString() }]);
+  const handleToggleBusy = async () => {
+    const nextBusy = !isBusyMode;
+    const nextWait = nextBusy ? 15 : 0;
+    try {
+      if (targetShopId) {
+        await api.updateStallStatus(targetShopId, { busyMode: nextBusy, waitTime: nextWait });
       }
-    } else {
-      setTickets(prev => prev.map(t => t.id === id ? { ...t, status: newStatus } : t));
+      setIsBusyMode(nextBusy);
+    } catch (err) {
+      alert('Failed to toggle busy mode: ' + err.message);
+    }
+  };
+
+  const handleUpdateStatus = async (id, newStatus) => {
+    try {
+      await api.updateOrderStatus(id, newStatus);
+      
+      if (newStatus === 'completed') {
+        setTickets(prev => prev.filter(t => t.id !== id));
+        const ticket = tickets.find(t => t.id === id);
+        if (ticket) {
+          setCompletedTickets(prev => [...prev, { ...ticket, status: 'completed', timestamp: new Date().toISOString() }]);
+        }
+      } else {
+        setTickets(prev => prev.map(t => t.id === id ? { ...t, status: newStatus } : t));
+      }
+    } catch (err) {
+      alert('Failed to update order status: ' + err.message);
     }
   };
 
@@ -204,7 +245,7 @@ const VendorDashboard = () => {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             className={`elite-ctrl-btn ${isBusyMode ? 'busy' : ''}`} 
-            onClick={() => setIsBusyMode(!isBusyMode)}
+            onClick={handleToggleBusy}
           >
             <Clock size={18} /> <span>{isBusyMode ? 'BUSY' : 'NORMAL'}</span>
           </motion.button>
@@ -390,7 +431,7 @@ const VendorDashboard = () => {
                   <X size={28} />
                 </button>
               </div>
-              <MenuEditor />
+              <MenuEditor shopId={targetShopId} />
             </motion.div>
           </>
         )}

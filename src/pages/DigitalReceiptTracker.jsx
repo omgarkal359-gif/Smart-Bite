@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { GlassCard } from '../components/ui/GlassCard';
 import { Button } from '../components/ui/Button';
 import { ArrowLeft, QrCode, CheckCircle, Clock, ChefHat, BellRing, Download, Mail } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { api, socket } from '../api';
 import './pages.css';
 import './tracker.css';
 
@@ -20,32 +21,47 @@ const DigitalReceiptTracker = () => {
   const [order, setOrder] = useState(null);
 
   useEffect(() => {
-    const fetchOrderStatus = () => {
-      const savedOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
-      const foundOrder = savedOrders.find(o => o.id === orderId);
-      if (foundOrder) {
+    async function loadOrder() {
+      try {
+        const foundOrder = await api.getOrder(orderId);
         setOrder(foundOrder);
+        
         // Map status to step index
-        if (foundOrder.status === 'placed') setCurrentStep(0);
+        if (foundOrder.status === 'placed' || foundOrder.status === 'pending_cash') setCurrentStep(0);
         else if (foundOrder.status === 'preparing') setCurrentStep(1);
-        else if (foundOrder.status === 'ready') setCurrentStep(2);
-        else if (foundOrder.status === 'completed') setCurrentStep(2); // Keep at ready or handle completion
+        else if (foundOrder.status === 'ready' || foundOrder.status === 'completed') setCurrentStep(2);
+      } catch (err) {
+        console.error('Failed to load order tracker:', err);
       }
+    }
+
+    loadOrder();
+
+    // Listen to real-time socket events for this order status
+    socket.emit('join', `order-${orderId}`);
+
+    const handleStatusUpdate = (updatedOrder) => {
+      setOrder(updatedOrder);
+      if (updatedOrder.status === 'placed' || updatedOrder.status === 'pending_cash') setCurrentStep(0);
+      else if (updatedOrder.status === 'preparing') setCurrentStep(1);
+      else if (updatedOrder.status === 'ready' || updatedOrder.status === 'completed') setCurrentStep(2);
     };
 
-    fetchOrderStatus();
-    
-    // Poll for status updates every 2 seconds
-    const interval = setInterval(fetchOrderStatus, 2000);
-    
-    // Also listen for storage events from other tabs
-    window.addEventListener('storage', fetchOrderStatus);
+    socket.on('order_status_update', handleStatusUpdate);
 
     return () => {
-      clearInterval(interval);
-      window.removeEventListener('storage', fetchOrderStatus);
+      socket.off('order_status_update', handleStatusUpdate);
     };
   }, [orderId]);
+
+  const itemsText = useMemo(() => {
+    if (!order) return '';
+    if (typeof order.items === 'string') return order.items;
+    if (Array.isArray(order.items)) {
+      return order.items.map(item => `${item.quantity}x ${item.name}`).join(', ');
+    }
+    return '';
+  }, [order]);
 
   return (
     <div className="tracker-container-v21 page-transition">
@@ -75,7 +91,7 @@ const DigitalReceiptTracker = () => {
               <p className="text-muted">Show code at the counter</p>
               {order && (
                 <div className="order-summary-v21 mt-4 p-4 border-t border-dashed w-full text-left">
-                  <p className="font-bold text-sm mb-2">{order.items}</p>
+                  <p className="font-bold text-sm mb-2">{itemsText}</p>
                   <p className="font-black text-lg">Total: ₹{order.total}</p>
                 </div>
               )}

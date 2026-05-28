@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Plus, X, Upload, Check, Edit2, Trash2, Camera, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-
-const MOCK_MENU = [];
+import { api } from '../../api';
 
 const FloatingInput = ({ label, ...props }) => (
   <div className="floating-label-group">
@@ -15,27 +14,60 @@ const FloatingInput = ({ label, ...props }) => (
   </div>
 );
 
-export const MenuEditor = () => {
-  const [items, setItems] = useState(MOCK_MENU);
+export const MenuEditor = ({ shopId }) => {
+  const [items, setItems] = useState([]);
   const [isAdding, setIsAdding] = useState(false);
   const [newItem, setNewItem] = useState({ name: '', price: '', category: 'Main', img: '' });
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = React.useRef(null);
 
-  const handleUpdate = (id, field, value) => {
+  useEffect(() => {
+    if (!shopId) return;
+    async function loadMenu() {
+      try {
+        const fetchedItems = await api.getStallMenu(shopId);
+        setItems(fetchedItems);
+      } catch (err) {
+        console.error('Failed to load menu items:', err);
+      }
+    }
+    loadMenu();
+  }, [shopId]);
+
+  const categories = useMemo(() => {
+    const list = [...new Set(items.map(item => item.category))];
+    if (list.length === 0) return ['Main', 'Sides', 'Beverages', 'Desserts'];
+    return list;
+  }, [items]);
+
+  const handleUpdate = async (id, field, value) => {
+    // Optimistic local state update
     setItems(items.map(item => item.id === id ? { ...item, [field]: value } : item));
+    try {
+      await api.updateMenuItem(id, { [field]: value });
+    } catch (err) {
+      console.error('Failed to sync item update:', err);
+    }
   };
 
-  const handleAddItem = (e) => {
+  const handleAddItem = async (e) => {
     e.preventDefault();
-    const item = {
-      ...newItem,
-      id: Date.now(),
-      img: newItem.img || `https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&q=80&fm=webp`
-    };
-    setItems([item, ...items]);
-    setNewItem({ name: '', price: '', category: 'Main', img: '' });
-    setIsAdding(false);
+    if (!newItem.name || !newItem.price) return;
+    try {
+      const payload = {
+        name: newItem.name,
+        price: parseFloat(newItem.price),
+        category: newItem.category,
+        stock: 20,
+        isVeg: 1
+      };
+      const createdItem = await api.addMenuItem(shopId, payload);
+      setItems([createdItem, ...items]);
+      setNewItem({ name: '', price: '', category: 'Main', img: '' });
+      setIsAdding(false);
+    } catch (err) {
+      alert('Failed to add item: ' + err.message);
+    }
   };
 
   const handleFileChange = (e) => {
@@ -98,10 +130,11 @@ export const MenuEditor = () => {
                 value={newItem.category}
                 onChange={(e) => setNewItem({...newItem, category: e.target.value})}
               >
-                <option>Main</option>
-                <option>Sides</option>
-                <option>Beverages</option>
-                <option>Desserts</option>
+                {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                <option value="Main">Main</option>
+                <option value="Sides">Sides</option>
+                <option value="Beverages">Beverages</option>
+                <option value="Desserts">Desserts</option>
               </select>
               <label className="floating-label">Category</label>
             </div>
@@ -145,7 +178,7 @@ export const MenuEditor = () => {
       </AnimatePresence>
 
       <div className="menu-sections flex flex-col gap-10 mt-8">
-        {['Main', 'Sides', 'Beverages', 'Desserts'].map(cat => {
+        {categories.map(cat => {
           const catItems = items.filter(i => i.category === cat);
           if (catItems.length === 0 && !isAdding) return null;
           
@@ -168,7 +201,7 @@ export const MenuEditor = () => {
                     className="menu-item-card elite-card group"
                   >
                     <div className="menu-item-image">
-                      <img src={item.img} alt={item.name} />
+                      <img src={item.img || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=100&q=80'} alt={item.name} />
                       <div className="image-overlay">
                         <Edit2 size={16} />
                       </div>
@@ -188,7 +221,7 @@ export const MenuEditor = () => {
                             type="number"
                             className="price-input" 
                             value={item.price}
-                            onChange={(e) => handleUpdate(item.id, 'price', e.target.value)}
+                            onChange={(e) => handleUpdate(item.id, 'price', parseFloat(e.target.value))}
                           />
                         </div>
                       </div>
@@ -197,7 +230,14 @@ export const MenuEditor = () => {
                     <div className="menu-item-actions">
                       <button 
                         className="delete-btn"
-                        onClick={() => setItems(items.filter(i => i.id !== item.id))}
+                        onClick={async () => {
+                          try {
+                            await api.updateMenuItem(item.id, { available: false });
+                            setItems(items.filter(i => i.id !== item.id));
+                          } catch (err) {
+                            alert('Failed to delete item: ' + err.message);
+                          }
+                        }}
                       >
                         <Trash2 size={20} />
                       </button>
