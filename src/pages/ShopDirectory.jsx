@@ -4,6 +4,7 @@ import { GlassCard } from '../components/ui/GlassCard';
 import { Clock, Wifi, WifiOff, Search, ChevronRight, Flame } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SHOPS, searchFoodItems } from '../data/foodCourtDB';
+import { api, socket } from '../api';
 import './pages.css';
 import './home_v21.css';
 
@@ -11,7 +12,11 @@ const MOCK_SHOPS = SHOPS;
 
 const MOCK_RECENT_ORDER = null;
 
-const TRENDING_SLIDES = [];
+const TRENDING_SLIDES = [
+  { id: 1, title: 'CRISPY BUCKET', subtitle: 'Flat 20% OFF today only!', img: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=800&q=80&fm=webp' },
+  { id: 2, title: 'SPICY WINGS', subtitle: 'Buy 1 Get 1 Free', img: 'https://images.unsplash.com/photo-1608039829572-78524f79c4c7?auto=format&fit=crop&w=800&q=80&fm=webp' },
+  { id: 3, title: 'CHEESE BURGER', subtitle: 'Combo meal starting ₹199', img: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=800&q=80&fm=webp' },
+];
 
 const SkeletonCard = ({ isHero }) => (
   <div className={`shop-card-v21 skeleton ${isHero ? 'hero' : 'square'}`}>
@@ -29,6 +34,7 @@ const ShopDirectory = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [query, setQuery] = useState('');
+  const [stalls, setStalls] = useState([]);
 
   // Auto-scrolling Hero
   useEffect(() => {
@@ -39,8 +45,30 @@ const ShopDirectory = () => {
   }, []);
 
   useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 500);
-    return () => clearTimeout(timer);
+    async function loadStalls() {
+      try {
+        const data = await api.getStalls();
+        setStalls(data);
+      } catch (err) {
+        console.error('Failed to load stalls:', err);
+        setStalls(MOCK_SHOPS);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    loadStalls();
+
+    socket.emit('join', 'student');
+
+    const handleStatusUpdate = (updatedStall) => {
+      setStalls(prev => prev.map(s => s.id === updatedStall.id ? updatedStall : s));
+    };
+
+    socket.on('stall_status_update', handleStatusUpdate);
+
+    return () => {
+      socket.off('stall_status_update', handleStatusUpdate);
+    };
   }, []);
 
   return (
@@ -163,11 +191,9 @@ const ShopDirectory = () => {
                   </motion.div>
                 ))
               ) : (
-                MOCK_SHOPS.map((shop, index) => {
+                stalls.map((shop, index) => {
                   const isHero = index === 0;
-                  // Check real-time status from localStorage (synced with vendor)
-                  const savedStatus = localStorage.getItem(`shop_status_${shop.id}`);
-                  const isOnline = savedStatus ? savedStatus === 'OPEN' : shop.online;
+                  const isOnline = shop.online === 1 || shop.online === true;
 
                   return (
                   <motion.div

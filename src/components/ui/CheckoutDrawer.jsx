@@ -4,6 +4,7 @@ import { X, Utensils, ShoppingBag, Banknote, Smartphone, CheckCircle, ArrowRight
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import { useCart } from '../../context/CartContext';
+import { api } from '../../api';
 import './checkout.css';
 
 export const CheckoutDrawer = ({ isOpen, onClose, cart, inventory, onComplete }) => {
@@ -75,55 +76,45 @@ export const CheckoutDrawer = ({ isOpen, onClose, cart, inventory, onComplete })
       document.body.removeChild(link);
     }
 
-    // Simulate verification (Step 5)
-    setTimeout(() => {
-      setIsProcessing(false);
-      setStep(4); // Success step
-      triggerConfetti();
+    // Submit order to API
+    const userData = JSON.parse(localStorage.getItem('sgu_user') || '{}');
+    const orderPayload = {
+      customerName: userData.name || 'Guest User',
+      customerId: userData.id || '9876543210',
+      type: diningMode === 'dine_in' ? 'Dine-In' : 'Takeaway',
+      payment: paymentMode === 'upi' ? 'Online UPI' : 'Cash',
+      total: totalCartValue,
+      items: cartItems.map(item => ({
+        id: item.id,
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity,
+        stallId: item.stallId,
+        stallName: item.stallName
+      }))
+    };
 
-      const userData = JSON.parse(localStorage.getItem('sgu_user') || '{}');
-      const existingOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
-      
-      // Group cart items by stallId
-      const itemsByStall = cartItems.reduce((acc, item) => {
-        if (!acc[item.stallId]) acc[item.stallId] = [];
-        acc[item.stallId].push(item);
-        return acc;
-      }, {});
+    api.createOrder(orderPayload)
+      .then((createdOrder) => {
+        setIsProcessing(false);
+        setStep(4); // Success step
+        triggerConfetti();
 
-      const newOrders = Object.entries(itemsByStall).map(([stallId, items]) => {
-        const stallTotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-        const orderItemsStr = items.map(item => `${item.quantity}x ${item.name}`).join(', ');
-        const firstItem = items[0];
-        
-        return {
-          id: `SGU-${Math.floor(1000 + Math.random() * 9000)}`,
-          status: 'placed',
-          total: stallTotal,
-          items: orderItemsStr,
-          stallId: stallId,
-          stallName: firstItem?.stallName || 'Food Court',
-          customerName: userData.name || 'Guest User',
-          type: diningMode === 'dine_in' ? 'Dine-In' : 'Takeaway',
-          payment: paymentMode === 'upi' ? 'Online UPI' : 'Cash',
-          time: 'Just now',
-          img: firstItem?.img || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=300&q=80',
-          timestamp: new Date().toISOString()
-        };
+        const existingOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
+        localStorage.setItem('sgu_orders', JSON.stringify([createdOrder, ...existingOrders]));
+
+        setTimeout(() => {
+          clearCart();
+          onClose();
+          if (typeof onComplete === 'function') onComplete();
+          navigate(`/student/order/${createdOrder.id}`);
+        }, 3000);
+      })
+      .catch((err) => {
+        console.error('Checkout failed:', err);
+        alert('Order placement failed: ' + err.message);
+        setIsProcessing(false);
       });
-
-      localStorage.setItem('sgu_orders', JSON.stringify([...newOrders, ...existingOrders]));
-
-      setTimeout(() => {
-        clearCart();
-        onClose();
-        if (typeof onComplete === 'function') onComplete();
-        // Navigate to the first new order's tracker
-        if (newOrders.length > 0) {
-          navigate(`/student/order/${newOrders[0].id}`);
-        }
-      }, 3000);
-    }, 2000);
   };
 
   return (

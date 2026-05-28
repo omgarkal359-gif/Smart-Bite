@@ -3,8 +3,8 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Leaf, Flame, Pizza, Coffee, Sandwich } from 'lucide-react';
 import { CheckoutDrawer } from '../components/ui/CheckoutDrawer';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getItemsByStall, getCategoriesByStall, FOOD_COURT } from '../data/foodCourtDB';
 import { useCart } from '../context/CartContext';
+import { api, socket } from '../api';
 import './pages.css';
 import './menu_v21.css';
 
@@ -20,26 +20,58 @@ const InteractiveMenu = () => {
   const highlightId = searchParams.get('highlight');
   const targetCategory = searchParams.get('category');
 
-  // Derive data from the food court database
-  const stallItems = useMemo(() => getItemsByStall(shopId), [shopId]);
-  const CATEGORIES = useMemo(() => getCategoriesByStall(shopId), [shopId]);
-  const stallInfo = useMemo(() => FOOD_COURT.stalls.find(s => s.id === shopId), [shopId]);
-
   const [activeCategory, setActiveCategory] = useState('');
   const { cart, addToCart, removeFromCart, totalItems, isCheckoutOpen, setIsCheckoutOpen, clearCart } = useCart();
 
   const [inventory, setInventory] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [stallInfo, setStallInfo] = useState(null);
+
+  // Derive CATEGORIES dynamically from the inventory
+  const CATEGORIES = useMemo(() => {
+    const cats = inventory.map(item => item.category);
+    return [...new Set(cats)];
+  }, [inventory]);
 
   // Set initial category & inventory when stall loads
   useEffect(() => {
-    if (targetCategory && CATEGORIES.includes(targetCategory)) {
-      setActiveCategory(targetCategory);
-    } else if (CATEGORIES.length > 0) {
-      setActiveCategory(CATEGORIES[0]);
+    async function loadStallMenu() {
+      setIsLoading(true);
+      try {
+        const items = await api.getStallMenu(shopId);
+        setInventory(items);
+
+        const stalls = await api.getStalls();
+        const stall = stalls.find(s => s.id === shopId);
+        setStallInfo(stall);
+
+        const cats = [...new Set(items.map(i => i.category))];
+        if (targetCategory && cats.includes(targetCategory)) {
+          setActiveCategory(targetCategory);
+        } else if (cats.length > 0) {
+          setActiveCategory(cats[0]);
+        }
+      } catch (err) {
+        console.error('Failed to load menu:', err);
+      } finally {
+        setIsLoading(false);
+      }
     }
-    setInventory(stallItems);
-  }, [shopId, CATEGORIES, stallItems, targetCategory]);
+    loadStallMenu();
+
+    // Join room for real-time menu/stock updates
+    socket.emit('join', `stall-menu-${shopId}`);
+
+    const handleMenuItemUpdate = (updatedItem) => {
+      setInventory(prev => prev.map(i => i.id === updatedItem.id ? updatedItem : i));
+    };
+
+    socket.on('menu_item_update', handleMenuItemUpdate);
+
+    return () => {
+      socket.off('menu_item_update', handleMenuItemUpdate);
+    };
+  }, [shopId, targetCategory]);
 
   useEffect(() => {
     if (highlightId && !isLoading) {
@@ -60,11 +92,6 @@ const InteractiveMenu = () => {
       }, 300);
     }
   }, [highlightId, isLoading, activeCategory]);
-
-  useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 500);
-    return () => clearTimeout(timer);
-  }, []);
 
   const handleAddToCartClick = (item) => {
     if (item.stock > 0) {

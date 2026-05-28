@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff, User, Lock, Store, Mail, Phone, Loader2, CheckCircle2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { SHOPS } from '../data/foodCourtDB';
+import { api } from '../api';
 import './LoginPage.css'; // Importing pure CSS
 
 const LoginPage = () => {
@@ -68,41 +69,50 @@ const LoginPage = () => {
     return true;
   };
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     if (isFormValid()) {
       if (!validateFormat()) return;
 
       setIsLoading(true);
-      setTimeout(() => {
-        const normalizedRole = role === 'Shop Owner' ? 'owner' : role === 'Student' ? 'student' : 'guest';
-        
-        // --- VENDOR LOGIN ---
-        if (role === 'Shop Owner') {
-          // Additional validation for vendors could be added here
-        }
+      setErrorMsg('');
 
-        setIsLoading(false);
-        setIsSuccess(true);
+      try {
+        const normalizedRole = role === 'Shop Owner' ? 'owner' : role === 'Student' ? 'student' : 'guest';
+        const loginUsername = role === 'Student' ? studentId : (role === 'Guest' ? guestMobile : shopId);
         
-        const userData = {
-          role: normalizedRole,
-          name: role === 'Shop Owner' ? (SHOPS.find(s => s.id === shopId)?.name || 'Stall Owner') : (role === 'Guest' ? guestName : studentName),
-          id: role === 'Student' ? studentId : (role === 'Guest' ? guestMobile : shopId),
-          shopId: role === 'Shop Owner' ? shopId : null,
-          timestamp: new Date().toISOString(),
-          rememberMe: rememberMe
-        };
-        localStorage.setItem('sgu_user', JSON.stringify(userData));
-        setTimeout(() => {
-          setIsSuccess(false);
-          if (role === 'Student' || role === 'Guest') {
-            navigate('/student');
-          } else if (role === 'Shop Owner') {
-            navigate('/vendor');
-          }
-        }, 1500);
-      }, 1500);
+        const response = await api.login(loginUsername, password, normalizedRole);
+        
+        if (response.success) {
+          setIsLoading(false);
+          setIsSuccess(true);
+          
+          const userData = {
+            role: response.user.role,
+            name: role === 'Guest' ? guestName : response.user.name,
+            id: response.user.username,
+            shopId: response.user.shopId,
+            timestamp: new Date().toISOString(),
+            rememberMe: rememberMe
+          };
+          localStorage.setItem('sgu_user', JSON.stringify(userData));
+          
+          setTimeout(() => {
+            setIsSuccess(false);
+            if (normalizedRole === 'student' || normalizedRole === 'guest') {
+              navigate('/student');
+            } else if (normalizedRole === 'owner') {
+              navigate('/vendor');
+            }
+          }, 1500);
+        } else {
+          setErrorMsg(response.message || 'Login failed.');
+          setIsLoading(false);
+        }
+      } catch (err) {
+        setErrorMsg(err.message || 'Could not connect to backend server.');
+        setIsLoading(false);
+      }
     }
   };
 
