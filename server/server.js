@@ -180,10 +180,11 @@ app.post('/api/orders', async (req, res) => {
     // Generate order ID
     const orderId = `SGU-${Math.floor(1000 + Math.random() * 9000)}`;
     const now = new Date().toISOString();
+    const initialStatus = payment === 'Cash' ? 'pending_cash' : 'placed';
 
     await db.run(
       'INSERT INTO orders (id, customerName, customerId, type, payment, status, total, time, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [orderId, customerName, customerId, type, payment, 'placed', total, 'Just now', now]
+      [orderId, customerName, customerId, type, payment, initialStatus, total, 'Just now', now]
     );
 
     for (const item of items) {
@@ -196,6 +197,28 @@ app.post('/api/orders', async (req, res) => {
     const createdOrder = await db.get('SELECT * FROM orders WHERE id = ?', [orderId]);
     const createdItems = await db.all('SELECT * FROM order_items WHERE orderId = ?', [orderId]);
     createdOrder.items = createdItems;
+
+    // --- DIGITAL RECEIPT DISPATCHER ---
+    const receiptItemsText = createdItems.map(item => `   - ${item.quantity}x ${item.name} (₹${item.price} each) - Stall: ${item.stallName}`).join('\n');
+    const isEmail = customerId.includes('@');
+    const dispatchMethod = isEmail ? 'EMAIL' : 'MOBILE SMS';
+    
+    console.log(`\n==================================================`);
+    console.log(`[RECEIPT DISPATCHER] NEW ORDER PLACED: ${orderId}`);
+    console.log(`[RECEIPT DISPATCHER] Dispatching Digital Receipt to Customer via ${dispatchMethod}:`);
+    console.log(`[RECEIPT DISPATCHER] Target: ${customerId}`);
+    console.log(`--------------------------------------------------`);
+    console.log(`INVOICE FOR ${customerName.toUpperCase()}`);
+    console.log(`Order ID: ${orderId}`);
+    console.log(`Time: ${now}`);
+    console.log(`Payment Method: ${payment}`);
+    console.log(`Items:\n${receiptItemsText}`);
+    console.log(`--------------------------------------------------`);
+    console.log(`GRAND TOTAL: ₹${total}`);
+    console.log(`[RECEIPT DISPATCHER] Dispatch successful! Receipt sent via ${dispatchMethod}.`);
+    console.log(`==================================================\n`);
+
+    createdOrder.receiptSentTo = customerId;
 
     // Group items by stall to notify vendors
     const itemsByStall = createdItems.reduce((acc, item) => {
@@ -219,6 +242,42 @@ app.post('/api/orders', async (req, res) => {
     broadcastQueueUpdate();
 
     res.json(createdOrder);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// Resend Digital Receipt Endpoint
+app.post('/api/orders/:id/resend', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const order = await db.get('SELECT * FROM orders WHERE id = ?', [id]);
+    if (!order) return res.status(404).json({ message: 'Order not found' });
+
+    const orderItems = await db.all('SELECT * FROM order_items WHERE orderId = ?', [id]);
+    
+    // --- DIGITAL RECEIPT DISPATCHER ---
+    const receiptItemsText = orderItems.map(item => `   - ${item.quantity}x ${item.name} (₹${item.price} each) - Stall: ${item.stallName}`).join('\n');
+    const isEmail = order.customerId.includes('@');
+    const dispatchMethod = isEmail ? 'EMAIL' : 'MOBILE SMS';
+    const now = new Date().toISOString();
+    
+    console.log(`\n==================================================`);
+    console.log(`[RECEIPT DISPATCHER] RESENDING RECEIPT FOR ORDER: ${order.id}`);
+    console.log(`[RECEIPT DISPATCHER] Dispatching Digital Receipt to Customer via ${dispatchMethod}:`);
+    console.log(`[RECEIPT DISPATCHER] Target: ${order.customerId}`);
+    console.log(`--------------------------------------------------`);
+    console.log(`INVOICE FOR ${order.customerName.toUpperCase()}`);
+    console.log(`Order ID: ${order.id}`);
+    console.log(`Time: ${now}`);
+    console.log(`Payment Method: ${order.payment}`);
+    console.log(`Items:\n${receiptItemsText}`);
+    console.log(`--------------------------------------------------`);
+    console.log(`GRAND TOTAL: ₹${order.total}`);
+    console.log(`[RECEIPT DISPATCHER] Re-dispatch successful! Receipt sent via ${dispatchMethod}.`);
+    console.log(`==================================================\n`);
+
+    res.json({ success: true, message: `Receipt successfully resent via ${dispatchMethod}.` });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

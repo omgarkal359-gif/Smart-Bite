@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Clock, CheckCircle, ShoppingBag } from 'lucide-react';
 import { GlassCard } from '../components/ui/GlassCard';
-import { api } from '../api';
+import { api, socket } from '../api';
 import './home_v21.css';
 
 const OrdersPage = () => {
@@ -14,31 +14,45 @@ const OrdersPage = () => {
     const userData = JSON.parse(localStorage.getItem('sgu_user') || '{}');
     const customerId = userData.id || '9876543210';
 
-    async function loadOrders() {
+    async function fetchOrders() {
       try {
-        const studentOrders = await api.getStudentOrders(customerId);
-        
-        const formatted = studentOrders.map(order => {
-          let itemsText = '';
-          if (typeof order.items === 'string') {
-            itemsText = order.items;
-          } else if (Array.isArray(order.items)) {
-            itemsText = order.items.map(item => `${item.quantity}x ${item.name}`).join(', ');
-          }
-          return {
-            ...order,
-            items: itemsText,
-            img: order.img || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=300&q=80'
-          };
-        });
-
-        setOrders(formatted);
+        const liveOrders = await api.getStudentOrders(customerId);
+        setOrders(liveOrders);
+        localStorage.setItem('sgu_orders', JSON.stringify(liveOrders));
       } catch (err) {
-        console.error('Failed to load student orders:', err);
+        console.error('Failed to fetch student orders:', err);
+        // Fallback to localStorage
+        const savedOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
+        setOrders(savedOrders);
       }
     }
-    
-    loadOrders();
+
+    fetchOrders();
+
+    // Listen to real-time status updates for student's orders
+    socket.emit('join', 'student');
+
+    const handleStatusUpdate = (updatedOrder) => {
+      setOrders(prev => {
+        // Only update if the order belongs to this customer
+        if (updatedOrder.customerId !== customerId) return prev;
+        
+        // If order is updated, replace it in the list
+        if (!prev.some(order => order.id === updatedOrder.id)) {
+          return [updatedOrder, ...prev];
+        }
+        return prev.map(order => order.id === updatedOrder.id ? {
+          ...order,
+          status: updatedOrder.status
+        } : order);
+      });
+    };
+
+    socket.on('order_status_update', handleStatusUpdate);
+
+    return () => {
+      socket.off('order_status_update', handleStatusUpdate);
+    };
   }, []);
 
   return (
@@ -75,21 +89,25 @@ const OrdersPage = () => {
               <GlassCard 
                 className={`shop-card-v21 tap-effect shadow-sm transition-all ${order.status === 'completed' ? 'opacity-75' : ''}`}
                 style={{ 
-                  borderLeft: (order.status === 'placed' || order.status === 'preparing' || order.status === 'pending_cash' || order.status === 'prep') ? '6px solid #E4002B' : order.status === 'ready' ? '6px solid var(--success-green)' : '1px solid #EEEEEE',
+                  borderLeft: (order.status === 'prep' || order.status === 'preparing') ? '6px solid #E4002B' : 
+                              order.status === 'ready' ? '6px solid var(--success-green)' : 
+                              order.status === 'pending_cash' ? '6px solid #F59E0B' :
+                              order.status === 'placed' ? '6px solid #8B5CF6' :
+                              '1px solid #EEEEEE',
                   padding: '16px',
                   gap: '16px',
                 }}
                 onClick={() => navigate(`/student/order/${order.id}`)}
               >
                 <div className="shop-img-container shadow-sm" style={{ width: '90px', height: '90px', flexShrink: 0, borderRadius: '12px' }}>
-                  <img src={order.img} alt="Order" className="shop-hd-img" style={{ borderRadius: '10px' }} />
+                  <img src={order.img || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&q=80'} alt="Order" className="shop-hd-img" style={{ borderRadius: '10px' }} />
                 </div>
 
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px', padding: '4px 0' }}>
                   {/* Order ID & Time */}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ 
-                       fontFamily: 'var(--font-heading)', 
+                      fontFamily: 'var(--font-heading)', 
                       fontWeight: 800, 
                       fontSize: '1.15rem', 
                       color: 'var(--text-dark)',
@@ -110,7 +128,13 @@ const OrdersPage = () => {
                     fontSize: '0.85rem', 
                     color: '#64748B',
                     lineHeight: '1.4',
-                  }}>{order.items}</p>
+                  }}>
+                    {typeof order.items === 'string' 
+                      ? order.items 
+                      : Array.isArray(order.items) 
+                        ? order.items.map(item => `${item.quantity}x ${item.name}`).join(', ') 
+                        : ''}
+                  </p>
 
                   {/* Price & Status */}
                   <div style={{ 
@@ -128,7 +152,20 @@ const OrdersPage = () => {
                       color: 'var(--text-dark)' 
                     }}>₹{order.total}</span>
                     
-                    {(order.status === 'placed' || order.status === 'preparing' || order.status === 'pending_cash' || order.status === 'prep') && (
+                    {(order.status === 'placed' || order.status === 'pending_cash') && (
+                      <span style={{
+                        display: 'inline-flex', alignItems: 'center', gap: '4px',
+                        background: order.status === 'pending_cash' ? '#F59E0B' : '#8B5CF6', 
+                        color: 'white',
+                        fontWeight: 800, fontSize: '0.65rem',
+                        padding: '4px 10px', borderRadius: '20px',
+                        textTransform: 'uppercase', letterSpacing: '0.5px',
+                        boxShadow: order.status === 'pending_cash' ? '0 2px 8px rgba(245, 158, 11, 0.3)' : '0 2px 8px rgba(139, 92, 246, 0.3)',
+                      }}>
+                        <Clock size={11} /> {order.status === 'pending_cash' ? 'Awaiting Cash' : 'Order Placed'}
+                      </span>
+                    )}
+                    {(order.status === 'preparing' || order.status === 'prep') && (
                       <span style={{
                         display: 'inline-flex', alignItems: 'center', gap: '4px',
                         background: '#E4002B', color: 'white',

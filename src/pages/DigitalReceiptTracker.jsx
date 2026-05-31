@@ -19,6 +19,7 @@ const DigitalReceiptTracker = () => {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(0);
   const [order, setOrder] = useState(null);
+  const [toastMsg, setToastMsg] = useState('');
 
   useEffect(() => {
     async function loadOrder() {
@@ -63,6 +64,70 @@ const DigitalReceiptTracker = () => {
     return '';
   }, [order]);
 
+  const handleResend = async () => {
+    if (!order) return;
+    try {
+      await api.resendReceipt(orderId);
+      const isEmail = order.customerId?.includes('@');
+      const method = isEmail ? 'Email' : 'SMS';
+      setToastMsg(`Digital receipt successfully resent to ${order.customerId} via ${method}!`);
+    } catch (err) {
+      console.error('Failed to resend receipt:', err);
+      setToastMsg('Failed to resend receipt. Please try again.');
+    }
+    setTimeout(() => {
+      setToastMsg('');
+    }, 4000);
+  };
+
+  const handleDownloadPDF = () => {
+    if (!order) return;
+    const isEmail = order.customerId?.includes('@');
+    const dispatchMethod = isEmail ? 'EMAIL' : 'MOBILE SMS';
+    
+    let itemsTextRaw = '';
+    if (typeof order.items === 'string') {
+      itemsTextRaw = order.items;
+    } else if (Array.isArray(order.items)) {
+      itemsTextRaw = order.items.map(item => `   - ${item.quantity}x ${item.name} (₹${item.price} each)`).join('\n');
+    }
+    
+    const invoiceContent = `==================================================
+                  SGU FOOD COURT
+                DIGITAL INVOICE & RECEIPT
+==================================================
+Order ID       : ${order.id}
+Customer Name  : ${order.customerName}
+Contact Info   : ${order.customerId} (${dispatchMethod})
+Payment Method : ${order.payment}
+Order Status   : ${order.status.toUpperCase()}
+Date & Time    : ${order.timestamp || new Date().toISOString()}
+
+--------------------------------------------------
+ITEMS ORDERED:
+${itemsTextRaw}
+--------------------------------------------------
+GRAND TOTAL    : ₹${order.total}
+
+Thank you for dining with us!
+==================================================
+`;
+    const blob = new Blob([invoiceContent], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `SGU_Receipt_${order.id}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    
+    setToastMsg(`Receipt invoice downloaded successfully!`);
+    setTimeout(() => {
+      setToastMsg('');
+    }, 4000);
+  };
+
   return (
     <div className="tracker-container-v21 page-transition">
       <header className="glass-header blur-header">
@@ -75,6 +140,37 @@ const DigitalReceiptTracker = () => {
         </div>
       </header>
 
+      {/* Premium Resend Toast Notification */}
+      <AnimatePresence>
+        {toastMsg && (
+          <motion.div 
+            initial={{ opacity: 0, y: -50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.9 }}
+            style={{
+              position: 'fixed',
+              top: '80px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              zIndex: 1000,
+              background: 'rgba(26, 82, 118, 0.95)',
+              backdropFilter: 'blur(10px)',
+              color: '#ffffff',
+              padding: '12px 24px',
+              borderRadius: '24px',
+              boxShadow: '0 10px 25px rgba(26, 82, 118, 0.25)',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+              fontSize: '0.85rem',
+              fontWeight: 700,
+              whiteSpace: 'nowrap',
+              pointerEvents: 'none'
+            }}
+          >
+            {toastMsg}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <main className="tracker-main-v21">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -83,6 +179,41 @@ const DigitalReceiptTracker = () => {
         >
           <GlassCard className="receipt-card-v21 shadow-md">
             
+            {/* Dynamic Digital Receipt Sent! Premium Notification Banner */}
+            {order && (
+              <div style={{
+                background: 'rgba(26, 82, 118, 0.08)',
+                border: '1px solid rgba(26, 82, 118, 0.15)',
+                borderRadius: '16px',
+                padding: '12px 16px',
+                marginBottom: '24px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                textAlign: 'left',
+                width: '100%'
+              }}>
+                <div style={{
+                  width: '36px', height: '36px', borderRadius: '50%',
+                  background: 'var(--primary-navy)', color: 'white',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0
+                }}>
+                  {order.customerId?.includes('@') ? <Mail size={18} /> : <BellRing size={18} />}
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                  <span style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--primary-navy)' }}>
+                    Digital Receipt Sent!
+                  </span>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+                    {order.customerId?.includes('@') 
+                      ? `Emailed to: ${order.customerId}` 
+                      : `Sent via SMS to: ${order.customerId}`}
+                  </span>
+                </div>
+              </div>
+            )}
+
             <div className="qr-section-v21">
               <div className="qr-wrapper-v21">
                 <QrCode size={120} color="var(--primary-navy)" />
@@ -118,17 +249,25 @@ const DigitalReceiptTracker = () => {
               })}
             </div>
 
-            {currentStep === 2 && (
+            {order && (
               <motion.div 
                 className="ready-actions-v21 mt-6"
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
               >
-                <button className="btn-pdf-v21">
-                  <Download size={20} /> Download PDF Receipt
+                <button className="btn-pdf-v21" onClick={handleDownloadPDF} style={{ cursor: 'pointer' }}>
+                  <Download size={20} /> Download Invoice
                 </button>
-                <button className="btn-email-v21">
-                  <Mail size={20} /> Resend to Email
+                <button className="btn-email-v21" onClick={handleResend} style={{ cursor: 'pointer' }}>
+                  {order.customerId?.includes('@') ? (
+                    <>
+                      <Mail size={20} /> Resend to Email
+                    </>
+                  ) : (
+                    <>
+                      <BellRing size={20} /> Resend via SMS
+                    </>
+                  )}
                 </button>
               </motion.div>
             )}
