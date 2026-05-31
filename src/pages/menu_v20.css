@@ -33,11 +33,6 @@
   border-color: var(--success-green);
 }
 
-.diet-btn.non-veg.active {
-  background: var(--error-red);
-  border-color: var(--error-red);
-}
-
 .menu-grid-v20 {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -84,7 +79,6 @@
 }
 
 .diet-indicator.veg { color: var(--success-green); }
-.diet-indicator.non-veg { color: var(--error-red); }
 
 .food-info h3 {
   font-family: var(--font-heading);

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trash2, Plus, Minus, ArrowRight, ShoppingBag, CreditCard, ChevronLeft } from 'lucide-react';
+import { api } from '../api';
 import './pages.css';
 import './cart.css';
 
@@ -15,31 +16,37 @@ const CartPage = () => {
 
   const cartItems = Object.values(cart);
 
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
     setIsCheckingOut(true);
-    setTimeout(() => {
-      // Create a new order object
-      const newOrder = {
-        id: `SGU-${Math.floor(1000 + Math.random() * 9000)}`,
-        status: paymentMode === 'cash' ? 'pending_cash' : 'prep',
-        total: totalPrice,
-        items: cartItems.map(item => `${item.quantity}x ${item.name}`).join(', '),
-        stallId: cartItems[0]?.stallId || 'general',
-        stallName: cartItems[0]?.stallName || 'Food Court',
-        time: 'Just now',
-        img: cartItems[0]?.img || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=300&q=80',
-        timestamp: new Date().toISOString(),
+    
+    const userData = JSON.parse(localStorage.getItem('sgu_user') || '{}');
+    const customerName = userData.name || 'Student';
+    const customerId = userData.id || '9876543210';
+
+    try {
+      const orderPayload = {
+        customerName,
+        customerId,
         type: diningMode === 'dine_in' ? 'Dine-In' : 'Takeaway',
-        payment: paymentMode === 'upi' ? 'Online UPI' : 'Cash'
+        payment: paymentMode === 'upi' ? 'Online UPI' : 'Cash',
+        total: totalPrice,
+        items: cartItems.map(item => ({
+          itemId: item.id,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+          stallId: item.stallId
+        }))
       };
 
-      // Save to localStorage
-      const existingOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
-      localStorage.setItem('sgu_orders', JSON.stringify([newOrder, ...existingOrders]));
-
-      navigate('/student/orders');
+      const result = await api.createOrder(orderPayload);
       clearCart();
-    }, 2000);
+      setIsCheckingOut(false);
+      navigate(`/student/order/${result.id}`);
+    } catch (err) {
+      alert('Order placement failed: ' + err.message);
+      setIsCheckingOut(false);
+    }
   };
 
   if (cartItems.length === 0) {
