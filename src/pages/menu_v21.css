@@ -44,11 +44,6 @@
   border-color: var(--success-green);
 }
 
-.diet-btn.non-veg.active {
-  background: var(--error-red);
-  border-color: var(--error-red);
-}
-
 .category-pill-v21 {
   display: flex;
   align-items: center;
@@ -161,11 +156,6 @@
 }
 
 .diet-indicator-v21.veg { color: #007A27; }
-.diet-indicator-v21.non-veg { color: #E4002B; }
-.diet-indicator-v21.non-veg::after {
-  border-radius: 0;
-  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
-}
 
 .food-info-v21 {
   padding: 12px;

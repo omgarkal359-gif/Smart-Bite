@@ -13,9 +13,10 @@ const MOCK_SHOPS = SHOPS;
 const MOCK_RECENT_ORDER = null;
 
 const TRENDING_SLIDES = [
-  { id: 1, title: 'CRISPY BUCKET', subtitle: 'Flat 20% OFF today only!', img: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=800&q=80&fm=webp' },
-  { id: 2, title: 'SPICY WINGS', subtitle: 'Buy 1 Get 1 Free', img: 'https://images.unsplash.com/photo-1608039829572-78524f79c4c7?auto=format&fit=crop&w=800&q=80&fm=webp' },
-  { id: 3, title: 'CHEESE BURGER', subtitle: 'Combo meal starting ₹199', img: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=800&q=80&fm=webp' },
+  { id: 1, title: 'JUMBO MISAL', subtitle: 'Authentic spices starting at ₹100!', img: 'https://images.unsplash.com/photo-1601050690117-94f5f6fa8bd7?auto=format&fit=crop&w=800&q=80&fm=webp', path: '/student/shop/mangales-snacks?category=Misal' },
+  { id: 2, title: 'CLASSIC WADAPAV', subtitle: 'Classic Mumbai style for just ₹25!', img: 'https://images.unsplash.com/photo-1606491956689-2ea866880c84?auto=format&fit=crop&w=800&q=80&fm=webp', path: '/student/shop/rohit-vadewale?category=Wadapav' },
+  { id: 3, title: 'MASALA DOSA', subtitle: 'Crispy & delicious South Indian special for ₹50', img: 'https://images.unsplash.com/photo-1668236543090-82eba5ee5976?auto=format&fit=crop&w=800&q=80&fm=webp', path: "/student/shop/narayana?category=Dosa's" },
+  { id: 4, title: 'THICK COLD COFFEE', subtitle: 'Rich, creamy, and chilled for just ₹100', img: 'https://images.unsplash.com/photo-1541658016709-82535e94bc69?auto=format&fit=crop&w=800&q=80&fm=webp', path: '/student/shop/cool-cravings?category=Cold%20Coffee' },
 ];
 
 const SkeletonCard = ({ isHero }) => (
@@ -152,7 +153,9 @@ const ShopDirectory = () => {
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 1 }}
-                    className="hero-slide"
+                    className="hero-slide tap-effect"
+                    style={{ cursor: 'pointer' }}
+                    onClick={() => navigate(TRENDING_SLIDES[currentSlide].path)}
                   >
                     <div 
                       className="hero-bg-image"

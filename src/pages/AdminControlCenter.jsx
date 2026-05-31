@@ -4,12 +4,14 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { useNavigate } from 'react-router-dom';
 import { ShieldAlert, Trash2, Ban, TrendingUp, BarChart3, Clock, AlertTriangle, LogOut } from 'lucide-react';
+import { api } from '../api';
 import './pages.css';
 import './admin.css';
 
 const AdminControlCenter = () => {
   const navigate = useNavigate();
   const [blacklistPrn, setBlacklistPrn] = useState('');
+  const [metrics, setMetrics] = useState({ totalSales: 0, totalOrders: 0, digitalSales: 0, cashSales: 0 });
 
   React.useEffect(() => {
     const userData = localStorage.getItem('sgu_user');
@@ -20,7 +22,31 @@ const AdminControlCenter = () => {
     const parsedUser = JSON.parse(userData);
     if (parsedUser.role !== 'admin') {
       navigate('/login');
+      return;
     }
+
+    async function loadMetrics() {
+      try {
+        const data = await api.getAdminMetrics();
+        const digitalSales = data.orders
+          .filter(o => o.status === 'completed' && o.payment !== 'Cash')
+          .reduce((sum, o) => sum + o.total, 0);
+        
+        const cashSales = data.orders
+          .filter(o => o.status === 'completed' && o.payment === 'Cash')
+          .reduce((sum, o) => sum + o.total, 0);
+
+        setMetrics({
+          totalSales: data.totalSales,
+          totalOrders: data.totalOrders,
+          digitalSales,
+          cashSales
+        });
+      } catch (err) {
+        console.error('Failed to load metrics:', err);
+      }
+    }
+    loadMetrics();
   }, [navigate]);
 
   const handleLogout = () => {
@@ -67,15 +93,15 @@ const AdminControlCenter = () => {
           <h2 className="section-title"><BarChart3 size={20} /> Analytics Overview</h2>
           
           <GlassCard className="admin-card mb-4 animate-stagger-item stagger-delay-1">
-            <h3>Daily Sales</h3>
+            <h3>Daily Sales (Total: ₹{metrics.totalSales})</h3>
             <div className="sales-stats">
               <div className="stat-box digital">
                 <span className="label">Digital</span>
-                <span className="value">₹45,200</span>
+                <span className="value">₹{metrics.digitalSales}</span>
               </div>
               <div className="stat-box cash">
                 <span className="label">Cash</span>
-                <span className="value">₹12,800</span>
+                <span className="value">₹{metrics.cashSales}</span>
               </div>
             </div>
           </GlassCard>

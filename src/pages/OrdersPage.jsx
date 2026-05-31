@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Clock, CheckCircle, ShoppingBag } from 'lucide-react';
 import { GlassCard } from '../components/ui/GlassCard';
+import { api } from '../api';
 import './home_v21.css';
 
 const OrdersPage = () => {
@@ -10,8 +11,34 @@ const OrdersPage = () => {
   const [orders, setOrders] = React.useState([]);
 
   React.useEffect(() => {
-    const savedOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
-    setOrders(savedOrders);
+    const userData = JSON.parse(localStorage.getItem('sgu_user') || '{}');
+    const customerId = userData.id || '9876543210';
+
+    async function loadOrders() {
+      try {
+        const studentOrders = await api.getStudentOrders(customerId);
+        
+        const formatted = studentOrders.map(order => {
+          let itemsText = '';
+          if (typeof order.items === 'string') {
+            itemsText = order.items;
+          } else if (Array.isArray(order.items)) {
+            itemsText = order.items.map(item => `${item.quantity}x ${item.name}`).join(', ');
+          }
+          return {
+            ...order,
+            items: itemsText,
+            img: order.img || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=300&q=80'
+          };
+        });
+
+        setOrders(formatted);
+      } catch (err) {
+        console.error('Failed to load student orders:', err);
+      }
+    }
+    
+    loadOrders();
   }, []);
 
   return (
@@ -48,7 +75,7 @@ const OrdersPage = () => {
               <GlassCard 
                 className={`shop-card-v21 tap-effect shadow-sm transition-all ${order.status === 'completed' ? 'opacity-75' : ''}`}
                 style={{ 
-                  borderLeft: order.status === 'prep' ? '6px solid #E4002B' : order.status === 'ready' ? '6px solid var(--success-green)' : '1px solid #EEEEEE',
+                  borderLeft: (order.status === 'placed' || order.status === 'preparing' || order.status === 'pending_cash' || order.status === 'prep') ? '6px solid #E4002B' : order.status === 'ready' ? '6px solid var(--success-green)' : '1px solid #EEEEEE',
                   padding: '16px',
                   gap: '16px',
                 }}
@@ -62,7 +89,7 @@ const OrdersPage = () => {
                   {/* Order ID & Time */}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ 
-                      fontFamily: 'var(--font-heading)', 
+                       fontFamily: 'var(--font-heading)', 
                       fontWeight: 800, 
                       fontSize: '1.15rem', 
                       color: 'var(--text-dark)',
@@ -101,7 +128,7 @@ const OrdersPage = () => {
                       color: 'var(--text-dark)' 
                     }}>₹{order.total}</span>
                     
-                    {order.status === 'prep' && (
+                    {(order.status === 'placed' || order.status === 'preparing' || order.status === 'pending_cash' || order.status === 'prep') && (
                       <span style={{
                         display: 'inline-flex', alignItems: 'center', gap: '4px',
                         background: '#E4002B', color: 'white',
