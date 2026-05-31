@@ -76,6 +76,12 @@ export const api = {
     });
   },
 
+  async resendReceipt(orderId) {
+    return fetchAPI(`/orders/${orderId}/resend`, {
+      method: 'POST'
+    });
+  },
+
   async getOrderQueue() {
     return fetchAPI('/orders/queue');
   },
