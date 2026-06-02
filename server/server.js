@@ -54,7 +54,7 @@ async function broadcastQueueUpdate() {
 
 // Auth
 app.post('/api/auth/login', async (req, res) => {
-  const { username, password, role } = req.body;
+  const { username, password, role, name } = req.body;
   try {
     if (role === 'guest') {
       // Create guest dynamically or fetch if exists
@@ -65,6 +65,20 @@ app.post('/api/auth/login', async (req, res) => {
           [username, username, '', 'guest', null]
         );
         user = await db.get('SELECT * FROM users WHERE username = ? AND role = ?', [username, 'guest']);
+      }
+      return res.json({ success: true, user });
+    }
+
+    if (role === 'student') {
+      // Find student by username
+      let user = await db.get('SELECT * FROM users WHERE username = ? AND role = ?', [username, 'student']);
+      if (!user) {
+        // Dynamically create student record if not existing
+        await db.run(
+          'INSERT INTO users (username, name, password, role, shopId) VALUES (?, ?, ?, ?, ?)',
+          [username, name || 'Student', '', 'student', null]
+        );
+        user = await db.get('SELECT * FROM users WHERE username = ? AND role = ?', [username, 'student']);
       }
       return res.json({ success: true, user });
     }
