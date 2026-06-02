@@ -1,7 +1,8 @@
 import { io } from 'socket.io-client';
 
-const API_BASE_URL = 'http://localhost:3001/api';
-export const SOCKET_URL = 'http://localhost:3001';
+const API_BASE_URL = '/api';
+export const SOCKET_URL = window.location.origin;
+
 
 // Initialize socket client (configured not to connect automatically until needed)
 export const socket = io(SOCKET_URL, {
@@ -30,10 +31,10 @@ async function fetchAPI(endpoint, options = {}) {
 // API Methods
 export const api = {
   // Auth
-  async login(username, password, role) {
+  async login(username, password, role, name) {
     return fetchAPI('/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ username, password, role })
+      body: JSON.stringify({ username, password, role, name })
     });
   },
 
