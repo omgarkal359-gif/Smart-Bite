@@ -2,6 +2,14 @@ import express from 'express';
 import cors from 'cors';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
+import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+dotenv.config({ path: join(__dirname, '.env') });
+
 import { db, initDatabase } from './db.js';
 
 const app = express();
@@ -71,6 +79,25 @@ app.post('/api/auth/login', async (req, res) => {
     } else {
       res.status(401).json({ success: false, message: 'Invalid credentials or role selection.' });
     }
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// Google Auth Single Sign-On (SSO)
+app.post('/api/auth/google', async (req, res) => {
+  const { email, name } = req.body;
+  try {
+    let user = await db.get('SELECT * FROM users WHERE username = ?', [email]);
+    if (!user) {
+      // Register new student automatically upon first Google login
+      await db.run(
+        'INSERT INTO users (username, name, password, role, shopId) VALUES (?, ?, ?, ?, ?)',
+        [email, name || 'Google Student', '', 'student', null]
+      );
+      user = await db.get('SELECT * FROM users WHERE username = ?', [email]);
+    }
+    res.json({ success: true, user });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
