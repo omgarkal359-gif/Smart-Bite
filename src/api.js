@@ -37,6 +37,13 @@ export const api = {
     });
   },
 
+  async googleLogin(email, name) {
+    return fetchAPI('/auth/google', {
+      method: 'POST',
+      body: JSON.stringify({ email, name })
+    });
+  },
+
   // Stalls
   async getStalls() {
     return fetchAPI('/stalls');

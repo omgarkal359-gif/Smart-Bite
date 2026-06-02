@@ -3,6 +3,7 @@ import { Eye, EyeOff, User, Lock, Store, Mail, Phone, Loader2, CheckCircle2 } fr
 import { useNavigate } from 'react-router-dom';
 import { SHOPS } from '../data/foodCourtDB';
 import { api } from '../api';
+import { supabase } from '../supabaseClient';
 import './LoginPage.css'; // Importing pure CSS
 
 const LoginPage = () => {
@@ -23,6 +24,58 @@ const LoginPage = () => {
   const [guestMobile, setGuestMobile] = useState('');
 
   useEffect(() => {
+    // Listen for Supabase OAuth redirects and login automatically
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        setIsLoading(true);
+        setErrorMsg('');
+        try {
+          const { email, full_name, name } = session.user.user_metadata;
+          const userEmail = session.user.email || email;
+          const userName = full_name || name || userEmail.split('@')[0];
+
+          // Authenticate/Register Google user dynamically in our database
+          const response = await api.googleLogin(userEmail, userName);
+          
+          if (response.success) {
+            setIsLoading(false);
+            setIsSuccess(true);
+
+            const userData = {
+              role: response.user.role,
+              name: response.user.name,
+              id: response.user.username,
+              shopId: response.user.shopId,
+              timestamp: new Date().toISOString(),
+              rememberMe: true
+            };
+            localStorage.setItem('sgu_user', JSON.stringify(userData));
+
+            // Clean up Supabase auth session so next logins fire clean redirects
+            await supabase.auth.signOut();
+
+            setTimeout(() => {
+              setIsSuccess(false);
+              const finalRole = response.user.role;
+              if (finalRole === 'student' || finalRole === 'guest') {
+                navigate('/student');
+              } else if (finalRole === 'owner') {
+                navigate('/vendor');
+              } else if (finalRole === 'admin') {
+                navigate('/admin');
+              }
+            }, 1500);
+          } else {
+            setErrorMsg(response.message || 'Google login verification failed.');
+            setIsLoading(false);
+          }
+        } catch (err) {
+          setErrorMsg(err.message || 'Could not register Google session in backend.');
+          setIsLoading(false);
+        }
+      }
+    });
+
     const savedSession = localStorage.getItem('sgu_user');
     if (savedSession) {
       const parsedUser = JSON.parse(savedSession);
@@ -35,6 +88,10 @@ const LoginPage = () => {
         navigate('/admin');
       }
     }
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, [navigate]);
 
   const isFormValid = () => {
@@ -119,6 +176,25 @@ const LoginPage = () => {
         setErrorMsg(err.message || 'Could not connect to backend server.');
         setIsLoading(false);
       }
+    }
+  };
+
+  const loginWithGoogle = async () => {
+    setIsLoading(true);
+    setErrorMsg('');
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin + '/login'
+        }
+      });
+      if (error) {
+        throw error;
+      }
+    } catch (err) {
+      setErrorMsg(err.message || 'Google Sign-In failed to initialize.');
+      setIsLoading(false);
     }
   };
 
@@ -311,6 +387,41 @@ const LoginPage = () => {
             <div className="login-register-text">
               Don&apos;t have an account? <button type="button" onClick={() => alert('Registration is currently handled by the administrator.')} className="login-link bg-transparent border-none p-0 cursor-pointer">Register</button>
             </div>
+          )}
+
+          {/* --- GOOGLE OAUTH BUTTON (STUDENTS ONLY) --- */}
+          {role === 'Student' && (
+            <>
+              <div className="login-divider">
+                <span>or</span>
+              </div>
+              <button
+                type="button"
+                onClick={loginWithGoogle}
+                disabled={isLoading || isSuccess}
+                className="login-google-button"
+              >
+                <svg className="login-google-icon" viewBox="0 0 24 24" width="20" height="20">
+                  <path
+                    fill="#4285F4"
+                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                  />
+                  <path
+                    fill="#34A853"
+                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                  />
+                  <path
+                    fill="#FBBC05"
+                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+                  />
+                  <path
+                    fill="#EA4335"
+                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+                  />
+                </svg>
+                <span>Sign in with Google</span>
+              </button>
+            </>
           )}
 
         </form>

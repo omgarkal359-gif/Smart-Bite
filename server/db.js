@@ -1,54 +1,84 @@
-import sqlite3 from 'sqlite3';
+import pg from 'pg';
+import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const dbPath = join(__dirname, 'database.sqlite');
 
-const dbConnection = new sqlite3.Database(dbPath);
+// Load env variables
+dotenv.config({ path: join(__dirname, '.env') });
 
-// Helper to run query with Promise
+// Configure pg to parse INT8 (bigint) as Javascript number
+pg.types.setTypeParser(pg.types.builtins.INT8, (val) => parseInt(val, 10));
+
+const connectionString = process.env.DATABASE_URL;
+
+if (!connectionString || connectionString.includes('[YOUR-PASSWORD]')) {
+  console.warn('\n==================================================');
+  console.warn('WARNING: Supabase DATABASE_URL is not configured yet.');
+  console.warn('Please update the PASSWORD in server/.env to start the database connection.');
+  console.warn('==================================================\n');
+}
+
+const pool = new pg.Pool({
+  connectionString: connectionString,
+  ssl: connectionString && connectionString.includes('supabase.co')
+    ? { rejectUnauthorized: false }
+    : false
+});
+
+// Helper to convert SQLite '?' to Postgres '$1', '$2', ...
+function convertSql(sql) {
+  let index = 1;
+  return sql.replace(/\?/g, () => `$${index++}`);
+}
+
 export const db = {
-  run(sql, params = []) {
-    return new Promise((resolve, reject) => {
-      dbConnection.run(sql, params, function (err) {
-        if (err) reject(err);
-        else resolve({ id: this.lastID, changes: this.changes });
-      });
-    });
+  async run(sql, params = []) {
+    let pgSql = convertSql(sql);
+    
+    // If it's an INSERT statement, we automatically append RETURNING id
+    // to match SQLite's `{ id: lastID }` behavior
+    if (pgSql.trim().toUpperCase().startsWith('INSERT ')) {
+      if (!pgSql.trim().toUpperCase().includes('RETURNING')) {
+        pgSql = `${pgSql} RETURNING id`;
+      }
+      const res = await pool.query(pgSql, params);
+      return { id: res.rows[0]?.id, changes: res.rowCount };
+    }
+    
+    const res = await pool.query(pgSql, params);
+    return { id: null, changes: res.rowCount };
   },
-  all(sql, params = []) {
-    return new Promise((resolve, reject) => {
-      dbConnection.all(sql, params, (err, rows) => {
-        if (err) reject(err);
-        else resolve(rows);
-      });
-    });
+
+  async all(sql, params = []) {
+    const pgSql = convertSql(sql);
+    const res = await pool.query(pgSql, params);
+    return res.rows;
   },
-  get(sql, params = []) {
-    return new Promise((resolve, reject) => {
-      dbConnection.get(sql, params, (err, row) => {
-        if (err) reject(err);
-        else resolve(row);
-      });
-    });
+
+  async get(sql, params = []) {
+    const pgSql = convertSql(sql);
+    const res = await pool.query(pgSql, params);
+    return res.rows[0] || null;
   },
-  exec(sql) {
-    return new Promise((resolve, reject) => {
-      dbConnection.exec(sql, (err) => {
-        if (err) reject(err);
-        else resolve();
-      });
-    });
+
+  async exec(sql) {
+    const pgSql = convertSql(sql);
+    await pool.query(pgSql);
   }
 };
 
 export async function initDatabase() {
-  // Create tables
+  if (!connectionString || connectionString.includes('[YOUR-PASSWORD]')) {
+    throw new Error('Database initialization aborted: Supabase DATABASE_URL password has not been configured in server/.env.');
+  }
+
+  // Create tables using Postgres syntax
   await db.exec(`
     CREATE TABLE IF NOT EXISTS users (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id SERIAL PRIMARY KEY,
       username TEXT UNIQUE,
       name TEXT,
       password TEXT,
@@ -73,7 +103,7 @@ export async function initDatabase() {
 
   await db.exec(`
     CREATE TABLE IF NOT EXISTS menu_items (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id SERIAL PRIMARY KEY,
       stallId TEXT,
       name TEXT,
       price REAL,
@@ -100,7 +130,7 @@ export async function initDatabase() {
 
   await db.exec(`
     CREATE TABLE IF NOT EXISTS order_items (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id SERIAL PRIMARY KEY,
       orderId TEXT,
       itemId INTEGER,
       name TEXT,
