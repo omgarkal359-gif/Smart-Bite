@@ -1,7 +1,9 @@
 import { io } from 'socket.io-client';
 
-const API_BASE_URL = '/api';
-export const SOCKET_URL = window.location.origin;
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || window.location.origin;
+const API_BASE_URL = BACKEND_URL === window.location.origin ? '/api' : `${BACKEND_URL}/api`;
+export const SOCKET_URL = BACKEND_URL;
+
 
 
 // Initialize socket client (configured not to connect automatically until needed)
