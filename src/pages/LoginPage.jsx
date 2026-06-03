@@ -64,7 +64,7 @@ const LoginPage = () => {
               if (finalRole === 'student' || finalRole === 'guest') {
                 navigate('/student');
               } else if (finalRole === 'owner') {
-                navigate('/vendor');
+                navigate(`/vendor/${userData.shopId}`);
               } else if (finalRole === 'admin') {
                 navigate('/admin');
               }
@@ -87,7 +87,7 @@ const LoginPage = () => {
       if (parsedUser.role === 'student' || parsedUser.role === 'guest') {
         navigate('/student');
       } else if (parsedUser.role === 'owner') {
-        navigate('/vendor');
+        navigate(`/vendor/${parsedUser.shopId}`);
       } else if (parsedUser.role === 'admin') {
         navigate('/admin');
       }
@@ -185,7 +185,7 @@ const LoginPage = () => {
             if (finalRole === 'student' || finalRole === 'guest') {
               navigate('/student');
             } else if (finalRole === 'owner') {
-              navigate('/vendor');
+              navigate(`/vendor/${userData.shopId}`);
             } else if (finalRole === 'admin') {
               navigate('/admin');
             }

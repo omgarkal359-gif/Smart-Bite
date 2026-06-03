@@ -128,6 +128,19 @@ const VendorDashboard = () => {
       navigate('/student');
       return;
     }
+
+    // If owner tries to access without a shopId in URL, redirect to their own shop
+    if (parsedUser.role === 'owner' && !urlShopId && parsedUser.shopId) {
+      navigate(`/vendor/${parsedUser.shopId}`, { replace: true });
+      return;
+    }
+
+    // Security: owners can only access their own shop's dashboard
+    if (parsedUser.role === 'owner' && urlShopId && parsedUser.shopId && urlShopId !== parsedUser.shopId) {
+      navigate(`/vendor/${parsedUser.shopId}`, { replace: true });
+      return;
+    }
+
     setUser(parsedUser);
 
     // Initial stall status load
@@ -241,6 +254,7 @@ const VendorDashboard = () => {
             <div className="heartbeat-monitor mt-1" style={{ padding: '4px 12px' }}>
               <Activity size={14} color={heartbeat ? '#22C55E' : '#94A3B8'} className={heartbeat ? 'pulse' : ''} />
               <span className="text-white opacity-80 text-[10px] uppercase font-black tracking-widest">Live Operations</span>
+              {user && <span className="text-white opacity-60 text-[10px] font-semibold ml-2">· {user.name}</span>}
             </div>
           </div>
 
