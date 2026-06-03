@@ -7,9 +7,9 @@ const API_BASE_URL = BACKEND_URL === window.location.origin ? '/api' : `${BACKEN
 export const SOCKET_URL = BACKEND_URL;
 
 
-// Initialize socket client (configured not to connect automatically until needed)
+// Initialize socket client (disabled in production Vercel to prevent connection errors since serverless doesn't support WebSockets)
 export const socket = io(SOCKET_URL, {
-  autoConnect: true
+  autoConnect: !SOCKET_URL.includes('vercel.app')
 });
 
 // Helper for fetch calls
