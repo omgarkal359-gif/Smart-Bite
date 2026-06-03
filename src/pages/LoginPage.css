@@ -269,3 +269,80 @@
 .login-google-icon {
   flex-shrink: 0;
 }
+
+/* Connection Settings styling */
+.login-settings-section {
+  margin-top: 16px;
+  border-top: 1px dashed #ddd;
+  padding-top: 12px;
+  text-align: center;
+}
+
+.login-settings-toggle {
+  background: none;
+  border: none;
+  color: #666;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.login-settings-toggle:hover {
+  background: #f3f4f6;
+  color: #111;
+}
+
+.login-settings-panel {
+  margin-top: 12px;
+  padding: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  text-align: left;
+}
+
+.login-settings-desc {
+  font-size: 11px;
+  color: #64748b;
+  margin: 0 0 10px 0;
+  line-height: 1.4;
+  font-weight: 500;
+}
+
+.login-settings-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.login-settings-btn {
+  flex: 1;
+  height: 32px;
+  font-size: 12px;
+  font-weight: bold;
+  border-radius: 6px;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+}
+
+.login-settings-btn.save {
+  background: #ff4d6d;
+  color: #fff;
+}
+
+.login-settings-btn.save:hover {
+  opacity: 0.9;
+}
+
+.login-settings-btn.reset {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.login-settings-btn.reset:hover {
+  background: #cbd5e1;
+}
