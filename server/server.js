@@ -481,7 +481,7 @@ app.post('/api/orders/:id/resend', async (req, res) => {
   }
 });
 
-// Fetch active orders queue
+// Fetch active orders queue  ← must be BEFORE /api/orders/:id
 app.get('/api/orders/queue', async (req, res) => {
   try {
     const activeOrders = await db.all(
@@ -493,21 +493,7 @@ app.get('/api/orders/queue', async (req, res) => {
   }
 });
 
-// Fetch single order details
-app.get('/api/orders/:id', async (req, res) => {
-  const { id } = req.params;
-  try {
-    const order = await db.get('SELECT * FROM orders WHERE id = ?', [id]);
-    if (!order) return res.status(404).json({ message: 'Order not found' });
-    const items = await db.all('SELECT * FROM order_items WHERE orderId = ?', [id]);
-    order.items = items;
-    res.json(order);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
-
-// Fetch active student orders
+// Fetch active student orders  ← must be BEFORE /api/orders/:id
 app.get('/api/orders/student/:customerId', async (req, res) => {
   const { customerId } = req.params;
   try {
@@ -521,7 +507,7 @@ app.get('/api/orders/student/:customerId', async (req, res) => {
   }
 });
 
-// Fetch active vendor orders
+// Fetch vendor stall orders  ← must be BEFORE /api/orders/:id
 app.get('/api/orders/stall/:stallId', async (req, res) => {
   const { stallId } = req.params;
   try {
@@ -545,6 +531,20 @@ app.get('/api/orders/stall/:stallId', async (req, res) => {
     });
 
     res.json(formattedOrders);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// Fetch single order details  ← generic wildcard LAST
+app.get('/api/orders/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const order = await db.get('SELECT * FROM orders WHERE id = ?', [id]);
+    if (!order) return res.status(404).json({ message: 'Order not found' });
+    const items = await db.all('SELECT * FROM order_items WHERE orderId = ?', [id]);
+    order.items = items;
+    res.json(order);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
