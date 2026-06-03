@@ -50,8 +50,12 @@ const OrdersPage = () => {
 
     socket.on('order_status_update', handleStatusUpdate);
 
+    // Polling fallback
+    const interval = setInterval(fetchOrders, 8000); // Poll every 8 seconds
+
     return () => {
       socket.off('order_status_update', handleStatusUpdate);
+      clearInterval(interval);
     };
   }, []);
 

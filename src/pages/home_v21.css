@@ -240,6 +240,23 @@
   padding: 8px;
 }
 
+@media (max-width: 767px) {
+  .shop-card-v21.hero {
+    flex-direction: column;
+    padding: 12px;
+  }
+  .shop-card-v21.hero .shop-img-container {
+    width: 100%;
+    height: 140px;
+    border-right: none;
+    border-bottom: 1px solid #EEEEEE;
+    padding: 4px;
+  }
+  .shop-card-v21.hero .shop-card-right {
+    padding-top: 8px;
+  }
+}
+
 .shop-card-v21.square {
   grid-column: span 1;
   flex-direction: column;
@@ -266,6 +283,34 @@
 
 .shop-card-v21.square .shop-name-v21 {
   font-size: 1rem;
+}
+
+.shop-footer-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: auto;
+  padding-top: 8px;
+  border-top: 1px dashed #EEEEEE;
+}
+
+.shop-dashboard-btn {
+  background: var(--primary-navy, #1A5276);
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 5px 12px;
+  border-radius: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.shop-dashboard-btn:hover {
+  background: #F39C12; /* Brand Amber */
+  color: #1A5276;
 }
 
 /* --- RESPONSIVE DESKTOP OVERRIDES --- */
