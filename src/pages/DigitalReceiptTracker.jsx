@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { GlassCard } from '../components/ui/GlassCard';
 import { Button } from '../components/ui/Button';
 import { ArrowLeft, QrCode, CheckCircle, Clock, ChefHat, BellRing, Download, Mail } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { api, socket } from '../api';
 import './pages.css';
 import './tracker.css';
