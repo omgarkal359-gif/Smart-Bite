@@ -15,20 +15,30 @@ export const socket = io(SOCKET_URL, {
 // Helper for fetch calls
 async function fetchAPI(endpoint, options = {}) {
   const url = `${API_BASE_URL}${endpoint}`;
-  const response = await fetch(url, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-    ...options,
-  });
+  try {
+    const response = await fetch(url, {
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+      ...options,
+    });
 
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.message || `HTTP error! Status: ${response.status}`);
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `HTTP error! Status: ${response.status}`);
+    }
+
+    return response.json();
+  } catch (err) {
+    // Self-healing: if fetch fails and a custom backend URL is configured, clear it and reload the application
+    if (typeof window !== 'undefined' && localStorage.getItem('sgu_backend_url')) {
+      localStorage.removeItem('sgu_backend_url');
+      alert('Custom backend connection failed. Resetting connection URL to default Vercel server and reloading...');
+      window.location.reload();
+    }
+    throw err;
   }
-
-  return response.json();
 }
 
 // API Methods
