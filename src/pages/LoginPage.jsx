@@ -326,6 +326,25 @@ const LoginPage = () => {
             <h1 className="login-heading">Welcome Back</h1>
             <p className="login-subheading">Login to continue your experience</p>
 
+            {window.location.hostname.includes('vercel.app') && !localStorage.getItem('sgu_backend_url') && (
+              <div style={{
+                backgroundColor: '#FFFBEB',
+                border: '1px solid #FDE68A',
+                borderRadius: '8px',
+                padding: '10px 12px',
+                fontSize: '0.8rem',
+                color: '#B45309',
+                marginBottom: '16px',
+                fontWeight: '600',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                lineHeight: '1.4'
+              }}>
+                ⚠️ Mobile/Cloud Testing: Please configure your Backend Connection URL at the bottom to connect to your database.
+              </div>
+            )}
+
             {/* Tab Switcher */}
             <div className="login-tabs">
               {roles.map((r) => (
