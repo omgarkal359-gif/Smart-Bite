@@ -16,6 +16,31 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Database initialization middleware for Serverless environment
+let dbInitialized = false;
+let dbInitPromise = null;
+
+app.use(async (req, res, next) => {
+  if (!dbInitialized) {
+    if (!dbInitPromise) {
+      dbInitPromise = initDatabase()
+        .then(() => {
+          dbInitialized = true;
+        })
+        .catch((err) => {
+          dbInitPromise = null;
+          throw err;
+        });
+    }
+    try {
+      await dbInitPromise;
+    } catch (err) {
+      return res.status(500).json({ success: false, message: 'Database initialization failed: ' + err.message });
+    }
+  }
+  next();
+});
+
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
@@ -440,14 +465,18 @@ app.get('/api/admin/metrics', async (req, res) => {
   }
 });
 
-// Boot Database and listen
-const PORT = 3001;
-initDatabase()
-  .then(() => {
-    httpServer.listen(PORT, () => {
-      console.log(`Backend server listening at http://localhost:${PORT}`);
+// Boot Database and listen (only run local HTTP listener when NOT deploying to serverless/Vercel)
+if (!process.env.VERCEL) {
+  const PORT = 3001;
+  initDatabase()
+    .then(() => {
+      httpServer.listen(PORT, () => {
+        console.log(`Backend server listening at http://localhost:${PORT}`);
+      });
+    })
+    .catch((err) => {
+      console.error('Failed to initialize database:', err);
     });
-  })
-  .catch((err) => {
-    console.error('Failed to initialize database:', err);
-  });
+}
+
+export default app;
