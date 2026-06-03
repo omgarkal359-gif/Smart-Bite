@@ -23,14 +23,21 @@ let dbInitPromise = null;
 app.use(async (req, res, next) => {
   if (!dbInitialized) {
     if (!dbInitPromise) {
-      dbInitPromise = initDatabase()
-        .then(() => {
-          dbInitialized = true;
-        })
-        .catch((err) => {
-          dbInitPromise = null;
-          throw err;
-        });
+      // In Vercel serverless production, skip the heavy CREATE TABLE and seeding checks
+      // to avoid query roundtrip latency and prevent Vercel 10s execution timeouts.
+      if (process.env.VERCEL) {
+        dbInitialized = true;
+        dbInitPromise = Promise.resolve();
+      } else {
+        dbInitPromise = initDatabase()
+          .then(() => {
+            dbInitialized = true;
+          })
+          .catch((err) => {
+            dbInitPromise = null;
+            throw err;
+          });
+      }
     }
     try {
       await dbInitPromise;
