@@ -24,6 +24,8 @@ const LoginPage = () => {
   const [guestMobile, setGuestMobile] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [otpToken, setOtpToken] = useState('');
+  const [showSettings, setShowSettings] = useState(false);
+  const [customBackend, setCustomBackend] = useState(localStorage.getItem('sgu_backend_url') || '');
 
   useEffect(() => {
     // Listen for Supabase OAuth redirects and login automatically
@@ -242,6 +244,17 @@ const LoginPage = () => {
       setErrorMsg(err.message || 'Google Sign-In failed to initialize.');
       setIsLoading(false);
     }
+  };
+
+  const handleSaveSettings = (e) => {
+    e.preventDefault();
+    if (customBackend.trim()) {
+      localStorage.setItem('sgu_backend_url', customBackend.trim().replace(/\/$/, ''));
+    } else {
+      localStorage.removeItem('sgu_backend_url');
+    }
+    alert('Connection settings saved! Reloading application...');
+    window.location.reload();
   };
 
   const roles = ['Student', 'Shop Owner', 'Guest'];
@@ -530,6 +543,55 @@ const LoginPage = () => {
               )}
 
             </form>
+            {/* --- CONNECTION SETTINGS --- */}
+            <div className="login-settings-section">
+              <button
+                type="button"
+                className="login-settings-toggle"
+                onClick={() => setShowSettings(!showSettings)}
+              >
+                ⚙️ Connection Settings
+              </button>
+              
+              {showSettings && (
+                <div className="login-settings-panel">
+                  <p className="login-settings-desc">
+                    Specify custom backend API URL (e.g. for localtunnel mobile testing):
+                  </p>
+                  <div className="login-form-group">
+                    <input
+                      type="text"
+                      className="login-input"
+                      style={{ height: '36px', fontSize: '14px', paddingLeft: '12px' }}
+                      placeholder="e.g. https://your-tunnel.loca.lt"
+                      value={customBackend}
+                      onChange={(e) => setCustomBackend(e.target.value)}
+                    />
+                  </div>
+                  <div className="login-settings-actions">
+                    <button
+                      type="button"
+                      className="login-settings-btn save"
+                      onClick={handleSaveSettings}
+                    >
+                      Save & Reload
+                    </button>
+                    <button
+                      type="button"
+                      className="login-settings-btn reset"
+                      onClick={() => {
+                        localStorage.removeItem('sgu_backend_url');
+                        alert('Connection URL reset to default! Reloading...');
+                        window.location.reload();
+                      }}
+                    >
+                      Reset to Default
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
           </>
         )}
       </div>
