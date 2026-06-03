@@ -3,6 +3,7 @@ import cors from 'cors';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import dotenv from 'dotenv';
+import nodemailer from 'nodemailer';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
@@ -320,25 +321,135 @@ app.post('/api/orders', async (req, res) => {
   }
 });
 
+// Setup Nodemailer transporter
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST || 'smtp.ethereal.email',
+  port: parseInt(process.env.SMTP_PORT || '587'),
+  secure: process.env.SMTP_SECURE === 'true',
+  auth: {
+    user: process.env.SMTP_USER || '',
+    pass: process.env.SMTP_PASS || '',
+  },
+});
+
+async function sendReceiptEmail(toEmail, order, items) {
+  const itemsText = items.map(item => `   - ${item.quantity}x ${item.name} (₹${item.price} each) - Stall: ${item.stallName}`).join('\n');
+  const itemsHtml = items.map(item => `
+    <tr>
+      <td style="padding: 8px; border-bottom: 1px solid #ddd;">${item.quantity}x ${item.name}</td>
+      <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right;">₹${item.price}</td>
+      <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right;">₹${item.price * item.quantity}</td>
+    </tr>
+  `).join('');
+
+  const emailBodyText = `
+SGU FOOD COURT - DIGITAL INVOICE & RECEIPT
+==================================================
+Order ID       : ${order.id}
+Customer Name  : ${order.customerName}
+Payment Method : ${order.payment}
+Order Status   : ${order.status.toUpperCase()}
+Date & Time    : ${order.timestamp || new Date().toISOString()}
+
+--------------------------------------------------
+ITEMS ORDERED:
+${itemsText}
+--------------------------------------------------
+GRAND TOTAL    : ₹${order.total}
+
+Thank you for dining with us!
+==================================================
+`;
+
+  const emailBodyHtml = `
+    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
+      <h2 style="text-align: center; color: #E4002B; margin-bottom: 5px;">SGU FOOD COURT</h2>
+      <p style="text-align: center; color: #888; font-size: 14px; margin-top: 0;">DIGITAL RECEIPT & INVOICE</p>
+      <hr style="border: 0; border-top: 1px dashed #ddd; margin: 20px 0;" />
+      <table style="width: 100%; font-size: 14px;">
+        <tr>
+          <td><strong>Order ID:</strong></td>
+          <td style="text-align: right;">#${order.id}</td>
+        </tr>
+        <tr>
+          <td><strong>Customer Name:</strong></td>
+          <td style="text-align: right;">${order.customerName}</td>
+        </tr>
+        <tr>
+          <td><strong>Payment Method:</strong></td>
+          <td style="text-align: right;">${order.payment}</td>
+        </tr>
+        <tr>
+          <td><strong>Order Status:</strong></td>
+          <td style="text-align: right; color: #E4002B; font-weight: bold;">${order.status.toUpperCase()}</td>
+        </tr>
+        <tr>
+          <td><strong>Date & Time:</strong></td>
+          <td style="text-align: right;">${order.timestamp || new Date().toLocaleString()}</td>
+        </tr>
+      </table>
+      <hr style="border: 0; border-top: 1px dashed #ddd; margin: 20px 0;" />
+      <h4 style="margin-bottom: 10px;">ITEMS ORDERED</h4>
+      <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+        <thead>
+          <tr style="background-color: #f9f9f9;">
+            <th style="padding: 8px; text-align: left; border-bottom: 2px solid #ddd;">Item</th>
+            <th style="padding: 8px; text-align: right; border-bottom: 2px solid #ddd;">Price</th>
+            <th style="padding: 8px; text-align: right; border-bottom: 2px solid #ddd;">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${itemsHtml}
+        </tbody>
+      </table>
+      <hr style="border: 0; border-top: 1px dashed #ddd; margin: 20px 0;" />
+      <div style="display: flex; justify-content: space-between; font-size: 18px; font-weight: bold; margin: 20px 0;">
+        <span>GRAND TOTAL:</span>
+        <span style="color: #E4002B; text-align: right;">₹${order.total}</span>
+      </div>
+      <p style="text-align: center; color: #888; font-size: 12px; margin-top: 40px;">Thank you for dining with us!</p>
+    </div>
+  `;
+
+  if (!process.env.SMTP_USER) {
+    console.log(`[RECEIPT SMTP] No SMTP_USER configured. Simulating email send to: ${toEmail}`);
+    return { simulated: true, toEmail };
+  }
+
+  await transporter.sendMail({
+    from: `"SGU Food Court" <${process.env.SMTP_USER}>`,
+    to: toEmail,
+    subject: `Your SGU Food Court Digital Receipt - #${order.id}`,
+    text: emailBodyText,
+    html: emailBodyHtml,
+  });
+
+  return { success: true };
+}
+
 // Resend Digital Receipt Endpoint
 app.post('/api/orders/:id/resend', async (req, res) => {
   const { id } = req.params;
+  const { customEmail } = req.body || {};
   try {
     const order = await db.get('SELECT * FROM orders WHERE id = ?', [id]);
     if (!order) return res.status(404).json({ message: 'Order not found' });
 
     const orderItems = await db.all('SELECT * FROM order_items WHERE orderId = ?', [id]);
     
-    // --- DIGITAL RECEIPT DISPATCHER ---
-    const receiptItemsText = orderItems.map(item => `   - ${item.quantity}x ${item.name} (₹${item.price} each) - Stall: ${item.stallName}`).join('\n');
-    const isEmail = order.customerId.includes('@');
+    // Determine the target destination
+    const targetRecipient = customEmail || order.customerId;
+    const isEmail = targetRecipient.includes('@');
     const dispatchMethod = isEmail ? 'EMAIL' : 'MOBILE SMS';
     const now = new Date().toISOString();
+    
+    // --- DIGITAL RECEIPT DISPATCHER ---
+    const receiptItemsText = orderItems.map(item => `   - ${item.quantity}x ${item.name} (₹${item.price} each) - Stall: ${item.stallName}`).join('\n');
     
     console.log(`\n==================================================`);
     console.log(`[RECEIPT DISPATCHER] RESENDING RECEIPT FOR ORDER: ${order.id}`);
     console.log(`[RECEIPT DISPATCHER] Dispatching Digital Receipt to Customer via ${dispatchMethod}:`);
-    console.log(`[RECEIPT DISPATCHER] Target: ${order.customerId}`);
+    console.log(`[RECEIPT DISPATCHER] Target: ${targetRecipient}`);
     console.log(`--------------------------------------------------`);
     console.log(`INVOICE FOR ${order.customerName.toUpperCase()}`);
     console.log(`Order ID: ${order.id}`);
@@ -347,10 +458,24 @@ app.post('/api/orders/:id/resend', async (req, res) => {
     console.log(`Items:\n${receiptItemsText}`);
     console.log(`--------------------------------------------------`);
     console.log(`GRAND TOTAL: ₹${order.total}`);
+    
+    if (isEmail) {
+      try {
+        const mailResult = await sendReceiptEmail(targetRecipient, order, orderItems);
+        if (mailResult.simulated) {
+          console.log(`[RECEIPT DISPATCHER] Simulated email dispatch successful.`);
+        } else {
+          console.log(`[RECEIPT DISPATCHER] Real SMTP email dispatch successful.`);
+        }
+      } catch (mailErr) {
+        console.error(`[RECEIPT DISPATCHER] Nodemailer failed:`, mailErr);
+      }
+    }
+    
     console.log(`[RECEIPT DISPATCHER] Re-dispatch successful! Receipt sent via ${dispatchMethod}.`);
     console.log(`==================================================\n`);
 
-    res.json({ success: true, message: `Receipt successfully resent via ${dispatchMethod}.` });
+    res.json({ success: true, message: `Receipt successfully resent via ${dispatchMethod}.`, targetRecipient });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

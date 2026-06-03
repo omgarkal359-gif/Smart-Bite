@@ -97,9 +97,10 @@ export const api = {
     });
   },
 
-  async resendReceipt(orderId) {
+  async resendReceipt(orderId, customEmail) {
     return fetchAPI(`/orders/${orderId}/resend`, {
-      method: 'POST'
+      method: 'POST',
+      body: customEmail ? JSON.stringify({ customEmail }) : undefined
     });
   },
 

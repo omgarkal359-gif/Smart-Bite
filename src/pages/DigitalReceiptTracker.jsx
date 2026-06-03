@@ -20,6 +20,7 @@ const DigitalReceiptTracker = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [order, setOrder] = useState(null);
   const [toastMsg, setToastMsg] = useState('');
+  const [emailInput, setEmailInput] = useState('');
 
   useEffect(() => {
     async function loadOrder() {
@@ -67,6 +68,31 @@ const DigitalReceiptTracker = () => {
     }
     return '';
   }, [order]);
+
+  const handleSendCustomEmail = async () => {
+    if (!emailInput) {
+      setToastMsg('Please enter a valid email address.');
+      setTimeout(() => setToastMsg(''), 3000);
+      return;
+    }
+    if (!emailInput.includes('@')) {
+      setToastMsg('Please type a valid email containing @.');
+      setTimeout(() => setToastMsg(''), 3000);
+      return;
+    }
+
+    try {
+      await api.resendReceipt(orderId, emailInput);
+      setToastMsg(`Digital receipt successfully sent to ${emailInput}!`);
+      setEmailInput('');
+    } catch (err) {
+      console.error('Failed to send receipt:', err);
+      setToastMsg('Failed to send receipt. Please try again.');
+    }
+    setTimeout(() => {
+      setToastMsg('');
+    }, 4000);
+  };
 
   const handleResend = async () => {
     if (!order) return;
@@ -254,26 +280,89 @@ Thank you for dining with us!
             </div>
 
             {order && (
-              <motion.div 
-                className="ready-actions-v21 mt-6"
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-              >
-                <button className="btn-pdf-v21" onClick={handleDownloadPDF} style={{ cursor: 'pointer' }}>
-                  <Download size={20} /> Download Invoice
-                </button>
-                <button className="btn-email-v21" onClick={handleResend} style={{ cursor: 'pointer' }}>
-                  {order.customerId?.includes('@') ? (
-                    <>
-                      <Mail size={20} /> Resend to Email
-                    </>
-                  ) : (
-                    <>
-                      <BellRing size={20} /> Resend via SMS
-                    </>
-                  )}
-                </button>
-              </motion.div>
+              <>
+                <motion.div 
+                  className="ready-actions-v21 mt-6"
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                >
+                  <button className="btn-pdf-v21" onClick={handleDownloadPDF} style={{ cursor: 'pointer' }}>
+                    <Download size={20} /> Download Invoice
+                  </button>
+                  <button className="btn-email-v21" onClick={handleResend} style={{ cursor: 'pointer' }}>
+                    {order.customerId?.includes('@') ? (
+                      <>
+                        <Mail size={20} /> Resend to Email
+                      </>
+                    ) : (
+                      <>
+                        <BellRing size={20} /> Resend via SMS
+                      </>
+                    )}
+                  </button>
+                </motion.div>
+
+                {/* Custom Email Dispatch Form */}
+                <motion.div
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                  style={{
+                    marginTop: '24px',
+                    paddingTop: '20px',
+                    borderTop: '1px dashed rgba(0, 0, 0, 0.1)',
+                    width: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '10px'
+                  }}
+                >
+                  <h4 style={{ fontSize: '0.85rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--text-dark)', textAlign: 'left', margin: 0 }}>
+                    Send Receipt to Email
+                  </h4>
+                  <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
+                    <input 
+                      type="email" 
+                      placeholder="Enter your email address" 
+                      value={emailInput}
+                      onChange={(e) => setEmailInput(e.target.value)}
+                      style={{
+                        flex: 1,
+                        padding: '10px 14px',
+                        borderRadius: '10px',
+                        border: '1.5px solid #E2E8F0',
+                        fontSize: '0.85rem',
+                        fontWeight: '600',
+                        outline: 'none',
+                        background: 'var(--white)',
+                        color: 'var(--text-dark)',
+                        boxSizing: 'border-box'
+                      }}
+                    />
+                    <button 
+                      onClick={handleSendCustomEmail}
+                      className="tap-effect"
+                      style={{
+                        background: 'var(--primary-navy)',
+                        color: 'white',
+                        padding: '10px 16px',
+                        borderRadius: '10px',
+                        fontSize: '0.85rem',
+                        fontWeight: '800',
+                        textTransform: 'uppercase',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        border: 'none',
+                        flexShrink: 0
+                      }}
+                    >
+                      <Mail size={16} /> Send
+                    </button>
+                  </div>
+                </motion.div>
+              </>
             )}
           </GlassCard>
         </motion.div>
