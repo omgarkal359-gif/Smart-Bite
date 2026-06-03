@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { Leaf, Flame, Pizza, Coffee, Sandwich } from 'lucide-react';
+import { Leaf, Flame, Pizza, Coffee, Sandwich, Utensils } from 'lucide-react';
 import { CheckoutDrawer } from '../components/ui/CheckoutDrawer';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCart } from '../context/CartContext';
@@ -30,6 +30,19 @@ const getFoodImage = (item) => {
   return defaultImages[item.category] || defaultImages['default'];
 };
 
+const getFallbackIcon = (category) => {
+  switch (category) {
+    case 'Pizzas':
+      return <Pizza size={36} />;
+    case 'Burgers':
+      return <Sandwich size={36} />;
+    case 'Beverages':
+      return <Coffee size={36} />;
+    default:
+      return <Utensils size={36} />;
+  }
+};
+
 const InteractiveMenu = () => {
   const { shopId } = useParams();
   const [searchParams] = useSearchParams();
@@ -42,6 +55,7 @@ const InteractiveMenu = () => {
   const [inventory, setInventory] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [stallInfo, setStallInfo] = useState(null);
+  const [imgErrors, setImgErrors] = useState({});
 
   // Derive CATEGORIES dynamically from the inventory
   const CATEGORIES = useMemo(() => {
@@ -141,13 +155,6 @@ const InteractiveMenu = () => {
     return item.category === activeCategory;
   });
 
-  // Expose global checkout via local state for this shop
-  useEffect(() => {
-    if (totalItems > 0) {
-      // Trigger floating button logic if needed
-    }
-  }, [totalItems]);
-
   return (
     <div className="menu-container page-transition">
       <header className="menu-header-v21">
@@ -181,7 +188,7 @@ const InteractiveMenu = () => {
             ))
           ) : (
             filteredInventory.map((item, index) => {
-              const isFeatured = index === 0;
+              const isImgError = imgErrors[item.id];
               return (
                 <motion.div
                   key={item.id}
@@ -192,47 +199,53 @@ const InteractiveMenu = () => {
                   exit={{ opacity: 0, scale: 0.9 }}
                   transition={{ type: "spring", stiffness: 100, damping: 15, delay: index * 0.05 }}
                   whileHover={{ y: -5 }}
-                  className={`food-card-v21 shadow-sm ${item.stock === 0 ? 'out-of-stock' : ''} ${isFeatured ? 'featured' : ''}`}
+                  className={`food-card-v21 shadow-sm ${item.stock === 0 ? 'out-of-stock' : ''}`}
                 >
-                  <div className="food-img-wrapper-v21">
-                    <img 
-                      src={getFoodImage(item)} 
-                      alt={item.name} 
-                      className="food-hd-img" 
-                      onError={(e) => {
-                        e.target.onerror = null; 
-                        e.target.src = defaultImages[item.category] || defaultImages['default'];
-                      }}
-                    />
+                  <div className="food-img-wrapper-v21" style={{ background: '#F8FAFC', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                    {!isImgError ? (
+                      <img 
+                        src={getFoodImage(item)} 
+                        alt={item.name} 
+                        className="food-hd-img" 
+                        onError={() => {
+                          setImgErrors(prev => ({ ...prev, [item.id]: true }));
+                        }}
+                      />
+                    ) : (
+                      <div style={{ color: '#CBD5E1', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                        {getFallbackIcon(item.category)}
+                      </div>
+                    )}
+
+                    {/* Floating Cart Add/Qty selector inside the image wrapper */}
+                    {cart[item.id] ? (
+                      <div className="qty-controls-v21 shadow-md">
+                        <motion.button whileTap={{ scale: 0.9 }} className="qty-btn" onClick={() => handleRemoveFromCartClick(item)}>
+                          -
+                        </motion.button>
+                        <span className="qty-value">{cart[item.id].quantity}</span>
+                        <motion.button whileTap={{ scale: 0.9 }} className="qty-btn" onClick={() => handleAddToCartClick(item)} disabled={item.stock === 0}>
+                          +
+                        </motion.button>
+                      </div>
+                    ) : (
+                      <motion.button
+                        whileTap={{ scale: 0.8 }}
+                        className="kfc-add-btn"
+                        onClick={() => handleAddToCartClick(item)}
+                        disabled={item.stock === 0}
+                      >
+                        +
+                      </motion.button>
+                    )}
                   </div>
 
                   <div className="food-info-v21">
                     <h3>{item.name}</h3>
                     <p className="food-desc-v21">Enjoy the authentic taste of freshly prepared {item.name.toLowerCase()} with signature herbs.</p>
 
-                    <div className="food-bottom-row" style={{ marginTop: 'auto', paddingTop: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div className="food-bottom-row" style={{ marginTop: 'auto', paddingTop: '8px' }}>
                       <p className="price-v21">₹{item.price}</p>
-                      
-                      {cart[item.id] ? (
-                        <div className="qty-controls-v21 shadow-md">
-                          <motion.button whileTap={{ scale: 0.9 }} className="qty-btn" onClick={() => handleRemoveFromCartClick(item)}>
-                            -
-                          </motion.button>
-                          <span className="qty-value">{cart[item.id].quantity}</span>
-                          <motion.button whileTap={{ scale: 0.9 }} className="qty-btn" onClick={() => handleAddToCartClick(item)} disabled={item.stock === 0}>
-                            +
-                          </motion.button>
-                        </div>
-                      ) : (
-                        <motion.button
-                          whileTap={{ scale: 0.8 }}
-                          className="kfc-add-btn-v21"
-                          onClick={() => handleAddToCartClick(item)}
-                          disabled={item.stock === 0}
-                        >
-                          ADD
-                        </motion.button>
-                      )}
                     </div>
 
                     {item.stock > 0 && item.stock <= 5 && (

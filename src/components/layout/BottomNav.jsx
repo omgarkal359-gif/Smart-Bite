@@ -64,19 +64,7 @@ export const BottomNav = () => {
           </motion.div>
         )}
       </NavLink>
-      <NavLink to="/student/cart" className={({ isActive }) => `nav-item tap-effect ${isActive ? 'active' : ''}`}>
-        {({ isActive }) => (
-          <motion.div className="nav-icon-wrapper relative" animate={{ scale: isActive ? 1.1 : 1 }} whileTap={{ scale: 0.9 }}>
-            <ShoppingCart size={24} />
-            {badgeCount > 0 && (
-              <span className={`cart-badge-v21 ${hasActiveOrders ? 'glowing-active-badge' : ''}`}>
-                {badgeCount}
-              </span>
-            )}
-            <span>Cart</span>
-          </motion.div>
-        )}
-      </NavLink>
+
       <NavLink to="/student/profile" className={({ isActive }) => `nav-item tap-effect ${isActive ? 'active' : ''}`}>
         {({ isActive }) => (
           <motion.div className="nav-icon-wrapper" animate={{ scale: isActive ? 1.1 : 1 }} whileTap={{ scale: 0.9 }}>
