@@ -112,47 +112,362 @@ const DigitalReceiptTracker = () => {
 
   const handleDownloadPDF = () => {
     if (!order) return;
-    const isEmail = order.customerId?.includes('@');
-    const dispatchMethod = isEmail ? 'EMAIL' : 'MOBILE SMS';
     
-    let itemsTextRaw = '';
+    const shopName = order.items?.[0]?.stallName || 'SGU Food Court';
+    const dateTimeString = order.timestamp ? new Date(order.timestamp).toLocaleString() : new Date().toLocaleString();
+    
+    let itemsHtmlRows = '';
     if (typeof order.items === 'string') {
-      itemsTextRaw = order.items;
+      itemsHtmlRows = `<div class="item-row"><span class="item-name">${order.items}</span></div>`;
     } else if (Array.isArray(order.items)) {
-      itemsTextRaw = order.items.map(item => `   - ${item.quantity}x ${item.name} (₹${item.price} each)`).join('\n');
+      itemsHtmlRows = order.items.map(item => `
+        <div class="item-row">
+          <span class="item-name">${item.quantity}x ${item.name}</span>
+          <div class="item-details">
+            <span class="item-price">₹${item.price} each</span>
+            <span class="item-total">₹${item.price * item.quantity}</span>
+          </div>
+        </div>
+      `).join('');
     }
     
-    const invoiceContent = `==================================================
-                  SGU FOOD COURT
-                DIGITAL INVOICE & RECEIPT
-==================================================
-Order ID       : ${order.id}
-Customer Name  : ${order.customerName}
-Contact Info   : ${order.customerId} (${dispatchMethod})
-Payment Method : ${order.payment}
-Order Status   : ${order.status.toUpperCase()}
-Date & Time    : ${order.timestamp || new Date().toISOString()}
+    const invoiceContent = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>SGU SmartBite Ticket - #${order.id}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=Oswald:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: #F1F5F9;
+      margin: 0;
+      padding: 20px 10px;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+      box-sizing: border-box;
+    }
+    .ticket-container {
+      width: 100%;
+      max-width: 360px;
+      background-color: #FFFFFF;
+      border-radius: 24px;
+      box-shadow: 0 15px 35px rgba(228, 0, 43, 0.15);
+      border: 3px solid #E4002B;
+      overflow: hidden;
+      box-sizing: border-box;
+      position: relative;
+    }
+    .ticket-header {
+      background: linear-gradient(135deg, #E4002B 0%, #B00020 100%);
+      color: #FFFFFF;
+      padding: 24px 20px;
+      text-align: center;
+      position: relative;
+    }
+    .ticket-header h1 {
+      margin: 0;
+      font-family: 'Oswald', sans-serif;
+      font-size: 1.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+    }
+    .ticket-header p {
+      margin: 4px 0 0 0;
+      font-size: 0.85rem;
+      opacity: 0.95;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .ticket-body {
+      padding: 24px 20px;
+      color: #111827;
+    }
+    .shop-section {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .shop-title {
+      font-family: 'Oswald', sans-serif;
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #E4002B;
+      text-transform: uppercase;
+      margin: 0 0 4px 0;
+    }
+    .order-tag {
+      display: inline-block;
+      background: rgba(228, 0, 43, 0.1);
+      color: #E4002B;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      font-size: 0.8rem;
+      margin-top: 20px;
+      margin-bottom: 20px;
+      padding: 12px;
+      background-color: #FFF5F5;
+      border-radius: 14px;
+      border: 1px solid rgba(228, 0, 43, 0.1);
+    }
+    .info-item {
+      display: flex;
+      flex-direction: column;
+      text-align: left;
+    }
+    .info-item span:first-child {
+      color: #6B7280;
+      display: block;
+      margin-bottom: 2px;
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 0.7rem;
+    }
+    .info-item span:last-child {
+      font-weight: 700;
+      color: #111827;
+    }
+    
+    /* Creative Ticket Separator with side circle notches */
+    .ticket-separator {
+      height: 20px;
+      position: relative;
+      background: transparent;
+      margin: 20px -23px; /* extends slightly beyond padding */
+    }
+    .ticket-separator::before, .ticket-separator::after {
+      content: '';
+      position: absolute;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #F1F5F9; /* matches body background */
+      top: -12px;
+      border: 3px solid #E4002B;
+      box-sizing: border-box;
+      z-index: 10;
+    }
+    .ticket-separator::before {
+      left: 10px;
+    }
+    .ticket-separator::after {
+      right: 10px;
+    }
+    .separator-line {
+      border: none;
+      border-top: 2px dashed #E4002B;
+      position: absolute;
+      left: 30px;
+      right: 30px;
+      top: 0;
+      height: 1px;
+    }
+    
+    .items-title {
+      font-family: 'Oswald', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: #374151;
+      margin-bottom: 12px;
+      letter-spacing: 0.5px;
+      text-align: left;
+    }
+    
+    .item-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.9rem;
+      margin-bottom: 12px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #F3F4F6;
+    }
+    .item-row:last-of-type {
+      border-bottom: none;
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
+    .item-name {
+      font-weight: 700;
+      color: #111827;
+    }
+    .item-details {
+      text-align: right;
+    }
+    .item-price {
+      font-size: 0.75rem;
+      color: #6B7280;
+      margin-right: 8px;
+      font-weight: 500;
+    }
+    .item-total {
+      font-weight: 700;
+      color: #111827;
+    }
+    
+    .total-section {
+      background: #E4002B;
+      color: #FFFFFF;
+      border-radius: 14px;
+      padding: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 20px;
+      box-shadow: 0 4px 10px rgba(228, 0, 43, 0.2);
+    }
+    .total-label {
+      font-family: 'Oswald', sans-serif;
+      font-size: 1.1rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .total-value {
+      font-size: 1.6rem;
+      font-weight: 900;
+    }
+    
+    /* Creative Barcode Simulation */
+    .barcode-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-top: 24px;
+      padding-top: 16px;
+      border-top: 1px dashed #E5E7EB;
+    }
+    .barcode {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 2.5px;
+      height: 44px;
+      width: 100%;
+      margin-bottom: 6px;
+    }
+    .bar {
+      height: 100%;
+      background-color: #111827;
+      width: 2px;
+      border-radius: 1px;
+    }
+    .bar.thick { width: 4.5px; }
+    .bar.thin { width: 1px; }
+    .bar.medium { width: 3px; }
+    
+    .barcode-number {
+      font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+      font-size: 0.75rem;
+      color: #6B7280;
+      font-weight: 600;
+      letter-spacing: 2px;
+    }
+    
+    .ticket-footer {
+      text-align: center;
+      font-size: 0.75rem;
+      color: #9CA3AF;
+      margin-top: 24px;
+      font-weight: 600;
+      line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+  <div class="ticket-container">
+    <div class="ticket-header">
+      <h1>SGU SmartBite</h1>
+      <p>Official Digital Receipt</p>
+    </div>
+    
+    <div class="ticket-body">
+      <div class="shop-section">
+        <h2 class="shop-title">${shopName}</h2>
+        <div class="order-tag">Order #${order.id}</div>
+      </div>
+      
+      <div class="info-grid">
+        <div class="info-item">
+          <span>Date & Time</span>
+          <span>${dateTimeString}</span>
+        </div>
+        <div class="info-item">
+          <span>Customer</span>
+          <span>${order.customerName}</span>
+        </div>
+        <div class="info-item">
+          <span>Payment Mode</span>
+          <span>${order.payment}</span>
+        </div>
+        <div class="info-item">
+          <span>Order Status</span>
+          <span style="color: #22C55E; text-transform: uppercase;">${order.status}</span>
+        </div>
+      </div>
+      
+      <div class="ticket-separator">
+        <div class="separator-line"></div>
+      </div>
+      
+      <div class="items-title">Items Ordered</div>
+      <div class="items-list">
+        ${itemsHtmlRows}
+      </div>
+      
+      <div class="total-section">
+        <span class="total-label">Grand Total</span>
+        <span class="total-value">₹${order.total}</span>
+      </div>
+      
+      <div class="barcode-section">
+        <div class="barcode">
+          <div class="bar thin"></div><div class="bar thick"></div><div class="bar medium"></div>
+          <div class="bar thin"></div><div class="bar medium"></div><div class="bar thick"></div>
+          <div class="bar thin"></div><div class="bar thick"></div><div class="bar thin"></div>
+          <div class="bar medium"></div><div class="bar thin"></div><div class="bar thick"></div>
+          <div class="bar medium"></div><div class="bar thin"></div><div class="bar thick"></div>
+          <div class="bar thin"></div><div class="bar medium"></div><div class="bar thick"></div>
+          <div class="bar thin"></div><div class="bar medium"></div><div class="bar thin"></div>
+          <div class="bar thick"></div><div class="bar thin"></div><div class="bar thick"></div>
+          <div class="bar medium"></div><div class="bar thin"></div><div class="bar medium"></div>
+        </div>
+        <div class="barcode-number">${order.id}-${Math.floor(100000 + Math.random() * 900000)}</div>
+      </div>
+      
+      <div class="ticket-footer">
+        Thank you for dining with us!<br>
+        Show this ticket at the counter to collect your order.
+      </div>
+    </div>
+  </div>
+</body>
+</html>`;
 
---------------------------------------------------
-ITEMS ORDERED:
-${itemsTextRaw}
---------------------------------------------------
-GRAND TOTAL    : ₹${order.total}
-
-Thank you for dining with us!
-==================================================
-`;
-    const blob = new Blob([invoiceContent], { type: 'text/plain' });
+    const blob = new Blob([invoiceContent], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `SGU_Receipt_${order.id}.txt`;
+    link.download = `SGU_Receipt_${order.id}.html`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
     
-    setToastMsg(`Receipt invoice downloaded successfully!`);
+    setToastMsg(`Receipt downloaded successfully!`);
     setTimeout(() => {
       setToastMsg('');
     }, 4000);
@@ -249,14 +564,20 @@ Thank you for dining with us!
                 <QrCode size={120} color="var(--primary-navy)" />
               </div>
               <p className="heading-2 mt-4">#{orderId}</p>
-              <p className="text-muted">Show code at the counter</p>
               {order && (
-                <div className="order-summary-v21 mt-4 p-4 border-t border-dashed w-full text-left">
-                  <p className="font-bold text-sm mb-2">{itemsText}</p>
-                  <p className="font-black text-lg">Total: ₹{order.total}</p>
-                </div>
+                <p className="shop-name-tracker">
+                  {order.items?.[0]?.stallName || 'SGU Food Court'}
+                </p>
               )}
+              <p className="text-muted mt-1">Show code at the counter</p>
             </div>
+
+            {order && (
+              <div className="order-summary-v21">
+                <p className="font-bold text-sm mb-2">{itemsText}</p>
+                <p className="font-black text-lg">Total: ₹{order.total}</p>
+              </div>
+            )}
 
             <div className="timeline-v21">
               {STATUS_STEPS.map((step, index) => {
@@ -307,56 +628,22 @@ Thank you for dining with us!
                   initial={{ opacity: 0, y: 15 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 }}
-                  style={{
-                    marginTop: '24px',
-                    paddingTop: '20px',
-                    borderTop: '1px dashed rgba(0, 0, 0, 0.1)',
-                    width: '100%',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '10px'
-                  }}
+                  className="email-receipt-section"
                 >
-                  <h4 style={{ fontSize: '0.85rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--text-dark)', textAlign: 'left', margin: 0 }}>
+                  <h4 className="email-receipt-title">
                     Send Receipt to Email
                   </h4>
-                  <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
+                  <div className="email-input-wrapper">
                     <input 
                       type="email" 
                       placeholder="Enter your email address" 
                       value={emailInput}
                       onChange={(e) => setEmailInput(e.target.value)}
-                      style={{
-                        flex: 1,
-                        padding: '10px 14px',
-                        borderRadius: '10px',
-                        border: '1.5px solid #E2E8F0',
-                        fontSize: '0.85rem',
-                        fontWeight: '600',
-                        outline: 'none',
-                        background: 'var(--white)',
-                        color: 'var(--text-dark)',
-                        boxSizing: 'border-box'
-                      }}
+                      className="email-input-field"
                     />
                     <button 
                       onClick={handleSendCustomEmail}
-                      className="tap-effect"
-                      style={{
-                        background: 'var(--primary-navy)',
-                        color: 'white',
-                        padding: '10px 16px',
-                        borderRadius: '10px',
-                        fontSize: '0.85rem',
-                        fontWeight: '800',
-                        textTransform: 'uppercase',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        border: 'none',
-                        flexShrink: 0
-                      }}
+                      className="btn-send-email tap-effect"
                     >
                       <Mail size={16} /> Send
                     </button>

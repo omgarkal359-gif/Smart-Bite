@@ -24,8 +24,32 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-bottom: 40px;
+  margin-bottom: 24px;
   text-align: center;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.shop-name-tracker {
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  color: var(--primary-navy);
+  text-transform: uppercase;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  margin-top: 8px;
+  margin-bottom: 4px;
+  text-align: center;
+}
+
+.order-summary-v21 {
+  width: 100%;
+  padding-top: 16px;
+  padding-bottom: 8px;
+  border-top: 1.5px dashed var(--glass-border);
+  text-align: left;
+  box-sizing: border-box;
+  margin-bottom: 24px;
 }
 
 .qr-wrapper-v21 {
@@ -147,4 +171,66 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
+}
+
+/* Custom Email Dispatch Form */
+.email-receipt-section {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px dashed rgba(0, 0, 0, 0.1);
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.email-receipt-title {
+  font-size: 0.85rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-dark);
+  text-align: left;
+  margin: 0;
+}
+
+.email-input-wrapper {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.email-input-field {
+  flex: 1;
+  min-width: 0; /* allows input to shrink on small mobile screens */
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1.5px solid #E2E8F0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  outline: none;
+  background: var(--white);
+  color: var(--text-dark);
+  box-sizing: border-box;
+}
+
+.email-input-field:focus {
+  border-color: var(--primary-navy);
+}
+
+.btn-send-email {
+  background: var(--primary-navy);
+  color: white;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  flex-shrink: 0; /* prevents button from shrinking or warping */
 }
