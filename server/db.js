@@ -23,7 +23,7 @@ if (!connectionString || connectionString.includes('[YOUR-PASSWORD]')) {
 
 const pool = new pg.Pool({
   connectionString: connectionString,
-  ssl: connectionString && connectionString.includes('supabase.co')
+  ssl: connectionString && (connectionString.includes('supabase.co') || connectionString.includes('supabase.com') || connectionString.includes('supabase'))
     ? { rejectUnauthorized: false }
     : false
 });
