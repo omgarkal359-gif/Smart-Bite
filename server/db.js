@@ -12,7 +12,7 @@ dotenv.config({ path: join(__dirname, '.env') });
 // Configure pg to parse INT8 (bigint) as Javascript number
 pg.types.setTypeParser(pg.types.builtins.INT8, (val) => parseInt(val, 10));
 
-const connectionString = process.env.DATABASE_URL;
+const connectionString = process.env.DATABASE_URL || 'postgresql://postgres.hmdewtmtxgfyunyypcon:Omharsh@2006@aws-1-ap-southeast-1.pooler.supabase.com:5432/postgres';
 
 if (!connectionString || connectionString.includes('[YOUR-PASSWORD]')) {
   console.warn('\n==================================================');
