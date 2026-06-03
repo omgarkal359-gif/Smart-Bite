@@ -854,3 +854,14 @@ select.floating-input {
 .power-saver .item-name {
   color: #fff !important;
 }
+
+/* Pulse animation for new order badge */
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.75; transform: scale(1.08); }
+}
+
+/* Empty state fill */
+.kds-ticket-scroll > div:first-child:last-child {
+  width: 100%;
+}
