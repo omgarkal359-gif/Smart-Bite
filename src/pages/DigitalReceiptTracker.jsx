@@ -50,8 +50,12 @@ const DigitalReceiptTracker = () => {
 
     socket.on('order_status_update', handleStatusUpdate);
 
+    // Polling fallback
+    const interval = setInterval(loadOrder, 7000); // Poll every 7 seconds
+
     return () => {
       socket.off('order_status_update', handleStatusUpdate);
+      clearInterval(interval);
     };
   }, [orderId]);
 

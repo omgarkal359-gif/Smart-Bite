@@ -105,9 +105,15 @@ const VendorDashboard = () => {
     socket.on('order_new', handleNewOrder);
     socket.on('order_status_update', handleStatusUpdate);
 
+    // Polling fallback
+    const isVercel = window.location.hostname.includes('vercel.app');
+    const intervalTime = isVercel ? 5000 : 15000;
+    const interval = setInterval(loadOrders, intervalTime);
+
     return () => {
       socket.off('order_new', handleNewOrder);
       socket.off('order_status_update', handleStatusUpdate);
+      clearInterval(interval);
     };
   }, [targetShopId, loadOrders]);
 

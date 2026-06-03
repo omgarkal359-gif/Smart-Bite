@@ -32,9 +32,13 @@ export const BottomNav = () => {
     socket.on('order_new_student', fetchActiveCount);
     socket.on('order_status_update', fetchActiveCount);
     
+    // Polling fallback
+    const interval = setInterval(fetchActiveCount, 15000); // Poll every 15 seconds
+
     return () => {
       socket.off('order_new_student', fetchActiveCount);
       socket.off('order_status_update', fetchActiveCount);
+      clearInterval(interval);
     };
   }, [userData.id]);
 
