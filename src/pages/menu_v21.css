@@ -1,7 +1,7 @@
 /* Menu V21 Styles */
 .menu-header-v21 {
-  padding: 20px 20px 8px 20px;
-  margin: 0 -20px;
+  padding: 16px 16px 8px 16px;
+  margin: 0;
   position: sticky;
   top: 64px;
   background: var(--white);
@@ -72,9 +72,9 @@
 .category-scroll-wrapper {
   display: flex;
   overflow-x: auto;
-  gap: 16px;
-  padding: 12px 20px;
-  margin: 0 -20px 8px -20px;
+  gap: 12px;
+  padding: 12px 0;
+  margin: 0 0 8px 0;
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
@@ -224,56 +224,58 @@
   color: var(--black);
 }
 
-.kfc-add-btn-v21 {
-  background: var(--white);
-  color: #E4002B; /* Brand Red */
-  border: 1.5px solid #E4002B;
-  padding: 6px 14px;
-  border-radius: 8px;
-  font-family: var(--font-heading);
-  font-weight: 800;
-  font-size: 0.75rem;
-  letter-spacing: 0.5px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 6px rgba(228, 0, 43, 0.08);
+.kfc-add-btn {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  background: #E4002B; /* Brand Red */
+  color: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 64px;
+  font-size: 1.5rem;
+  font-weight: 400;
+  border: none;
+  cursor: pointer;
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(228, 0, 43, 0.35);
 }
 
-.kfc-add-btn-v21:hover {
-  background: #E4002B;
-  color: var(--white);
-  box-shadow: 0 4px 10px rgba(228, 0, 43, 0.2);
+.kfc-add-btn:hover {
+  background: #B30020;
 }
 
 .qty-controls-v21 {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  z-index: 10;
   display: flex;
   align-items: center;
-  gap: 6px;
-  background: var(--white);
-  border: 1.5px solid #E4002B;
-  border-radius: 8px;
+  gap: 8px;
+  background: white;
+  border-radius: 20px;
   padding: 2px;
-  box-shadow: 0 2px 6px rgba(228, 0, 43, 0.08);
+  border: 1.5px solid #E4002B;
+  box-shadow: 0 2px 8px rgba(228, 0, 43, 0.2);
 }
 
 .qty-controls-v21 .qty-btn {
-  width: 22px;
-  height: 22px;
-  border-radius: 4px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
   background: #E4002B;
-  color: var(--white);
+  color: white;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 800;
   border: none;
   cursor: pointer;
-  transition: background 0.2s ease;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
 }
 
 .qty-controls-v21 .qty-btn:hover {
@@ -283,7 +285,7 @@
 .qty-controls-v21 .qty-value {
   font-family: var(--font-heading);
   font-weight: 800;
-  font-size: 0.85rem;
+  font-size: 0.95rem;
   color: #E4002B;
   min-width: 16px;
   text-align: center;
