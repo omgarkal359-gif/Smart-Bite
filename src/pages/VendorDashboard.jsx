@@ -428,6 +428,12 @@ const VendorDashboard = () => {
                   initial={{ opacity: 0, scale: 0.85, x: 60 }}
                   animate={{ opacity: 1, scale: 1, x: 0 }}
                   exit={{ opacity: 0, scale: 0.8, y: -50 }}
+                  transition={{
+                    type: "spring",
+                    stiffness: 140,
+                    damping: 20,
+                    layout: { type: "spring", stiffness: 140, damping: 20 }
+                  }}
                   className={`elite-card kds-ticket`}
                   style={{ borderTop: `4px solid ${statusColor}` }}
                 >
