@@ -178,9 +178,9 @@ app.put('/api/stalls/:id/status', async (req, res) => {
     const current = await db.get('SELECT * FROM stalls WHERE id = ?', [id]);
     if (!current) return res.status(404).json({ message: 'Stall not found' });
 
-    const newOnline = online !== undefined ? (online ? 1 : 0) : current.online;
-    const newWaitTime = waitTime !== undefined ? waitTime : current.waitTime;
-    const newBusy = busyMode !== undefined ? (busyMode ? 1 : 0) : current.busyMode;
+    const newOnline = online !== undefined ? (online ? 1 : 0) : (current.online !== undefined ? current.online : 0);
+    const newWaitTime = waitTime !== undefined ? waitTime : (current.waitTime !== undefined ? current.waitTime : current.waittime || 0);
+    const newBusy = busyMode !== undefined ? (busyMode ? 1 : 0) : (current.busyMode !== undefined ? current.busyMode : current.busymode || 0);
 
     await db.run(
       'UPDATE stalls SET online = ?, waitTime = ?, busyMode = ? WHERE id = ?',
