@@ -84,12 +84,22 @@ const LoginPage = () => {
     if (savedSession) {
       const parsedUser = JSON.parse(savedSession);
       console.log('Auto-logging in saved user:', parsedUser);
-      if (parsedUser.role === 'student' || parsedUser.role === 'guest') {
-        navigate('/student');
-      } else if (parsedUser.role === 'owner') {
-        navigate(`/vendor/${parsedUser.shopId}`);
-      } else if (parsedUser.role === 'admin') {
-        navigate('/admin');
+      
+      // Auto-clear corrupted sessions from previous case-sensitivity bug
+      const isOwnerSessionCorrupted = parsedUser.role === 'owner' && 
+        (!parsedUser.shopId || parsedUser.shopId === 'undefined' || parsedUser.shopId === 'null');
+        
+      if (isOwnerSessionCorrupted) {
+        console.warn('Clearing corrupted owner session:', parsedUser);
+        localStorage.removeItem('sgu_user');
+      } else {
+        if (parsedUser.role === 'student' || parsedUser.role === 'guest') {
+          navigate('/student');
+        } else if (parsedUser.role === 'owner') {
+          navigate(`/vendor/${parsedUser.shopId}`);
+        } else if (parsedUser.role === 'admin') {
+          navigate('/admin');
+        }
       }
     }
 
