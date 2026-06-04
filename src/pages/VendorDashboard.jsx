@@ -25,11 +25,12 @@ const VendorDashboard = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [activeSidebarTab, setActiveSidebarTab] = useState('menu'); // 'menu' | 'history'
   const { shopId: urlShopId } = useParams();
+  const cleanUrlShopId = (urlShopId && urlShopId !== 'undefined' && urlShopId !== 'null') ? urlShopId : null;
   const [user, setUser] = useState(null);
   const [showConfetti, setShowConfetti] = useState(false);
   
   // Determine target shop ID (URL takes priority, then user profile)
-  const targetShopId = urlShopId || user?.shopId;
+  const targetShopId = cleanUrlShopId || user?.shopId || user?.shopid;
   const currentShop = SHOPS.find(s => s.id === targetShopId);
 
   // Sync with Backend Orders
@@ -129,15 +130,17 @@ const VendorDashboard = () => {
       return;
     }
 
+    const userShopId = parsedUser.shopId || parsedUser.shopid;
+
     // If owner tries to access without a shopId in URL, redirect to their own shop
-    if (parsedUser.role === 'owner' && !urlShopId && parsedUser.shopId) {
-      navigate(`/vendor/${parsedUser.shopId}`, { replace: true });
+    if (parsedUser.role === 'owner' && !cleanUrlShopId && userShopId) {
+      navigate(`/vendor/${userShopId}`, { replace: true });
       return;
     }
 
     // Security: owners can only access their own shop's dashboard
-    if (parsedUser.role === 'owner' && urlShopId && parsedUser.shopId && urlShopId !== parsedUser.shopId) {
-      navigate(`/vendor/${parsedUser.shopId}`, { replace: true });
+    if (parsedUser.role === 'owner' && cleanUrlShopId && userShopId && cleanUrlShopId !== userShopId) {
+      navigate(`/vendor/${userShopId}`, { replace: true });
       return;
     }
 
@@ -146,7 +149,7 @@ const VendorDashboard = () => {
     // Initial stall status load
     api.getStalls()
       .then(stalls => {
-        const stall = stalls.find(s => s.id === (urlShopId || parsedUser.shopId));
+        const stall = stalls.find(s => s.id === (cleanUrlShopId || userShopId));
         if (stall) {
           setShopStatus(stall.online === 1 || stall.online === true ? 'OPEN' : 'CLOSED');
           setIsBusyMode(stall.busyMode === 1 || stall.busyMode === true);

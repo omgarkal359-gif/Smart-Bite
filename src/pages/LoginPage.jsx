@@ -49,7 +49,7 @@ const LoginPage = () => {
               role: response.user.role,
               name: response.user.name,
               id: response.user.username,
-              shopId: response.user.shopId,
+              shopId: response.user.shopId || response.user.shopid,
               timestamp: new Date().toISOString(),
               rememberMe: true
             };
@@ -173,7 +173,7 @@ const LoginPage = () => {
             role: response.user.role,
             name: role === 'Guest' ? guestName : response.user.name,
             id: response.user.username,
-            shopId: response.user.shopId,
+            shopId: response.user.shopId || response.user.shopid,
             timestamp: new Date().toISOString(),
             rememberMe: rememberMe
           };
