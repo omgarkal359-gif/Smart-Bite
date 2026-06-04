@@ -6,7 +6,7 @@ import { Clock, Volume2, Power, LogOut, CheckCircle, Banknote, Activity, Smartph
 import { motion, AnimatePresence } from 'framer-motion';
 import { MenuEditor } from '../components/vendor/MenuEditor';
 import { SHOPS } from '../data/foodCourtDB';
-import { api, socket } from '../api';
+import { api, socket, formatRelativeTime } from '../api';
 import './pages.css';
 import './vendor.css';
 
@@ -454,7 +454,7 @@ const VendorDashboard = () => {
                       </span>
                     </div>
                     <span style={{ fontSize: '0.75rem', fontWeight: 900, color: '#E4002B', textTransform: 'uppercase', fontFamily: "'Oswald', sans-serif" }}>
-                      {ticket.time || 'Just now'}
+                      {(ticket.timestamp || ticket.timestamp) ? formatRelativeTime(ticket.timestamp || ticket.timestamp).toUpperCase() : (ticket.time || 'Just now').toUpperCase()}
                     </span>
                   </div>
 
