@@ -336,24 +336,6 @@ const LoginPage = () => {
             <h1 className="login-heading">Welcome Back</h1>
             <p className="login-subheading">Login to continue your experience</p>
 
-            {window.location.hostname.includes('vercel.app') && !localStorage.getItem('sgu_backend_url') && (
-              <div style={{
-                backgroundColor: '#FFFBEB',
-                border: '1px solid #FDE68A',
-                borderRadius: '8px',
-                padding: '10px 12px',
-                fontSize: '0.8rem',
-                color: '#B45309',
-                marginBottom: '16px',
-                fontWeight: '600',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                lineHeight: '1.4'
-              }}>
-                ⚠️ Mobile/Cloud Testing: Please configure your Backend Connection URL at the bottom to connect to your database.
-              </div>
-            )}
 
             {/* Tab Switcher */}
             <div className="login-tabs">
@@ -529,12 +511,6 @@ const LoginPage = () => {
                 {isSuccess && <CheckCircle2 size={24} />}
               </button>
 
-              {/* --- REGISTER LINK --- */}
-              {role !== 'Guest' && (
-                <div className="login-register-text">
-                  Don&apos;t have an account? <button type="button" onClick={() => alert('Registration is currently handled by the administrator.')} className="login-link bg-transparent border-none p-0 cursor-pointer">Register</button>
-                </div>
-              )}
 
               {/* --- GOOGLE OAUTH BUTTON (STUDENTS ONLY) --- */}
               {role === 'Student' && (
@@ -572,54 +548,6 @@ const LoginPage = () => {
               )}
 
             </form>
-            {/* --- CONNECTION SETTINGS --- */}
-            <div className="login-settings-section">
-              <button
-                type="button"
-                className="login-settings-toggle"
-                onClick={() => setShowSettings(!showSettings)}
-              >
-                ⚙️ Connection Settings
-              </button>
-              
-              {showSettings && (
-                <div className="login-settings-panel">
-                  <p className="login-settings-desc">
-                    Specify custom backend API URL (e.g. for localtunnel mobile testing):
-                  </p>
-                  <div className="login-form-group">
-                    <input
-                      type="text"
-                      className="login-input"
-                      style={{ height: '36px', fontSize: '14px', paddingLeft: '12px' }}
-                      placeholder="e.g. https://your-tunnel.loca.lt"
-                      value={customBackend}
-                      onChange={(e) => setCustomBackend(e.target.value)}
-                    />
-                  </div>
-                  <div className="login-settings-actions">
-                    <button
-                      type="button"
-                      className="login-settings-btn save"
-                      onClick={handleSaveSettings}
-                    >
-                      Save & Reload
-                    </button>
-                    <button
-                      type="button"
-                      className="login-settings-btn reset"
-                      onClick={() => {
-                        localStorage.removeItem('sgu_backend_url');
-                        alert('Connection URL reset to default! Reloading...');
-                        window.location.reload();
-                      }}
-                    >
-                      Reset to Default
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
 
           </>
         )}
