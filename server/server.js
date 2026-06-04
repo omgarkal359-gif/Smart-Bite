@@ -77,7 +77,12 @@ async function broadcastQueueUpdate() {
     const activeOrders = await db.all(
       `SELECT id, status, customerName FROM orders WHERE status IN ('placed', 'preparing', 'ready') ORDER BY timestamp DESC`
     );
-    io.to('public-board').emit('queue_update', activeOrders);
+    const formatted = activeOrders.map(o => ({
+      id: o.id,
+      status: o.status,
+      customerName: o.customerName || o.customername
+    }));
+    io.to('public-board').emit('queue_update', formatted);
   } catch (err) {
     console.error('Error broadcasting queue:', err);
   }
@@ -296,8 +301,9 @@ app.post('/api/orders', async (req, res) => {
 
     // Group items by stall to notify vendors
     const itemsByStall = createdItems.reduce((acc, item) => {
-      if (!acc[item.stallId]) acc[item.stallId] = [];
-      acc[item.stallId].push(item);
+      const itemStallId = item.stallId || item.stallid;
+      if (!acc[itemStallId]) acc[itemStallId] = [];
+      acc[itemStallId].push(item);
       return acc;
     }, {});
 
@@ -305,6 +311,8 @@ app.post('/api/orders', async (req, res) => {
     for (const [stallId, stallItems] of Object.entries(itemsByStall)) {
       const stallOrder = {
         ...createdOrder,
+        customerName: createdOrder.customerName || createdOrder.customername,
+        customerId: createdOrder.customerId || createdOrder.customerid,
         items: stallItems.map(si => `${si.quantity}x ${si.name}`).join(', '),
         originalItems: stallItems
       };
@@ -487,7 +495,12 @@ app.get('/api/orders/queue', async (req, res) => {
     const activeOrders = await db.all(
       `SELECT id, status, customerName FROM orders WHERE status IN ('placed', 'preparing', 'ready') ORDER BY timestamp DESC`
     );
-    res.json(activeOrders);
+    const formatted = activeOrders.map(o => ({
+      id: o.id,
+      status: o.status,
+      customerName: o.customerName || o.customername
+    }));
+    res.json(formatted);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -513,7 +526,7 @@ app.get('/api/orders/stall/:stallId', async (req, res) => {
   try {
     // Get all order IDs that contain items from this stall
     const orderItems = await db.all('SELECT * FROM order_items WHERE stallId = ?', [stallId]);
-    const orderIds = [...new Set(orderItems.map(oi => oi.orderId))];
+    const orderIds = [...new Set(orderItems.map(oi => oi.orderId || oi.orderid))];
 
     if (orderIds.length === 0) return res.json([]);
 
@@ -522,9 +535,12 @@ app.get('/api/orders/stall/:stallId', async (req, res) => {
 
     // Filter items to show only those belonging to this stall for the vendor dashboard
     const formattedOrders = orders.map(order => {
-      const filteredItems = orderItems.filter(oi => oi.orderId === order.id);
+      const orderIdVal = order.id;
+      const filteredItems = orderItems.filter(oi => (oi.orderId || oi.orderid) === orderIdVal);
       return {
         ...order,
+        customerName: order.customerName || order.customername,
+        customerId: order.customerId || order.customerid,
         items: filteredItems.map(oi => `${oi.quantity}x ${oi.name}`).join(', '),
         originalItems: filteredItems
       };
