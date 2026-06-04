@@ -313,6 +313,12 @@ app.post('/api/orders', async (req, res) => {
 
     createdOrder.receiptSentTo = customerId;
 
+    if (isEmail) {
+      sendReceiptEmail(customerId, createdOrder, createdItems).catch(err => {
+        console.error('[RECEIPT DISPATCHER ERROR] Automatic receipt email failed:', err);
+      });
+    }
+
     // Group items by stall to notify vendors
     const itemsByStall = createdItems.reduce((acc, item) => {
       const itemStallId = item.stallId || item.stallid;
@@ -355,82 +361,145 @@ const transporter = nodemailer.createTransport({
 });
 
 async function sendReceiptEmail(toEmail, order, items) {
-  const itemsText = items.map(item => `   - ${item.quantity}x ${item.name} (₹${item.price} each) - Stall: ${item.stallName}`).join('\n');
+  const itemsText = items.map(item => `   - ${item.quantity}x ${item.name} (₹${item.price} each) - Stall: ${item.stallName || item.stallname}`).join('\n');
+  
+  const totalVal = parseFloat(order.total) || 0;
+  const subtotalVal = totalVal / 1.05;
+  const gstVal = totalVal - subtotalVal;
+  
+  const subtotal = subtotalVal.toFixed(2);
+  const gst = gstVal.toFixed(2);
+  const total = totalVal.toFixed(2);
+
+  const shopName = items[0]?.stallName || items[0]?.stallname || 'SGU Food Court';
+  const paymentMethod = order.payment === 'Online UPI' ? 'UPI' : 'CASH';
+  const itemCount = items.reduce((sum, item) => sum + (item.quantity || 1), 0);
+
   const itemsHtml = items.map(item => `
     <tr>
-      <td style="padding: 8px; border-bottom: 1px solid #ddd;">${item.quantity}x ${item.name}</td>
-      <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right;">₹${item.price}</td>
-      <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right;">₹${item.price * item.quantity}</td>
+      <td style="padding-bottom: 8px; font-size: 14px; color: #4A5568; font-weight: 500;">
+        ${item.quantity || 1}x ${item.name}
+      </td>
+      <td align="right" style="padding-bottom: 8px; font-size: 14px; font-weight: bold; color: #000000;">
+        ₹${((item.price || 0) * (item.quantity || 1)).toFixed(2)}
+      </td>
     </tr>
   `).join('');
 
   const emailBodyText = `
-SGU FOOD COURT - DIGITAL INVOICE & RECEIPT
+RECEIPT
 ==================================================
-Order ID       : ${order.id}
-Customer Name  : ${order.customerName}
-Payment Method : ${order.payment}
-Order Status   : ${order.status.toUpperCase()}
-Date & Time    : ${order.timestamp || new Date().toISOString()}
+ORDERS #${order.id}
+
+PREPARED BY
+${shopName}
+Hours: 10 AM-10:45 PM
 
 --------------------------------------------------
-ITEMS ORDERED:
-${itemsText}
+${itemCount} ${itemCount === 1 ? 'ITEM' : 'ITEMS'}
 --------------------------------------------------
-GRAND TOTAL    : ₹${order.total}
+${itemsText}
+
+--------------------------------------------------
+Subtotal                : ₹${subtotal}
+GST                     : ₹${gst}
+--------------------------------------------------
+TOTAL (GST INCLUDED)    : ₹${total}
+PAYMENT                 : ${paymentMethod}
 
 Thank you for dining with us!
 ==================================================
 `;
 
   const emailBodyHtml = `
-    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
-      <h2 style="text-align: center; color: #E4002B; margin-bottom: 5px;">SGU FOOD COURT</h2>
-      <p style="text-align: center; color: #888; font-size: 14px; margin-top: 0;">DIGITAL RECEIPT & INVOICE</p>
-      <hr style="border: 0; border-top: 1px dashed #ddd; margin: 20px 0;" />
-      <table style="width: 100%; font-size: 14px;">
-        <tr>
-          <td><strong>Order ID:</strong></td>
-          <td style="text-align: right;">#${order.id}</td>
-        </tr>
-        <tr>
-          <td><strong>Customer Name:</strong></td>
-          <td style="text-align: right;">${order.customerName}</td>
-        </tr>
-        <tr>
-          <td><strong>Payment Method:</strong></td>
-          <td style="text-align: right;">${order.payment}</td>
-        </tr>
-        <tr>
-          <td><strong>Order Status:</strong></td>
-          <td style="text-align: right; color: #E4002B; font-weight: bold;">${order.status.toUpperCase()}</td>
-        </tr>
-        <tr>
-          <td><strong>Date & Time:</strong></td>
-          <td style="text-align: right;">${order.timestamp || new Date().toLocaleString()}</td>
-        </tr>
-      </table>
-      <hr style="border: 0; border-top: 1px dashed #ddd; margin: 20px 0;" />
-      <h4 style="margin-bottom: 10px;">ITEMS ORDERED</h4>
-      <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
-        <thead>
-          <tr style="background-color: #f9f9f9;">
-            <th style="padding: 8px; text-align: left; border-bottom: 2px solid #ddd;">Item</th>
-            <th style="padding: 8px; text-align: right; border-bottom: 2px solid #ddd;">Price</th>
-            <th style="padding: 8px; text-align: right; border-bottom: 2px solid #ddd;">Total</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${itemsHtml}
-        </tbody>
-      </table>
-      <hr style="border: 0; border-top: 1px dashed #ddd; margin: 20px 0;" />
-      <div style="display: flex; justify-content: space-between; font-size: 18px; font-weight: bold; margin: 20px 0;">
-        <span>GRAND TOTAL:</span>
-        <span style="color: #E4002B; text-align: right;">₹${order.total}</span>
-      </div>
-      <p style="text-align: center; color: #888; font-size: 12px; margin-top: 40px;">Thank you for dining with us!</p>
-    </div>
+    <table cellpadding="0" cellspacing="0" border="0" style="width: 100%; max-width: 450px; margin: 0 auto; padding: 24px; border: 1px solid #E2E8F0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #ffffff; color: #000000;">
+      <!-- RECEIPT Header -->
+      <tr>
+        <td align="center" style="font-size: 16px; font-weight: bold; letter-spacing: 2px; text-transform: uppercase; padding-bottom: 16px; border-bottom: 1px solid #E2E8F0; color: #000000;">
+          Receipt
+        </td>
+      </tr>
+      
+      <!-- Order Number -->
+      <tr>
+        <td style="padding-top: 24px; font-size: 20px; font-weight: 800; text-transform: uppercase; color: #000000; letter-spacing: 0.5px;">
+          Orders #${order.id}
+        </td>
+      </tr>
+      
+      <!-- Prepared By -->
+      <tr>
+        <td style="padding-top: 20px; font-size: 11px; font-weight: 800; text-transform: uppercase; color: #718096; letter-spacing: 1px;">
+          Prepared By
+        </td>
+      </tr>
+      <tr>
+        <td style="padding-top: 4px; font-size: 15px; font-weight: 700; color: #000000;">
+          ${shopName}
+        </td>
+      </tr>
+      <tr>
+        <td style="padding-top: 4px; font-size: 13px; color: #718096; padding-bottom: 20px;">
+          Hours: 10 AM-10:45 PM
+        </td>
+      </tr>
+      
+      <!-- Items Header -->
+      <tr>
+        <td style="border-top: 2px solid #000000; padding-top: 16px; font-size: 14px; font-weight: 800; text-transform: uppercase; color: #000000; letter-spacing: 0.5px;">
+          ${itemCount} ${itemCount === 1 ? 'Item' : 'Items'}
+        </td>
+      </tr>
+      
+      <!-- Items List -->
+      <tr>
+        <td style="padding-top: 16px; padding-bottom: 16px;">
+          <table cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
+            ${itemsHtml}
+          </table>
+        </td>
+      </tr>
+      
+      <!-- Financial Divider -->
+      <tr>
+        <td style="border-top: 2px solid #000000; padding-top: 16px;">
+          <table cellpadding="0" cellspacing="0" border="0" style="width: 100%; font-size: 14px; color: #4A5568;">
+            <tr>
+              <td style="padding-bottom: 8px; font-weight: 500;">Subtotal</td>
+              <td align="right" style="padding-bottom: 8px; font-weight: bold; color: #000000;">₹${subtotal}</td>
+            </tr>
+            <tr>
+              <td style="padding-bottom: 16px; font-weight: 500;">GST</td>
+              <td align="right" style="padding-bottom: 16px; font-weight: bold; color: #000000;">₹${gst}</td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+      
+      <!-- Total -->
+      <tr>
+        <td style="border-top: 1px solid #E2E8F0; padding-top: 16px; padding-bottom: 16px;">
+          <table cellpadding="0" cellspacing="0" border="0" style="width: 100%; font-size: 15px; font-weight: bold; color: #000000;">
+            <tr>
+              <td style="text-transform: uppercase; letter-spacing: 0.5px; font-weight: 800;">Total (GST Included):</td>
+              <td align="right" style="font-size: 18px; font-weight: 900;">₹${total}</td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+      
+      <!-- Payment -->
+      <tr>
+        <td style="border-top: 1px solid #E2E8F0; padding-top: 16px; padding-bottom: 8px;">
+          <table cellpadding="0" cellspacing="0" border="0" style="width: 100%; font-size: 14px; color: #000000;">
+            <tr>
+              <td style="font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: #718096;">Payment</td>
+              <td align="right" style="font-weight: 700; text-transform: uppercase;">${paymentMethod}</td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
   `;
 
   if (!process.env.SMTP_USER) {
