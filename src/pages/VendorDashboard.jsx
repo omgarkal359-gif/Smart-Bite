@@ -125,6 +125,18 @@ const VendorDashboard = () => {
       return;
     }
     const parsedUser = JSON.parse(userData);
+    
+    // Self-healing session check for corrupted owner sessions from previous bugs
+    const isOwnerSessionCorrupted = parsedUser.role === 'owner' && 
+      (!parsedUser.shopId || parsedUser.shopId === 'undefined' || parsedUser.shopId === 'null');
+      
+    if (isOwnerSessionCorrupted) {
+      console.warn('Clearing corrupted owner session on VendorDashboard:', parsedUser);
+      localStorage.removeItem('sgu_user');
+      navigate('/login', { replace: true });
+      return;
+    }
+
     if (parsedUser.role !== 'owner' && parsedUser.role !== 'admin') {
       navigate('/student');
       return;
