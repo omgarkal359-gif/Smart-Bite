@@ -292,10 +292,16 @@ const LoginPage = () => {
                     setOtpToken(val);
                     setErrorMsg('');
                   }}
-                  placeholder="Enter 6-digit code"
+                  placeholder="Enter 6-digit OTP"
                   className="login-input"
                   required
-                  style={{ letterSpacing: '8px', textAlign: 'center', fontSize: '1.25rem', fontWeight: 'bold' }}
+                  style={{
+                    letterSpacing: otpToken ? '8px' : 'normal',
+                    textAlign: otpToken ? 'center' : 'left',
+                    fontSize: otpToken ? '1.25rem' : '1rem',
+                    fontWeight: otpToken ? 'bold' : 'normal',
+                    paddingLeft: otpToken ? '12px' : '40px'
+                  }}
                 />
               </div>
             </div>
