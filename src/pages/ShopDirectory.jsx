@@ -67,8 +67,12 @@ const ShopDirectory = () => {
 
     socket.on('stall_status_update', handleStatusUpdate);
 
+    // Polling fallback
+    const interval = setInterval(loadStalls, 15000); // Poll every 15 seconds
+
     return () => {
       socket.off('stall_status_update', handleStatusUpdate);
+      clearInterval(interval);
     };
   }, []);
 
@@ -242,7 +246,7 @@ const ShopDirectory = () => {
                           )}
 
                           <button 
-                            className="bg-navy-900 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-tighter hover:bg-accent-amber hover:text-navy-900 transition-colors z-10"
+                            className="shop-dashboard-btn z-10"
                             onClick={(e) => {
                               e.stopPropagation();
                               navigate(`/vendor/${shop.id}`);

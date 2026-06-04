@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { Leaf, Flame, Pizza, Coffee, Sandwich } from 'lucide-react';
+import { Leaf, Flame, Pizza, Coffee, Sandwich, Utensils } from 'lucide-react';
 import { CheckoutDrawer } from '../components/ui/CheckoutDrawer';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCart } from '../context/CartContext';
@@ -12,6 +12,35 @@ const CAT_ICONS = {
   'Pizzas': <Pizza size={16} />,
   'Burgers': <Sandwich size={16} />,
   'Beverages': <Coffee size={16} />
+};
+
+const defaultImages = {
+  'Pizzas': 'https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=400&q=80',
+  'Burgers': 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=400&q=80',
+  'Beverages': 'https://images.unsplash.com/photo-1541658016709-82535e94bc69?auto=format&fit=crop&w=400&q=80',
+  'Misal': 'https://images.unsplash.com/photo-1601050690117-94f5f6fa8bd7?auto=format&fit=crop&w=400&q=80',
+  'Thalipeeth': 'https://images.unsplash.com/photo-1608797178974-15b35a61d121?auto=format&fit=crop&w=400&q=80',
+  'Rice': 'https://images.unsplash.com/photo-1512058564366-18510be2db19?auto=format&fit=crop&w=400&q=80',
+  'Veg Wraps': 'https://images.unsplash.com/photo-1626700051175-6518c4793f4f?auto=format&fit=crop&w=400&q=80',
+  'default': 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&q=80'
+};
+
+const getFoodImage = (item) => {
+  if (item.img && item.img.trim().startsWith('http')) return item.img;
+  return defaultImages[item.category] || defaultImages['default'];
+};
+
+const getFallbackIcon = (category) => {
+  switch (category) {
+    case 'Pizzas':
+      return <Pizza size={36} />;
+    case 'Burgers':
+      return <Sandwich size={36} />;
+    case 'Beverages':
+      return <Coffee size={36} />;
+    default:
+      return <Utensils size={36} />;
+  }
 };
 
 const InteractiveMenu = () => {
@@ -26,6 +55,7 @@ const InteractiveMenu = () => {
   const [inventory, setInventory] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [stallInfo, setStallInfo] = useState(null);
+  const [imgErrors, setImgErrors] = useState({});
 
   // Derive CATEGORIES dynamically from the inventory
   const CATEGORIES = useMemo(() => {
@@ -36,7 +66,6 @@ const InteractiveMenu = () => {
   // Set initial category & inventory when stall loads
   useEffect(() => {
     async function loadStallMenu() {
-      setIsLoading(true);
       try {
         const items = await api.getStallMenu(shopId);
         setInventory(items);
@@ -68,8 +97,23 @@ const InteractiveMenu = () => {
 
     socket.on('menu_item_update', handleMenuItemUpdate);
 
+    // Polling fallback
+    const interval = setInterval(async () => {
+      try {
+        const items = await api.getStallMenu(shopId);
+        setInventory(items);
+        
+        const stalls = await api.getStalls();
+        const stall = stalls.find(s => s.id === shopId);
+        if (stall) setStallInfo(stall);
+      } catch (err) {
+        console.error('Polling failed to fetch menu updates:', err);
+      }
+    }, 15000); // 15 seconds polling interval for menu updates
+
     return () => {
       socket.off('menu_item_update', handleMenuItemUpdate);
+      clearInterval(interval);
     };
   }, [shopId, targetCategory]);
 
@@ -111,13 +155,6 @@ const InteractiveMenu = () => {
     return item.category === activeCategory;
   });
 
-  // Expose global checkout via local state for this shop
-  useEffect(() => {
-    if (totalItems > 0) {
-      // Trigger floating button logic if needed
-    }
-  }, [totalItems]);
-
   return (
     <div className="menu-container page-transition">
       <header className="menu-header-v21">
@@ -151,7 +188,7 @@ const InteractiveMenu = () => {
             ))
           ) : (
             filteredInventory.map((item, index) => {
-              const isFeatured = index === 0;
+              const isImgError = imgErrors[item.id];
               return (
                 <motion.div
                   key={item.id}
@@ -162,22 +199,27 @@ const InteractiveMenu = () => {
                   exit={{ opacity: 0, scale: 0.9 }}
                   transition={{ type: "spring", stiffness: 100, damping: 15, delay: index * 0.05 }}
                   whileHover={{ y: -5 }}
-                  className={`food-card-v21 shadow-sm ${item.stock === 0 ? 'out-of-stock' : ''} ${isFeatured ? 'featured' : ''}`}
+                  className={`food-card-v21 shadow-sm ${item.stock === 0 ? 'out-of-stock' : ''}`}
                 >
-                  <div className="food-img-wrapper-v21">
-                    <img 
-                      src={item.img || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&q=80'} 
-                      alt={item.name} 
-                      className="food-hd-img" 
-                      onError={(e) => {
-                        e.target.onerror = null; 
-                        e.target.src = 'https://images.unsplash.com/photo-1495147466023-ac5c588e2e94?auto=format&fit=crop&w=400&q=80'; // Sweet treat placeholder
-                      }}
-                    />
+                  <div className="food-img-wrapper-v21" style={{ background: '#F8FAFC', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                    {!isImgError ? (
+                      <img 
+                        src={getFoodImage(item)} 
+                        alt={item.name} 
+                        className="food-hd-img" 
+                        onError={() => {
+                          setImgErrors(prev => ({ ...prev, [item.id]: true }));
+                        }}
+                      />
+                    ) : (
+                      <div style={{ color: '#CBD5E1', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                        {getFallbackIcon(item.category)}
+                      </div>
+                    )}
 
-                    {/* KFC Add Button positioned over the image */}
+                    {/* Floating Cart Add/Qty selector inside the image wrapper */}
                     {cart[item.id] ? (
-                      <div className="qty-controls-v21 shadow-md" style={{ position: 'absolute', bottom: '8px', right: '8px', zIndex: 10 }}>
+                      <div className="qty-controls-v21 shadow-md">
                         <motion.button whileTap={{ scale: 0.9 }} className="qty-btn" onClick={() => handleRemoveFromCartClick(item)}>
                           -
                         </motion.button>
@@ -220,19 +262,17 @@ const InteractiveMenu = () => {
       {totalItems > 0 && (
         <motion.div
           className="floating-cart-v21"
-          style={{ background: '#FFFFFF', position: 'fixed', bottom: '80px', left: '50%', transform: 'translateX(-50%)', width: 'calc(100% - 40px)', maxWidth: '440px', padding: '12px 16px', borderRadius: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 60, boxShadow: 'var(--shadow-lg)', border: '1px solid var(--glass-border)' }}
           initial={{ y: 100 }}
           animate={{ y: 0 }}
           exit={{ y: 100 }}
         >
           <div className="cart-summary-v21">
-            <span className="cart-total" style={{ fontFamily: 'var(--font-heading)', fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-dark)' }}>
+            <span className="cart-total">
               {totalItems} item{totalItems > 1 ? 's' : ''} added
             </span>
           </div>
           <button 
             className="checkout-btn-v21 tap-effect shadow-md" 
-            style={{ background: '#E4002B', color: 'white', padding: '12px 24px', borderRadius: '12px', fontFamily: 'var(--font-heading)', textTransform: 'uppercase', fontSize: '1rem', letterSpacing: '0.5px' }}
             onClick={() => setIsCheckoutOpen(true)}
           >
             Checkout

@@ -62,9 +62,15 @@ const PublicOrderBoard = () => {
     socket.on('queue_update', handleQueueUpdate);
     socket.on('stall_status_update', handleStallStatusUpdate);
 
+    // Polling fallbacks
+    const queueInterval = setInterval(loadQueue, 5000); // Poll queue every 5 seconds
+    const stallsInterval = setInterval(checkStallsStatus, 15000); // Poll stalls status every 15 seconds
+
     return () => {
       socket.off('queue_update', handleQueueUpdate);
       socket.off('stall_status_update', handleStallStatusUpdate);
+      clearInterval(queueInterval);
+      clearInterval(stallsInterval);
     };
   }, []);
 
