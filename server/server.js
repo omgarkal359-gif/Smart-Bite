@@ -96,33 +96,33 @@ app.post('/api/auth/login', async (req, res) => {
   try {
     if (role === 'guest') {
       // Create guest dynamically or fetch if exists
-      let user = await db.get('SELECT * FROM users WHERE username = ? AND role = ?', [username, 'guest']);
+      let user = await db.get('SELECT * FROM users WHERE LOWER(username) = LOWER(?) AND role = ?', [username, 'guest']);
       if (!user) {
         await db.run(
           'INSERT INTO users (username, name, password, role, shopId) VALUES (?, ?, ?, ?, ?)',
           [username, username, '', 'guest', null]
         );
-        user = await db.get('SELECT * FROM users WHERE username = ? AND role = ?', [username, 'guest']);
+        user = await db.get('SELECT * FROM users WHERE LOWER(username) = LOWER(?) AND role = ?', [username, 'guest']);
       }
       return res.json({ success: true, user });
     }
 
     if (role === 'student') {
       // Find student by username
-      let user = await db.get('SELECT * FROM users WHERE username = ? AND role = ?', [username, 'student']);
+      let user = await db.get('SELECT * FROM users WHERE LOWER(username) = LOWER(?) AND role = ?', [username, 'student']);
       if (!user) {
         // Dynamically create student record if not existing
         await db.run(
           'INSERT INTO users (username, name, password, role, shopId) VALUES (?, ?, ?, ?, ?)',
           [username, name || 'Student', '', 'student', null]
         );
-        user = await db.get('SELECT * FROM users WHERE username = ? AND role = ?', [username, 'student']);
+        user = await db.get('SELECT * FROM users WHERE LOWER(username) = LOWER(?) AND role = ?', [username, 'student']);
       }
       return res.json({ success: true, user });
     }
 
     const user = await db.get(
-      'SELECT * FROM users WHERE username = ? AND password = ? AND role = ?',
+      'SELECT * FROM users WHERE LOWER(username) = LOWER(?) AND password = ? AND role = ?',
       [username, password, role]
     );
 
@@ -159,7 +159,12 @@ app.post('/api/auth/google', async (req, res) => {
 app.get('/api/stalls', async (req, res) => {
   try {
     const stalls = await db.all('SELECT * FROM stalls');
-    res.json(stalls);
+    const formatted = stalls.map(s => ({
+      ...s,
+      busyMode: s.busyMode !== undefined ? s.busyMode : s.busymode,
+      waitTime: s.waitTime !== undefined ? s.waitTime : s.waittime
+    }));
+    res.json(formatted);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -183,8 +188,13 @@ app.put('/api/stalls/:id/status', async (req, res) => {
     );
 
     const updated = await db.get('SELECT * FROM stalls WHERE id = ?', [id]);
-    io.to('student').emit('stall_status_update', updated);
-    res.json(updated);
+    const formatted = {
+      ...updated,
+      busyMode: updated.busyMode !== undefined ? updated.busyMode : updated.busymode,
+      waitTime: updated.waitTime !== undefined ? updated.waitTime : updated.waittime
+    };
+    io.to('student').emit('stall_status_update', formatted);
+    res.json(formatted);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -195,7 +205,11 @@ app.get('/api/stalls/:id/menu', async (req, res) => {
   const { id } = req.params;
   try {
     const items = await db.all('SELECT * FROM menu_items WHERE stallId = ? AND available = 1', [id]);
-    res.json(items);
+    const formatted = items.map(item => ({
+      ...item,
+      stallId: item.stallId || item.stallid
+    }));
+    res.json(formatted);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

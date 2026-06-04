@@ -71,8 +71,8 @@ export const CheckoutDrawer = ({ isOpen, onClose, cart, inventory, onComplete })
         name: item.name,
         price: item.price,
         quantity: item.quantity,
-        stallId: item.stallId,
-        stallName: item.stallName
+        stallId: item.stallId || item.stallid,
+        stallName: item.stallName || item.stallname
       }))
     };
 
