@@ -136,3 +136,29 @@ export const api = {
     return fetchAPI('/admin/metrics');
   }
 };
+
+export function formatRelativeTime(timestamp) {
+  if (!timestamp) return 'Just now';
+  const date = new Date(timestamp);
+  const now = new Date();
+  const diffMs = now - date;
+  
+  if (diffMs < 0) return 'Just now';
+  
+  const diffSec = Math.floor(diffMs / 1000);
+  const diffMin = Math.floor(diffSec / 60);
+  const diffHr = Math.floor(diffMin / 60);
+  const diffDay = Math.floor(diffHr / 24);
+
+  if (diffSec < 60) {
+    return 'Just now';
+  } else if (diffMin < 60) {
+    return `${diffMin} min${diffMin > 1 ? 's' : ''} ago`;
+  } else if (diffHr < 24) {
+    return `${diffHr} hour${diffHr > 1 ? 's' : ''} ago`;
+  } else if (diffDay === 1) {
+    return 'Yesterday';
+  } else {
+    return `${diffDay} day${diffDay > 1 ? 's' : ''} ago`;
+  }
+}
