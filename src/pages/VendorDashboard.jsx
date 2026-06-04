@@ -106,8 +106,8 @@ const VendorDashboard = () => {
     socket.on('order_new', handleNewOrder);
     socket.on('order_status_update', handleStatusUpdate);
 
-    // Polling fallback (poll every 5 seconds for fast order updates)
-    const intervalTime = 5000;
+    // Polling fallback (poll every 2 seconds for instant order updates)
+    const intervalTime = 2000;
     const interval = setInterval(loadOrders, intervalTime);
 
     return () => {
@@ -497,7 +497,7 @@ const VendorDashboard = () => {
                     </div>
 
                     {/* Action Buttons */}
-                    {(isNew || isPreparing || isPendingCash) && (
+                    {(isNew || isPreparing) && (
                       <div style={{ display: 'flex', gap: 10 }}>
                         <motion.button
                           whileHover={{ scale: isPreparing ? 1 : 1.04 }}
@@ -536,6 +536,26 @@ const VendorDashboard = () => {
                           Ready
                         </motion.button>
                       </div>
+                    )}
+
+                    {isPendingCash && (
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => handleConfirmCash(ticket.id)}
+                        style={{
+                          width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+                          padding: '16px', borderRadius: 16, border: 'none', cursor: 'pointer',
+                          fontFamily: "'Oswald', sans-serif", fontWeight: 800, fontSize: '1rem', letterSpacing: '0.05em', textTransform: 'uppercase',
+                          background: 'linear-gradient(135deg, #F59E0B, #D97706)',
+                          color: 'white',
+                          boxShadow: '0 6px 20px rgba(245,158,11,0.4)',
+                          transition: 'all 0.2s'
+                        }}
+                      >
+                        <Banknote size={22} color="white" />
+                        Confirm Cash
+                      </motion.button>
                     )}
 
                     {isReady && (
