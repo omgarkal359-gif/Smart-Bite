@@ -3,9 +3,50 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>SGU SmartBite Enterprise</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet">
+    <script>
+      window.addEventListener('error', function(e) {
+        var errDiv = document.getElementById('global-error-banner');
+        if (!errDiv) {
+          errDiv = document.createElement('div');
+          errDiv.id = 'global-error-banner';
+          errDiv.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#FEE2E2;color:#991B1B;padding:12px;z-index:99999;font-family:sans-serif;font-size:12px;border-bottom:2px solid #FCA5A5;white-space:pre-wrap;overflow:auto;max-height:200px;';
+          var closeBtn = document.createElement('button');
+          closeBtn.textContent = 'X';
+          closeBtn.style.cssText = 'float:right;background:none;border:none;color:#991B1B;font-weight:bold;cursor:pointer;margin-left:10px;';
+          closeBtn.onclick = function() { errDiv.remove(); };
+          errDiv.appendChild(closeBtn);
+          var pre = document.createElement('pre');
+          pre.id = 'global-error-banner-content';
+          pre.style.cssText = 'margin:0;white-space:pre-wrap;';
+          errDiv.appendChild(pre);
+          document.body.insertBefore(errDiv, document.body.firstChild);
+        }
+        document.getElementById('global-error-banner-content').textContent += '\nError: ' + e.message + ' at ' + e.filename + ':' + e.lineno;
+      });
+      window.addEventListener('unhandledrejection', function(e) {
+        var errDiv = document.getElementById('global-error-banner');
+        if (!errDiv) {
+          errDiv = document.createElement('div');
+          errDiv.id = 'global-error-banner';
+          errDiv.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#FEE2E2;color:#991B1B;padding:12px;z-index:99999;font-family:sans-serif;font-size:12px;border-bottom:2px solid #FCA5A5;white-space:pre-wrap;overflow:auto;max-height:200px;';
+          var closeBtn = document.createElement('button');
+          closeBtn.textContent = 'X';
+          closeBtn.style.cssText = 'float:right;background:none;border:none;color:#991B1B;font-weight:bold;cursor:pointer;margin-left:10px;';
+          closeBtn.onclick = function() { errDiv.remove(); };
+          errDiv.appendChild(closeBtn);
+          var pre = document.createElement('pre');
+          pre.id = 'global-error-banner-content';
+          pre.style.cssText = 'margin:0;white-space:pre-wrap;';
+          errDiv.appendChild(pre);
+          document.body.insertBefore(errDiv, document.body.firstChild);
+        }
+        var reasonMsg = e.reason && (e.reason.stack || e.reason.message || e.reason) || 'Unknown reason';
+        document.getElementById('global-error-banner-content').textContent += '\nUnhandled Rejection: ' + reasonMsg;
+      });
+    </script>
   </head>
   <body>
     <div id="root"></div>

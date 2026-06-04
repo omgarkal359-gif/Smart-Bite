@@ -1,10 +1,10 @@
 /* Profile Styles */
 .profile-container {
-  padding-top: 20px;
+  padding: 20px 16px 40px 16px;
 }
 
 .profile-main {
-  padding: 0 20px;
+  padding: 0;
   display: flex;
   flex-direction: column;
   gap: 24px;

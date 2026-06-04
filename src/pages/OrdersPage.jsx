@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Clock, CheckCircle, ShoppingBag } from 'lucide-react';
 import { GlassCard } from '../components/ui/GlassCard';
-import { api, socket } from '../api';
+import { api, socket, formatRelativeTime } from '../api';
 import './home_v21.css';
 
 const OrdersPage = () => {
@@ -50,8 +50,12 @@ const OrdersPage = () => {
 
     socket.on('order_status_update', handleStatusUpdate);
 
+    // Polling fallback
+    const interval = setInterval(fetchOrders, 8000); // Poll every 8 seconds
+
     return () => {
       socket.off('order_status_update', handleStatusUpdate);
+      clearInterval(interval);
     };
   }, []);
 
@@ -119,7 +123,7 @@ const OrdersPage = () => {
                       color: 'var(--text-muted)', 
                       textTransform: 'uppercase',
                       letterSpacing: '0.5px',
-                    }}>{order.time}</span>
+                    }}>{(order.timestamp || order.timestamp) ? formatRelativeTime(order.timestamp || order.timestamp).toUpperCase() : (order.time || 'Just now').toUpperCase()}</span>
                   </div>
 
                   {/* Items */}
