@@ -159,7 +159,7 @@ const LoginPage = () => {
         if (role === 'Student' && studentId.toLowerCase().includes('admin')) {
           normalizedRole = 'admin';
         }
-        const loginUsername = role === 'Student' ? studentId : (role === 'Guest' ? guestMobile : shopId);
+        const loginUsername = (role === 'Student' ? studentId : (role === 'Guest' ? guestMobile : shopId)).trim();
         
         // Trigger Supabase OTP if student logging in via Email
         if (role === 'Student' && normalizedRole === 'student' && loginUsername.includes('@')) {
@@ -173,7 +173,7 @@ const LoginPage = () => {
           return;
         }
 
-        const response = await api.login(loginUsername, password, normalizedRole, studentName);
+        const response = await api.login(loginUsername, password.trim(), normalizedRole, studentName.trim());
         
         if (response.success) {
           setIsLoading(false);
