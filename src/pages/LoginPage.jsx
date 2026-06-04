@@ -34,12 +34,21 @@ const LoginPage = () => {
         setIsLoading(true);
         setErrorMsg('');
         try {
-          const { email, full_name, name } = session.user.user_metadata;
+          const { email, full_name, name, phone } = session.user.user_metadata || {};
           const userEmail = session.user.email || email;
-          const userName = full_name || name || userEmail.split('@')[0];
+          const userPhone = session.user.phone || phone;
+          
+          const loginIdentifier = userEmail || userPhone;
+          if (!loginIdentifier) throw new Error('No email or phone number found in authentication session.');
+
+          const pendingName = localStorage.getItem('sgu_pending_name');
+          const userName = full_name || name || pendingName || (userEmail ? userEmail.split('@')[0] : userPhone);
+          
+          // Clean up pending name
+          localStorage.removeItem('sgu_pending_name');
 
           // Authenticate/Register Google user dynamically in our database
-          const response = await api.googleLogin(userEmail, userName);
+          const response = await api.googleLogin(loginIdentifier, userName);
           
           if (response.success) {
             setIsLoading(false);
@@ -161,16 +170,35 @@ const LoginPage = () => {
         }
         const loginUsername = (role === 'Student' ? studentId : (role === 'Guest' ? guestMobile : shopId)).trim();
         
-        // Trigger Supabase OTP if student logging in via Email
-        if (role === 'Student' && normalizedRole === 'student' && loginUsername.includes('@')) {
-          const { error } = await supabase.auth.signInWithOtp({
-            email: loginUsername,
-          });
-          if (error) throw error;
+        // Trigger Supabase OTP if student logging in via Email or Mobile
+        if (role === 'Student' && normalizedRole === 'student') {
+          const isEmail = loginUsername.includes('@');
+          const isPhone = /^\d{10}$/.test(loginUsername) || /^\+\d{10,12}$/.test(loginUsername);
           
-          setIsLoading(false);
-          setOtpSent(true);
-          return;
+          if (isEmail || isPhone) {
+            // Save student name to localStorage so it can be retrieved on redirect
+            localStorage.setItem('sgu_pending_name', studentName.trim());
+
+            if (isEmail) {
+              const { error } = await supabase.auth.signInWithOtp({
+                email: loginUsername,
+              });
+              if (error) throw error;
+            } else {
+              let phoneToUse = loginUsername;
+              if (/^\d{10}$/.test(loginUsername)) {
+                phoneToUse = `+91${loginUsername}`;
+              }
+              const { error } = await supabase.auth.signInWithOtp({
+                phone: phoneToUse,
+              });
+              if (error) throw error;
+            }
+            
+            setIsLoading(false);
+            setOtpSent(true);
+            return;
+          }
         }
 
         const response = await api.login(loginUsername, password.trim(), normalizedRole, studentName.trim());
@@ -222,11 +250,28 @@ const LoginPage = () => {
     setErrorMsg('');
 
     try {
-      const { error } = await supabase.auth.verifyOtp({
-        email: studentId,
-        token: otpToken.trim(),
-        type: 'email'
-      });
+      const isEmail = studentId.includes('@');
+      let verifyParams = {};
+
+      if (isEmail) {
+        verifyParams = {
+          email: studentId.trim(),
+          token: otpToken.trim(),
+          type: 'email'
+        };
+      } else {
+        let phoneToUse = studentId.trim();
+        if (/^\d{10}$/.test(phoneToUse)) {
+          phoneToUse = `+91${phoneToUse}`;
+        }
+        verifyParams = {
+          phone: phoneToUse,
+          token: otpToken.trim(),
+          type: 'sms'
+        };
+      }
+
+      const { error } = await supabase.auth.verifyOtp(verifyParams);
 
       if (error) throw error;
       
@@ -274,9 +319,11 @@ const LoginPage = () => {
       <div className="login-card">
         {otpSent ? (
           <form onSubmit={handleVerifyOtp}>
-            <h1 className="login-heading" style={{ fontSize: '1.75rem', marginBottom: '8px' }}>Verify Your Email</h1>
+            <h1 className="login-heading" style={{ fontSize: '1.75rem', marginBottom: '8px' }}>
+              {studentId.includes('@') ? 'Verify Your Email' : 'Verify Your Mobile'}
+            </h1>
             <p className="login-subheading" style={{ marginBottom: '24px' }}>
-              We sent a 6-digit code to <strong>{studentId}</strong>
+              We sent a 6-digit OTP to <strong>{studentId}</strong>
             </p>
 
             <div className="login-form-group">
