@@ -507,6 +507,13 @@ select.floating-input {
   max-width: 100%;
 }
 
+/* KDS Header Left base */
+.kds-header-left {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
 /* KDS Operations Area */
 .kds-main {
   flex: 1;
@@ -527,6 +534,8 @@ select.floating-input {
   align-items: flex-start;
   scrollbar-width: thin;
   scrollbar-color: var(--primary-navy) transparent;
+  touch-action: pan-x;
+  -webkit-overflow-scrolling: touch;
 }
 
 .kds-ticket {
@@ -864,4 +873,277 @@ select.floating-input {
 /* Empty state fill */
 .kds-ticket-scroll > div:first-child:last-child {
   width: 100%;
+}
+
+/* =========================================
+   MOBILE RESPONSIVE STYLES
+   ========================================= */
+
+/* Tablet (≤ 1024px) */
+@media (max-width: 1024px) {
+  .kds-header {
+    padding: 14px 20px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+
+  .kds-header-left {
+    justify-content: space-between;
+    width: 100%;
+    gap: 16px !important;
+  }
+
+  .command-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .kds-main {
+    padding: 20px;
+  }
+
+  .kds-ticket {
+    min-width: 300px;
+    max-width: 340px;
+  }
+
+  .elite-ctrl-btn {
+    padding: 10px 16px;
+    font-size: 0.75rem;
+    gap: 8px;
+    flex: 1;
+    justify-content: center;
+  }
+}
+
+/* Mobile (≤ 768px) */
+@media (max-width: 768px) {
+  .kds-header {
+    padding: 12px 16px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+    border-bottom-width: 3px;
+  }
+
+  .kds-header-left {
+    width: 100%;
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    gap: 8px !important;
+  }
+
+  .kds-header-left .flex-col {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .kds-header-left h1 {
+    font-size: 1.35rem !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .heartbeat-monitor {
+    padding: 3px 8px !important;
+    align-self: flex-start;
+  }
+
+  .status-toggle-container {
+    flex-shrink: 0;
+  }
+
+  .premium-switch {
+    width: 110px;
+    height: 40px;
+  }
+
+  .switch-knob {
+    width: 50px;
+    height: 30px;
+    font-size: 0.65rem;
+  }
+
+  /* Controls deck: 2x2 grid for standard mobile */
+  .kds-controls {
+    width: 100%;
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+  }
+
+  .elite-ctrl-btn {
+    padding: 10px 8px;
+    border-radius: 10px;
+    font-size: 0.7rem;
+    gap: 6px;
+    width: 100%;
+    box-sizing: border-box;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .elite-ctrl-btn span {
+    display: inline !important;
+    font-size: 0.65rem;
+  }
+
+  /* Metrics grid: 2×2 */
+  .command-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .command-card {
+    padding: 12px !important;
+  }
+
+  .command-value {
+    font-size: 1.8rem;
+  }
+
+  .command-label {
+    font-size: 0.65rem;
+  }
+
+  .command-subvalue {
+    font-size: 0.75rem;
+  }
+
+  /* Main area */
+  .kds-main {
+    padding: 14px;
+  }
+
+  /* Ticket scroll: vertical stack instead of horizontal scroll */
+  .kds-ticket-scroll {
+    flex-direction: column;
+    overflow-x: hidden;
+    overflow-y: visible;
+    gap: 16px;
+    padding: 10px 0 32px 0;
+  }
+
+  .kds-ticket {
+    min-width: 100%;
+    max-width: 100%;
+    min-height: auto;
+    padding: 18px !important;
+    border-radius: 18px;
+  }
+
+  .kds-ticket:hover {
+    transform: none;
+  }
+
+  .ticket-header {
+    margin-bottom: 12px;
+  }
+
+  .ticket-id {
+    font-size: 1.1rem !important;
+  }
+
+  .ticket-badges {
+    margin-bottom: 10px;
+  }
+
+  .badge {
+    padding: 5px 10px;
+    font-size: 0.65rem;
+  }
+
+  /* Sidebar: full-screen on mobile */
+  .management-sidebar {
+    max-width: 100% !important;
+    width: 100% !important;
+    padding: 24px 18px !important;
+  }
+
+  .management-sidebar h2 {
+    font-size: 1.5rem !important;
+  }
+
+  /* Menu editor card on mobile */
+  .menu-item-card {
+    gap: 14px;
+    padding: 14px !important;
+  }
+
+  .menu-item-image {
+    width: 70px;
+    height: 70px;
+  }
+
+  .item-name,
+  .item-name-input {
+    font-size: 1rem !important;
+  }
+
+  .item-meta {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  /* Empty state */
+  .kds-ticket-scroll > div:first-child:last-child {
+    width: 100%;
+  }
+
+  /* Watermark sizing */
+  .watermark-text {
+    font-size: 18vw;
+  }
+}
+
+/* Small phones (≤ 480px) */
+@media (max-width: 480px) {
+  .kds-header {
+    padding: 10px 12px;
+    gap: 10px;
+  }
+
+  .kds-header-left h1 {
+    font-size: 1.2rem !important;
+  }
+
+  .command-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .command-value {
+    font-size: 1.5rem;
+  }
+
+  .kds-controls {
+    gap: 6px !important;
+  }
+
+  .elite-ctrl-btn {
+    padding: 8px 4px;
+    font-size: 0.65rem;
+    gap: 4px;
+  }
+
+  .elite-ctrl-btn span {
+    font-size: 0.6rem;
+  }
+
+  .kds-main {
+    padding: 10px;
+  }
+
+  .kds-ticket {
+    padding: 14px !important;
+    border-radius: 14px;
+  }
+
+  .management-sidebar {
+    padding: 16px 12px !important;
+  }
 }
