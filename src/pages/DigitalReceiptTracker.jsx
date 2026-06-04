@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { GlassCard } from '../components/ui/GlassCard';
 import { Button } from '../components/ui/Button';
-import { ArrowLeft, QrCode, CheckCircle, Clock, ChefHat, BellRing, Download, Mail } from 'lucide-react';
+import { ArrowLeft, QrCode, CheckCircle, Clock, ChefHat, BellRing, Download, Mail, ShoppingBag } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api, socket } from '../api';
 import './pages.css';
@@ -607,6 +607,22 @@ const DigitalReceiptTracker = () => {
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                 >
+                  <button 
+                    className="btn-pdf-v21" 
+                    onClick={() => {
+                      const itemsList = order.items || [];
+                      const firstItem = itemsList[0] || {};
+                      const stallId = firstItem.stallId || firstItem.stallid || '';
+                      if (stallId) {
+                        navigate(`/student/shop/${stallId}`);
+                      } else {
+                        navigate('/student');
+                      }
+                    }} 
+                    style={{ cursor: 'pointer', background: 'linear-gradient(135deg, #1A5276, #2471A3)', boxShadow: '0 4px 14px rgba(26,82,118,0.3)' }}
+                  >
+                    <ShoppingBag size={20} /> Order More
+                  </button>
                   <button className="btn-pdf-v21" onClick={handleDownloadPDF} style={{ cursor: 'pointer' }}>
                     <Download size={20} /> Download Invoice
                   </button>
