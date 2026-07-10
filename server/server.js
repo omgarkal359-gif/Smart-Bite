@@ -121,6 +121,27 @@ app.post('/api/auth/login', async (req, res) => {
       return res.json({ success: true, user });
     }
 
+    // Auto-detect role: if no role sent (or role is 'owner'/'admin'), look up by username + password only
+    if (!role || role === 'owner' || role === 'admin') {
+      // Try exact role match first if role is specified
+      if (role) {
+        const user = await db.get(
+          'SELECT * FROM users WHERE LOWER(username) = LOWER(?) AND password = ? AND role = ?',
+          [username, password, role]
+        );
+        if (user) return res.json({ success: true, user });
+      }
+
+      // Fallback: find the user by username + password regardless of role
+      const user = await db.get(
+        'SELECT * FROM users WHERE LOWER(username) = LOWER(?) AND password = ?',
+        [username, password]
+      );
+      if (user) return res.json({ success: true, user });
+
+      return res.status(401).json({ success: false, message: 'Invalid ID or password.' });
+    }
+
     const user = await db.get(
       'SELECT * FROM users WHERE LOWER(username) = LOWER(?) AND password = ? AND role = ?',
       [username, password, role]
@@ -129,7 +150,7 @@ app.post('/api/auth/login', async (req, res) => {
     if (user) {
       res.json({ success: true, user });
     } else {
-      res.status(401).json({ success: false, message: 'Invalid credentials or role selection.' });
+      res.status(401).json({ success: false, message: 'Invalid credentials.' });
     }
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
