@@ -121,24 +121,43 @@ app.post('/api/auth/login', async (req, res) => {
       return res.json({ success: true, user });
     }
 
-    // Auto-detect role: if no role sent (or role is 'owner'/'admin'), look up by username + password only
-    if (!role || role === 'owner' || role === 'admin') {
-      // Try exact role match first if role is specified
-      if (role) {
-        const user = await db.get(
-          'SELECT * FROM users WHERE LOWER(username) = LOWER(?) AND password = ? AND role = ?',
-          [username, password, role]
+    if (role === 'owner') {
+      // Create vendor/owner dynamically or update password if exists
+      let user = await db.get('SELECT * FROM users WHERE username = ? AND role = ?', [username, 'owner']);
+      if (!user) {
+        const displayName = `${username.charAt(0).toUpperCase() + username.slice(1).replace('-', ' ')} Owner`;
+        await db.run(
+          'INSERT INTO users (username, name, password, role, shopId) VALUES (?, ?, ?, ?, ?)',
+          [username, displayName, password, 'owner', username]
         );
-        if (user) return res.json({ success: true, user });
-      }
+        user = await db.get('SELECT * FROM users WHERE username = ? AND role = ?', [username, 'owner']);
 
-      // Fallback: find the user by username + password regardless of role
+        // Check if corresponding stall exists, if not create default
+        const stall = await db.get('SELECT * FROM stalls WHERE id = ?', [username]);
+        if (!stall) {
+          const stallName = username.charAt(0).toUpperCase() + username.slice(1).replace('-', ' ');
+          await db.run(
+            'INSERT INTO stalls (id, name, category, online, busyMode, waitTime, rating, logo, img) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            [username, stallName, 'Fresh & delicious food', 1, 0, 0, 4.5, '🍽️', 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=400&q=80']
+          );
+        }
+      } else {
+        // If password is different, update it
+        if (user.password !== password) {
+          await db.run('UPDATE users SET password = ? WHERE id = ?', [password, user.id]);
+          user.password = password;
+        }
+      }
+      return res.json({ success: true, user });
+    }
+
+    // Auto-detect role: look up by username + password regardless of role (covers admin & edge cases)
+    if (!role || role === 'admin') {
       const user = await db.get(
         'SELECT * FROM users WHERE LOWER(username) = LOWER(?) AND password = ?',
         [username, password]
       );
       if (user) return res.json({ success: true, user });
-
       return res.status(401).json({ success: false, message: 'Invalid ID or password.' });
     }
 
