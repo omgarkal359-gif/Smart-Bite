@@ -168,7 +168,7 @@ const VendorDashboard = () => {
         }
       })
       .catch(console.error);
-  }, [navigate, urlShopId]);
+  }, [navigate, urlShopId, cleanUrlShopId]);
 
   // Today's Metrics Calculation
   const metrics = useMemo(() => {

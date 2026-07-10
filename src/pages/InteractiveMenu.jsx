@@ -137,23 +137,34 @@ const InteractiveMenu = () => {
     }
   }, [highlightId, isLoading, activeCategory]);
 
+  // Derive display inventory by subtracting current cart quantities from fetched stock
+  const displayInventory = useMemo(() => {
+    return inventory.map(item => {
+      const cartQty = cart[item.id]?.quantity || 0;
+      return {
+        ...item,
+        stock: Math.max(0, item.stock - cartQty)
+      };
+    });
+  }, [inventory, cart]);
+
   const handleAddToCartClick = (item) => {
     if (item.stock > 0) {
       addToCart(item);
-      setInventory(prev => prev.map(i => i.id === item.id ? { ...i, stock: i.stock - 1 } : i));
     }
   };
 
   const handleRemoveFromCartClick = (item) => {
     if (cart[item.id] && cart[item.id].quantity > 0) {
       removeFromCart(item.id);
-      setInventory(prev => prev.map(i => i.id === item.id ? { ...i, stock: i.stock + 1 } : i));
     }
   };
 
-  const filteredInventory = inventory.filter(item => {
-    return item.category === activeCategory;
-  });
+  const filteredInventory = useMemo(() => {
+    return displayInventory.filter(item => {
+      return item.category === activeCategory;
+    });
+  }, [displayInventory, activeCategory]);
 
   return (
     <div className="menu-container page-transition">
