@@ -110,7 +110,10 @@ const LoginPage = () => {
   const isFormValid = () => {
     const id = identifier.trim();
     if (!id) return false;
-    if (showPasswordField && !password.trim()) return false;
+    // For email/phone users → OTP flow, password not needed
+    if (isEmail(id) || isPhone(id)) return true;
+    // For shop owners / admin → password required
+    if (!password.trim()) return false;
     return true;
   };
 
@@ -317,32 +320,18 @@ const LoginPage = () => {
 
             <form onSubmit={handleLogin}>
 
-              {/* Name (optional, only for new students/guests via OTP) */}
-              <div className="login-form-group">
-                <label className="login-label">Your Name <span className="login-label-optional">(optional for new users)</span></label>
-                <div className="login-input-wrapper">
-                  <User className="login-icon" size={20} />
-                  <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="Enter your full name"
-                    className="login-input"
-                    autoComplete="name"
-                  />
-                </div>
-              </div>
+
 
               {/* Identifier */}
               <div className="login-form-group">
-                <label className="login-label">Email / Mobile / Shop ID</label>
+                <label className="login-label">Shop ID / Email / Mobile</label>
                 <div className="login-input-wrapper">
                   <Mail className="login-icon" size={20} />
                   <input
                     type="text"
                     value={identifier}
                     onChange={(e) => { setIdentifier(e.target.value); setErrorMsg(''); }}
-                    placeholder="Email, mobile number, or shop ID"
+                    placeholder="Shop ID, email, or mobile number"
                     className="login-input"
                     required
                     autoComplete="username"
@@ -357,51 +346,48 @@ const LoginPage = () => {
                 )}
               </div>
 
-              {/* Password — shown only for non-email/phone identifiers */}
-              {showPasswordField && (
-                <div className="login-form-group">
-                  <label className="login-label">Password</label>
-                  <div className="login-input-wrapper">
-                    <Lock className="login-icon" size={20} />
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Enter your password"
-                      className="login-input"
-                      required
-                      autoComplete="current-password"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="login-icon-right"
-                    >
-                      {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                    </button>
-                  </div>
-
-                  <div className="login-options">
-                    <label className="login-checkbox-label">
-                      <input
-                        type="checkbox"
-                        checked={rememberMe}
-                        onChange={(e) => setRememberMe(e.target.checked)}
-                        className="login-checkbox"
-                      />
-                      Remember Me
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => alert('Forgot Password feature coming soon!')}
-                      className="login-link"
-                      style={{ background: 'none', border: 'none', cursor: 'pointer' }}
-                    >
-                      Forgot Password?
-                    </button>
-                  </div>
+              {/* Password — always visible */}
+              <div className="login-form-group">
+                <label className="login-label">Password</label>
+                <div className="login-input-wrapper">
+                  <Lock className="login-icon" size={20} />
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter your password"
+                    className="login-input"
+                    autoComplete="current-password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="login-icon-right"
+                  >
+                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </button>
                 </div>
-              )}
+
+                <div className="login-options">
+                  <label className="login-checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={rememberMe}
+                      onChange={(e) => setRememberMe(e.target.checked)}
+                      className="login-checkbox"
+                    />
+                    Remember Me
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => alert('Forgot Password feature coming soon!')}
+                    className="login-link"
+                    style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+                  >
+                    Forgot Password?
+                  </button>
+                </div>
+              </div>
 
               {errorMsg && <div className="login-error">{errorMsg}</div>}
 
@@ -412,7 +398,7 @@ const LoginPage = () => {
               >
                 {!isLoading && !isSuccess && (
                   <span>
-                    {showPasswordField ? 'Login' : isEmail(identifier.trim()) || isPhone(identifier.trim()) ? 'Send OTP' : 'Continue'}
+                    {isEmail(identifier.trim()) || isPhone(identifier.trim()) ? 'Send OTP' : 'Login'}
                   </span>
                 )}
                 {isLoading && <Loader2 className="animate-spin" size={24} />}
