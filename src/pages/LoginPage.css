@@ -25,6 +25,44 @@
   border: 1px solid rgba(255, 255, 255, 0.8);
 }
 
+/* ── Mode Tabs ───────────────────────────────────── */
+.login-mode-tabs {
+  display: flex;
+  background: #F1F5F9;
+  border-radius: 12px;
+  padding: 4px;
+  margin-bottom: 24px;
+  gap: 4px;
+}
+
+.login-mode-tab {
+  flex: 1;
+  padding: 10px 8px;
+  border-radius: 9px;
+  border: none;
+  font-family: 'Oswald', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #6B7280;
+  background: transparent;
+}
+
+.login-mode-tab.active {
+  background: #E4002B;
+  color: #FFFFFF;
+  box-shadow: 0 4px 12px rgba(228, 0, 43, 0.25);
+}
+
+.login-mode-tab:not(.active):hover {
+  background: rgba(228, 0, 43, 0.08);
+  color: #E4002B;
+}
+
+
 /* ── Logo / Header ───────────────────────────────── */
 .login-logo-area {
   text-align: center;

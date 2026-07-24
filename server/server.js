@@ -195,6 +195,30 @@ app.post('/api/auth/google', async (req, res) => {
   }
 });
 
+// Register new account
+app.post('/api/auth/register', async (req, res) => {
+  const { username, name, password, role } = req.body;
+  if (!username || !name || !password) {
+    return res.status(400).json({ success: false, message: 'Name, username/email/mobile, and password are required.' });
+  }
+  const allowedRoles = ['student', 'guest'];
+  const userRole = allowedRoles.includes(role) ? role : 'student';
+  try {
+    const existing = await db.get('SELECT * FROM users WHERE LOWER(username) = LOWER(?)', [username]);
+    if (existing) {
+      return res.status(409).json({ success: false, message: 'An account with this email or mobile already exists.' });
+    }
+    await db.run(
+      'INSERT INTO users (username, name, password, role, shopId) VALUES (?, ?, ?, ?, ?)',
+      [username.trim(), name.trim(), password.trim(), userRole, null]
+    );
+    const user = await db.get('SELECT * FROM users WHERE LOWER(username) = LOWER(?)', [username]);
+    res.json({ success: true, user });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 // Stalls list
 app.get('/api/stalls', async (req, res) => {
   try {

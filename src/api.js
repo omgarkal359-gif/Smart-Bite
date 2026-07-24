@@ -58,6 +58,13 @@ export const api = {
     });
   },
 
+  async register(username, name, password, role) {
+    return fetchAPI('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({ username, name, password, role })
+    });
+  },
+
   // Stalls
   async getStalls() {
     return fetchAPI('/stalls');
