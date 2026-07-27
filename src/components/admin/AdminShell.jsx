@@ -137,12 +137,29 @@ export const AdminShell = ({ activeModule, setActiveModule, user, children }) =>
           })}
 
           <div style={{ marginTop: 'auto', paddingTop: '12px', borderTop: '1px solid rgba(255,255,255,0.12)' }}>
+            {!isSidebarCollapsed && (
+              <div style={{ fontSize: '0.65rem', fontWeight: 900, color: 'rgba(255,255,255,0.75)', textTransform: 'uppercase', letterSpacing: '0.1em', padding: '0 12px 6px 12px' }}>
+                SWITCH DASHBOARD
+              </div>
+            )}
+            <button className="admin-nav-item" onClick={() => navigate('/vendor')} title="Vendor Dashboard">
+              <Store size={18} color="#FFFFFF" />
+              {!isSidebarCollapsed && <span>Vendor Dashboard</span>}
+            </button>
+            <button className="admin-nav-item" onClick={() => navigate('/board')} title="Public Order TV Board">
+              <Activity size={18} color="#FFFFFF" />
+              {!isSidebarCollapsed && <span>Live Queue TV Board</span>}
+            </button>
+            <button className="admin-nav-item" onClick={() => navigate('/student')} title="Student Food Court">
+              <ShoppingBag size={18} color="#FFFFFF" />
+              {!isSidebarCollapsed && <span>Student Food Court</span>}
+            </button>
             <button
               className="admin-nav-item admin-logout-nav-item"
               onClick={handleLogout}
               title={isSidebarCollapsed ? 'Sign Out' : undefined}
             >
-              <LogOut size={20} color="#FFFFFF" />
+              <LogOut size={18} color="#FFFFFF" />
               {!isSidebarCollapsed && <span style={{ color: '#FFFFFF', fontWeight: 800 }}>Sign Out</span>}
             </button>
           </div>
