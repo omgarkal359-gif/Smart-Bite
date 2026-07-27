@@ -94,30 +94,8 @@ const PublicOrderBoard = () => {
         )}
       </AnimatePresence>
       <div className="tv-header">
-        <div className="tv-logo" style={{ cursor: 'pointer' }} onClick={() => navigate('/student')}>
+        <div className="tv-logo">
           SGU SmartBite
-        </div>
-
-        {/* Dashboard Interlink Bar */}
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-          <button 
-            onClick={() => navigate('/student')}
-            style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.25)', color: 'white', padding: '6px 14px', borderRadius: 999, fontSize: '0.8rem', fontWeight: 800, cursor: 'pointer', fontFamily: "'Oswald', sans-serif" }}
-          >
-            <ShoppingBag size={14} /> Student App
-          </button>
-          <button 
-            onClick={() => navigate('/vendor')}
-            style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.25)', color: 'white', padding: '6px 14px', borderRadius: 999, fontSize: '0.8rem', fontWeight: 800, cursor: 'pointer', fontFamily: "'Oswald', sans-serif" }}
-          >
-            <Store size={14} /> Vendor Kiosk
-          </button>
-          <button 
-            onClick={() => navigate('/admin')}
-            style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(255,59,92,0.85)', border: '1px solid rgba(255,255,255,0.3)', color: 'white', padding: '6px 14px', borderRadius: 999, fontSize: '0.8rem', fontWeight: 800, cursor: 'pointer', fontFamily: "'Oswald', sans-serif" }}
-          >
-            <ShieldAlert size={14} /> Super Admin
-          </button>
         </div>
 
         <div className="tv-time">
