@@ -135,7 +135,7 @@ export const OverviewModule = ({ onNavigateModule }) => {
               style={{
                 padding: '6px 14px', borderRadius: 8, border: 'none', cursor: 'pointer',
                 fontFamily: "'Oswald', sans-serif", fontWeight: 700, fontSize: '0.75rem',
-                background: timeRange === r ? '#E4002B' : 'transparent',
+                background: timeRange === r ? '#FF3B5C' : 'transparent',
                 color: timeRange === r ? 'white' : '#64748B',
                 transition: 'all 0.2s ease'
               }}
@@ -148,10 +148,10 @@ export const OverviewModule = ({ onNavigateModule }) => {
 
       {/* KPI Metric Cards */}
       <div className="kpi-grid">
-        <div className="admin-card-v2 kpi-card" style={{ '--kpi-accent': '#E4002B' }}>
+        <div className="admin-card-v2 kpi-card" style={{ '--kpi-accent': '#FF3B5C' }}>
           <div className="kpi-top">
             <span className="kpi-title">Total Platform Sales</span>
-            <div className="kpi-icon-wrap" style={{ background: 'rgba(228,0,43,0.12)', color: '#E4002B' }}><DollarSign size={18} /></div>
+            <div className="kpi-icon-wrap" style={{ background: 'rgba(255,59,92,0.12)', color: '#FF3B5C' }}><DollarSign size={18} /></div>
           </div>
           <div className="kpi-value">₹{metrics.totalSales.toLocaleString()}</div>
           <div className="flex items-center gap-2 mt-1">
@@ -172,10 +172,10 @@ export const OverviewModule = ({ onNavigateModule }) => {
           </div>
         </div>
 
-        <div className="admin-card-v2 kpi-card" style={{ '--kpi-accent': '#22C55E' }}>
+        <div className="admin-card-v2 kpi-card" style={{ '--kpi-accent': '#10B981' }}>
           <div className="kpi-top">
             <span className="kpi-title">Campus Vendors</span>
-            <div className="kpi-icon-wrap" style={{ background: 'rgba(34,197,94,0.12)', color: '#22C55E' }}><Store size={18} /></div>
+            <div className="kpi-icon-wrap" style={{ background: 'rgba(16,185,129,0.12)', color: '#10B981' }}><Store size={18} /></div>
           </div>
           <div className="kpi-value">{metrics.totalVendors} / 6</div>
           <div className="flex items-center gap-2 mt-1">
@@ -184,10 +184,10 @@ export const OverviewModule = ({ onNavigateModule }) => {
           </div>
         </div>
 
-        <div className="admin-card-v2 kpi-card" style={{ '--kpi-accent': '#E4002B' }}>
+        <div className="admin-card-v2 kpi-card" style={{ '--kpi-accent': '#FF3B5C' }}>
           <div className="kpi-top">
             <span className="kpi-title">System Health & Uptime</span>
-            <div className="kpi-icon-wrap" style={{ background: 'rgba(228,0,43,0.12)', color: '#E4002B' }}><ShieldCheck size={18} /></div>
+            <div className="kpi-icon-wrap" style={{ background: 'rgba(255,59,92,0.12)', color: '#FF3B5C' }}><ShieldCheck size={18} /></div>
           </div>
           <div className="kpi-value">{metrics.healthScore}%</div>
           <div className="flex items-center gap-2 mt-1">
@@ -209,8 +209,8 @@ export const OverviewModule = ({ onNavigateModule }) => {
               <p className="text-xs text-slate-400 font-semibold">Hourly distribution of sales across all campus stalls</p>
             </div>
             <div className="flex items-center gap-4 text-xs font-bold font-heading">
-              <span className="flex items-center gap-2" style={{ color: '#E4002B' }}>
-                <span style={{ width: 10, height: 10, borderRadius: 3, background: '#E4002B' }} /> Revenue (₹)
+              <span className="flex items-center gap-2" style={{ color: '#FF3B5C' }}>
+                <span style={{ width: 10, height: 10, borderRadius: 3, background: '#FF3B5C' }} /> Revenue (₹)
               </span>
               <span className="flex items-center gap-2" style={{ color: '#F59E0B' }}>
                 <span style={{ width: 10, height: 10, borderRadius: 3, background: '#F59E0B' }} /> Orders Count
@@ -224,10 +224,10 @@ export const OverviewModule = ({ onNavigateModule }) => {
               const heightPct = Math.round((item.revenue / maxRevenue) * 100);
               return (
                 <div key={idx} className="flex-1 flex flex-col items-center gap-2 h-full justify-end group cursor-pointer">
-                  <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#E4002B', opacity: 0 }} className="group-hover:opacity-100 transition-opacity font-heading">
+                  <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#FF3B5C', opacity: 0 }} className="group-hover:opacity-100 transition-opacity font-heading">
                     ₹{item.revenue}
                   </div>
-                  <div style={{ width: '100%', height: `${heightPct}%`, minHeight: 20, background: 'linear-gradient(180deg, #E4002B, #B91C1C)', borderRadius: '10px 10px 4px 4px', transition: 'all 0.3s ease', position: 'relative' }} className="group-hover:brightness-125">
+                  <div style={{ width: '100%', height: `${heightPct}%`, minHeight: 20, background: 'linear-gradient(180deg, #FF3B5C, #E11D48)', borderRadius: '10px 10px 4px 4px', transition: 'all 0.3s ease', position: 'relative' }} className="group-hover:brightness-125">
                     <div style={{ position: 'absolute', top: -14, left: '50%', transform: 'translateX(-50%)', background: '#F59E0B', color: 'white', fontSize: '0.65rem', fontWeight: 900, borderRadius: 4, padding: '1px 5px', fontFamily: "'Oswald', sans-serif" }}>
                       {item.orders}
                     </div>
@@ -242,11 +242,11 @@ export const OverviewModule = ({ onNavigateModule }) => {
 
           {/* Breakdown Pills */}
           <div className="flex justify-between items-center mt-4 text-xs font-semibold text-slate-600">
-            <div>Digital UPI Sales: <strong style={{ color: '#22C55E' }}>₹{metrics.digitalSales}</strong></div>
+            <div>Digital UPI Sales: <strong style={{ color: '#10B981' }}>₹{metrics.digitalSales}</strong></div>
             <div>Cash Payments: <strong style={{ color: '#F59E0B' }}>₹{metrics.cashSales}</strong></div>
             <button 
               onClick={() => onNavigateModule('orders')}
-              style={{ background: 'none', border: 'none', color: '#E4002B', fontWeight: 800, cursor: 'pointer', fontFamily: "'Oswald', sans-serif" }}
+              style={{ background: 'none', border: 'none', color: '#FF3B5C', fontWeight: 800, cursor: 'pointer', fontFamily: "'Oswald', sans-serif" }}
             >
               VIEW FULL ORDERS LOG →
             </button>
@@ -257,9 +257,9 @@ export const OverviewModule = ({ onNavigateModule }) => {
         <div className="admin-card-v2 flex flex-col">
           <div className="flex justify-between items-center mb-4 pb-3 border-b border-slate-100">
             <h3 style={{ margin: 0, fontFamily: "'Oswald', sans-serif", fontSize: '1.1rem', fontWeight: 800, color: '#0F172A', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Flame size={18} color="#E4002B" /> LIVE ACTIVITY STREAM
+              <Flame size={18} color="#FF3B5C" /> LIVE ACTIVITY STREAM
             </h3>
-            <span style={{ fontSize: '0.65rem', fontWeight: 800, color: '#22C55E', background: '#DCFCE7', padding: '2px 8px', borderRadius: 999, fontFamily: "'Oswald', sans-serif" }}>REALTIME</span>
+            <span style={{ fontSize: '0.65rem', fontWeight: 800, color: '#10B981', background: '#D1FAE5', padding: '2px 8px', borderRadius: 999, fontFamily: "'Oswald', sans-serif" }}>REALTIME</span>
           </div>
 
           <div className="flex flex-col gap-3 overflow-y-auto" style={{ maxHeight: 300 }}>
@@ -267,7 +267,7 @@ export const OverviewModule = ({ onNavigateModule }) => {
               <p className="text-slate-400 text-xs text-center py-8">Waiting for live activities...</p>
             ) : (
               activityLogs.map((log) => (
-                <div key={log.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: 10, background: '#F8FAFC', borderRadius: 12, borderLeft: '3px solid #E4002B' }}>
+                <div key={log.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: 10, background: '#F8FAFC', borderRadius: 12, borderLeft: '3px solid #FF3B5C' }}>
                   <div style={{ marginTop: 2 }}>
                     <Clock size={14} color="#64748B" />
                   </div>

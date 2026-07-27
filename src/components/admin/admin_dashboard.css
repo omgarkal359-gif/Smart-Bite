@@ -1,17 +1,18 @@
-/* Master Admin Dashboard - KFC Red & White Theme System */
+/* Master Admin Dashboard - Vibrant Light Red Theme System */
 :root {
-  --admin-navy: #E4002B; /* KFC Red */
-  --admin-navy-dark: #B91C1C; /* Dark KFC Red */
+  --admin-navy: #E11D48; /* Light Vibrant Rose Red */
+  --admin-navy-dark: #BE123C;
   --admin-amber: #F59E0B;
-  --admin-green: #22C55E;
-  --admin-red: #E4002B;
-  --admin-bg: #F4F5F7;
+  --admin-green: #10B981;
+  --admin-red: #E11D48;
+  --admin-red-light: #FFF1F2; /* Soft Rose Background */
+  --admin-bg: #FBFBFC;
   --admin-card-bg: #FFFFFF;
-  --admin-text-main: #111827;
-  --admin-text-muted: #6B7280;
-  --admin-border: #E5E7EB;
+  --admin-text-main: #0F172A;
+  --admin-text-muted: #64748B;
+  --admin-border: #F1F5F9;
   --admin-glass: rgba(255, 255, 255, 0.95);
-  --admin-shadow: 0 10px 25px -5px rgba(228, 0, 43, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.03);
+  --admin-shadow: 0 10px 30px -5px rgba(225, 29, 72, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
 }
 
 .admin-layout-root {
@@ -43,18 +44,18 @@
   font-family: 'Oswald', sans-serif !important;
 }
 
-/* Sidebar Styling - Bold KFC Red Theme */
+/* Sidebar Styling - Vibrant Light Red Theme */
 .admin-sidebar {
   width: 260px;
-  background: linear-gradient(180deg, #E4002B 0%, #B91C1C 100%);
+  background: linear-gradient(180deg, #FF3B5C 0%, #E11D48 100%);
   color: #FFFFFF;
   display: flex;
   flex-direction: column;
   transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 100;
   position: relative;
-  border-right: 1px solid rgba(0, 0, 0, 0.1);
-  box-shadow: 4px 0 20px rgba(228, 0, 43, 0.15);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 4px 0 25px rgba(225, 29, 72, 0.15);
   flex-shrink: 0;
 }
 
@@ -67,7 +68,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .sidebar-logo {
@@ -91,8 +92,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #E4002B;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  color: #E11D48;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
   flex-shrink: 0;
 }
 
@@ -111,7 +112,7 @@
   gap: 12px !important;
   padding: 12px 16px !important;
   border-radius: 12px !important;
-  color: rgba(255, 255, 255, 0.9) !important;
+  color: rgba(255, 255, 255, 0.92) !important;
   font-family: 'Inter', system-ui, sans-serif !important;
   font-weight: 600 !important;
   font-size: 0.9rem !important;
@@ -128,14 +129,14 @@
 
 .admin-nav-item:hover {
   color: #FFFFFF !important;
-  background: rgba(255, 255, 255, 0.15) !important;
+  background: rgba(255, 255, 255, 0.18) !important;
 }
 
 .admin-nav-item.active {
-  color: #E4002B !important;
+  color: #E11D48 !important;
   background: #FFFFFF !important;
-  border-left: 4px solid #111827 !important;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15) !important;
+  border-left: 4px solid #0F172A !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15) !important;
   font-weight: 800 !important;
   text-shadow: none !important;
 }
@@ -153,7 +154,7 @@
 }
 
 .admin-nav-item.active .admin-nav-item-badge {
-  background: #E4002B !important;
+  background: #E11D48 !important;
   color: #FFFFFF !important;
 }
 
@@ -170,7 +171,7 @@
   height: 70px;
   background: #FFFFFF;
   backdrop-filter: blur(12px);
-  border-bottom: 3px solid #E4002B; /* KFC Red Signature Bottom Border */
+  border-bottom: 3px solid #FF3B5C; /* Light Red Signature Bottom Line */
   padding: 0 28px;
   display: flex;
   align-items: center;
@@ -178,7 +179,7 @@
   position: sticky;
   top: 0;
   z-index: 90;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+  box-shadow: 0 4px 16px rgba(225, 29, 72, 0.04);
 }
 
 .cmdk-trigger-btn {
@@ -199,9 +200,9 @@
 }
 
 .cmdk-trigger-btn:hover {
-  border-color: #E4002B;
+  border-color: #FF3B5C;
   color: var(--admin-text-main);
-  box-shadow: 0 4px 12px rgba(228, 0, 43, 0.1);
+  box-shadow: 0 4px 14px rgba(255, 59, 92, 0.12);
 }
 
 .cmdk-kbd {
@@ -226,10 +227,10 @@
   align-items: center;
   gap: 8px;
   padding: 6px 14px;
-  background: rgba(34, 197, 94, 0.1);
-  border: 1px solid rgba(34, 197, 94, 0.3);
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.25);
   border-radius: 999px;
-  color: #15803D;
+  color: #059669;
   font-size: 0.75rem;
   font-weight: 700;
   font-family: 'Inter', sans-serif !important;
@@ -240,8 +241,8 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--admin-green);
-  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.25);
+  background: #10B981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25);
   animation: pulse-green 2s infinite;
 }
 
@@ -264,15 +265,15 @@
 }
 
 .admin-profile-pill:hover {
-  border-color: #E4002B;
-  box-shadow: 0 4px 12px rgba(228, 0, 43, 0.1);
+  border-color: #FF3B5C;
+  box-shadow: 0 4px 14px rgba(255, 59, 92, 0.12);
 }
 
 .admin-avatar {
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #E4002B, #B91C1C);
+  background: linear-gradient(135deg, #FF3B5C, #E11D48);
   color: white;
   display: flex;
   align-items: center;
@@ -591,9 +592,9 @@
   gap: 8px;
   padding: 8px 16px;
   border-radius: 999px;
-  border: 1px solid rgba(228, 0, 43, 0.2);
-  background: rgba(228, 0, 43, 0.06);
-  color: #DC2626;
+  border: 1px solid rgba(255, 59, 92, 0.25);
+  background: rgba(255, 59, 92, 0.08);
+  color: #E11D48;
   font-size: 0.8rem;
   font-weight: 700;
   cursor: pointer;
@@ -602,9 +603,9 @@
 }
 
 .admin-topbar-logout-btn:hover {
-  background: #E4002B;
+  background: #FF3B5C;
   color: #FFFFFF;
-  border-color: #E4002B;
-  box-shadow: 0 4px 12px rgba(228, 0, 43, 0.25);
+  border-color: #FF3B5C;
+  box-shadow: 0 4px 14px rgba(255, 59, 92, 0.3);
 }
 
