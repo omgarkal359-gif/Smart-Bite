@@ -81,6 +81,14 @@ async function broadcastQueueUpdate() {
   }
 }
 
+// Security helper: sanitize user objects returned over HTTP APIs
+function sanitizeUser(user) {
+  if (!user) return user;
+  const sanitized = { ...user };
+  delete sanitized.password;
+  return sanitized;
+}
+
 // REST Endpoints
 
 // Auth
@@ -97,7 +105,7 @@ app.post('/api/auth/login', async (req, res) => {
         );
         user = await db.get('SELECT * FROM users WHERE LOWER(username) = LOWER(?) AND role = ?', [username, 'guest']);
       }
-      return res.json({ success: true, user });
+      return res.json({ success: true, user: sanitizeUser(user) });
     }
 
     if (role === 'student') {
@@ -111,7 +119,7 @@ app.post('/api/auth/login', async (req, res) => {
         );
         user = await db.get('SELECT * FROM users WHERE LOWER(username) = LOWER(?) AND role = ?', [username, 'student']);
       }
-      return res.json({ success: true, user });
+      return res.json({ success: true, user: sanitizeUser(user) });
     }
 
     if (role === 'owner') {
@@ -141,7 +149,7 @@ app.post('/api/auth/login', async (req, res) => {
           user.password = password;
         }
       }
-      return res.json({ success: true, user });
+      return res.json({ success: true, user: sanitizeUser(user) });
     }
 
     // Auto-detect role: look up by username + password regardless of role (covers admin & edge cases)
@@ -150,7 +158,7 @@ app.post('/api/auth/login', async (req, res) => {
         'SELECT * FROM users WHERE LOWER(username) = LOWER(?) AND password = ?',
         [username, password]
       );
-      if (user) return res.json({ success: true, user });
+      if (user) return res.json({ success: true, user: sanitizeUser(user) });
       return res.status(401).json({ success: false, message: 'Invalid ID or password.' });
     }
 
@@ -160,7 +168,7 @@ app.post('/api/auth/login', async (req, res) => {
     );
 
     if (user) {
-      res.json({ success: true, user });
+      res.json({ success: true, user: sanitizeUser(user) });
     } else {
       res.status(401).json({ success: false, message: 'Invalid credentials.' });
     }
@@ -182,7 +190,7 @@ app.post('/api/auth/google', async (req, res) => {
       );
       user = await db.get('SELECT * FROM users WHERE username = ?', [email]);
     }
-    res.json({ success: true, user });
+    res.json({ success: true, user: sanitizeUser(user) });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -206,7 +214,7 @@ app.post('/api/auth/register', async (req, res) => {
       [username.trim(), name.trim(), password.trim(), userRole, null]
     );
     const user = await db.get('SELECT * FROM users WHERE LOWER(username) = LOWER(?)', [username]);
-    res.json({ success: true, user });
+    res.json({ success: true, user: sanitizeUser(user) });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -693,8 +701,20 @@ app.get('/api/orders/queue', async (req, res) => {
 // Fetch active student orders  ← must be BEFORE /api/orders/:id
 app.get('/api/orders/student/:customerId', async (req, res) => {
   const { customerId } = req.params;
+  const reqUserId = (req.headers['x-user-id'] || '').trim().toLowerCase();
+  const reqUserRole = (req.headers['x-user-role'] || '').trim().toLowerCase();
+
+  // Security Access Guard: A student/guest can ONLY access their own orders
+  if ((reqUserRole === 'student' || reqUserRole === 'guest') && reqUserId && reqUserId !== customerId.trim().toLowerCase()) {
+    console.warn(`[SECURITY GUARD ALERT] Unauthorized student order access attempt! User '${reqUserId}' attempted to access orders of student '${customerId}'`);
+    return res.status(403).json({ 
+      success: false, 
+      message: 'Access Denied: Security Policy Violation. You are only authorized to view your own order history.' 
+    });
+  }
+
   try {
-    const studentOrders = await db.all('SELECT * FROM orders WHERE customerId = ? ORDER BY timestamp DESC', [customerId]);
+    const studentOrders = await db.all('SELECT * FROM orders WHERE LOWER(customerId) = LOWER(?) ORDER BY timestamp DESC', [customerId.trim()]);
     for (const order of studentOrders) {
       order.items = await db.all('SELECT * FROM order_items WHERE orderId = ?', [order.id]);
     }
@@ -739,9 +759,25 @@ app.get('/api/orders/stall/:stallId', async (req, res) => {
 // Fetch single order details  ← generic wildcard LAST
 app.get('/api/orders/:id', async (req, res) => {
   const { id } = req.params;
+  const reqUserId = (req.headers['x-user-id'] || '').trim().toLowerCase();
+  const reqUserRole = (req.headers['x-user-role'] || '').trim().toLowerCase();
+
   try {
     const order = await db.get('SELECT * FROM orders WHERE id = ?', [id]);
     if (!order) return res.status(404).json({ message: 'Order not found' });
+
+    // Security Access Guard: Verify order ownership if requester is student or guest
+    if ((reqUserRole === 'student' || reqUserRole === 'guest') && reqUserId) {
+      const orderOwner = (order.customerId || order.customerid || '').trim().toLowerCase();
+      if (orderOwner && orderOwner !== reqUserId) {
+        console.warn(`[SECURITY GUARD ALERT] Unauthorized single order view attempt! User '${reqUserId}' attempted to view order #${id} owned by '${orderOwner}'`);
+        return res.status(403).json({
+          success: false,
+          message: 'Access Denied: Security Policy Violation. You cannot access or view another student\'s order invoice.'
+        });
+      }
+    }
+
     const items = await db.all('SELECT * FROM order_items WHERE orderId = ?', [id]);
     order.items = items;
     res.json(order);
