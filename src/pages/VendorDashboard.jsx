@@ -314,40 +314,6 @@ const VendorDashboard = () => {
             <Settings size={16} /> <span>MENU & HISTORY</span>
           </motion.button>
 
-          {/* Quick Dashboard Interlink Navigation */}
-          <motion.button 
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="elite-ctrl-btn" 
-            style={{ background: '#0F172A', color: '#FFFFFF', border: '1px solid #334155' }}
-            onClick={() => navigate('/board')}
-            title="Switch to Live Queue TV Board"
-          >
-            <Activity size={16} color="#86EFAC" /> <span>TV BOARD</span>
-          </motion.button>
-
-          <motion.button 
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="elite-ctrl-btn" 
-            style={{ background: '#0F172A', color: '#FFFFFF', border: '1px solid #334155' }}
-            onClick={() => navigate('/admin')}
-            title="Switch to Super Admin Control Center"
-          >
-            <Power size={16} color="#FF3B5C" /> <span>ADMIN</span>
-          </motion.button>
-
-          <motion.button 
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="elite-ctrl-btn" 
-            style={{ background: '#0F172A', color: '#FFFFFF', border: '1px solid #334155' }}
-            onClick={() => navigate('/student')}
-            title="Switch to Student Food Court App"
-          >
-            <Utensils size={16} color="#F59E0B" /> <span>STUDENT APP</span>
-          </motion.button>
-
           <motion.button 
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
