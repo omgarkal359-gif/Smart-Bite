@@ -486,7 +486,13 @@
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  padding-top: 100px;
+  padding: 80px 16px 20px 16px;
+}
+
+@media (max-width: 640px) {
+  .cmdk-backdrop {
+    padding-top: 20px;
+  }
 }
 
 .cmdk-modal {
@@ -546,34 +552,101 @@
   color: var(--admin-navy);
 }
 
-/* Responsiveness */
-@media (max-width: 1024px) {
+/* Responsiveness & Mobile Touch System */
+@media (max-width: 1200px) {
   .kpi-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, 1fr) !important;
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
+  .admin-layout-root {
+    flex-direction: column;
+  }
   .admin-sidebar {
     position: fixed;
     top: 0;
     bottom: 0;
-    left: -260px;
+    left: -280px;
+    width: 280px !important;
+    box-shadow: 10px 0 30px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
   }
   .admin-sidebar.mobile-open {
     left: 0;
   }
+  .admin-main-container {
+    width: 100%;
+  }
+  .admin-content-frame {
+    padding: 20px;
+  }
+}
+
+@media (max-width: 768px) {
   .kpi-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr !important;
+    gap: 14px;
   }
   .admin-topbar {
     padding: 0 16px;
+    height: 64px;
   }
   .cmdk-trigger-btn {
-    min-width: auto;
+    min-width: 0;
+    padding: 8px 12px;
+    font-size: 0.78rem;
+  }
+  .cmdk-trigger-btn span:nth-child(2) {
+    display: none;
+  }
+  .cmdk-kbd {
+    margin-left: 0;
+  }
+  .health-badge span:last-child {
+    font-size: 0.68rem;
+  }
+  .admin-profile-pill {
+    padding: 4px 8px 4px 4px;
+  }
+  .admin-profile-pill span {
+    font-size: 0.75rem !important;
   }
   .admin-content-frame {
-    padding: 16px;
+    padding: 16px 12px;
+  }
+  .admin-card-v2 {
+    padding: 18px 14px;
+    border-radius: 16px;
+  }
+  .admin-table-container {
+    -webkit-overflow-scrolling: touch;
+  }
+  .admin-table th, .admin-table td {
+    padding: 10px 12px;
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-topbar {
+    padding: 0 10px;
+  }
+  .topbar-right {
+    gap: 8px;
+  }
+  .health-badge {
+    padding: 4px 8px;
+  }
+  .health-badge span:last-child {
+    display: none;
+  }
+  .admin-topbar-logout-btn span {
+    display: none;
+  }
+  .admin-topbar-logout-btn {
+    padding: 8px;
+    border-radius: 50%;
   }
 }
 
@@ -583,7 +656,7 @@
 }
 
 .admin-logout-nav-item:hover {
-  background: rgba(239, 68, 68, 0.15) !important;
+  background: rgba(255, 59, 92, 0.15) !important;
 }
 
 .admin-topbar-logout-btn {

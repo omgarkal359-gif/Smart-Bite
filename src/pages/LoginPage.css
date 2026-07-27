@@ -562,11 +562,27 @@
 /* ════════════════════════════════════════════
    RESPONSIVE
 ════════════════════════════════════════════ */
-@media (max-width: 479px) {
+@media (max-width: 540px) {
+  .sb-root {
+    padding: 20px 12px;
+  }
   .sb-card {
-    padding: 32px 22px 28px;
+    padding: 28px 18px 24px;
     border-radius: 20px;
   }
-
   .sb-heading { font-size: 1.55rem; }
+  .sb-field-input {
+    font-size: 16px !important; /* Prevents auto-zoom on iOS safari */
+    height: 48px;
+    padding: 0 40px 0 40px;
+  }
+  .sb-tab {
+    font-size: 0.8rem;
+    padding: 9px 4px;
+  }
+  .sb-options-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
 }
