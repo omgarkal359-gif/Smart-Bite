@@ -265,7 +265,7 @@ export const OverviewModule = ({ onNavigateModule }) => {
       </div>
 
       {/* Main Charts & Activity Row */}
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 24 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 24 }}>
         {/* Interactive Sales & Revenue Volume Chart */}
         <div className="admin-card-v2 flex flex-col justify-between">
           <div className="flex justify-between items-center mb-6 flex-wrap gap-3">

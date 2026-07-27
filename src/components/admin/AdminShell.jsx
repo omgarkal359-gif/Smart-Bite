@@ -100,10 +100,16 @@ export const AdminShell = ({ activeModule, setActiveModule, user, children }) =>
             )}
           </div>
           <button 
-            onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-            style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.7)', cursor: 'pointer', display: isSidebarCollapsed ? 'none' : 'block' }}
+            onClick={() => {
+              if (isMobileMenuOpen) {
+                setIsMobileMenuOpen(false);
+              } else {
+                setIsSidebarCollapsed(!isSidebarCollapsed);
+              }
+            }}
+            style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.85)', cursor: 'pointer', padding: 4 }}
           >
-            <Menu size={18} />
+            {isMobileMenuOpen ? <X size={20} /> : (isSidebarCollapsed ? null : <Menu size={18} />)}
           </button>
         </div>
 

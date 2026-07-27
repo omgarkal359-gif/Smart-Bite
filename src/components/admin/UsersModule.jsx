@@ -96,7 +96,7 @@ export const UsersModule = () => {
       </div>
 
       {/* Main Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: '2.5fr 1fr', gap: 24 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 24 }}>
         {/* User Table Card */}
         <div className="admin-card-v2 flex flex-col gap-4">
           {/* Controls */}

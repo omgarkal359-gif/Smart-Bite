@@ -263,7 +263,7 @@ export const OrdersVendorsModule = () => {
         </div>
       ) : (
         /* VENDOR STALLS MODULE */
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20 }}>
           {stalls.map(stall => {
             const isOnline = stall.online === 1 || stall.online === true;
             return (

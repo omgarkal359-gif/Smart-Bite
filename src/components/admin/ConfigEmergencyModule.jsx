@@ -37,7 +37,7 @@ export const ConfigEmergencyModule = () => {
       </div>
 
       {/* Feature Flags Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 20 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20 }}>
         {/* Maintenance Mode */}
         <div className="admin-card-v2 flex flex-col justify-between" style={{ borderLeft: `6px solid ${isMaintenanceMode ? '#DC2626' : '#22C55E'}` }}>
           <div>
@@ -98,7 +98,7 @@ export const ConfigEmergencyModule = () => {
       </div>
 
       {/* Emergency Controls & System Matrix */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20 }}>
         {/* Emergency Overrides */}
         <div className="admin-card-v2" style={{ borderTop: '4px solid #FF3B5C' }}>
           <h3 style={{ fontFamily: "'Oswald', sans-serif", fontSize: '1.2rem', fontWeight: 800, color: '#FF3B5C', margin: '0 0 12px 0', display: 'flex', items: 'center', gap: 8 }}>
