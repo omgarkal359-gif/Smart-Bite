@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Leaf, Flame, Pizza, Coffee, Sandwich, Utensils } from 'lucide-react';
-import { CheckoutDrawer } from '../components/ui/CheckoutDrawer';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCart } from '../context/CartContext';
 import { api, socket } from '../api';
@@ -290,20 +289,6 @@ const InteractiveMenu = () => {
           </button>
         </motion.div>
       )}
-
-      <AnimatePresence>
-        {isCheckoutOpen && (
-          <CheckoutDrawer 
-            isOpen={isCheckoutOpen} 
-            onClose={() => setIsCheckoutOpen(false)} 
-            cart={cart}
-            onComplete={() => {
-              clearCart();
-              setIsCheckoutOpen(false);
-            }}
-          />
-        )}
-      </AnimatePresence>
 
     </div>
   );

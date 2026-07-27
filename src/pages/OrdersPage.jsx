@@ -123,7 +123,7 @@ const OrdersPage = () => {
                       color: 'var(--text-muted)', 
                       textTransform: 'uppercase',
                       letterSpacing: '0.5px',
-                    }}>{(order.timestamp || order.timestamp) ? formatRelativeTime(order.timestamp || order.timestamp).toUpperCase() : (order.time || 'Just now').toUpperCase()}</span>
+                    }}>{order.timestamp ? formatRelativeTime(order.timestamp).toUpperCase() : (order.time || 'Just now').toUpperCase()}</span>
                   </div>
 
                   {/* Items */}

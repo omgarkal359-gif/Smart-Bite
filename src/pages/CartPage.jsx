@@ -99,6 +99,8 @@ const CartPage = () => {
     if (paymentMode === 'upi' && isMobile) {
       // Mobile flow: Redirect directly to mobile payment apps (GPay, PhonePe, Paytm, etc.)
       window.location.href = upiLink;
+      // Order will be placed after the redirect attempt (user confirms in their UPI app)
+      // executeFinalCheckout is called below for both cash and mobile UPI
     }
 
     executeFinalCheckout();

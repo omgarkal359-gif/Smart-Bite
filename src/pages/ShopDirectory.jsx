@@ -12,11 +12,47 @@ const MOCK_SHOPS = SHOPS;
 
 const MOCK_RECENT_ORDER = null;
 
-const TRENDING_SLIDES = [
-  { id: 1, title: 'JUMBO MISAL', subtitle: 'Authentic spices starting at ₹100!', img: 'https://images.unsplash.com/photo-1601050690117-94f5f6fa8bd7?auto=format&fit=crop&w=800&q=80&fm=webp', path: '/student/shop/mangales-snacks?category=Misal' },
-  { id: 2, title: 'CLASSIC WADAPAV', subtitle: 'Classic Mumbai style for just ₹25!', img: 'https://images.unsplash.com/photo-1606491956689-2ea866880c84?auto=format&fit=crop&w=800&q=80&fm=webp', path: '/student/shop/rohit-vadewale?category=Wadapav' },
-  { id: 3, title: 'MASALA DOSA', subtitle: 'Crispy & delicious South Indian special for ₹50', img: 'https://images.unsplash.com/photo-1668236543090-82eba5ee5976?auto=format&fit=crop&w=800&q=80&fm=webp', path: "/student/shop/narayana?category=Dosa's" },
-  { id: 4, title: 'THICK COLD COFFEE', subtitle: 'Rich, creamy, and chilled for just ₹100', img: 'https://images.unsplash.com/photo-1541658016709-82535e94bc69?auto=format&fit=crop&w=800&q=80&fm=webp', path: '/student/shop/cool-cravings?category=Cold%20Coffee' },
+const MOST_ORDERED_SLIDES = [
+  { 
+    id: 1, 
+    rank: '🏆 #1 MOST ORDERED', 
+    title: 'CLASSIC WADAPAV', 
+    subtitle: '🔥 350+ Orders Today! Fresh & hot classic Mumbai wadapav for ₹25', 
+    img: 'https://images.unsplash.com/photo-1626132647523-66f5bf380027?auto=format&fit=crop&w=800&q=80&fm=webp', 
+    path: '/student/shop/rohit-vadewale?category=Wadapav' 
+  },
+  { 
+    id: 2, 
+    rank: '🏆 #2 MOST ORDERED', 
+    title: 'MISAL', 
+    subtitle: '🔥 280+ Orders Today! Spicy Kolhapuri special Misal for ₹50', 
+    img: 'https://images.unsplash.com/photo-1601050690117-94f5f6fa8bd7?auto=format&fit=crop&w=800&q=80&fm=webp', 
+    path: '/student/shop/mangales-snacks?category=Misal' 
+  },
+  { 
+    id: 3, 
+    rank: '🏆 #3 MOST ORDERED', 
+    title: 'MASALA DOSA', 
+    subtitle: '🔥 220+ Orders Today! Crispy South Indian Special Dosa for ₹50', 
+    img: 'https://images.unsplash.com/photo-1668236543090-82eba5ee5976?auto=format&fit=crop&w=800&q=80&fm=webp', 
+    path: "/student/shop/narayana?category=Dosa's" 
+  },
+  { 
+    id: 4, 
+    rank: '🏆 #4 MOST ORDERED', 
+    title: 'COLD COFFEE', 
+    subtitle: '🔥 190+ Orders Today! Rich, creamy chilled coffee for ₹50', 
+    img: 'https://images.unsplash.com/photo-1517701550927-30cf4ba1dba5?auto=format&fit=crop&w=800&q=80&fm=webp', 
+    path: '/student/shop/cool-cravings?category=Cold%20Coffee' 
+  },
+  { 
+    id: 5, 
+    rank: '🏆 #5 MOST ORDERED', 
+    title: 'HAKKA NOODLES', 
+    subtitle: '🔥 160+ Orders Today! Indo-Chinese wok fried noodles for ₹50', 
+    img: 'https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&w=800&q=80&fm=webp', 
+    path: '/student/shop/oodles-of-noodles?category=Noodles' 
+  }
 ];
 
 const SkeletonCard = ({ isHero }) => (
@@ -36,14 +72,15 @@ const ShopDirectory = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [query, setQuery] = useState('');
   const [stalls, setStalls] = useState([]);
+  const [slides, setSlides] = useState(MOST_ORDERED_SLIDES);
 
-  // Auto-scrolling Hero
+  // Auto-scrolling Hero Slideshow (Cycles through top most ordered orders)
   useEffect(() => {
     const slideInterval = setInterval(() => {
-      setCurrentSlide(prev => (prev + 1) % TRENDING_SLIDES.length);
+      setCurrentSlide(prev => (prev + 1) % slides.length);
     }, 4000);
     return () => clearInterval(slideInterval);
-  }, []);
+  }, [slides.length]);
 
   useEffect(() => {
     async function loadStalls() {
@@ -150,35 +187,37 @@ const ShopDirectory = () => {
               <div className="skeleton" style={{ width: '100%', height: '200px', borderRadius: '24px', marginBottom: '24px', background: 'linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%)', backgroundSize: '200% 100%', animation: 'shimmer 1.5s infinite linear' }} />
             ) : (
               <div className="hero-slideshow-wrapper shadow-2xl">
-                <AnimatePresence>
+                <AnimatePresence mode="wait">
                   <motion.div
                     key={currentSlide}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 1 }}
+                    initial={{ opacity: 0, scale: 0.98 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 1.02 }}
+                    transition={{ duration: 0.8 }}
                     className="hero-slide tap-effect"
                     style={{ cursor: 'pointer' }}
-                    onClick={() => navigate(TRENDING_SLIDES[currentSlide].path)}
+                    onClick={() => navigate(slides[currentSlide].path)}
                   >
                     <div 
                       className="hero-bg-image"
-                      style={{ backgroundImage: `url(${TRENDING_SLIDES[currentSlide].img})` }}
+                      style={{ backgroundImage: `url(${slides[currentSlide].img})` }}
                     />
                     <div className="hero-parallax-overlay" />
                     <div className="hero-parallax-content">
-                      <span className="text-white text-xs font-bold uppercase tracking-wider mb-1 block flex items-center gap-1" style={{ color: 'white' }}><Flame size={12}/> Trending Now</span>
-                      <h2 className="heading-1 text-white" style={{ fontSize: '2.5rem', marginBottom: '0.5rem', color: 'white' }}>
-                        {TRENDING_SLIDES[currentSlide].title}
+                      <span className="text-white text-xs font-bold uppercase tracking-wider mb-1 block flex items-center gap-1" style={{ color: '#FDE047' }}>
+                        <Flame size={14} color="#FDE047" /> {slides[currentSlide].rank || '🏆 MOST ORDERED'}
+                      </span>
+                      <h2 className="heading-1 text-white" style={{ fontSize: '2.4rem', marginBottom: '0.4rem', color: 'white', textTransform: 'uppercase' }}>
+                        {slides[currentSlide].title}
                       </h2>
-                      <p className="text-white" style={{ color: 'white' }}>{TRENDING_SLIDES[currentSlide].subtitle}</p>
+                      <p className="text-white" style={{ color: 'rgba(255,255,255,0.92)', fontSize: '0.9rem', fontWeight: 600 }}>{slides[currentSlide].subtitle}</p>
                     </div>
                   </motion.div>
                 </AnimatePresence>
                 
                 <div className="slide-indicators">
-                  {TRENDING_SLIDES.map((_, idx) => (
-                    <div key={idx} className={`slide-dot ${idx === currentSlide ? 'active' : ''}`} />
+                  {slides.map((_, idx) => (
+                    <div key={idx} className={`slide-dot ${idx === currentSlide ? 'active' : ''}`} onClick={() => setCurrentSlide(idx)} />
                   ))}
                 </div>
               </div>
@@ -245,15 +284,7 @@ const ShopDirectory = () => {
                             </span>
                           )}
 
-                          <button 
-                            className="shop-dashboard-btn z-10"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              navigate(`/vendor/${shop.id}`);
-                            }}
-                          >
-                            Dashboard
-                          </button>
+
                         </div>
                       </div>
                     </GlassCard>

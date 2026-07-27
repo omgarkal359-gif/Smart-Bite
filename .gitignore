@@ -6,3 +6,5 @@ dist
 .vscode
 .agents/
 skills-lock.json
+.vercel
+.env*
