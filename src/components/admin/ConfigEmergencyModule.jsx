@@ -68,11 +68,11 @@ export const ConfigEmergencyModule = () => {
         </div>
 
         {/* Pause Orders */}
-        <div className="admin-card-v2 flex flex-col justify-between" style={{ borderLeft: `6px solid ${isPauseOrders ? '#F59E0B' : '#E4002B'}` }}>
+        <div className="admin-card-v2 flex flex-col justify-between" style={{ borderLeft: `6px solid ${isPauseOrders ? '#F59E0B' : '#FF3B5C'}` }}>
           <div>
             <div className="flex justify-between items-start mb-2">
               <h3 style={{ fontFamily: "'Oswald', sans-serif", fontSize: '1.2rem', fontWeight: 800, color: '#0F172A', margin: 0, display: 'flex', items: 'center', gap: 8 }}>
-                <Lock size={20} color={isPauseOrders ? '#F59E0B' : '#E4002B'} /> PAUSE NEW ORDERS
+                <Lock size={20} color={isPauseOrders ? '#F59E0B' : '#FF3B5C'} /> PAUSE NEW ORDERS
               </h3>
               <span className={`status-pill ${isPauseOrders ? 'preparing' : 'ready'}`}>
                 {isPauseOrders ? 'PAUSED' : 'ACCEPTING'}
@@ -87,7 +87,7 @@ export const ConfigEmergencyModule = () => {
             style={{
               marginTop: 16, width: '100%', padding: '12px', borderRadius: 12, border: 'none', cursor: 'pointer',
               fontFamily: "'Oswald', sans-serif", fontWeight: 800, fontSize: '0.85rem', textTransform: 'uppercase',
-              background: isPauseOrders ? '#E4002B' : '#FEF3C7',
+              background: isPauseOrders ? '#FF3B5C' : '#FEF3C7',
               color: isPauseOrders ? 'white' : '#D97706',
               transition: 'all 0.2s ease'
             }}
@@ -100,9 +100,9 @@ export const ConfigEmergencyModule = () => {
       {/* Emergency Controls & System Matrix */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
         {/* Emergency Overrides */}
-        <div className="admin-card-v2" style={{ borderTop: '4px solid #E4002B' }}>
-          <h3 style={{ fontFamily: "'Oswald', sans-serif", fontSize: '1.2rem', fontWeight: 800, color: '#E4002B', margin: '0 0 12px 0', display: 'flex', items: 'center', gap: 8 }}>
-            <AlertTriangle size={20} color="#E4002B" /> EMERGENCY OVERRIDES
+        <div className="admin-card-v2" style={{ borderTop: '4px solid #FF3B5C' }}>
+          <h3 style={{ fontFamily: "'Oswald', sans-serif", fontSize: '1.2rem', fontWeight: 800, color: '#FF3B5C', margin: '0 0 12px 0', display: 'flex', items: 'center', gap: 8 }}>
+            <AlertTriangle size={20} color="#FF3B5C" /> EMERGENCY OVERRIDES
           </h3>
           <p style={{ fontSize: '0.8rem', color: '#64748B', margin: '0 0 16px 0', fontWeight: 500 }}>
             Execute emergency actions in case of server outages or severe technical failures.
@@ -114,8 +114,8 @@ export const ConfigEmergencyModule = () => {
               style={{
                 width: '100%', padding: '14px', borderRadius: 12, border: 'none', cursor: 'pointer',
                 fontFamily: "'Oswald', sans-serif", fontWeight: 800, fontSize: '0.9rem', textTransform: 'uppercase',
-                background: '#E4002B', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                boxShadow: '0 4px 14px rgba(228,0,43,0.3)'
+                background: '#FF3B5C', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                boxShadow: '0 4px 14px rgba(255,59,92,0.3)'
               }}
             >
               <Trash2 size={18} /> GLOBAL QUEUE WIPE
@@ -135,15 +135,15 @@ export const ConfigEmergencyModule = () => {
         </div>
 
         {/* Integration Status Matrix */}
-        <div className="admin-card-v2" style={{ borderTop: '4px solid #E4002B' }}>
-          <h3 style={{ fontFamily: "'Oswald', sans-serif", fontSize: '1.2rem', fontWeight: 800, color: '#E4002B', margin: '0 0 12px 0', display: 'flex', items: 'center', gap: 8 }}>
-            <Cpu size={20} color="#E4002B" /> API INTEGRATION STATUS MATRIX
+        <div className="admin-card-v2" style={{ borderTop: '4px solid #FF3B5C' }}>
+          <h3 style={{ fontFamily: "'Oswald', sans-serif", fontSize: '1.2rem', fontWeight: 800, color: '#FF3B5C', margin: '0 0 12px 0', display: 'flex', items: 'center', gap: 8 }}>
+            <Cpu size={20} color="#FF3B5C" /> API INTEGRATION STATUS MATRIX
           </h3>
 
           <div className="flex flex-col gap-3">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', background: '#F8FAFC', borderRadius: 12 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <Database size={18} color="#E4002B" />
+                <Database size={18} color="#FF3B5C" />
                 <div>
                   <div style={{ fontWeight: 800, fontSize: '0.85rem', color: '#0F172A' }}>Supabase PostgreSQL</div>
                   <div style={{ fontSize: '0.7rem', color: '#64748B' }}>Primary Database Cluster</div>

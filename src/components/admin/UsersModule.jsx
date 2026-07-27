@@ -118,7 +118,7 @@ export const UsersModule = () => {
             <select
               value={roleFilter}
               onChange={e => setRoleFilter(e.target.value)}
-              style={{ padding: '9px 12px', borderRadius: 10, border: '1px solid #E2E8F0', fontSize: '0.85rem', fontWeight: 700, fontFamily: "'Oswald', sans-serif", color: '#E4002B', cursor: 'pointer' }}
+              style={{ padding: '9px 12px', borderRadius: 10, border: '1px solid #E2E8F0', fontSize: '0.85rem', fontWeight: 700, fontFamily: "'Oswald', sans-serif", color: '#FF3B5C', cursor: 'pointer' }}
             >
               <option value="ALL">ALL ROLES</option>
               <option value="student">STUDENTS</option>
@@ -150,7 +150,7 @@ export const UsersModule = () => {
                 ) : (
                   filteredUsers.map(user => (
                     <tr key={user.id || user.username}>
-                      <td style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 800, color: '#E4002B', fontSize: '0.95rem' }}>
+                      <td style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 800, color: '#FF3B5C', fontSize: '0.95rem' }}>
                         {user.username}
                       </td>
                       <td style={{ fontWeight: 700, color: '#0F172A' }}>
@@ -185,9 +185,9 @@ export const UsersModule = () => {
 
         {/* Security Overrides Sidebar */}
         <div className="flex flex-col gap-4">
-          <div className="admin-card-v2" style={{ borderTop: '4px solid #E4002B' }}>
+          <div className="admin-card-v2" style={{ borderTop: '4px solid #FF3B5C' }}>
             <h3 style={{ fontFamily: "'Oswald', sans-serif", fontSize: '1.1rem', fontWeight: 800, color: '#0F172A', margin: '0 0 8px 0', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <ShieldAlert size={18} color="#E4002B" /> PRN BLACKLIST
+              <ShieldAlert size={18} color="#FF3B5C" /> PRN BLACKLIST
             </h3>
             <p style={{ fontSize: '0.8rem', color: '#64748B', margin: '0 0 16px 0', fontWeight: 500 }}>
               Instantly suspend student access for repeated no-shows or policy violations.
@@ -208,7 +208,7 @@ export const UsersModule = () => {
                 style={{
                   width: '100%', padding: '12px', borderRadius: 10, border: 'none', cursor: 'pointer',
                   fontFamily: "'Oswald', sans-serif", fontWeight: 800, fontSize: '0.85rem', textTransform: 'uppercase',
-                  background: '#E4002B', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8
+                  background: '#FF3B5C', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8
                 }}
               >
                 <UserX size={16} /> BLOCK PRN (24 HOURS)

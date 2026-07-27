@@ -132,11 +132,11 @@ export const CmdKSearchModal = ({ isOpen, onClose, onNavigateModule, onLogout })
                     onMouseEnter={() => setSelectedIndex(idx)}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      <div style={{ width: 28, height: 28, borderRadius: 8, background: isSelected ? 'rgba(228,0,43,0.12)' : '#F1F5F9', color: isSelected ? '#E4002B' : '#64748B', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <div style={{ width: 28, height: 28, borderRadius: 8, background: isSelected ? 'rgba(255,59,92,0.12)' : '#F1F5F9', color: isSelected ? '#FF3B5C' : '#64748B', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <IconComponent size={15} />
                       </div>
                       <div>
-                        <div style={{ fontWeight: 700, fontSize: '0.875rem', color: isSelected ? '#E4002B' : '#0F172A' }}>
+                        <div style={{ fontWeight: 700, fontSize: '0.875rem', color: isSelected ? '#FF3B5C' : '#0F172A' }}>
                           {item.label}
                         </div>
                         <div style={{ fontSize: '0.7rem', fontWeight: 600, color: '#94A3B8' }}>
@@ -144,7 +144,7 @@ export const CmdKSearchModal = ({ isOpen, onClose, onNavigateModule, onLogout })
                         </div>
                       </div>
                     </div>
-                    <ArrowRight size={14} color={isSelected ? '#E4002B' : '#CBD5E1'} />
+                    <ArrowRight size={14} color={isSelected ? '#FF3B5C' : '#CBD5E1'} />
                   </div>
                 );
               })

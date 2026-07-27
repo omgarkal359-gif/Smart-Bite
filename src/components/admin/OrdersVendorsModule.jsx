@@ -101,7 +101,7 @@ export const OrdersVendorsModule = () => {
             style={{
               padding: '8px 18px', borderRadius: 8, border: 'none', cursor: 'pointer',
               fontFamily: "'Oswald', sans-serif", fontWeight: 800, fontSize: '0.8rem',
-              background: activeTab === 'orders' ? '#E4002B' : 'transparent',
+              background: activeTab === 'orders' ? '#FF3B5C' : 'transparent',
               color: activeTab === 'orders' ? 'white' : '#64748B',
               transition: 'all 0.2s ease', display: 'flex', alignItems: 'center', gap: 8
             }}
@@ -113,7 +113,7 @@ export const OrdersVendorsModule = () => {
             style={{
               padding: '8px 18px', borderRadius: 8, border: 'none', cursor: 'pointer',
               fontFamily: "'Oswald', sans-serif", fontWeight: 800, fontSize: '0.8rem',
-              background: activeTab === 'vendors' ? '#E4002B' : 'transparent',
+              background: activeTab === 'vendors' ? '#FF3B5C' : 'transparent',
               color: activeTab === 'vendors' ? 'white' : '#64748B',
               transition: 'all 0.2s ease', display: 'flex', alignItems: 'center', gap: 8
             }}
@@ -147,7 +147,7 @@ export const OrdersVendorsModule = () => {
               <select
                 value={selectedStall}
                 onChange={e => setSelectedStall(e.target.value)}
-                style={{ padding: '9px 12px', borderRadius: 10, border: '1px solid #E2E8F0', fontSize: '0.85rem', fontWeight: 700, fontFamily: "'Oswald', sans-serif", color: '#E4002B', cursor: 'pointer' }}
+                style={{ padding: '9px 12px', borderRadius: 10, border: '1px solid #E2E8F0', fontSize: '0.85rem', fontWeight: 700, fontFamily: "'Oswald', sans-serif", color: '#FF3B5C', cursor: 'pointer' }}
               >
                 <option value="ALL">ALL STALLS</option>
                 {SHOPS.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
@@ -157,7 +157,7 @@ export const OrdersVendorsModule = () => {
               <select
                 value={selectedStatus}
                 onChange={e => setSelectedStatus(e.target.value)}
-                style={{ padding: '9px 12px', borderRadius: 10, border: '1px solid #E2E8F0', fontSize: '0.85rem', fontWeight: 700, fontFamily: "'Oswald', sans-serif", color: '#E4002B', cursor: 'pointer' }}
+                style={{ padding: '9px 12px', borderRadius: 10, border: '1px solid #E2E8F0', fontSize: '0.85rem', fontWeight: 700, fontFamily: "'Oswald', sans-serif", color: '#FF3B5C', cursor: 'pointer' }}
               >
                 <option value="ALL">ALL STATUSES</option>
                 <option value="placed">PLACED</option>
@@ -201,7 +201,7 @@ export const OrdersVendorsModule = () => {
                 ) : (
                   filteredOrders.map(order => (
                     <tr key={order.id}>
-                      <td style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 800, color: '#E4002B', fontSize: '1rem' }}>
+                      <td style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 800, color: '#FF3B5C', fontSize: '1rem' }}>
                         #{order.id}
                       </td>
                       <td>

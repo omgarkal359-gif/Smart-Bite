@@ -194,7 +194,7 @@ export const AdminShell = ({ activeModule, setActiveModule, user, children }) =>
                   <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#0F172A', lineHeight: 1.1 }}>
                     {user?.name || 'Administrator'}
                   </span>
-                  <span style={{ fontSize: '0.65rem', fontWeight: 800, color: '#E4002B', textTransform: 'uppercase', fontFamily: "'Oswald', sans-serif" }}>
+                  <span style={{ fontSize: '0.65rem', fontWeight: 800, color: '#FF3B5C', textTransform: 'uppercase', fontFamily: "'Oswald', sans-serif" }}>
                     SUPER ADMIN
                   </span>
                 </div>
