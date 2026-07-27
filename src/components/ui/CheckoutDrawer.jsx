@@ -22,9 +22,9 @@ export const CheckoutDrawer = ({ isOpen, onClose, cart, inventory, onComplete })
     return total + (item.price * item.quantity);
   }, 0);
 
-  // Auto-close if cart becomes empty
+  // Auto-close if cart becomes empty (safe: only rendered when isOpen is true)
   if (cartItems.length === 0 && step === 1) {
-    setTimeout(() => onClose(), 100);
+    onClose();
     return null;
   }
 

@@ -424,15 +424,13 @@ const VendorDashboard = () => {
               return (
                 <motion.div
                   key={ticket.id}
-                  layout
-                  initial={{ opacity: 0, scale: 0.85, x: 60 }}
-                  animate={{ opacity: 1, scale: 1, x: 0 }}
-                  exit={{ opacity: 0, scale: 0.8, y: -50 }}
+                  layout="position"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.96, y: -20 }}
                   transition={{
-                    type: "spring",
-                    stiffness: 140,
-                    damping: 20,
-                    layout: { type: "spring", stiffness: 140, damping: 20 }
+                    duration: 0.25,
+                    ease: [0.16, 1, 0.3, 1]
                   }}
                   className={`elite-card kds-ticket`}
                   style={{ borderTop: `4px solid ${statusColor}` }}
@@ -460,7 +458,7 @@ const VendorDashboard = () => {
                       </span>
                     </div>
                     <span style={{ fontSize: '0.75rem', fontWeight: 900, color: '#E4002B', textTransform: 'uppercase', fontFamily: "'Oswald', sans-serif" }}>
-                      {(ticket.timestamp || ticket.timestamp) ? formatRelativeTime(ticket.timestamp || ticket.timestamp).toUpperCase() : (ticket.time || 'Just now').toUpperCase()}
+                      {ticket.timestamp ? formatRelativeTime(ticket.timestamp).toUpperCase() : (ticket.time || 'Just now').toUpperCase()}
                     </span>
                   </div>
 

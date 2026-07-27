@@ -165,22 +165,48 @@ const LoginPage = () => {
   const handleLogin = async (e) => {
     e.preventDefault();
     const id = identifier.trim();
+    const pwd = password.trim();
     const fe = {};
     if (!id) fe.identifier = 'This field is required.';
     if (Object.keys(fe).length) { setFieldErr(fe); return; }
     setIsLoading(true); clear();
     try {
+      // 1. If password is provided, attempt password-based database login first
+      if (pwd) {
+        let role = 'student';
+        if (id.toLowerCase().includes('admin')) role = 'admin';
+        else if (id.includes('-') || id.toLowerCase().includes('owner') || id.toLowerCase().includes('tea') || id.toLowerCase().includes('vadewale') || id.toLowerCase().includes('noodles') || id.toLowerCase().includes('narayana') || id.toLowerCase().includes('cravings')) role = 'owner';
+        
+        let res = await api.login(id, pwd, role, '');
+        if (res.success) { finish(res); return; }
+        
+        // Try alternate roles if specified role attempt failed
+        if (role !== 'admin') {
+          res = await api.login(id, pwd, 'admin', '');
+          if (res.success) { finish(res); return; }
+        }
+        if (role !== 'owner') {
+          res = await api.login(id, pwd, 'owner', '');
+          if (res.success) { finish(res); return; }
+        }
+        if (role !== 'student') {
+          res = await api.login(id, pwd, 'student', '');
+          if (res.success) { finish(res); return; }
+        }
+        
+        setErrorMsg('Incorrect username/email or password. Please try again.');
+        setIsLoading(false);
+        return;
+      }
+
+      // 2. If NO password is provided and identifier is an email or phone, attempt OTP flow
       if (isOtpId(id)) {
         if (isEmail(id)) { const { error } = await supabase.auth.signInWithOtp({ email: id }); if (error) throw error; }
         else { const ph = /^\d{10}$/.test(id) ? `+91${id}` : id; const { error } = await supabase.auth.signInWithOtp({ phone: ph }); if (error) throw error; }
         setIsLoading(false); setOtpSent(true); return;
       }
-      const role = id.toLowerCase().includes('admin') ? 'admin' : 'owner';
-      const res = await api.login(id, password.trim(), role, '');
-      if (res.success) { finish(res); return; }
-      const retry = await api.login(id, password.trim(), 'student', '');
-      if (retry.success) { finish(retry); return; }
-      setErrorMsg('Incorrect credentials. Please try again.');
+
+      setErrorMsg('Please enter your password to sign in.');
       setIsLoading(false);
     } catch (err) { setErrorMsg(err.message || 'Could not reach server.'); setIsLoading(false); }
   };

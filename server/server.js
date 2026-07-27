@@ -24,21 +24,14 @@ let dbInitPromise = null;
 app.use(async (req, res, next) => {
   if (!dbInitialized) {
     if (!dbInitPromise) {
-      // In Vercel serverless production, skip the heavy CREATE TABLE and seeding checks
-      // to avoid query roundtrip latency and prevent Vercel 10s execution timeouts.
-      if (process.env.VERCEL) {
-        dbInitialized = true;
-        dbInitPromise = Promise.resolve();
-      } else {
-        dbInitPromise = initDatabase()
-          .then(() => {
-            dbInitialized = true;
-          })
-          .catch((err) => {
-            dbInitPromise = null;
-            throw err;
-          });
-      }
+      dbInitPromise = initDatabase()
+        .then(() => {
+          dbInitialized = true;
+        })
+        .catch((err) => {
+          dbInitPromise = null;
+          throw err;
+        });
     }
     try {
       await dbInitPromise;
@@ -357,7 +350,7 @@ app.post('/api/orders', async (req, res) => {
 
     // --- DIGITAL RECEIPT DISPATCHER ---
     const receiptItemsText = createdItems.map(item => `   - ${item.quantity}x ${item.name} (₹${item.price} each) - Stall: ${item.stallName}`).join('\n');
-    const isEmail = customerId.includes('@');
+    const isEmail = customerId?.includes('@');
     const dispatchMethod = isEmail ? 'EMAIL' : 'MOBILE SMS';
     
     console.log(`\n==================================================`);
