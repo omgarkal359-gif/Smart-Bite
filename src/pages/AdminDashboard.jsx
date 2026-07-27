@@ -154,10 +154,6 @@ const AdminDashboard = () => {
             <div style={{ background: 'linear-gradient(135deg, #ff4757 0%, #ff6b81 100%)', width: '40px', height: '40px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '1.2rem', boxShadow: '0 4px 10px rgba(255,71,87,0.3)' }}>
               🛡️
             </div>
-            <div>
-              <h2 style={{ margin: 0, fontSize: '1.2rem', fontWeight: '900', letterSpacing: '1px', color: 'var(--text-main)' }}>ADMIN PANEL</h2>
-              <p style={{ margin: 0, fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--text-light)', textTransform: 'uppercase', letterSpacing: '1px' }}>Master Admin</p>
-            </div>
           </div>
 
           <nav>
