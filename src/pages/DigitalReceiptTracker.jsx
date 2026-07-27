@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { GlassCard } from '../components/ui/GlassCard';
 import { Button } from '../components/ui/Button';
-import { ArrowLeft, QrCode, CheckCircle, Clock, ChefHat, BellRing, Download, Mail, ShoppingBag } from 'lucide-react';
+import { ArrowLeft, QrCode, CheckCircle, Clock, ChefHat, BellRing, Download, Mail, ShoppingBag, ShieldAlert } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api, socket } from '../api';
 import './pages.css';
@@ -21,12 +21,27 @@ const DigitalReceiptTracker = () => {
   const [order, setOrder] = useState(null);
   const [toastMsg, setToastMsg] = useState('');
   const [emailInput, setEmailInput] = useState('');
+  const [isAccessDenied, setIsAccessDenied] = useState(false);
 
   useEffect(() => {
     async function loadOrder() {
       try {
+        const savedUser = JSON.parse(localStorage.getItem('sgu_user') || '{}');
+        const currentUserId = (savedUser.username || savedUser.id || '').trim().toLowerCase();
+        const currentUserRole = (savedUser.role || 'student').trim().toLowerCase();
+
         const foundOrder = await api.getOrder(orderId);
+        
+        // Security Ownership Guard: Prevent viewing other students' orders by changing order link ID
+        const orderOwner = (foundOrder.customerId || foundOrder.customerid || '').trim().toLowerCase();
+        if ((currentUserRole === 'student' || currentUserRole === 'guest') && currentUserId && orderOwner && orderOwner !== currentUserId) {
+          setIsAccessDenied(true);
+          setOrder(null);
+          return;
+        }
+
         setOrder(foundOrder);
+        setIsAccessDenied(false);
         
         // Map status to step index
         if (foundOrder.status === 'placed' || foundOrder.status === 'pending_cash') setCurrentStep(0);
@@ -34,6 +49,9 @@ const DigitalReceiptTracker = () => {
         else if (foundOrder.status === 'ready' || foundOrder.status === 'completed') setCurrentStep(2);
       } catch (err) {
         console.error('Failed to load order tracker:', err);
+        if (err.message?.toLowerCase().includes('denied') || err.message?.includes('403')) {
+          setIsAccessDenied(true);
+        }
       }
     }
 
@@ -43,6 +61,15 @@ const DigitalReceiptTracker = () => {
     socket.emit('join', `order-${orderId}`);
 
     const handleStatusUpdate = (updatedOrder) => {
+      const savedUser = JSON.parse(localStorage.getItem('sgu_user') || '{}');
+      const currentUserId = (savedUser.username || savedUser.id || '').trim().toLowerCase();
+      const currentUserRole = (savedUser.role || 'student').trim().toLowerCase();
+      const orderOwner = (updatedOrder.customerId || updatedOrder.customerid || '').trim().toLowerCase();
+
+      if ((currentUserRole === 'student' || currentUserRole === 'guest') && currentUserId && orderOwner && orderOwner !== currentUserId) {
+        return;
+      }
+
       setOrder(updatedOrder);
       if (updatedOrder.status === 'placed' || updatedOrder.status === 'pending_cash') setCurrentStep(0);
       else if (updatedOrder.status === 'preparing') setCurrentStep(1);
@@ -472,6 +499,47 @@ const DigitalReceiptTracker = () => {
       setToastMsg('');
     }, 4000);
   };
+
+  if (isAccessDenied) {
+    return (
+      <div className="tracker-container-v21 page-transition">
+        <header className="glass-header blur-header">
+          <div className="menu-header-top">
+            <button className="btn-icon tap-effect" onClick={() => navigate('/student/orders')}>
+              <ArrowLeft size={24} />
+            </button>
+            <h1 className="heading-2">Access Denied</h1>
+            <div style={{ width: 40 }} />
+          </div>
+        </header>
+
+        <main className="tracker-main-v21 flex flex-col items-center justify-center p-6 text-center" style={{ minHeight: '60vh' }}>
+          <GlassCard style={{ padding: '36px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', borderTop: '5px solid #FF3B5C', maxWidth: 420, width: '100%' }}>
+            <div style={{ width: 64, height: 64, borderRadius: 20, background: '#FFF1F2', color: '#FF3B5C', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+              <ShieldAlert size={36} />
+            </div>
+            <h2 style={{ fontFamily: "var(--font-heading)", fontSize: '1.4rem', fontWeight: 800, color: 'var(--text-dark)', margin: '0 0 8px 0' }}>
+              UNAUTHORIZED ORDER LINK
+            </h2>
+            <p style={{ fontSize: '0.85rem', color: '#64748B', lineHeight: 1.5, margin: '0 0 20px 0', fontWeight: 500 }}>
+              Security Policy Alert: You are not authorized to view or access another student's order details by modifying the order number in the link.
+            </p>
+            <button 
+              onClick={() => navigate('/student/orders')}
+              style={{
+                width: '100%', padding: '12px 20px', borderRadius: 999, border: 'none',
+                background: 'linear-gradient(135deg, #FF3B5C, #E11D48)', color: 'white',
+                fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: '0.9rem',
+                cursor: 'pointer', boxShadow: '0 4px 14px rgba(255, 59, 92, 0.35)'
+              }}
+            >
+              RETURN TO MY ORDERS
+            </button>
+          </GlassCard>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="tracker-container-v21 page-transition">
