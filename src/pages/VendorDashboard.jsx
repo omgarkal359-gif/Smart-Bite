@@ -417,7 +417,6 @@ const VendorDashboard = () => {
                 animate={{ opacity: 1 }}
                 className="flex flex-col items-center justify-center w-full py-24 gap-4 text-center"
               >
-                <div style={{ fontSize: 64 }}>🍽️</div>
                 <p style={{ fontFamily: "'Oswald', sans-serif", fontSize: '1.4rem', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 700 }}>
                   No Active Orders
                 </p>
