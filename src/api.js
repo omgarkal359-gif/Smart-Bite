@@ -15,10 +15,14 @@ export const socket = io(SOCKET_URL, {
 // Helper for fetch calls
 async function fetchAPI(endpoint, options = {}) {
   const url = `${API_BASE_URL}${endpoint}`;
+  const savedUser = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('sgu_user') || '{}') : {};
+
   try {
     const response = await fetch(url, {
       headers: {
         'Content-Type': 'application/json',
+        'x-user-id': savedUser.username || savedUser.id || '',
+        'x-user-role': savedUser.role || 'student',
         ...options.headers,
       },
       ...options,
