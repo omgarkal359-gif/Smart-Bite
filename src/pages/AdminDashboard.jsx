@@ -92,28 +92,30 @@ const AdminDashboard = () => {
       onClick={() => setActiveTab(id)}
       style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '0.8rem 1rem',
-        borderRadius: '10px',
+        padding: '0.9rem 1.2rem',
+        borderRadius: '12px',
         cursor: 'pointer',
-        marginBottom: '0.5rem',
-        background: activeTab === id ? 'linear-gradient(135deg, #ff4757 0%, #ff6b81 100%)' : 'transparent',
-        color: activeTab === id ? 'white' : 'var(--text-main)',
-        fontWeight: activeTab === id ? '700' : '600',
-        transition: 'all 0.2s'
+        marginBottom: '0.8rem',
+        background: activeTab === id ? 'white' : 'transparent',
+        color: activeTab === id ? '#ee3c48' : 'white',
+        fontWeight: activeTab === id ? '800' : '600',
+        transition: 'all 0.2s',
+        boxShadow: activeTab === id ? '0 4px 15px rgba(0,0,0,0.1)' : 'none'
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
-        <span>{icon}</span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontSize: '1.05rem' }}>
+        <span style={{ fontSize: '1.3rem' }}>{icon}</span>
         <span>{label}</span>
       </div>
       {badge && (
         <span style={{ 
-          background: activeTab === id ? 'rgba(255,255,255,0.2)' : 'var(--primary)', 
+          background: activeTab === id ? '#ee3c48' : 'rgba(255,255,255,0.25)', 
           color: 'white', 
           fontSize: '0.75rem', 
-          padding: '0.2rem 0.6rem', 
+          padding: '0.3rem 0.8rem', 
           borderRadius: '20px',
-          fontWeight: 'bold'
+          fontWeight: '900',
+          letterSpacing: '0.5px'
         }}>
           {badge}
         </span>
@@ -148,15 +150,24 @@ const AdminDashboard = () => {
     <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f8f9fa', fontFamily: "'Inter', sans-serif" }}>
       
       {/* Sidebar */}
-      <aside style={{ width: '280px', background: 'white', borderRight: '1px solid #eee', display: 'flex', flexDirection: 'column' }}>
+      <aside style={{ width: '280px', background: '#ee3c48', borderRight: 'none', display: 'flex', flexDirection: 'column', color: 'white' }}>
         <div style={{ padding: '2rem 1.5rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', marginBottom: '2.5rem' }}>
-            <div style={{ background: 'linear-gradient(135deg, #ff4757 0%, #ff6b81 100%)', width: '40px', height: '40px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '1.2rem', boxShadow: '0 4px 10px rgba(255,71,87,0.3)' }}>
-              🛡️
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2.5rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+              <div style={{ background: 'white', width: '45px', height: '45px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ee3c48', fontSize: '1.4rem', boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}>
+                🛡️
+              </div>
+              <div>
+                <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: '900', letterSpacing: '0.5px', color: 'white', textTransform: 'uppercase' }}>ADMIN DASHBOARD</h2>
+                <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.75rem', fontWeight: 'bold', color: 'rgba(255,255,255,0.9)', textTransform: 'uppercase', letterSpacing: '1px' }}>SGU SmartBite Enterprise</p>
+              </div>
+            </div>
+            <div style={{ cursor: 'pointer', fontSize: '1.2rem', color: 'white' }}>
+              ☰
             </div>
           </div>
 
-          <nav>
+          <nav style={{ borderTop: '1px solid rgba(255,255,255,0.2)', paddingTop: '1.5rem' }}>
             <NavItem id="overview" icon="📱" label="Overview" />
             <NavItem id="orders" icon="🛍️" label="Orders & Shops" badge="LIVE" />
             <NavItem id="users" icon="👥" label="User Access" />
@@ -165,10 +176,10 @@ const AdminDashboard = () => {
           </nav>
         </div>
         
-        <div style={{ marginTop: 'auto', padding: '1.5rem', borderTop: '1px solid #eee' }}>
+        <div style={{ marginTop: 'auto', padding: '1.5rem', borderTop: '1px solid rgba(255,255,255,0.2)' }}>
           <button 
             onClick={() => navigate('/shops')}
-            style={{ width: '100%', padding: '0.8rem', background: '#f8f9fa', border: '1px solid #ddd', borderRadius: '8px', fontWeight: 'bold', color: 'var(--text-main)', cursor: 'pointer' }}
+            style={{ width: '100%', padding: '0.9rem', background: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', color: '#ee3c48', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}
           >
             ← Back to App
           </button>
