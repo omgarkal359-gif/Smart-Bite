@@ -15,13 +15,6 @@ export const CheckoutDrawer = ({ isOpen, onClose, cart, inventory, onComplete })
   const [paymentMode, setPaymentMode] = useState('upi'); // upi | cash
   const [isProcessing, setIsProcessing] = useState(false);
 
-  if (!isOpen) return null;
-
-  const cartItems = Object.values(cart);
-  const totalCartValue = cartItems.reduce((total, item) => {
-    return total + (item.price * item.quantity);
-  }, 0);
-
   useEffect(() => {
     if (isOpen) {
       setStep(1);
@@ -30,6 +23,13 @@ export const CheckoutDrawer = ({ isOpen, onClose, cart, inventory, onComplete })
       setIsProcessing(false);
     }
   }, [isOpen]);
+
+  if (!isOpen) return null;
+
+  const cartItems = Object.values(cart);
+  const totalCartValue = cartItems.reduce((total, item) => {
+    return total + (item.price * item.quantity);
+  }, 0);
 
   // Auto-close if cart becomes empty (safe: only rendered when isOpen is true)
   if (cartItems.length === 0 && step === 1) {
