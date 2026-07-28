@@ -269,16 +269,19 @@ export const MenuEditor = ({ shopId }) => {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-white rounded-3xl shadow-2xl p-8 max-w-lg w-full max-h-[90vh] overflow-y-auto"
+              className="bg-white rounded-3xl shadow-2xl max-w-lg w-full flex flex-col overflow-hidden"
+              style={{ maxHeight: '90vh' }}
             >
-              <div className="flex justify-between items-center mb-8">
-                <h3 className="text-3xl font-black uppercase tracking-wide text-slate-900 m-0">Edit Item</h3>
-                <button onClick={() => setEditingItem(null)} className="p-2 hover:bg-slate-100 rounded-full transition-colors border-none bg-transparent cursor-pointer">
+              {/* Sticky Header */}
+              <div className="flex justify-between items-center p-6 pb-4 border-b border-slate-100 bg-white z-10 shrink-0">
+                <h3 className="text-3xl font-black uppercase tracking-wide text-slate-900 m-0 leading-none">Edit Item</h3>
+                <button onClick={() => setEditingItem(null)} className="p-2 hover:bg-slate-100 rounded-full transition-colors border-none bg-transparent cursor-pointer flex items-center justify-center">
                   <X size={24} />
                 </button>
               </div>
               
-              <div className="flex flex-col gap-6">
+              {/* Scrollable Body */}
+              <div className="flex flex-col gap-6 p-6 overflow-y-auto">
                 <FloatingInput 
                   label="Item Name"
                   value={editingItem.name}
@@ -317,7 +320,7 @@ export const MenuEditor = ({ shopId }) => {
                 />
                 
                 <div 
-                  className={`drop-zone ${isUploading ? 'shimmer' : ''} !mb-2`}
+                  className={`drop-zone ${isUploading ? 'shimmer' : ''} !mb-2 shrink-0`}
                   onClick={() => editFileInputRef.current.click()}
                 >
                   {editingItem.img ? (
@@ -348,7 +351,7 @@ export const MenuEditor = ({ shopId }) => {
                       alert('Failed to update item: ' + err.message);
                     }
                   }}
-                  className="w-full py-4 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold uppercase tracking-wider text-sm transition-colors border-none cursor-pointer mt-2"
+                  className="w-full py-4 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold uppercase tracking-wider text-sm transition-colors border-none cursor-pointer shrink-0 mt-2"
                   disabled={isUploading}
                 >
                   Save Changes
