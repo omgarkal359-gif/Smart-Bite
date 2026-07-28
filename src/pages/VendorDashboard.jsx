@@ -299,7 +299,7 @@ const VendorDashboard = () => {
           <motion.button 
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className={`elite-ctrl-btn ${isBusyMode ? 'busy' : ''}`} 
+            className={`elite-ctrl-btn ${isBusyMode ? 'busy' : 'active'}`} 
             onClick={handleToggleBusy}
           >
             <Clock size={16} /> <span>{isBusyMode ? 'BUSY' : 'NORMAL'}</span>
