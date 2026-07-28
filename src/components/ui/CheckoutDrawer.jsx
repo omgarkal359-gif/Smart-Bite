@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X, Utensils, ShoppingBag, Banknote, Smartphone, CheckCircle, ArrowRight, Trash2, Plus, Minus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -21,6 +21,15 @@ export const CheckoutDrawer = ({ isOpen, onClose, cart, inventory, onComplete })
   const totalCartValue = cartItems.reduce((total, item) => {
     return total + (item.price * item.quantity);
   }, 0);
+
+  useEffect(() => {
+    if (isOpen) {
+      setStep(1);
+      setDiningMode('dine_in');
+      setPaymentMode('upi');
+      setIsProcessing(false);
+    }
+  }, [isOpen]);
 
   // Auto-close if cart becomes empty (safe: only rendered when isOpen is true)
   if (cartItems.length === 0 && step === 1) {
