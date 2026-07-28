@@ -1,20 +1,25 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { IconMail, IconArrowLeft, IconSend, IconCircleCheck, IconShieldCheck, IconLoader2 } from '@tabler/icons-react';
+import { IconMail, IconDeviceMobile, IconArrowLeft, IconSend, IconCircleCheck, IconShieldCheck, IconLoader2 } from '@tabler/icons-react';
 import { supabase } from '../supabaseClient';
 import './LoginPage.css';
 
 const ForgotPassword = () => {
   const navigate = useNavigate();
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
+  const isEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+  const isPhone = (v) => /^\d{10}$/.test(v) || /^\+\d{10,12}$/.test(v);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!email.trim() || !email.includes('@')) {
-      setErrorMsg('Please enter a valid email address.');
+    const id = identifier.trim();
+
+    if (!id || (!isEmail(id) && !isPhone(id))) {
+      setErrorMsg('Please enter a valid registered email address or 10-digit mobile number.');
       return;
     }
 
@@ -22,13 +27,21 @@ const ForgotPassword = () => {
     setIsLoading(true);
 
     try {
-      await supabase.auth.resetPasswordForEmail(email.trim(), {
-        redirectTo: window.location.origin + '/reset-password',
-      });
+      if (isEmail(id)) {
+        await supabase.auth.resetPasswordForEmail(id, {
+          redirectTo: window.location.origin + '/reset-password',
+        });
+      } else if (isPhone(id)) {
+        const formattedPhone = /^\d{10}$/.test(id) ? `+91${id}` : id;
+        await supabase.auth.signInWithOtp({
+          phone: formattedPhone,
+        });
+      }
     } catch (err) {
-      console.error('Password reset email error:', err);
+      console.error('Password reset dispatch error:', err);
     } finally {
       setIsLoading(false);
+      // Security Anti-enumeration rule: Always display success message regardless of account existence
       setIsSubmitted(true);
     }
   };
@@ -97,11 +110,11 @@ const ForgotPassword = () => {
               marginBottom: 20,
               textAlign: 'center'
             }}>
-              If an account exists for <strong style={{ color: '#FFFFFF' }}>{email}</strong>, a password reset link has been sent.
+              If an account exists for registered <strong style={{ color: '#FFFFFF' }}>{identifier}</strong>, a password reset link or verification code has been sent.
             </div>
 
             <p style={{ fontSize: '0.78rem', color: '#94A3B8', marginBottom: 24 }}>
-              Please check your email inbox and spam folder for instructions.
+              Please check your email inbox, spam folder, or SMS messages for instructions.
             </p>
 
             <button
@@ -117,23 +130,31 @@ const ForgotPassword = () => {
           <form onSubmit={handleSubmit} noValidate>
             <div style={{ marginBottom: 24 }}>
               <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
-                Email Address
+                Registered Mobile Number or Email ID
               </label>
               
               <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                <IconMail 
-                  size={20} 
-                  strokeWidth={1.75} 
-                  style={{ position: 'absolute', left: 14, color: '#64748B', pointerEvents: 'none' }} 
-                />
+                {isPhone(identifier.trim()) ? (
+                  <IconDeviceMobile 
+                    size={20} 
+                    strokeWidth={1.75} 
+                    style={{ position: 'absolute', left: 14, color: '#E4002B', pointerEvents: 'none' }} 
+                  />
+                ) : (
+                  <IconMail 
+                    size={20} 
+                    strokeWidth={1.75} 
+                    style={{ position: 'absolute', left: 14, color: '#64748B', pointerEvents: 'none' }} 
+                  />
+                )}
                 <input
-                  type="email"
-                  value={email}
+                  type="text"
+                  value={identifier}
                   onChange={(e) => {
-                    setEmail(e.target.value);
+                    setIdentifier(e.target.value);
                     if (errorMsg) setErrorMsg('');
                   }}
-                  placeholder="student@sgu.ac.in"
+                  placeholder="student@sgu.ac.in or 9876543210"
                   style={{
                     width: '100%',
                     padding: '14px 16px 14px 44px',
@@ -160,7 +181,7 @@ const ForgotPassword = () => {
 
             <button
               type="submit"
-              disabled={isLoading || !email.trim()}
+              disabled={isLoading || !identifier.trim()}
               className="sb-btn-primary"
               style={{ 
                 width: '100%', 
@@ -168,18 +189,18 @@ const ForgotPassword = () => {
                 alignItems: 'center', 
                 justifyContent: 'center', 
                 gap: 8,
-                opacity: (!email.trim() || isLoading) ? 0.6 : 1,
-                cursor: (!email.trim() || isLoading) ? 'not-allowed' : 'pointer'
+                opacity: (!identifier.trim() || isLoading) ? 0.6 : 1,
+                cursor: (!identifier.trim() || isLoading) ? 'not-allowed' : 'pointer'
               }}
             >
               {isLoading ? (
                 <>
                   <IconLoader2 size={20} className="sb-spin" />
-                  <span>Sending Reset Link...</span>
+                  <span>Sending Reset Link / OTP...</span>
                 </>
               ) : (
                 <>
-                  <span>Send Reset Link</span>
+                  <span>Send Reset Link / OTP</span>
                   <IconSend size={18} strokeWidth={2} />
                 </>
               )}
