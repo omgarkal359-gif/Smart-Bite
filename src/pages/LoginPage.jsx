@@ -85,12 +85,6 @@ const LoginPage = () => {
   const [errorMsg,  setErrorMsg]  = useState('');
   const [fieldErr,  setFieldErr]  = useState({});
 
-  /* OTP flow */
-  const [otpSent,        setOtpSent]        = useState(false);
-  const [otpToken,       setOtpToken]       = useState('');
-  const [pendingRegUser, setPendingRegUser] = useState(null);
-  const [resendTimer,    setResendTimer]    = useState(30);
-
   const navigate = useNavigate();
 
   /* Clerk Authentication Hook */
@@ -135,17 +129,6 @@ const LoginPage = () => {
     }
   }, [isClerkSignedIn, clerkUser]);
 
-  /* ── resend OTP timer countdown ── */
-  useEffect(() => {
-    let timer;
-    if (otpSent && resendTimer > 0) {
-      timer = setInterval(() => {
-        setResendTimer(prev => prev - 1);
-      }, 1000);
-    }
-    return () => clearInterval(timer);
-  }, [otpSent, resendTimer]);
-
   /* ── Auto-reset loading state if login process is terminated or timed out ── */
   useEffect(() => {
     let timeout;
@@ -157,28 +140,15 @@ const LoginPage = () => {
     return () => clearTimeout(timeout);
   }, [isLoading, isSuccess]);
 
-  /* ── Window Focus Listener: Reset loading state when user returns focus after closing popup/exiting ── */
-  useEffect(() => {
-    const handleFocus = () => {
-      if (isLoading && !isSuccess) {
-        setIsLoading(false);
-      }
-    };
-    window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
-  }, [isLoading, isSuccess]);
-
   /* ── helpers ── */
   const isEmail  = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
   const isPhone  = (v) => /^\d{10}$/.test(v) || /^\+\d{10,12}$/.test(v);
-  const isOtpId  = (v) => isEmail(v) || isPhone(v);
   const clear    = ()  => { setErrorMsg(''); setFieldErr({}); };
 
   const switchMode = (m) => {
     setMode(m);
     setIdentifier(''); setPassword(''); setRegName(''); setConfirmPwd('');
     setShowPwd(false); setShowConfirm(false);
-    setOtpSent(false); setOtpToken(''); setPendingRegUser(null);
     clear();
   };
 
@@ -221,13 +191,13 @@ const LoginPage = () => {
           const isSignUp = localStorage.getItem('sgu_is_signup') === 'true' || mode === 'register';
           localStorage.removeItem('sgu_is_signup');
 
-          // Transition selected Google account to OTP Verification screen
-          setIdentifier(lid);
-          setPendingRegUser({ username: lid, name: uName, role: 'student', isSignUp });
-          await supabase.auth.signOut();
-          setIsLoading(false);
-          setOtpSent(true);
-          setResendTimer(30);
+          const res = await api.googleLogin(lid, uName, isSignUp);
+          if (res.success) {
+            finish(res);
+          } else {
+            setErrorMsg(res.message || 'Google sign-in failed.');
+            setIsLoading(false);
+          }
         } catch (err) { setErrorMsg(err.message || 'Could not complete Google sign-in.'); setIsLoading(false); }
       }
     });
@@ -261,6 +231,7 @@ const LoginPage = () => {
     const pwd = password.trim();
     const fe = {};
     if (!id) fe.identifier = 'This field is required.';
+    if (!pwd) fe.password = 'Password is required.';
     if (Object.keys(fe).length) { setFieldErr(fe); return; }
     setIsLoading(true); clear();
     try {
@@ -268,44 +239,12 @@ const LoginPage = () => {
       if (id.toLowerCase().includes('admin')) role = 'admin';
       else if (id.includes('-') || id.toLowerCase().includes('owner') || id.toLowerCase().includes('tea') || id.toLowerCase().includes('vadewale') || id.toLowerCase().includes('noodles') || id.toLowerCase().includes('narayana') || id.toLowerCase().includes('cravings')) role = 'owner';
       
-      // 1. Password sign-in -> Validate credentials and send Real 6-Digit Email OTP
-      if (pwd) {
-        const res = await api.login(id, pwd, role, '');
-        if (res.success) {
-          setPendingRegUser(res.user);
-          try {
-            await api.sendOtp(id);
-          } catch (e) {
-            console.warn('Real OTP dispatch notice:', e);
-          }
-          setIsLoading(false);
-          setOtpSent(true);
-          setResendTimer(30);
-          return;
-        }
-        setErrorMsg(res.message || 'Incorrect password or account not found.');
-        setIsLoading(false);
+      const res = await api.login(id, pwd, role, '');
+      if (res.success) {
+        finish(res);
         return;
       }
-
-      // 2. OTP sign-in (when password is left blank or user clicks Send Code)
-      if (isOtpId(id)) {
-        const res = await api.login(id, '', role, '');
-        if (res.success) {
-          setPendingRegUser(res.user);
-          try {
-            await api.sendOtp(id);
-          } catch (e) {
-            console.warn('Real OTP dispatch notice:', e);
-          }
-          setIsLoading(false);
-          setOtpSent(true);
-          setResendTimer(30);
-          return;
-        }
-      }
-
-      setErrorMsg('Please enter your password to sign in.');
+      setErrorMsg(res.message || 'Incorrect password or account not found.');
       setIsLoading(false);
     } catch (err) {
       if (err.message?.includes('Account not found') || err.message?.includes('Sign Up')) {
@@ -333,54 +272,13 @@ const LoginPage = () => {
     try {
       const res = await api.register(id, nm, password.trim(), 'student');
       if (res.success) {
-        setPendingRegUser(res.user);
-        try {
-          await api.sendOtp(id);
-        } catch (e) {
-          console.warn('OTP dispatch notice:', e);
-        }
-        setIsLoading(false);
-        setOtpSent(true);
-        setResendTimer(30);
+        finish(res);
       } else {
         setErrorMsg(res.message || 'Registration failed. Try again.');
         setIsLoading(false);
       }
     } catch (err) {
       setErrorMsg(err.message || 'Could not reach server.');
-      setIsLoading(false);
-    }
-  };
-
-  /* ── OTP verify ── */
-  const handleVerifyOtp = async (e) => {
-    e.preventDefault();
-    const code = otpToken.trim();
-    if (code.length !== 6) { setErrorMsg('Enter the 6-digit verification code.'); return; }
-    setIsLoading(true); clear();
-    try {
-      const verifyTarget = identifier || pendingRegUser?.username;
-      const vRes = await api.verifyOtp(verifyTarget, code).catch(() => null);
-
-      if (vRes?.success || code === '123456' || code.length === 6) {
-        if (pendingRegUser) {
-          const isSignUp = pendingRegUser.isSignUp !== undefined ? pendingRegUser.isSignUp : true;
-          const regRes = await api.googleLogin(pendingRegUser.username, pendingRegUser.name, isSignUp);
-          if (regRes.success) {
-            finish(regRes);
-            return;
-          }
-        }
-        const userRes = await api.login(identifier, '', 'student', regName || 'Student');
-        if (userRes.success) { finish(userRes); return; }
-        
-        finish({ success: true, user: pendingRegUser || { username: verifyTarget, name: 'Student', role: 'student' } });
-      } else {
-        setErrorMsg('Invalid verification code. Please check your email inbox and try again.');
-        setIsLoading(false);
-      }
-    } catch (err) {
-      setErrorMsg(err.message || 'Verification failed. Incorrect OTP code.');
       setIsLoading(false);
     }
   };
@@ -412,14 +310,14 @@ const LoginPage = () => {
   const hint = (() => {
     const id = identifier.trim();
     if (!id) return null;
-    if (isEmail(id)) return 'We will send a one-time code to this email.';
-    if (isPhone(id)) return 'We will send a one-time code via SMS.';
+    if (isEmail(id)) return 'Enter your password below to sign in.';
+    if (isPhone(id)) return 'Enter your password below to sign in.';
     if (id.toLowerCase().includes('admin')) return 'Admin account. Enter your password below.';
     return 'Shop owner account. Enter your password below.';
   })();
 
   /* ── Primary button label ── */
-  const loginLabel = isOtpId(identifier.trim()) ? 'Send Code' : 'Sign In';
+  const loginLabel = 'Sign In';
 
   /* ── Shared: Google button ── */
   const GoogleBtn = ({ label, isSignUp }) => (
@@ -456,25 +354,22 @@ const LoginPage = () => {
         alignItems: 'center',
         justifyContent: 'center',
         gap: '10px',
-        padding: '12px',
-        borderRadius: '999px',
-        border: '1px solid rgba(108, 71, 255, 0.3)',
-        background: 'linear-gradient(135deg, #6C47FF, #5634D9)',
-        color: '#FFFFFF',
-        fontWeight: 800,
-        fontSize: '0.88rem',
+        padding: '12px 16px',
+        borderRadius: '12px',
+        border: '1px solid #CBD5E1',
+        background: '#FFFFFF',
+        color: '#1E293B',
+        fontWeight: 600,
+        fontSize: '0.95rem',
         cursor: 'pointer',
         marginTop: '10px',
-        boxShadow: '0 4px 14px rgba(108, 71, 255, 0.3)',
         transition: 'all 0.2s ease',
-        fontFamily: "'Outfit', sans-serif"
       }}
       aria-label={label}
     >
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
-        <path d="M2 17L12 22L22 17" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
-        <path d="M2 12L12 17L22 12" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 2C6.477 2 2 6.477 2 12C2 17.523 6.477 22 12 22C17.523 22 22 17.523 22 12C22 6.477 17.523 2 12 2Z" fill="#6C47FF"/>
+        <path d="M12 6C8.686 6 6 8.686 6 12C6 15.314 8.686 18 12 18C15.314 18 18 15.314 18 12C18 8.686 15.314 6 12 6Z" fill="white"/>
       </svg>
       <span>{label}</span>
     </button>
@@ -496,84 +391,7 @@ const LoginPage = () => {
       <div className="sb-bg-accent" aria-hidden="true" />
 
       <div className="sb-card" role="region" aria-label="Smart Bite authentication">
-
-        {/* ══ OTP SCREEN ══ */}
-        {otpSent ? (
-          <form onSubmit={handleVerifyOtp} noValidate aria-label="OTP verification">
-            <div className="sb-otp-icon" aria-hidden="true">
-              <IconShieldCheck size={40} strokeWidth={1.5} />
-            </div>
-            <h1 className="sb-heading sb-heading--sm">
-              {pendingRegUser ? 'Account Created! Enter OTP' : isEmail(identifier) ? 'Check your email' : 'Check your phone'}
-            </h1>
-            <p className="sb-body sb-body--center" style={{ marginBottom: 20 }}>
-              We sent a 6-digit verification code to{' '}
-              <span className="sb-accent-text" style={{ fontWeight: 700 }}>{identifier}</span>. Please check your email inbox.
-            </p>
-
-            <Field
-              id="otp"
-              label="6-Digit OTP Code"
-              Icon={IconShieldCheck}
-              value={otpToken}
-              onChange={(e) => { setOtpToken(e.target.value.replace(/\D/g, '').slice(0, 6)); clear(); }}
-              placeholder="123456"
-              autoFocus
-              autoComplete="one-time-code"
-              error={errorMsg}
-            />
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, fontSize: '0.78rem' }}>
-              <span style={{ color: '#64748B' }}>Didn't receive code?</span>
-              <button
-                type="button"
-                disabled={resendTimer > 0}
-                onClick={async () => {
-                  setResendTimer(30);
-                  setErrorMsg('');
-                  const target = identifier || pendingRegUser?.username;
-                  if (target) {
-                    try {
-                      await api.sendOtp(target);
-                    } catch (e) {
-                      console.warn('Resend OTP error:', e);
-                    }
-                  }
-                  alert(`Verification code re-sent to ${target}! (Test fallback code: 123456)`);
-                }}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: resendTimer > 0 ? '#94A3B8' : '#E4002B',
-                  fontWeight: 700,
-                  cursor: resendTimer > 0 ? 'not-allowed' : 'pointer'
-                }}
-              >
-                {resendTimer > 0 ? `Resend in ${resendTimer}s` : 'Resend Code'}
-              </button>
-            </div>
-
-            <button
-              type="submit"
-              disabled={otpToken.length !== 6 || isLoading || isSuccess}
-              className={`sb-btn-primary${isSuccess ? ' sb-btn-primary--success' : ''}`}
-              aria-label="Verify code and complete sign up"
-            >
-              <BtnInner label={pendingRegUser ? 'Verify & Activate Account' : 'Verify and sign in'} />
-            </button>
-
-            <button
-              type="button"
-              className="sb-link-btn"
-              onClick={() => { setOtpSent(false); setOtpToken(''); setPendingRegUser(null); clear(); }}
-            >
-              Back to sign in
-            </button>
-          </form>
-
-        ) : (
-          <>
-            {/* ── Brand mark ── */}
+        {/* ── Brand mark ── */}
             <div className="sb-brand" aria-label="Smart Bite">
               <div className="sb-logo-ring" aria-hidden="true">
                 {/* Simple geometric mark: utensils silhouette, not hand-rolled decorative SVG */}
@@ -794,8 +612,6 @@ const LoginPage = () => {
                 </div>
               </form>
             )}
-          </>
-        )}
       </div>
     </main>
   );
