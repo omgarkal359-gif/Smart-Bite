@@ -269,73 +269,89 @@ export const MenuEditor = ({ shopId }) => {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-white rounded-3xl shadow-2xl max-w-lg w-full flex flex-col overflow-hidden"
+              className="bg-white rounded-[2rem] shadow-2xl max-w-lg w-full flex flex-col overflow-hidden"
               style={{ height: '85vh', minHeight: '500px', maxHeight: '800px' }}
             >
-              {/* Sticky Header */}
-              <div className="bg-white z-20 px-8 py-6 border-b border-slate-100 flex justify-between items-center shrink-0">
-                <h3 className="text-3xl font-black uppercase tracking-wide text-slate-900 m-0">Edit Item</h3>
-                <button onClick={() => setEditingItem(null)} className="p-2 hover:bg-slate-100 rounded-full transition-colors border-none bg-transparent cursor-pointer flex items-center justify-center">
-                  <X size={24} />
+              {/* Refined Header */}
+              <div className="bg-slate-50 px-8 py-5 border-b border-slate-100 flex justify-between items-center shrink-0">
+                <h2 className="text-2xl font-bold text-slate-800 m-0 tracking-tight">Edit Menu Item</h2>
+                <button onClick={() => setEditingItem(null)} className="p-2 hover:bg-slate-200 rounded-full transition-colors border-none bg-transparent cursor-pointer flex items-center justify-center text-slate-500 hover:text-slate-800">
+                  <X size={22} strokeWidth={2.5} />
                 </button>
               </div>
               
               {/* Body */}
-              <div className="flex flex-col gap-6 p-8 flex-1 overflow-y-auto min-h-0">
-                <FloatingInput 
-                  label="Item Name"
-                  value={editingItem.name}
-                  onChange={(e) => setEditingItem({...editingItem, name: e.target.value})}
-                />
+              <div className="flex flex-col gap-6 p-8 flex-1 overflow-y-auto min-h-0 bg-white">
                 
-                <div className="flex gap-4">
-                  <div className="flex-1">
-                    <FloatingInput 
-                      label="Price (₹)"
-                      type="number"
-                      value={editingItem.price}
-                      onChange={(e) => setEditingItem({...editingItem, price: e.target.value})}
-                    />
-                  </div>
-                  <div className="flex-1">
-                    <div className="floating-label-group m-0 h-full">
-                      <select 
-                        className="floating-input appearance-none h-full"
-                        value={editingItem.category}
-                        onChange={(e) => setEditingItem({...editingItem, category: e.target.value})}
-                      >
-                        {categories.map(c => <option key={c} value={c}>{c}</option>)}
-                      </select>
-                      <label className="floating-label">Category</label>
+                <div className="space-y-6 flex-1">
+                  <FloatingInput 
+                    label="Item Name"
+                    value={editingItem.name}
+                    onChange={(e) => setEditingItem({...editingItem, name: e.target.value})}
+                  />
+                  
+                  <div className="flex gap-5">
+                    <div className="flex-1">
+                      <FloatingInput 
+                        label="Price (₹)"
+                        type="number"
+                        value={editingItem.price}
+                        onChange={(e) => setEditingItem({...editingItem, price: e.target.value})}
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <div className="floating-label-group">
+                        <select 
+                          className="floating-input bg-white"
+                          value={editingItem.category}
+                          onChange={(e) => setEditingItem({...editingItem, category: e.target.value})}
+                        >
+                          {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                        </select>
+                        <label className="floating-label">Category</label>
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                <input 
-                  type="file" 
-                  ref={editFileInputRef} 
-                  className="hidden" 
-                  accept="image/*" 
-                  onChange={handleEditFileChange} 
-                />
-                
-                <div 
-                  className={`drop-zone ${isUploading ? 'shimmer' : ''} !mb-2 shrink-0`}
-                  onClick={() => editFileInputRef.current.click()}
-                >
-                  {editingItem.img ? (
-                    <img src={editingItem.img} className="preview-image" style={{ objectFit: 'cover' }} />
-                  ) : isUploading ? (
-                    <Loader2 size={40} className="upload-spinner animate-spin" />
-                  ) : (
-                    <>
-                      <div className="upload-icon-wrapper"><Camera size={32} /></div>
-                      <p className="upload-text">Change Photo</p>
-                    </>
-                  )}
+                {/* Spaced out Image Section */}
+                <div className="mt-4 pt-6 border-t border-slate-100">
+                  <h4 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4">Item Photo</h4>
+                  <div 
+                    className={`relative w-full h-48 rounded-2xl overflow-hidden border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all ${isUploading ? 'border-slate-300 bg-slate-50' : 'border-indigo-200 bg-indigo-50/50 hover:bg-indigo-50 hover:border-indigo-300'}`}
+                    onClick={() => editFileInputRef.current.click()}
+                  >
+                    {editingItem.img ? (
+                      <>
+                        <img src={editingItem.img} className="absolute inset-0 w-full h-full object-cover" alt="Item preview" />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <p className="text-white font-medium flex items-center gap-2"><Camera size={18} /> Change Photo</p>
+                        </div>
+                      </>
+                    ) : isUploading ? (
+                      <Loader2 size={32} className="text-indigo-500 animate-spin" />
+                    ) : (
+                      <>
+                        <div className="w-12 h-12 bg-white rounded-full shadow-sm flex items-center justify-center text-indigo-500 mb-3">
+                          <Camera size={24} />
+                        </div>
+                        <p className="text-sm font-medium text-indigo-900">Upload new photo</p>
+                        <p className="text-xs text-indigo-500 mt-1">Click to browse files</p>
+                      </>
+                    )}
+                  </div>
+                  <input 
+                    type="file"
+                    ref={editFileInputRef}
+                    onChange={handleEditFileChange}
+                    accept="image/*"
+                    style={{ display: 'none' }}
+                  />
                 </div>
-
+                
+                {/* Save Button */}
                 <button 
+                  className="w-full py-4 mt-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-md hover:shadow-lg transition-all border-none cursor-pointer flex items-center justify-center gap-2"
                   onClick={async () => {
                     try {
                       const payload = {
