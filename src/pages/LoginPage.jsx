@@ -639,7 +639,7 @@ const LoginPage = () => {
                   <button
                     type="button"
                     className="sb-text-link"
-                    onClick={() => alert('Forgot password — coming soon!')}
+                    onClick={() => navigate('/forgot-password')}
                   >
                     Forgot password?
                   </button>
