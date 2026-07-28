@@ -5,6 +5,7 @@ import {
   LayoutDashboard, Store, AlertTriangle, Radio
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import sguLogo from '../../assets/sgu-logo.jpg';
 import { CmdKSearchModal } from './CmdKSearchModal';
 import { socket } from '../../api';
 import './admin_dashboard.css';
