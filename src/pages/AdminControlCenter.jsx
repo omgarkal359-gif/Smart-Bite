@@ -19,12 +19,18 @@ const AdminControlCenter = () => {
       navigate('/login', { replace: true });
       return;
     }
-    const parsedUser = JSON.parse(userData);
-    if (parsedUser.role !== 'admin') {
+    try {
+      const parsedUser = JSON.parse(userData);
+      if (!parsedUser || parsedUser.role !== 'admin') {
+        localStorage.removeItem('sgu_user');
+        navigate('/login', { replace: true });
+        return;
+      }
+      setUser(parsedUser);
+    } catch (e) {
+      localStorage.removeItem('sgu_user');
       navigate('/login', { replace: true });
-      return;
     }
-    setUser(parsedUser);
   }, [navigate]);
 
   if (!user) {
