@@ -268,11 +268,19 @@ const LoginPage = () => {
       if (id.toLowerCase().includes('admin')) role = 'admin';
       else if (id.includes('-') || id.toLowerCase().includes('owner') || id.toLowerCase().includes('tea') || id.toLowerCase().includes('vadewale') || id.toLowerCase().includes('noodles') || id.toLowerCase().includes('narayana') || id.toLowerCase().includes('cravings')) role = 'owner';
       
-      // 1. Password sign-in
+      // 1. Password sign-in -> Validate credentials and send Real 6-Digit Email OTP
       if (pwd) {
         const res = await api.login(id, pwd, role, '');
         if (res.success) {
-          finish(res);
+          setPendingRegUser(res.user);
+          try {
+            await api.sendOtp(id);
+          } catch (e) {
+            console.warn('Real OTP dispatch notice:', e);
+          }
+          setIsLoading(false);
+          setOtpSent(true);
+          setResendTimer(30);
           return;
         }
         setErrorMsg(res.message || 'Incorrect password or account not found.');
@@ -285,6 +293,11 @@ const LoginPage = () => {
         const res = await api.login(id, '', role, '');
         if (res.success) {
           setPendingRegUser(res.user);
+          try {
+            await api.sendOtp(id);
+          } catch (e) {
+            console.warn('Real OTP dispatch notice:', e);
+          }
           setIsLoading(false);
           setOtpSent(true);
           setResendTimer(30);
@@ -493,25 +506,10 @@ const LoginPage = () => {
             <h1 className="sb-heading sb-heading--sm">
               {pendingRegUser ? 'Account Created! Enter OTP' : isEmail(identifier) ? 'Check your email' : 'Check your phone'}
             </h1>
-            <p className="sb-body sb-body--center" style={{ marginBottom: 12 }}>
+            <p className="sb-body sb-body--center" style={{ marginBottom: 20 }}>
               We sent a 6-digit verification code to{' '}
-              <span className="sb-accent-text" style={{ fontWeight: 700 }}>{identifier}</span>
+              <span className="sb-accent-text" style={{ fontWeight: 700 }}>{identifier}</span>. Please check your email inbox.
             </p>
-
-            {/* Demo OTP Banner Callout */}
-            <div style={{
-              background: '#FFF1F2',
-              border: '1px solid rgba(228, 0, 43, 0.2)',
-              borderRadius: '12px',
-              padding: '10px 14px',
-              marginBottom: '16px',
-              fontSize: '0.8rem',
-              color: '#991B1B',
-              textAlign: 'center',
-              fontWeight: 600
-            }}>
-              🔑 Demo Verification Code: <strong style={{ letterSpacing: '0.1em', fontSize: '0.9rem' }}>123456</strong>
-            </div>
 
             <Field
               id="otp"
