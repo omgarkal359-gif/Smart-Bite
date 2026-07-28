@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GlassCard } from '../components/ui/GlassCard';
 import { Clock, Wifi, WifiOff, Search, ChevronRight, Flame } from 'lucide-react';
@@ -73,14 +73,34 @@ const ShopDirectory = () => {
   const [query, setQuery] = useState('');
   const [stalls, setStalls] = useState([]);
   const [slides, setSlides] = useState(MOST_ORDERED_SLIDES);
+  const carouselRef = useRef(null);
 
   // Auto-scrolling Hero Slideshow (Cycles through top most ordered orders)
   useEffect(() => {
     const slideInterval = setInterval(() => {
-      setCurrentSlide(prev => (prev + 1) % slides.length);
+      setCurrentSlide(prev => {
+        const next = (prev + 1) % slides.length;
+        if (carouselRef.current) {
+          carouselRef.current.scrollTo({
+            left: carouselRef.current.clientWidth * next,
+            behavior: 'smooth'
+          });
+        }
+        return next;
+      });
     }, 4000);
     return () => clearInterval(slideInterval);
   }, [slides.length]);
+
+  const handleScroll = (e) => {
+    if (!e.target) return;
+    const scrollLeft = e.target.scrollLeft;
+    const width = e.target.clientWidth;
+    const slide = Math.round(scrollLeft / width);
+    if (slide !== currentSlide) {
+      setCurrentSlide(slide);
+    }
+  };
 
   useEffect(() => {
     async function loadStalls() {
@@ -186,38 +206,72 @@ const ShopDirectory = () => {
             {isLoading ? (
               <div className="skeleton" style={{ width: '100%', height: '200px', borderRadius: '24px', marginBottom: '24px', background: 'linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%)', backgroundSize: '200% 100%', animation: 'shimmer 1.5s infinite linear' }} />
             ) : (
-              <div className="hero-slideshow-wrapper shadow-2xl">
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={currentSlide}
-                    initial={{ opacity: 0, scale: 0.98 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 1.02 }}
-                    transition={{ duration: 0.8 }}
-                    className="hero-slide tap-effect"
-                    style={{ cursor: 'pointer' }}
-                    onClick={() => navigate(slides[currentSlide].path)}
-                  >
-                    <div 
-                      className="hero-bg-image"
-                      style={{ backgroundImage: `url(${slides[currentSlide].img})` }}
-                    />
-                    <div className="hero-parallax-overlay" />
-                    <div className="hero-parallax-content">
-                      <span className="text-white text-xs font-bold uppercase tracking-wider mb-1 block flex items-center gap-1" style={{ color: '#FDE047' }}>
-                        <Flame size={14} color="#FDE047" /> {slides[currentSlide].rank || '🏆 MOST ORDERED'}
-                      </span>
-                      <h2 className="heading-1 text-white" style={{ fontSize: '2.4rem', marginBottom: '0.4rem', color: 'white', textTransform: 'uppercase' }}>
-                        {slides[currentSlide].title}
-                      </h2>
-                      <p className="text-white" style={{ color: 'rgba(255,255,255,0.92)', fontSize: '0.9rem', fontWeight: 600 }}>{slides[currentSlide].subtitle}</p>
+              <div style={{ position: 'relative', marginBottom: '24px' }}>
+                <style>{`
+                  .hero-slideshow-wrapper::-webkit-scrollbar {
+                    display: none;
+                  }
+                `}</style>
+                <div 
+                  className="hero-slideshow-wrapper shadow-2xl" 
+                  ref={carouselRef}
+                  onScroll={handleScroll}
+                  style={{ 
+                    display: 'flex', 
+                    overflowX: 'auto', 
+                    scrollSnapType: 'x mandatory', 
+                    scrollBehavior: 'smooth',
+                    WebkitOverflowScrolling: 'touch',
+                    scrollbarWidth: 'none',
+                    msOverflowStyle: 'none',
+                    margin: 0
+                  }}
+                >
+                  {slides.map((slide, idx) => (
+                    <div
+                      key={idx}
+                      className="hero-slide tap-effect"
+                      style={{ 
+                        position: 'relative', 
+                        flex: '0 0 100%', 
+                        scrollSnapAlign: 'start', 
+                        cursor: 'pointer' 
+                      }}
+                      onClick={() => navigate(slide.path)}
+                    >
+                      <div 
+                        className="hero-bg-image"
+                        style={{ backgroundImage: `url(${slide.img})` }}
+                      />
+                      <div className="hero-parallax-overlay" />
+                      <div className="hero-parallax-content">
+                        <span className="text-white text-xs font-bold uppercase tracking-wider mb-1 block flex items-center gap-1" style={{ color: '#FDE047' }}>
+                          <Flame size={14} color="#FDE047" /> {slide.rank || '🏆 MOST ORDERED'}
+                        </span>
+                        <h2 className="heading-1 text-white" style={{ fontSize: '2.4rem', marginBottom: '0.4rem', color: 'white', textTransform: 'uppercase' }}>
+                          {slide.title}
+                        </h2>
+                        <p className="text-white" style={{ color: 'rgba(255,255,255,0.92)', fontSize: '0.9rem', fontWeight: 600 }}>{slide.subtitle}</p>
+                      </div>
                     </div>
-                  </motion.div>
-                </AnimatePresence>
+                  ))}
+                </div>
                 
                 <div className="slide-indicators">
                   {slides.map((_, idx) => (
-                    <div key={idx} className={`slide-dot ${idx === currentSlide ? 'active' : ''}`} onClick={() => setCurrentSlide(idx)} />
+                    <div 
+                      key={idx} 
+                      className={`slide-dot ${idx === currentSlide ? 'active' : ''}`} 
+                      onClick={() => {
+                        setCurrentSlide(idx);
+                        if (carouselRef.current) {
+                          carouselRef.current.scrollTo({
+                            left: carouselRef.current.clientWidth * idx,
+                            behavior: 'smooth'
+                          });
+                        }
+                      }} 
+                    />
                   ))}
                 </div>
               </div>
