@@ -237,13 +237,31 @@ const LoginPage = () => {
       if (id.toLowerCase().includes('admin')) role = 'admin';
       else if (id.includes('-') || id.toLowerCase().includes('owner') || id.toLowerCase().includes('tea') || id.toLowerCase().includes('vadewale') || id.toLowerCase().includes('noodles') || id.toLowerCase().includes('narayana') || id.toLowerCase().includes('cravings')) role = 'owner';
       
-      const res = await api.login(id, pwd, role, '');
-      if (res.success) {
-        finish(res);
+      // 1. Password sign-in
+      if (pwd) {
+        const res = await api.login(id, pwd, role, '');
+        if (res.success) {
+          finish(res);
+          return;
+        }
+        setErrorMsg(res.message || 'Incorrect password or account not found.');
+        setIsLoading(false);
         return;
       }
-      
-      setErrorMsg(res.message || 'Incorrect credentials or account not found.');
+
+      // 2. OTP sign-in (when password is left blank or user clicks Send Code)
+      if (isOtpId(id)) {
+        const res = await api.login(id, '', role, '');
+        if (res.success) {
+          setPendingRegUser(res.user);
+          setIsLoading(false);
+          setOtpSent(true);
+          setResendTimer(30);
+          return;
+        }
+      }
+
+      setErrorMsg('Please enter your password to sign in.');
       setIsLoading(false);
     } catch (err) {
       if (err.message?.includes('Account not found') || err.message?.includes('Sign Up')) {
