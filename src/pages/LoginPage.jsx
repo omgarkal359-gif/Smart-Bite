@@ -214,7 +214,9 @@ const LoginPage = () => {
           const pName = localStorage.getItem('sgu_pending_name');
           const uName = full_name || mName || pName || (ue ? ue.split('@')[0] : up);
           localStorage.removeItem('sgu_pending_name');
-          const res = await api.googleLogin(lid, uName);
+          const isSignUp = localStorage.getItem('sgu_is_signup') === 'true' || mode === 'register';
+          localStorage.removeItem('sgu_is_signup');
+          const res = await api.googleLogin(lid, uName, isSignUp);
           if (res.success) {
             setIsLoading(false); setIsSuccess(true);
             const ud = {
@@ -366,8 +368,13 @@ const LoginPage = () => {
   };
 
   /* ── Google OAuth ── */
-  const withGoogle = async () => {
+  const withGoogle = async (isSignUpMode = false) => {
     setIsLoading(true); clear();
+    if (isSignUpMode || mode === 'register') {
+      localStorage.setItem('sgu_is_signup', 'true');
+    } else {
+      localStorage.removeItem('sgu_is_signup');
+    }
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -391,12 +398,12 @@ const LoginPage = () => {
   const loginLabel = isOtpId(identifier.trim()) ? 'Send Code' : 'Sign In';
 
   /* ── Shared: Google button ── */
-  const GoogleBtn = ({ label }) => (
+  const GoogleBtn = ({ label, isSignUp }) => (
     <button
       type="button"
       onClick={() => {
         setIsLoading(true);
-        withGoogle();
+        withGoogle(isSignUp);
         setTimeout(() => setIsLoading(false), 4000);
       }}
       disabled={isSuccess}
@@ -661,7 +668,7 @@ const LoginPage = () => {
 
                 <div className="sb-divider" aria-hidden="true"><span>or</span></div>
 
-                <GoogleBtn label="Continue with Google" />
+                <GoogleBtn label="Continue with Google" isSignUp={false} />
                 <ClerkBtn label="Sign in with Clerk" isSignUp={false} />
 
                 <p className="sb-switch">
@@ -753,7 +760,7 @@ const LoginPage = () => {
 
                 <div className="sb-divider" aria-hidden="true"><span>or</span></div>
 
-                <GoogleBtn label="Sign up with Google" />
+                <GoogleBtn label="Sign up with Google" isSignUp={true} />
                 <ClerkBtn label="Sign up with Clerk" isSignUp={true} />
 
                 <p className="sb-switch">

@@ -55,10 +55,10 @@ export const api = {
     });
   },
 
-  async googleLogin(email, name) {
+  async googleLogin(email, name, isSignUp = true) {
     return fetchAPI('/auth/google', {
       method: 'POST',
-      body: JSON.stringify({ email, name })
+      body: JSON.stringify({ email, name, isSignUp })
     });
   },
 
