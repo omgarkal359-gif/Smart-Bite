@@ -274,14 +274,14 @@ export const MenuEditor = ({ shopId }) => {
             >
               {/* Sticky Header */}
               <div className="flex justify-between items-center p-6 pb-4 border-b border-slate-100 bg-white z-10 shrink-0">
-                <h3 className="text-3xl font-black uppercase tracking-wide text-slate-900 m-0 leading-none">Edit Item</h3>
+                <h3 className="text-3xl font-black uppercase tracking-wide text-slate-900 m-0">Edit Item</h3>
                 <button onClick={() => setEditingItem(null)} className="p-2 hover:bg-slate-100 rounded-full transition-colors border-none bg-transparent cursor-pointer flex items-center justify-center">
                   <X size={24} />
                 </button>
               </div>
               
               {/* Scrollable Body */}
-              <div className="flex flex-col gap-6 p-6 overflow-y-auto">
+              <div className="flex flex-col gap-6 p-6 overflow-y-auto flex-1 min-h-0">
                 <FloatingInput 
                   label="Item Name"
                   value={editingItem.name}
