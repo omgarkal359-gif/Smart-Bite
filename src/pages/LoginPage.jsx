@@ -216,18 +216,14 @@ const LoginPage = () => {
           localStorage.removeItem('sgu_pending_name');
           const isSignUp = localStorage.getItem('sgu_is_signup') === 'true' || mode === 'register';
           localStorage.removeItem('sgu_is_signup');
-          const res = await api.googleLogin(lid, uName, isSignUp);
-          if (res.success) {
-            setIsLoading(false); setIsSuccess(true);
-            const ud = {
-              role: res.user.role, name: res.user.name, id: res.user.username,
-              shopId: res.user.shopId || res.user.shopid,
-              timestamp: new Date().toISOString(), rememberMe: true,
-            };
-            localStorage.setItem('sgu_user', JSON.stringify(ud));
-            await supabase.auth.signOut();
-            setTimeout(() => { setIsSuccess(false); redirectByRole(ud.role, ud.shopId); }, 1400);
-          } else { setErrorMsg(res.message || 'Google login failed.'); setIsLoading(false); }
+
+          // Transition selected Google account to OTP Verification screen
+          setIdentifier(lid);
+          setPendingRegUser({ username: lid, name: uName, role: 'student', isSignUp });
+          await supabase.auth.signOut();
+          setIsLoading(false);
+          setOtpSent(true);
+          setResendTimer(30);
         } catch (err) { setErrorMsg(err.message || 'Could not complete Google sign-in.'); setIsLoading(false); }
       }
     });
@@ -336,11 +332,19 @@ const LoginPage = () => {
     if (code.length !== 6) { setErrorMsg('Enter the 6-digit verification code.'); return; }
     setIsLoading(true); clear();
     try {
-      // If completing Sign Up OTP verification:
+      // If completing Sign Up or Google OAuth OTP verification:
       if (pendingRegUser) {
         if (code === '123456' || code.length === 6) {
-          finish({ success: true, user: pendingRegUser });
-          return;
+          const isSignUp = pendingRegUser.isSignUp !== undefined ? pendingRegUser.isSignUp : true;
+          const regRes = await api.googleLogin(pendingRegUser.username, pendingRegUser.name, isSignUp);
+          if (regRes.success) {
+            finish(regRes);
+            return;
+          } else {
+            setErrorMsg(regRes.message || 'Registration failed. Try again.');
+            setIsLoading(false);
+            return;
+          }
         } else {
           setErrorMsg('Invalid OTP code. Please enter the valid 6-digit code.');
           setIsLoading(false);
@@ -378,7 +382,13 @@ const LoginPage = () => {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: { redirectTo: window.location.origin + '/login' },
+        options: {
+          redirectTo: window.location.origin + '/login',
+          queryParams: {
+            prompt: 'select_account',
+            access_type: 'offline'
+          }
+        },
       });
       if (error) throw error;
     } catch (err) { setErrorMsg(err.message || 'Google sign-in failed.'); setIsLoading(false); }
