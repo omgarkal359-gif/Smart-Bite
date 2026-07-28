@@ -32,7 +32,13 @@ export const MobileLayout = () => {
           </NavLink>
         </nav>
 
-        <button className="global-cart-btn tap-effect" onClick={() => setIsCheckoutOpen(true)}>
+        <button className="global-cart-btn tap-effect" onClick={() => {
+          if (totalItems === 0) {
+            navigate('/student/cart');
+          } else {
+            setIsCheckoutOpen(true);
+          }
+        }}>
           <ShoppingCart size={22} />
           <AnimatePresence>
             {totalItems > 0 && (
