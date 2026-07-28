@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trash2, Plus, Minus, ArrowRight, ShoppingBag, CreditCard, ChevronLeft, Loader2, Check } from 'lucide-react';
-import { api } from '../api';
+import { Trash2, Plus, Minus, ArrowRight, ShoppingBag, CreditCard, ChevronLeft, Loader2, Check, ExternalLink, Clock } from 'lucide-react';
+import { api, formatRelativeTime } from '../api';
 import './pages.css';
 import './cart.css';
 
@@ -15,8 +15,21 @@ const CartPage = () => {
   const [paymentMode, setPaymentMode] = useState('upi');
   const [showQRModal, setShowQRModal] = useState(false);
   const [upiPaymentState, setUpiPaymentState] = useState('idle'); // 'idle' | 'awaiting' | 'verifying' | 'success'
+  const [recentOrders, setRecentOrders] = useState([]);
 
   const cartItems = Object.values(cart);
+
+  useEffect(() => {
+    const userData = JSON.parse(localStorage.getItem('sgu_user') || '{}');
+    const customerId = (userData.id || userData.username || '9876543210').trim().toLowerCase();
+
+    api.getStudentOrders(customerId)
+      .then(orders => setRecentOrders(orders))
+      .catch(err => {
+        console.error('Failed to load orders for cart page:', err);
+        setRecentOrders(JSON.parse(localStorage.getItem('sgu_orders') || '[]'));
+      });
+  }, []);
 
   // Clear timers on unmount
   useEffect(() => {
@@ -122,16 +135,82 @@ const CartPage = () => {
           </button>
           <h1>My Cart</h1>
         </header>
-        <div className="empty-state">
+        <div className="empty-state" style={{ paddingBottom: 20 }}>
           <div className="empty-icon-wrapper">
-            <ShoppingBag size={80} className="empty-icon" />
+            <ShoppingBag size={64} className="empty-icon" />
           </div>
           <h2>Your cart is empty</h2>
           <p>Hungry? Explore our delicious menu and add some items!</p>
-          <button className="btn-primary-v21 mt-8" onClick={() => navigate('/student')}>
-            Browse Shops
+          <button className="btn-primary-v21 mt-6" onClick={() => navigate('/student')}>
+            Browse Menu & Stalls
           </button>
         </div>
+
+        {/* Placed Orders List inside Cart */}
+        {recentOrders.length > 0 && (
+          <div style={{ maxWidth: 480, margin: '0 auto', padding: '0 20px 40px 20px', width: '100%' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+              <h3 style={{ fontFamily: "'Oswald', sans-serif", fontSize: '1.05rem', fontWeight: 800, color: '#0F172A', textTransform: 'uppercase', margin: 0 }}>
+                My Placed Orders ({recentOrders.length})
+              </h3>
+              <button onClick={() => navigate('/student/orders')} style={{ background: 'none', border: 'none', color: '#FF3B5C', fontSize: '0.8rem', fontWeight: 800, cursor: 'pointer' }}>
+                View All →
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {recentOrders.slice(0, 3).map((order) => {
+                const itemsText = typeof order.items === 'string' 
+                  ? order.items 
+                  : Array.isArray(order.items) 
+                    ? order.items.map(i => typeof i === 'string' ? i : `${i.quantity}x ${i.name}`).join(', ')
+                    : '';
+
+                const isReady = order.status === 'ready';
+                const isPrep = order.status === 'preparing' || order.status === 'placed' || order.status === 'pending_cash';
+                const statusColor = isReady ? '#22C55E' : isPrep ? '#FF3B5C' : '#64748B';
+                const statusBg = isReady ? '#DCFCE7' : isPrep ? '#FFF1F2' : '#F1F5F9';
+                const statusLabel = order.status === 'ready' ? 'READY FOR PICKUP' : 
+                                    order.status === 'preparing' ? 'PREPARING' : 
+                                    order.status === 'pending_cash' ? 'CASH PENDING' : 
+                                    order.status === 'placed' ? 'ORDER PLACED' : 'COMPLETED';
+
+                return (
+                  <div 
+                    key={order.id}
+                    onClick={() => navigate(`/student/order/${order.id}`)}
+                    style={{
+                      background: 'white',
+                      padding: 16,
+                      borderRadius: 16,
+                      borderLeft: `5px solid ${statusColor}`,
+                      border: '1px solid #E2E8F0',
+                      borderLeftWidth: 5,
+                      cursor: 'pointer',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.03)'
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                      <span style={{ fontWeight: 900, fontFamily: "'Oswald', sans-serif", fontSize: '0.95rem' }}>#{order.id}</span>
+                      <span style={{ fontSize: '0.65rem', fontWeight: 900, padding: '2px 8px', borderRadius: 999, background: statusBg, color: statusColor, textTransform: 'uppercase' }}>
+                        {statusLabel}
+                      </span>
+                    </div>
+                    <p style={{ fontSize: '0.8rem', color: '#475569', fontWeight: 600, margin: '0 0 8px 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {itemsText}
+                    </p>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 6, borderTop: '1px dashed #E2E8F0' }}>
+                      <span style={{ fontWeight: 800, fontFamily: "'Oswald', sans-serif" }}>₹{order.total}</span>
+                      <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#FF3B5C', display: 'flex', alignItems: 'center', gap: 4 }}>
+                        Track Ticket <ExternalLink size={12} />
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
     );
   }
