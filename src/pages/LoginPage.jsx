@@ -155,8 +155,14 @@ const LoginPage = () => {
     if (saved) {
       const p = JSON.parse(saved);
       const bad = p.role === 'owner' && (!p.shopId || p.shopId === 'undefined' || p.shopId === 'null');
-      if (bad) localStorage.removeItem('sgu_user');
-      else redirectByRole(p.role, p.shopId);
+      
+      if (bad) {
+        localStorage.removeItem('sgu_user');
+      } else if (p.rememberMe) {
+        redirectByRole(p.role, p.shopId);
+      } else {
+        localStorage.removeItem('sgu_user');
+      }
     }
     return () => subscription.unsubscribe();
   }, [navigate]);
