@@ -603,34 +603,34 @@ const VendorDashboard = () => {
               transition={{ type: 'spring', damping: 30, stiffness: 300 }}
               className="management-sidebar open shadow-2xl"
             >
-              <div className="flex justify-between items-center mb-6 border-b pb-4">
-                <h2 className="heading-2 text-3xl text-navy-900" style={{ margin: 0 }}>OPERATIONS</h2>
-                <button className="p-3 hover:bg-slate-200 rounded-full transition-colors" onClick={() => setIsSidebarOpen(false)}>
-                  <X size={28} />
+              <div className="flex justify-between items-end mb-1">
+                <h2 className="text-5xl font-black uppercase tracking-tighter text-black" style={{ fontFamily: 'Oswald, sans-serif', margin: 0, lineHeight: 0.9 }}>OPERATIONS</h2>
+                <button className="p-1 hover:bg-slate-100 rounded transition-colors text-black mb-1" onClick={() => setIsSidebarOpen(false)}>
+                  <X size={36} strokeWidth={2} />
                 </button>
               </div>
-
-              {/* Tab Selector */}
-              <div className="flex gap-2 mb-6 border-b pb-4">
+              
+              {/* Tab Switcher */}
+              <div className="flex w-full mb-8 border-b border-black">
                 <button 
-                  className={`flex-1 py-3 rounded-xl font-bold text-xs uppercase tracking-wider cursor-pointer border-none transition-all ${
+                  className={`flex-1 py-2 text-center font-black uppercase text-xs tracking-widest border border-b-0 transition-all ${
                     activeSidebarTab === 'menu' 
-                      ? 'bg-[#1A5276] text-white shadow-md' 
-                      : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                      ? 'bg-white text-black border-transparent shadow-[0_-2px_10px_rgba(0,0,0,0.05)] rounded-t-lg' 
+                      : 'bg-slate-50 text-slate-500 border-transparent hover:bg-slate-100'
                   }`}
                   onClick={() => setActiveSidebarTab('menu')}
                 >
-                  Menu Editor
+                  MENU EDITOR
                 </button>
                 <button 
-                  className={`flex-1 py-3 rounded-xl font-bold text-xs uppercase tracking-wider cursor-pointer border-none transition-all ${
+                  className={`flex-1 py-2 text-center font-black uppercase text-xs tracking-widest border border-b-0 transition-all ${
                     activeSidebarTab === 'history' 
-                      ? 'bg-[#1A5276] text-white shadow-md' 
-                      : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                      ? 'bg-white text-black border-transparent shadow-[0_-2px_10px_rgba(0,0,0,0.05)] rounded-t-lg' 
+                      : 'bg-slate-50 text-slate-500 border-transparent hover:bg-slate-100'
                   }`}
                   onClick={() => setActiveSidebarTab('history')}
                 >
-                  Order History ({completedTickets.length})
+                  ORDER HISTORY ({completedTickets.length})
                 </button>
               </div>
 
@@ -660,7 +660,7 @@ const VendorDashboard = () => {
                         <div className="flex justify-between items-center">
                           <span className="font-bold text-md text-navy-900">{order.id}</span>
                           <span className="text-[10px] font-bold text-slate-400 uppercase">
-                            {new Date(order.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            {new Date(order.timestamp || new Date()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </span>
                         </div>
                         
