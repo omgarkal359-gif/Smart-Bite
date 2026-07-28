@@ -14,6 +14,7 @@ export const CheckoutDrawer = ({ isOpen, onClose, cart, inventory, onComplete })
   const [diningMode, setDiningMode] = useState('dine_in'); // dine_in | takeaway
   const [paymentMode, setPaymentMode] = useState('upi'); // upi | cash
   const [isProcessing, setIsProcessing] = useState(false);
+  const [placedOrderId, setPlacedOrderId] = useState(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -21,6 +22,7 @@ export const CheckoutDrawer = ({ isOpen, onClose, cart, inventory, onComplete })
       setDiningMode('dine_in');
       setPaymentMode('upi');
       setIsProcessing(false);
+      setPlacedOrderId(null);
     }
   }, [isOpen]);
 
@@ -88,6 +90,7 @@ export const CheckoutDrawer = ({ isOpen, onClose, cart, inventory, onComplete })
     api.createOrder(orderPayload)
       .then((createdOrder) => {
         setIsProcessing(false);
+        setPlacedOrderId(createdOrder.id);
         setStep(4); // Success step
         triggerConfetti();
 
@@ -323,10 +326,15 @@ export const CheckoutDrawer = ({ isOpen, onClose, cart, inventory, onComplete })
             )}
 
             {step === 4 && (
-              <motion.div key="step4" initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="success-state shadow-lg py-8 flex flex-col gap-4">
+              <motion.div key="step4" initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="success-state shadow-lg py-8 flex flex-col gap-4 items-center">
                 <CheckCircle size={64} color="white" /> 
-                <span className="heading-2">Payment Verified!</span>
-                <p className="text-white opacity-80">Generating Receipt...</p>
+                <span className="heading-2 text-center w-full">Payment Verified!</span>
+                {placedOrderId && (
+                  <div style={{ background: 'rgba(255,255,255,0.2)', padding: '6px 16px', borderRadius: '20px', fontWeight: 'bold', color: 'white', letterSpacing: '1px', marginTop: '4px' }}>
+                    ORDER ID: #{placedOrderId}
+                  </div>
+                )}
+                <p className="text-white opacity-90 text-sm mt-2 text-center w-full">Generating Receipt...</p>
               </motion.div>
             )}
           </AnimatePresence>
