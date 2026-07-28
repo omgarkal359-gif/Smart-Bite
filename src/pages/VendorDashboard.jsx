@@ -603,32 +603,32 @@ const VendorDashboard = () => {
               transition={{ type: 'spring', damping: 30, stiffness: 300 }}
               className="management-sidebar open shadow-2xl"
             >
-              <div className="flex justify-between items-center mb-6">
+              <div className="flex justify-between items-center mb-8 mt-2">
                 <h2 className="text-4xl font-bold uppercase" style={{ color: '#0f172a', fontFamily: 'Oswald, sans-serif', margin: 0, letterSpacing: '0.05em' }}>OPERATIONS</h2>
-                <button className="p-2 hover:bg-slate-200 rounded-full transition-colors" style={{ color: '#0f172a', border: 'none', background: 'transparent', cursor: 'pointer' }} onClick={() => setIsSidebarOpen(false)}>
-                  <X size={28} />
+                <button className="p-3 hover:bg-slate-200 rounded-full transition-colors" style={{ color: '#0f172a', border: 'none', background: 'transparent', cursor: 'pointer' }} onClick={() => setIsSidebarOpen(false)}>
+                  <X size={32} strokeWidth={2.5} />
                 </button>
               </div>
               
               {/* Tab Switcher */}
-              <div className="flex gap-2 mb-8 bg-slate-100 p-1.5 rounded-xl">
+              <div className="flex gap-3 mb-10 bg-slate-100 p-2 rounded-2xl">
                 <button 
-                  className="flex-1 py-2.5 rounded-lg font-bold text-xs uppercase tracking-wider transition-all border-none cursor-pointer"
+                  className="flex-1 py-4 rounded-xl font-black text-sm uppercase tracking-[0.2em] transition-all border-none cursor-pointer"
                   style={{ 
                     backgroundColor: activeSidebarTab === 'menu' ? '#ffffff' : 'transparent',
                     color: activeSidebarTab === 'menu' ? '#0f172a' : '#64748b',
-                    boxShadow: activeSidebarTab === 'menu' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none'
+                    boxShadow: activeSidebarTab === 'menu' ? '0 4px 10px rgba(0,0,0,0.05)' : 'none'
                   }}
                   onClick={() => setActiveSidebarTab('menu')}
                 >
                   MENU EDITOR
                 </button>
                 <button 
-                  className="flex-1 py-2.5 rounded-lg font-bold text-xs uppercase tracking-wider transition-all border-none cursor-pointer"
+                  className="flex-1 py-4 rounded-xl font-black text-sm uppercase tracking-[0.2em] transition-all border-none cursor-pointer"
                   style={{ 
                     backgroundColor: activeSidebarTab === 'history' ? '#ffffff' : 'transparent',
                     color: activeSidebarTab === 'history' ? '#0f172a' : '#64748b',
-                    boxShadow: activeSidebarTab === 'history' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none'
+                    boxShadow: activeSidebarTab === 'history' ? '0 4px 10px rgba(0,0,0,0.05)' : 'none'
                   }}
                   onClick={() => setActiveSidebarTab('history')}
                 >
