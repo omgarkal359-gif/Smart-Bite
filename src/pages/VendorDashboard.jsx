@@ -400,14 +400,7 @@ const VendorDashboard = () => {
             <span className="command-subvalue text-blue-600">Auto-Verified</span>
           </motion.div>
 
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="elite-card command-card">
-            <div className="flex justify-between items-start">
-              <span className="command-label">Trending Item</span>
-              <Star size={20} className="text-purple-500 fill-purple-100" />
-            </div>
-            <span className="command-value" style={{ fontSize: '1.4rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={metrics.trendingItem}>{metrics.trendingItem}</span>
-            <span className="command-subvalue text-purple-600">{metrics.trendingCount > 0 ? `${metrics.trendingCount} orders today` : 'Waiting for orders'}</span>
-          </motion.div>
+
         </div>
 
         {/* Horizontal Ticket Scroll */}
