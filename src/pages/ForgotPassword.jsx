@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { IconMail, IconDeviceMobile, IconArrowLeft, IconSend, IconCircleCheck, IconShieldCheck, IconLoader2 } from '@tabler/icons-react';
+import { IconMail, IconDeviceMobile, IconArrowLeft, IconSend, IconCircleCheck, IconShieldCheck, IconAlertTriangle, IconLoader2 } from '@tabler/icons-react';
+import { api } from '../api';
 import { supabase } from '../supabaseClient';
 import './LoginPage.css';
 
@@ -27,6 +28,16 @@ const ForgotPassword = () => {
     setIsLoading(true);
 
     try {
+      // 1. Verify that this email or mobile number is registered in the SGU Smart-Bite database first!
+      const verifyRes = await api.verifyRegistration(id);
+      
+      if (!verifyRes || !verifyRes.registered) {
+        setErrorMsg('Account not registered. This email or mobile number was never registered with SGU Smart-Bite. Please check for typos or click Sign Up to create an account.');
+        setIsLoading(false);
+        return;
+      }
+
+      // 2. Account verified! Send OTP / Reset link to registered target
       if (isEmail(id)) {
         await supabase.auth.resetPasswordForEmail(id, {
           redirectTo: window.location.origin + '/reset-password',
@@ -37,12 +48,16 @@ const ForgotPassword = () => {
           phone: formattedPhone,
         });
       }
-    } catch (err) {
-      console.error('Password reset dispatch error:', err);
-    } finally {
+
       setIsLoading(false);
-      // Security Anti-enumeration rule: Always display success message regardless of account existence
       setIsSubmitted(true);
+    } catch (err) {
+      if (err.message?.includes('Account not registered') || err.message?.includes('404') || err.message?.includes('not found')) {
+        setErrorMsg('Account not registered. This email or mobile number was never registered with SGU Smart-Bite. Please check for typos or click Sign Up to create an account.');
+      } else {
+        setErrorMsg(err.message || 'Could not verify registered account. Please try again.');
+      }
+      setIsLoading(false);
     }
   };
 
@@ -75,7 +90,7 @@ const ForgotPassword = () => {
             SGU Smart-Bite
           </h1>
           <p style={{ fontSize: '0.75rem', fontWeight: 800, color: '#E4002B', textTransform: 'uppercase', letterSpacing: '0.12em', margin: 0 }}>
-            Password Recovery
+            Account Security & Recovery
           </p>
         </div>
 
@@ -96,7 +111,7 @@ const ForgotPassword = () => {
             </div>
 
             <h2 style={{ fontFamily: "'Outfit', sans-serif", fontSize: '1.3rem', fontWeight: 700, color: '#F8FAFC', margin: '0 0 10px 0' }}>
-              Request Processed
+              Account Verified!
             </h2>
 
             <div style={{
@@ -110,7 +125,7 @@ const ForgotPassword = () => {
               marginBottom: 20,
               textAlign: 'center'
             }}>
-              If an account exists for registered <strong style={{ color: '#FFFFFF' }}>{identifier}</strong>, a password reset link or verification code has been sent.
+              A password reset link or 6-digit OTP verification code has been dispatched to your registered contact <strong style={{ color: '#FFFFFF' }}>{identifier}</strong>.
             </div>
 
             <p style={{ fontSize: '0.78rem', color: '#94A3B8', marginBottom: 24 }}>
@@ -173,9 +188,21 @@ const ForgotPassword = () => {
               </div>
 
               {errorMsg && (
-                <p style={{ fontSize: '0.78rem', fontWeight: 600, color: '#EF4444', marginTop: 8, margin: '8px 0 0 0' }}>
-                  {errorMsg}
-                </p>
+                <div style={{
+                  background: 'rgba(239, 68, 68, 0.12)',
+                  border: '1px solid rgba(239, 68, 68, 0.3)',
+                  borderRadius: 12,
+                  padding: '10px 12px',
+                  marginTop: 12,
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: 8
+                }}>
+                  <IconAlertTriangle size={18} strokeWidth={2} style={{ color: '#EF4444', shrink: 0, marginTop: 2 }} />
+                  <p style={{ fontSize: '0.78rem', fontWeight: 600, color: '#FCA5A5', margin: 0, lineHeight: 1.4 }}>
+                    {errorMsg}
+                  </p>
+                </div>
               )}
             </div>
 
@@ -196,11 +223,11 @@ const ForgotPassword = () => {
               {isLoading ? (
                 <>
                   <IconLoader2 size={20} className="sb-spin" />
-                  <span>Sending Reset Link / OTP...</span>
+                  <span>Verifying Account Registration...</span>
                 </>
               ) : (
                 <>
-                  <span>Send Reset Link / OTP</span>
+                  <span>Verify & Send Reset Code</span>
                   <IconSend size={18} strokeWidth={2} />
                 </>
               )}

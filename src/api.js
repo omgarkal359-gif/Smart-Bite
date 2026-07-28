@@ -69,6 +69,13 @@ export const api = {
     });
   },
 
+  async verifyRegistration(identifier) {
+    return fetchAPI('/auth/verify-registration', {
+      method: 'POST',
+      body: JSON.stringify({ identifier })
+    });
+  },
+
   // Stalls
   async getStalls() {
     return fetchAPI('/stalls');

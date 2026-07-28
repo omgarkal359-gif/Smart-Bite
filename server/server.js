@@ -225,6 +225,37 @@ app.post('/api/auth/register', async (req, res) => {
   }
 });
 
+// Verify if user account is registered before password reset
+app.post('/api/auth/verify-registration', async (req, res) => {
+  const { identifier } = req.body;
+  if (!identifier) {
+    return res.status(400).json({ success: false, message: 'Identifier is required.' });
+  }
+  try {
+    const cleanId = identifier.trim().toLowerCase();
+    const rawDigits = cleanId.replace(/\D/g, '');
+    let user = await db.get('SELECT * FROM users WHERE LOWER(username) = ?', [cleanId]);
+    if (!user && rawDigits.length >= 10) {
+      user = await db.get('SELECT * FROM users WHERE username LIKE ?', [`%${rawDigits.slice(-10)}%`]);
+    }
+
+    if (!user) {
+      return res.status(404).json({
+        registered: false,
+        message: 'Account not registered. This email or mobile number was never registered with SGU Smart-Bite. Please check for typos or click Sign Up to create an account.'
+      });
+    }
+
+    res.json({
+      registered: true,
+      user: sanitizeUser(user),
+      message: 'Account verified successfully.'
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 // Stalls list
 app.get('/api/stalls', async (req, res) => {
   try {
