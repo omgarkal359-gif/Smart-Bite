@@ -615,9 +615,10 @@ const VendorDashboard = () => {
                 <button 
                   className={`flex-1 py-2 text-center font-black uppercase text-xs tracking-widest border border-b-0 transition-all ${
                     activeSidebarTab === 'menu' 
-                      ? 'bg-white text-black border-transparent shadow-[0_-2px_10px_rgba(0,0,0,0.05)] rounded-t-lg' 
-                      : 'bg-slate-50 text-slate-500 border-transparent hover:bg-slate-100'
+                      ? 'bg-white border-transparent shadow-[0_-2px_10px_rgba(0,0,0,0.05)] rounded-t-lg' 
+                      : 'bg-slate-50 border-transparent hover:bg-slate-100'
                   }`}
+                  style={{ color: activeSidebarTab === 'menu' ? '#000000' : '#64748B' }}
                   onClick={() => setActiveSidebarTab('menu')}
                 >
                   MENU EDITOR
@@ -625,9 +626,10 @@ const VendorDashboard = () => {
                 <button 
                   className={`flex-1 py-2 text-center font-black uppercase text-xs tracking-widest border border-b-0 transition-all ${
                     activeSidebarTab === 'history' 
-                      ? 'bg-white text-black border-transparent shadow-[0_-2px_10px_rgba(0,0,0,0.05)] rounded-t-lg' 
-                      : 'bg-slate-50 text-slate-500 border-transparent hover:bg-slate-100'
+                      ? 'bg-white border-transparent shadow-[0_-2px_10px_rgba(0,0,0,0.05)] rounded-t-lg' 
+                      : 'bg-slate-50 border-transparent hover:bg-slate-100'
                   }`}
+                  style={{ color: activeSidebarTab === 'history' ? '#000000' : '#64748B' }}
                   onClick={() => setActiveSidebarTab('history')}
                 >
                   ORDER HISTORY ({completedTickets.length})
