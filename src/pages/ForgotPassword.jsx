@@ -37,16 +37,22 @@ const ForgotPassword = () => {
         return;
       }
 
-      // 2. Account verified! Send OTP / Reset link to registered target
+      // 2. Account verified! Send password reset link to registered target via Vercel Serverless API
       if (isEmail(id)) {
+        await fetch('/api/send-reset-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: id })
+        }).catch(console.error);
+
         await supabase.auth.resetPasswordForEmail(id, {
           redirectTo: window.location.origin + '/reset-password',
-        });
+        }).catch(console.error);
       } else if (isPhone(id)) {
         const formattedPhone = /^\d{10}$/.test(id) ? `+91${id}` : id;
         await supabase.auth.signInWithOtp({
           phone: formattedPhone,
-        });
+        }).catch(console.error);
       }
 
       setIsLoading(false);
