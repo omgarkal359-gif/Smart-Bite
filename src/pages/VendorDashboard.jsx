@@ -603,33 +603,33 @@ const VendorDashboard = () => {
               transition={{ type: 'spring', damping: 30, stiffness: 300 }}
               className="management-sidebar open shadow-2xl"
             >
-              <div className="flex justify-between items-end mb-1">
-                <h2 className="text-5xl font-black uppercase tracking-tighter text-black" style={{ fontFamily: 'Oswald, sans-serif', margin: 0, lineHeight: 0.9 }}>OPERATIONS</h2>
-                <button className="p-1 hover:bg-slate-100 rounded transition-colors text-black mb-1" onClick={() => setIsSidebarOpen(false)}>
-                  <X size={36} strokeWidth={2} />
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-4xl font-bold uppercase" style={{ color: '#0f172a', fontFamily: 'Oswald, sans-serif', margin: 0, letterSpacing: '0.05em' }}>OPERATIONS</h2>
+                <button className="p-2 hover:bg-slate-200 rounded-full transition-colors" style={{ color: '#0f172a', border: 'none', background: 'transparent', cursor: 'pointer' }} onClick={() => setIsSidebarOpen(false)}>
+                  <X size={28} />
                 </button>
               </div>
               
               {/* Tab Switcher */}
-              <div className="flex w-full mb-8 border-b border-black">
+              <div className="flex gap-2 mb-8 bg-slate-100 p-1.5 rounded-xl">
                 <button 
-                  className={`flex-1 py-2 text-center font-black uppercase text-xs tracking-widest border border-b-0 transition-all ${
-                    activeSidebarTab === 'menu' 
-                      ? 'bg-white border-transparent shadow-[0_-2px_10px_rgba(0,0,0,0.05)] rounded-t-lg' 
-                      : 'bg-slate-50 border-transparent hover:bg-slate-100'
-                  }`}
-                  style={{ color: activeSidebarTab === 'menu' ? '#000000' : '#64748B' }}
+                  className="flex-1 py-2.5 rounded-lg font-bold text-xs uppercase tracking-wider transition-all border-none cursor-pointer"
+                  style={{ 
+                    backgroundColor: activeSidebarTab === 'menu' ? '#ffffff' : 'transparent',
+                    color: activeSidebarTab === 'menu' ? '#0f172a' : '#64748b',
+                    boxShadow: activeSidebarTab === 'menu' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none'
+                  }}
                   onClick={() => setActiveSidebarTab('menu')}
                 >
                   MENU EDITOR
                 </button>
                 <button 
-                  className={`flex-1 py-2 text-center font-black uppercase text-xs tracking-widest border border-b-0 transition-all ${
-                    activeSidebarTab === 'history' 
-                      ? 'bg-white border-transparent shadow-[0_-2px_10px_rgba(0,0,0,0.05)] rounded-t-lg' 
-                      : 'bg-slate-50 border-transparent hover:bg-slate-100'
-                  }`}
-                  style={{ color: activeSidebarTab === 'history' ? '#000000' : '#64748B' }}
+                  className="flex-1 py-2.5 rounded-lg font-bold text-xs uppercase tracking-wider transition-all border-none cursor-pointer"
+                  style={{ 
+                    backgroundColor: activeSidebarTab === 'history' ? '#ffffff' : 'transparent',
+                    color: activeSidebarTab === 'history' ? '#0f172a' : '#64748b',
+                    boxShadow: activeSidebarTab === 'history' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none'
+                  }}
                   onClick={() => setActiveSidebarTab('history')}
                 >
                   ORDER HISTORY ({completedTickets.length})

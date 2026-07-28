@@ -85,16 +85,22 @@ export const MenuEditor = ({ shopId }) => {
 
   return (
     <div className="menu-editor-container">
-      <div className="flex justify-between items-center mb-8">
-        <h2 className="text-4xl font-black uppercase tracking-tighter text-black" style={{ fontFamily: 'Oswald, sans-serif', margin: 0, lineHeight: 1 }}>CATALOG EDITOR</h2>
+      <div className="flex justify-between items-center mb-8 mt-4">
+        <h2 className="text-3xl font-bold uppercase" style={{ color: '#0f172a', fontFamily: 'Oswald, sans-serif', margin: 0, letterSpacing: '0.05em' }}>CATALOG EDITOR</h2>
         <motion.button 
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-black text-sm tracking-wider text-white transition-all ${isAdding ? 'bg-slate-800' : 'bg-[#e30022]'}`}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all"
           onClick={() => setIsAdding(!isAdding)}
-          style={{ border: 'none', cursor: 'pointer' }}
+          style={{ 
+            backgroundColor: isAdding ? '#1e293b' : '#dc2626', 
+            color: '#ffffff',
+            border: 'none', 
+            cursor: 'pointer',
+            boxShadow: isAdding ? 'none' : '0 4px 12px rgba(220, 38, 38, 0.2)'
+          }}
         >
-          {isAdding ? <X size={20} strokeWidth={2.5} /> : <Plus size={20} strokeWidth={2.5} />}
+          {isAdding ? <X size={18} strokeWidth={2.5} /> : <Plus size={18} strokeWidth={2.5} />}
           {isAdding ? 'CANCEL' : 'ADD NEW ITEM'}
         </motion.button>
       </div>
