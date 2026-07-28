@@ -20,6 +20,8 @@ export const MenuEditor = ({ shopId }) => {
   const [newItem, setNewItem] = useState({ name: '', price: '', category: 'Main', img: '' });
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = React.useRef(null);
+  const [editingItem, setEditingItem] = useState(null);
+  const editFileInputRef = React.useRef(null);
 
   useEffect(() => {
     if (!shopId) return;
@@ -77,6 +79,19 @@ export const MenuEditor = ({ shopId }) => {
       const reader = new FileReader();
       reader.onloadend = () => {
         setNewItem({ ...newItem, img: reader.result });
+        setIsUploading(false);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleEditFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setIsUploading(true);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setEditingItem({ ...editingItem, img: reader.result });
         setIsUploading(false);
       };
       reader.readAsDataURL(file);
@@ -209,27 +224,17 @@ export const MenuEditor = ({ shopId }) => {
                   >
                     <div className="menu-item-image">
                       <img src={item.img || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=100&q=80'} alt={item.name} />
-                      <div className="image-overlay">
-                        <Edit2 size={16} />
+                      <div className="image-overlay" onClick={() => setEditingItem({...item})} style={{ cursor: 'pointer' }}>
+                        <Edit2 size={24} />
                       </div>
                     </div>
                     
                     <div className="menu-item-details">
-                      <input 
-                        className="item-name-input"
-                        value={item.name}
-                        onChange={(e) => handleUpdate(item.id, 'name', e.target.value)}
-                      />
+                      <h4 className="item-name" style={{ margin: '0 0 8px 0', fontSize: '1.25rem', fontWeight: 'bold' }}>{item.name}</h4>
                       <div className="item-meta">
                         <span className="category-tag">{item.category}</span>
-                        <div className="price-edit">
-                          <span className="currency">₹</span>
-                          <input 
-                            type="number"
-                            className="price-input" 
-                            value={item.price}
-                            onChange={(e) => handleUpdate(item.id, 'price', parseFloat(e.target.value))}
-                          />
+                        <div className="price-tag" style={{ fontWeight: 'bold', fontSize: '1.25rem', color: '#0f172a' }}>
+                          ₹ {item.price}
                         </div>
                       </div>
                     </div>
@@ -256,6 +261,103 @@ export const MenuEditor = ({ shopId }) => {
           );
         })}
       </div>
+
+      <AnimatePresence>
+        {editingItem && (
+          <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="bg-white rounded-3xl shadow-2xl p-8 max-w-lg w-full max-h-[90vh] overflow-y-auto"
+            >
+              <div className="flex justify-between items-center mb-8">
+                <h3 className="text-3xl font-black uppercase tracking-wide text-slate-900 m-0">Edit Item</h3>
+                <button onClick={() => setEditingItem(null)} className="p-2 hover:bg-slate-100 rounded-full transition-colors border-none bg-transparent cursor-pointer">
+                  <X size={24} />
+                </button>
+              </div>
+              
+              <div className="flex flex-col gap-6">
+                <FloatingInput 
+                  label="Item Name"
+                  value={editingItem.name}
+                  onChange={(e) => setEditingItem({...editingItem, name: e.target.value})}
+                />
+                
+                <div className="flex gap-4">
+                  <div className="flex-1">
+                    <FloatingInput 
+                      label="Price (₹)"
+                      type="number"
+                      value={editingItem.price}
+                      onChange={(e) => setEditingItem({...editingItem, price: e.target.value})}
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <div className="floating-label-group m-0 h-full">
+                      <select 
+                        className="floating-input appearance-none h-full"
+                        value={editingItem.category}
+                        onChange={(e) => setEditingItem({...editingItem, category: e.target.value})}
+                      >
+                        {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                      </select>
+                      <label className="floating-label">Category</label>
+                    </div>
+                  </div>
+                </div>
+
+                <input 
+                  type="file" 
+                  ref={editFileInputRef} 
+                  className="hidden" 
+                  accept="image/*" 
+                  onChange={handleEditFileChange} 
+                />
+                
+                <div 
+                  className={`drop-zone ${isUploading ? 'shimmer' : ''} !mb-2`}
+                  onClick={() => editFileInputRef.current.click()}
+                >
+                  {editingItem.img ? (
+                    <img src={editingItem.img} className="preview-image" style={{ objectFit: 'cover' }} />
+                  ) : isUploading ? (
+                    <Loader2 size={40} className="upload-spinner animate-spin" />
+                  ) : (
+                    <>
+                      <div className="upload-icon-wrapper"><Camera size={32} /></div>
+                      <p className="upload-text">Change Photo</p>
+                    </>
+                  )}
+                </div>
+
+                <button 
+                  onClick={async () => {
+                    try {
+                      const payload = {
+                        name: editingItem.name,
+                        price: parseFloat(editingItem.price),
+                        category: editingItem.category,
+                        img: editingItem.img
+                      };
+                      await api.updateMenuItem(editingItem.id, payload);
+                      setItems(items.map(i => i.id === editingItem.id ? {...i, ...payload} : i));
+                      setEditingItem(null);
+                    } catch(err) {
+                      alert('Failed to update item: ' + err.message);
+                    }
+                  }}
+                  className="w-full py-4 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold uppercase tracking-wider text-sm transition-colors border-none cursor-pointer mt-2"
+                  disabled={isUploading}
+                >
+                  Save Changes
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
