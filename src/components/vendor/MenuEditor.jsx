@@ -269,11 +269,11 @@ export const MenuEditor = ({ shopId }) => {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-white rounded-3xl shadow-2xl max-w-lg w-full relative overflow-y-auto"
-              style={{ maxHeight: '90vh' }}
+              className="bg-white rounded-3xl shadow-2xl max-w-lg w-full flex flex-col overflow-hidden"
+              style={{ height: '85vh', minHeight: '500px', maxHeight: '800px' }}
             >
               {/* Sticky Header */}
-              <div className="sticky top-0 bg-white z-20 px-8 py-6 border-b border-slate-100 flex justify-between items-center">
+              <div className="bg-white z-20 px-8 py-6 border-b border-slate-100 flex justify-between items-center shrink-0">
                 <h3 className="text-3xl font-black uppercase tracking-wide text-slate-900 m-0">Edit Item</h3>
                 <button onClick={() => setEditingItem(null)} className="p-2 hover:bg-slate-100 rounded-full transition-colors border-none bg-transparent cursor-pointer flex items-center justify-center">
                   <X size={24} />
@@ -281,7 +281,7 @@ export const MenuEditor = ({ shopId }) => {
               </div>
               
               {/* Body */}
-              <div className="flex flex-col gap-6 p-8">
+              <div className="flex flex-col gap-6 p-8 flex-1 overflow-y-auto min-h-0">
                 <FloatingInput 
                   label="Item Name"
                   value={editingItem.name}
