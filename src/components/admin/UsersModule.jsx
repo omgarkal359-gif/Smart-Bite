@@ -137,13 +137,12 @@ export const UsersModule = () => {
                   <th>Display Name</th>
                   <th>System Role</th>
                   <th>Shop Context</th>
-                  <th style={{ textAlign: 'right' }}>Security Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredUsers.length === 0 ? (
                   <tr>
-                    <td colSpan={5} style={{ textAlign: 'center', padding: 40, color: '#94A3B8' }}>
+                    <td colSpan={4} style={{ textAlign: 'center', padding: 40, color: '#94A3B8' }}>
                       No users match the specified search query.
                     </td>
                   </tr>
@@ -163,17 +162,6 @@ export const UsersModule = () => {
                       </td>
                       <td style={{ fontSize: '0.8rem', fontWeight: 600, color: '#64748B' }}>
                         {user.shopId || 'None'}
-                      </td>
-                      <td style={{ textAlign: 'right' }}>
-                        <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
-                          <button 
-                            className="btn-action-sm"
-                            title="Impersonate user session"
-                            onClick={() => handleImpersonate(user)}
-                          >
-                            <LogIn size={13} /> Impersonate
-                          </button>
-                        </div>
                       </td>
                     </tr>
                   ))
