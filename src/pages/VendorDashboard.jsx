@@ -391,12 +391,19 @@ const VendorDashboard = () => {
               transition={{ type: 'spring', damping: 30, stiffness: 300 }}
               className="management-sidebar open shadow-2xl"
             >
-              <div className="flex justify-between items-center mb-8 border-b pb-6">
-                <h2 className="heading-2 text-3xl text-navy-900" style={{ margin: 0 }}>OPERATIONS</h2>
-                <button className="p-3 hover:bg-slate-200 rounded-full transition-colors" onClick={() => setIsSidebarOpen(false)}>
-                  <X size={28} />
+              <div className="flex justify-between items-end mb-1">
+                <h2 className="text-5xl font-black uppercase tracking-tighter text-black" style={{ fontFamily: 'Oswald, sans-serif', margin: 0, lineHeight: 0.9 }}>OPERATIONS</h2>
+                <button className="p-1 hover:bg-slate-100 rounded transition-colors text-black mb-1" onClick={() => setIsSidebarOpen(false)}>
+                  <X size={36} strokeWidth={2} />
                 </button>
               </div>
+              
+              {/* Tab Switcher */}
+              <div className="flex w-full mb-8 border-b border-black">
+                <button className="flex-1 py-1.5 text-center bg-white text-black font-black uppercase text-xs tracking-widest border border-b-0 border-transparent transition-all">MENU EDITOR</button>
+                <button className="flex-1 py-1.5 text-center bg-slate-50 text-slate-500 font-bold uppercase text-xs tracking-widest border border-b-0 border-transparent transition-all hover:bg-slate-100">ORDER HISTORY (0)</button>
+              </div>
+
               <MenuEditor />
             </motion.div>
           </>
