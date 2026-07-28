@@ -351,7 +351,7 @@ export const MenuEditor = ({ shopId }) => {
                 
                 {/* Save Button */}
                 <button 
-                  className="w-full py-4 mt-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-md hover:shadow-lg transition-all border-none cursor-pointer flex items-center justify-center gap-2"
+                  className="w-full py-4 mt-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-md hover:shadow-lg transition-all border-none cursor-pointer flex items-center justify-center gap-2 shrink-0"
                   onClick={async () => {
                     try {
                       const payload = {
@@ -367,9 +367,9 @@ export const MenuEditor = ({ shopId }) => {
                       alert('Failed to update item: ' + err.message);
                     }
                   }}
-                  className="w-full py-4 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold uppercase tracking-wider text-sm transition-colors border-none cursor-pointer shrink-0 mt-2"
                   disabled={isUploading}
                 >
+                  <Check size={20} />
                   Save Changes
                 </button>
               </div>
