@@ -191,10 +191,14 @@ const LoginPage = () => {
   const finish = (res) => {
     setIsLoading(false);
     setIsSuccess(true);
+    const u = res?.user || res || {};
     const ud = {
-      role: res.user.role, name: res.user.name, id: res.user.username,
-      shopId: res.user.shopId || res.user.shopid,
-      timestamp: new Date().toISOString(), rememberMe,
+      role: u?.role || 'student',
+      name: u?.name || u?.username || 'Student',
+      id: u?.username || u?.id || 'student',
+      shopId: u?.shopId || u?.shopid || null,
+      timestamp: new Date().toISOString(),
+      rememberMe,
     };
     localStorage.setItem('sgu_user', JSON.stringify(ud));
     setTimeout(() => { setIsSuccess(false); redirectByRole(ud.role, ud.shopId); }, 1400);
@@ -229,14 +233,21 @@ const LoginPage = () => {
     });
     const saved = localStorage.getItem('sgu_user');
     if (saved) {
-      const p = JSON.parse(saved);
-      const bad = p.role === 'owner' && (!p.shopId || p.shopId === 'undefined' || p.shopId === 'null');
-      
-      if (bad) {
-        localStorage.removeItem('sgu_user');
-      } else if (p.rememberMe) {
-        redirectByRole(p.role, p.shopId);
-      } else {
+      try {
+        const p = JSON.parse(saved);
+        if (p && p.role) {
+          const bad = p.role === 'owner' && (!p.shopId || p.shopId === 'undefined' || p.shopId === 'null');
+          if (bad) {
+            localStorage.removeItem('sgu_user');
+          } else if (p.rememberMe) {
+            redirectByRole(p.role, p.shopId);
+          } else {
+            localStorage.removeItem('sgu_user');
+          }
+        } else {
+          localStorage.removeItem('sgu_user');
+        }
+      } catch (err) {
         localStorage.removeItem('sgu_user');
       }
     }

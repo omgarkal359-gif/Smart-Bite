@@ -124,7 +124,18 @@ const VendorDashboard = () => {
       navigate('/login');
       return;
     }
-    const parsedUser = JSON.parse(userData);
+    let parsedUser = null;
+    try {
+      parsedUser = JSON.parse(userData);
+    } catch (e) {
+      parsedUser = null;
+    }
+
+    if (!parsedUser || !parsedUser.role) {
+      localStorage.removeItem('sgu_user');
+      navigate('/login', { replace: true });
+      return;
+    }
     
     // Self-healing session check for corrupted owner sessions from previous bugs
     const isOwnerSessionCorrupted = parsedUser.role === 'owner' && 
