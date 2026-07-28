@@ -76,6 +76,20 @@ export const api = {
     });
   },
 
+  async sendOtp(email) {
+    return fetchAPI('/auth/send-otp', {
+      method: 'POST',
+      body: JSON.stringify({ email })
+    });
+  },
+
+  async verifyOtp(email, code) {
+    return fetchAPI('/auth/verify-otp', {
+      method: 'POST',
+      body: JSON.stringify({ email, code })
+    });
+  },
+
   // Stalls
   async getStalls() {
     return fetchAPI('/stalls');
