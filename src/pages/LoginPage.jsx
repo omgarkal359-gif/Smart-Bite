@@ -146,6 +146,28 @@ const LoginPage = () => {
     return () => clearInterval(timer);
   }, [otpSent, resendTimer]);
 
+  /* ── Auto-reset loading state if login process is terminated or timed out ── */
+  useEffect(() => {
+    let timeout;
+    if (isLoading && !isSuccess) {
+      timeout = setTimeout(() => {
+        setIsLoading(false);
+      }, 5000);
+    }
+    return () => clearTimeout(timeout);
+  }, [isLoading, isSuccess]);
+
+  /* ── Window Focus Listener: Reset loading state when user returns focus after closing popup/exiting ── */
+  useEffect(() => {
+    const handleFocus = () => {
+      if (isLoading && !isSuccess) {
+        setIsLoading(false);
+      }
+    };
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [isLoading, isSuccess]);
+
   /* ── helpers ── */
   const isEmail  = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
   const isPhone  = (v) => /^\d{10}$/.test(v) || /^\+\d{10,12}$/.test(v);
@@ -372,8 +394,12 @@ const LoginPage = () => {
   const GoogleBtn = ({ label }) => (
     <button
       type="button"
-      onClick={withGoogle}
-      disabled={isLoading || isSuccess}
+      onClick={() => {
+        setIsLoading(true);
+        withGoogle();
+        setTimeout(() => setIsLoading(false), 4000);
+      }}
+      disabled={isSuccess}
       className="sb-btn-google"
       aria-label={label}
     >
@@ -386,8 +412,13 @@ const LoginPage = () => {
   const ClerkBtn = ({ label, isSignUp }) => (
     <button
       type="button"
-      onClick={() => isSignUp ? openSignUp() : openSignIn()}
-      disabled={isLoading || isSuccess}
+      onClick={() => {
+        setIsLoading(true);
+        if (isSignUp) openSignUp();
+        else openSignIn();
+        setTimeout(() => setIsLoading(false), 4000);
+      }}
+      disabled={isSuccess}
       style={{
         width: '100%',
         display: 'flex',
@@ -620,7 +651,8 @@ const LoginPage = () => {
 
                 <button
                   type="submit"
-                  disabled={!identifier.trim() || isLoading || isSuccess}
+                  onClick={() => { if (isLoading) setIsLoading(false); }}
+                  disabled={!identifier.trim() || isSuccess}
                   className={`sb-btn-primary${isSuccess ? ' sb-btn-primary--success' : ''}`}
                   aria-label={loginLabel}
                 >
@@ -711,7 +743,8 @@ const LoginPage = () => {
 
                 <button
                   type="submit"
-                  disabled={!regName.trim() || !identifier.trim() || !password.trim() || !confirmPwd.trim() || isLoading || isSuccess}
+                  onClick={() => { if (isLoading) setIsLoading(false); }}
+                  disabled={!regName.trim() || !identifier.trim() || !password.trim() || !confirmPwd.trim() || isSuccess}
                   className={`sb-btn-primary${isSuccess ? ' sb-btn-primary--success' : ''}`}
                   aria-label="Create account"
                 >
