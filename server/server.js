@@ -183,18 +183,23 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
-// Google Auth Single Sign-On (SSO)
+// Google Auth Single Sign-On (SSO) & Account Registration
 app.post('/api/auth/google', async (req, res) => {
-  const { email, name } = req.body;
+  const { email, name, isSignUp } = req.body;
   try {
     const cleanId = (email || '').trim().toLowerCase();
-    const user = await db.get('SELECT * FROM users WHERE LOWER(username) = ?', [cleanId]);
+    let user = await db.get('SELECT * FROM users WHERE LOWER(username) = ?', [cleanId]);
+    
     if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'Account not found. No student is allowed to sign in until they have created an account. Please click "Sign Up" to create your account first.'
-      });
+      // Auto-register student account on Sign Up with Google!
+      const displayName = name || (cleanId ? cleanId.split('@')[0] : 'Google Student');
+      await db.run(
+        'INSERT INTO users (username, name, password, role, shopId) VALUES (?, ?, ?, ?, ?)',
+        [cleanId, displayName, '', 'student', null]
+      );
+      user = await db.get('SELECT * FROM users WHERE LOWER(username) = ?', [cleanId]);
     }
+
     res.json({ success: true, user: sanitizeUser(user) });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
