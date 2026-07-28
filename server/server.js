@@ -109,16 +109,22 @@ app.post('/api/auth/login', async (req, res) => {
     }
 
     if (role === 'student') {
-      // Find student by username
-      let user = await db.get('SELECT * FROM users WHERE LOWER(username) = LOWER(?) AND role = ?', [username, 'student']);
+      // Strictly enforce account existence rule: No student is allowed to login until they have created an account first
+      const cleanUsername = username.trim().toLowerCase();
+      const user = await db.get('SELECT * FROM users WHERE LOWER(username) = ?', [cleanUsername]);
+      
       if (!user) {
-        // Dynamically create student record if not existing
-        await db.run(
-          'INSERT INTO users (username, name, password, role, shopId) VALUES (?, ?, ?, ?, ?)',
-          [username, name || 'Student', '', 'student', null]
-        );
-        user = await db.get('SELECT * FROM users WHERE LOWER(username) = LOWER(?) AND role = ?', [username, 'student']);
+        return res.status(404).json({
+          success: false,
+          message: 'Account not found. No student is allowed to sign in until they have created an account. Please click "Sign Up" to create your account first.'
+        });
       }
+
+      // Verify password if provided
+      if (password && password.trim() !== '' && user.password && user.password !== password.trim()) {
+        return res.status(401).json({ success: false, message: 'Incorrect password. Please try again.' });
+      }
+
       return res.json({ success: true, user: sanitizeUser(user) });
     }
 
@@ -181,14 +187,13 @@ app.post('/api/auth/login', async (req, res) => {
 app.post('/api/auth/google', async (req, res) => {
   const { email, name } = req.body;
   try {
-    let user = await db.get('SELECT * FROM users WHERE username = ?', [email]);
+    const cleanId = (email || '').trim().toLowerCase();
+    const user = await db.get('SELECT * FROM users WHERE LOWER(username) = ?', [cleanId]);
     if (!user) {
-      // Register new student automatically upon first Google login
-      await db.run(
-        'INSERT INTO users (username, name, password, role, shopId) VALUES (?, ?, ?, ?, ?)',
-        [email, name || 'Google Student', '', 'student', null]
-      );
-      user = await db.get('SELECT * FROM users WHERE username = ?', [email]);
+      return res.status(404).json({
+        success: false,
+        message: 'Account not found. No student is allowed to sign in until they have created an account. Please click "Sign Up" to create your account first.'
+      });
     }
     res.json({ success: true, user: sanitizeUser(user) });
   } catch (err) {

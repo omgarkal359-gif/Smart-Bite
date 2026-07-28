@@ -233,44 +233,26 @@ const LoginPage = () => {
     if (Object.keys(fe).length) { setFieldErr(fe); return; }
     setIsLoading(true); clear();
     try {
-      // 1. If password is provided, attempt password-based database login first
-      if (pwd) {
-        let role = 'student';
-        if (id.toLowerCase().includes('admin')) role = 'admin';
-        else if (id.includes('-') || id.toLowerCase().includes('owner') || id.toLowerCase().includes('tea') || id.toLowerCase().includes('vadewale') || id.toLowerCase().includes('noodles') || id.toLowerCase().includes('narayana') || id.toLowerCase().includes('cravings')) role = 'owner';
-        
-        let res = await api.login(id, pwd, role, '');
-        if (res.success) { finish(res); return; }
-        
-        // Try alternate roles if specified role attempt failed
-        if (role !== 'admin') {
-          res = await api.login(id, pwd, 'admin', '');
-          if (res.success) { finish(res); return; }
-        }
-        if (role !== 'owner') {
-          res = await api.login(id, pwd, 'owner', '');
-          if (res.success) { finish(res); return; }
-        }
-        if (role !== 'student') {
-          res = await api.login(id, pwd, 'student', '');
-          if (res.success) { finish(res); return; }
-        }
-        
-        setErrorMsg('Incorrect username/email or password. Please try again.');
-        setIsLoading(false);
+      let role = 'student';
+      if (id.toLowerCase().includes('admin')) role = 'admin';
+      else if (id.includes('-') || id.toLowerCase().includes('owner') || id.toLowerCase().includes('tea') || id.toLowerCase().includes('vadewale') || id.toLowerCase().includes('noodles') || id.toLowerCase().includes('narayana') || id.toLowerCase().includes('cravings')) role = 'owner';
+      
+      const res = await api.login(id, pwd, role, '');
+      if (res.success) {
+        finish(res);
         return;
       }
-
-      // 2. If NO password is provided and identifier is an email or phone, attempt OTP flow
-      if (isOtpId(id)) {
-        if (isEmail(id)) { const { error } = await supabase.auth.signInWithOtp({ email: id }); if (error) throw error; }
-        else { const ph = /^\d{10}$/.test(id) ? `+91${id}` : id; const { error } = await supabase.auth.signInWithOtp({ phone: ph }); if (error) throw error; }
-        setIsLoading(false); setOtpSent(true); return;
-      }
-
-      setErrorMsg('Please enter your password to sign in.');
+      
+      setErrorMsg(res.message || 'Incorrect credentials or account not found.');
       setIsLoading(false);
-    } catch (err) { setErrorMsg(err.message || 'Could not reach server.'); setIsLoading(false); }
+    } catch (err) {
+      if (err.message?.includes('Account not found') || err.message?.includes('Sign Up')) {
+        setErrorMsg('Account not found. No student is allowed to sign in until they have created an account. Please click "Sign Up" above to register first.');
+      } else {
+        setErrorMsg(err.message || 'Could not reach server.');
+      }
+      setIsLoading(false);
+    }
   };
 
   /* ── Register ── */
