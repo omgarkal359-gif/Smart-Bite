@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { UserButton } from '@clerk/clerk-react';
 import { GlassCard } from '../components/ui/GlassCard';
 import { Button } from '../components/ui/Button';
 import { LogOut, User, Clock, ShoppingBag, ArrowRight, ExternalLink, CheckCircle } from 'lucide-react';
@@ -73,22 +74,31 @@ const UserProfile = () => {
 
   return (
     <div className="profile-container page-transition">
-      <header className="glass-header menu-header">
+      <header className="glass-header menu-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h1 className="heading-2">Profile</h1>
+        <div style={{ transform: 'scale(1.2)' }}>
+          <UserButton afterSignOutUrl="/login" />
+        </div>
       </header>
 
       <main className="profile-main">
         {/* User Info Card */}
-        <GlassCard className="profile-card user-info animate-stagger-item stagger-delay-1">
-          <div className="avatar-placeholder">
-            <User size={40} />
+        <GlassCard className="profile-card user-info animate-stagger-item stagger-delay-1" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <div className="avatar-placeholder">
+              <User size={40} />
+            </div>
+            <div className="user-details">
+              <h2 style={{ textTransform: 'capitalize' }}>{userData?.name || 'SGU Student'}</h2>
+              <p className="text-muted">{userData?.username || userData?.id || '+91 -'}</p>
+              <span style={{ fontSize: '0.68rem', fontWeight: 800, padding: '2px 8px', borderRadius: 999, background: '#FFF1F2', color: '#FF3B5C', textTransform: 'uppercase', marginTop: 4, display: 'inline-block' }}>
+                Role: {userData?.role ? userData.role.toUpperCase() : 'STUDENT'}
+              </span>
+            </div>
           </div>
-          <div className="user-details">
-            <h2 style={{ textTransform: 'capitalize' }}>{userData?.name || 'SGU Student'}</h2>
-            <p className="text-muted">{userData?.username || userData?.id || '+91 -'}</p>
-            <span style={{ fontSize: '0.68rem', fontWeight: 800, padding: '2px 8px', borderRadius: 999, background: '#FFF1F2', color: '#FF3B5C', textTransform: 'uppercase', marginTop: 4, display: 'inline-block' }}>
-              Role: {userData?.role ? userData.role.toUpperCase() : 'STUDENT'}
-            </span>
+
+          <div>
+            <UserButton afterSignOutUrl="/login" />
           </div>
         </GlassCard>
 

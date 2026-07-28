@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@clerk/clerk-react": "^5.61.9",
     "@supabase/supabase-js": "^2.107.0",
     "@tabler/icons-react": "^3.45.0",
     "canvas-confetti": "^1.9.4",
