@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { GlassCard } from '../components/ui/GlassCard';
 import { Button } from '../components/ui/Button';
-import { Clock, Volume2, Power, LogOut, CheckCircle, Banknote, Activity, Smartphone, Utensils, ShoppingBag, Settings, Menu, RefreshCw, X, TrendingUp, Hash, CreditCard } from 'lucide-react';
+import { Clock, Volume2, Power, LogOut, CheckCircle, Banknote, Activity, Smartphone, Utensils, ShoppingBag, Settings, Menu, RefreshCw, X, TrendingUp, Hash, CreditCard, Star } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MenuEditor } from '../components/vendor/MenuEditor';
 import { SHOPS } from '../data/foodCourtDB';
@@ -174,13 +174,40 @@ const VendorDashboard = () => {
   const metrics = useMemo(() => {
     const today = new Date().toDateString();
     const todayCompleted = completedTickets.filter(t => new Date(t.timestamp).toDateString() === today);
+    const todayPending = tickets.filter(t => new Date(t.timestamp).toDateString() === today);
     
     const totalOrders = todayCompleted.length + tickets.length;
     const totalRevenue = todayCompleted.reduce((sum, t) => sum + t.total, 0);
     const cashRevenue = todayCompleted.filter(t => t.payment === 'Cash').reduce((sum, t) => sum + t.total, 0);
     const upiRevenue = todayCompleted.filter(t => t.payment === 'Online UPI').reduce((sum, t) => sum + t.total, 0);
 
-    return { totalOrders, totalRevenue, cashRevenue, upiRevenue };
+    // Calculate Trending Item
+    const itemCounts = {};
+    [...todayCompleted, ...todayPending].forEach(t => {
+      let itemsList = [];
+      if (t.originalItems && Array.isArray(t.originalItems)) {
+        itemsList = t.originalItems;
+      } else if (typeof t.items === 'string') {
+        itemsList = t.items.split(',').map(s => ({ name: s.trim(), quantity: 1 }));
+      }
+      
+      itemsList.forEach(item => {
+        if (item.name) {
+          itemCounts[item.name] = (itemCounts[item.name] || 0) + (Number(item.quantity) || 1);
+        }
+      });
+    });
+
+    let trendingItem = 'No Orders';
+    let maxCount = 0;
+    for (const [name, count] of Object.entries(itemCounts)) {
+      if (count > maxCount) {
+        maxCount = count;
+        trendingItem = name;
+      }
+    }
+
+    return { totalOrders, totalRevenue, cashRevenue, upiRevenue, trendingItem, trendingCount: maxCount };
   }, [tickets, completedTickets]);
 
   const handleToggleShop = async () => {
@@ -336,7 +363,7 @@ const VendorDashboard = () => {
         </div>
 
         {/* Admin Command Dashboard */}
-        <div className="command-grid">
+        <div className="command-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="elite-card command-card">
             <div className="flex justify-between items-start">
               <span className="command-label">Today&apos;s Orders</span>
@@ -371,6 +398,15 @@ const VendorDashboard = () => {
             </div>
             <span className="command-value">₹{metrics.upiRevenue}</span>
             <span className="command-subvalue text-blue-600">Auto-Verified</span>
+          </motion.div>
+
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="elite-card command-card">
+            <div className="flex justify-between items-start">
+              <span className="command-label">Trending Item</span>
+              <Star size={20} className="text-purple-500 fill-purple-100" />
+            </div>
+            <span className="command-value" style={{ fontSize: '1.4rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={metrics.trendingItem}>{metrics.trendingItem}</span>
+            <span className="command-subvalue text-purple-600">{metrics.trendingCount > 0 ? `${metrics.trendingCount} orders today` : 'Waiting for orders'}</span>
           </motion.div>
         </div>
 
