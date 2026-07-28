@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Lock, Eye, EyeOff, CheckCircle2, XCircle, AlertTriangle, KeyRound } from 'lucide-react';
+import { 
+  IconLock, IconEye, IconEyeOff, IconCircleCheck, 
+  IconCircleX, IconAlertTriangle, IconKey, IconLoader2 
+} from '@tabler/icons-react';
 import { supabase } from '../supabaseClient';
-import './pages.css';
+import './LoginPage.css';
 
 const ResetPassword = () => {
   const navigate = useNavigate();
@@ -82,191 +85,254 @@ const ResetPassword = () => {
   // Loading State while verifying recovery session
   if (hasValidSession === null) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
-        <div className="text-white text-sm font-semibold flex items-center gap-3">
-          <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-          Verifying security link...
+      <main className="sb-root">
+        <div className="sb-bg-accent" aria-hidden="true" />
+        <div style={{ color: '#F8FAFC', fontSize: '0.95rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 10 }}>
+          <IconLoader2 size={24} className="sb-spin" style={{ color: '#E4002B' }} />
+          <span>Verifying security link...</span>
         </div>
-      </div>
+      </main>
     );
   }
 
   // Invalid or Expired Recovery Session View
   if (hasValidSession === false) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4 relative overflow-hidden font-sans">
-        <div className="w-full max-w-md bg-white/95 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border border-slate-100 text-center space-y-6">
-          <div className="w-16 h-16 bg-rose-50 text-rose-500 rounded-2xl flex items-center justify-center mx-auto">
-            <AlertTriangle size={36} />
+      <main className="sb-root">
+        <div className="sb-bg-accent" aria-hidden="true" />
+        
+        <div className="sb-card" style={{ maxWidth: 440, padding: '40px 32px', textAlign: 'center' }}>
+          <div 
+            style={{
+              width: 60,
+              height: 60,
+              borderRadius: '50%',
+              background: 'rgba(239, 68, 68, 0.15)',
+              color: '#EF4444',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 20px'
+            }}
+          >
+            <IconAlertTriangle size={34} strokeWidth={1.75} />
           </div>
-          <div>
-            <h2 className="text-xl font-bold text-slate-900">Invalid or Expired Link</h2>
-            <p className="text-xs text-slate-500 font-medium mt-2 leading-relaxed">
-              This password recovery link is either invalid or has expired. Please request a new link to reset your password.
-            </p>
-          </div>
-          <div className="space-y-3 pt-2">
+
+          <h2 style={{ fontFamily: "'Outfit', sans-serif", fontSize: '1.4rem', fontWeight: 800, color: '#F8FAFC', margin: '0 0 10px 0' }}>
+            Invalid or Expired Link
+          </h2>
+
+          <p style={{ fontSize: '0.85rem', color: '#94A3B8', lineHeight: 1.6, marginBottom: 24 }}>
+            This password recovery link is either invalid or has expired. Please request a new link to reset your password.
+          </p>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <button
+              type="button"
               onClick={() => navigate('/forgot-password')}
-              className="w-full py-3.5 px-6 rounded-2xl text-white font-bold text-sm tracking-wide uppercase transition-all shadow-md"
-              style={{ background: 'linear-gradient(135deg, #1A5276, #0F3248)' }}
+              className="sb-btn-primary"
+              style={{ width: '100%' }}
             >
               Request New Link
             </button>
+
             <Link
               to="/login"
-              className="block text-xs font-bold text-slate-500 hover:text-[#1A5276] transition-colors py-2"
+              style={{ fontSize: '0.82rem', fontWeight: 700, color: '#94A3B8', textDecoration: 'none', padding: '8px 0' }}
             >
               Back to Sign In
             </Link>
           </div>
         </div>
-      </div>
+      </main>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4 relative overflow-hidden font-sans">
-      {/* Background Accent */}
-      <div 
-        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full blur-3xl opacity-20 pointer-events-none"
-        style={{ background: 'radial-gradient(circle, #1A5276 0%, rgba(26,82,118,0) 70%)' }}
-      />
+    <main className="sb-root">
+      <div className="sb-bg-accent" aria-hidden="true" />
 
-      <div className="w-full max-w-md bg-white/95 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border border-slate-100 relative z-10">
+      <div className="sb-card" style={{ maxWidth: 440, padding: '40px 32px' }}>
         
         {/* Brand Header */}
-        <div className="flex flex-col items-center text-center mb-6">
+        <div style={{ textAlign: 'center', marginBottom: 28 }}>
           <div 
-            className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4 text-white shadow-lg shadow-[#1A5276]/30"
-            style={{ background: 'linear-gradient(135deg, #1A5276, #0F3248)' }}
+            style={{
+              width: 64,
+              height: 64,
+              borderRadius: 20,
+              background: 'linear-gradient(135deg, #E4002B 0%, #B80023 100%)',
+              color: '#FFFFFF',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 16px',
+              boxShadow: '0 10px 25px rgba(228, 0, 43, 0.4)'
+            }}
           >
-            <KeyRound size={32} />
+            <IconKey size={34} strokeWidth={1.75} />
           </div>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight" style={{ fontFamily: "'Oswald', sans-serif" }}>
+          <h1 style={{ fontFamily: "'Outfit', sans-serif", fontSize: '1.75rem', fontWeight: 800, color: '#F8FAFC', margin: '0 0 6px 0', letterSpacing: '-0.02em' }}>
             Set New Password
           </h1>
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">
+          <p style={{ fontSize: '0.75rem', fontWeight: 800, color: '#E4002B', textTransform: 'uppercase', letterSpacing: '0.12em', margin: 0 }}>
             SGU Smart-Bite Security
           </p>
         </div>
 
         {successMsg ? (
-          <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-6 text-center space-y-3">
-            <CheckCircle2 size={36} className="text-emerald-500 mx-auto" />
-            <h3 className="text-base font-bold text-emerald-900">{successMsg}</h3>
+          <div style={{
+            background: 'rgba(34, 197, 94, 0.15)',
+            border: '1px solid rgba(34, 197, 94, 0.3)',
+            borderRadius: 18,
+            padding: '24px 20px',
+            textAlign: 'center'
+          }}>
+            <IconCircleCheck size={40} strokeWidth={2} style={{ color: '#22C55E', margin: '0 auto 12px' }} />
+            <h3 style={{ fontFamily: "'Outfit', sans-serif", fontSize: '1.1rem', fontWeight: 700, color: '#F8FAFC', margin: 0 }}>
+              {successMsg}
+            </h3>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+          <form onSubmit={handleSubmit} noValidate>
             
             {/* New Password Input */}
-            <div>
-              <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">
+            <div style={{ marginBottom: 18 }}>
+              <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
                 New Password
               </label>
-              <div className="relative">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <IconLock size={20} strokeWidth={1.75} style={{ position: 'absolute', left: 14, color: '#64748B', pointerEvents: 'none' }} />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   placeholder="Enter new password"
-                  className="w-full pl-11 pr-11 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1A5276] focus:border-transparent transition-all"
+                  style={{
+                    width: '100%',
+                    padding: '14px 44px 14px 44px',
+                    background: 'rgba(30, 41, 59, 0.65)',
+                    border: '1px solid rgba(255, 255, 255, 0.14)',
+                    borderRadius: 14,
+                    color: '#F8FAFC',
+                    fontSize: '0.92rem',
+                    fontWeight: 600,
+                    outline: 'none',
+                    transition: 'all 0.2s ease',
+                    boxSizing: 'border-box'
+                  }}
                   autoFocus
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(v => !v)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  style={{ position: 'absolute', right: 14, background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
                 >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  {showPassword ? <IconEyeOff size={18} /> : <IconEye size={18} />}
                 </button>
               </div>
             </div>
 
             {/* Confirm Password Input */}
-            <div>
-              <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
                 Confirm Password
               </label>
-              <div className="relative">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <IconLock size={20} strokeWidth={1.75} style={{ position: 'absolute', left: 14, color: '#64748B', pointerEvents: 'none' }} />
                 <input
                   type={showConfirm ? 'text' : 'password'}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="Repeat new password"
-                  className="w-full pl-11 pr-11 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1A5276] focus:border-transparent transition-all"
+                  style={{
+                    width: '100%',
+                    padding: '14px 44px 14px 44px',
+                    background: 'rgba(30, 41, 59, 0.65)',
+                    border: '1px solid rgba(255, 255, 255, 0.14)',
+                    borderRadius: 14,
+                    color: '#F8FAFC',
+                    fontSize: '0.92rem',
+                    fontWeight: 600,
+                    outline: 'none',
+                    transition: 'all 0.2s ease',
+                    boxSizing: 'border-box'
+                  }}
                 />
                 <button
                   type="button"
                   onClick={() => setShowConfirm(v => !v)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  style={{ position: 'absolute', right: 14, background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
                 >
-                  {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
+                  {showConfirm ? <IconEyeOff size={18} /> : <IconEye size={18} />}
                 </button>
               </div>
             </div>
 
             {/* Real-time Password Strength Checklist */}
-            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-2">
-              <span className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+            <div style={{
+              background: 'rgba(30, 41, 59, 0.5)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              borderRadius: 16,
+              padding: '14px 16px',
+              marginBottom: 24,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 8
+            }}>
+              <span style={{ fontSize: '0.7rem', fontWeight: 800, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                 Password Requirements:
               </span>
               
-              <div className="flex items-center gap-2 text-xs font-semibold">
-                {hasMinLength ? (
-                  <CheckCircle2 size={16} className="text-emerald-500 shrink-0" />
-                ) : (
-                  <XCircle size={16} className="text-slate-300 shrink-0" />
-                )}
-                <span className={hasMinLength ? 'text-emerald-700' : 'text-slate-500'}>
-                  At least 8 characters long
-                </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.8rem', fontWeight: 600, color: hasMinLength ? '#4ADE80' : '#64748B' }}>
+                {hasMinLength ? <IconCircleCheck size={16} /> : <IconCircleX size={16} />}
+                <span>At least 8 characters long</span>
               </div>
 
-              <div className="flex items-center gap-2 text-xs font-semibold">
-                {hasNumber ? (
-                  <CheckCircle2 size={16} className="text-emerald-500 shrink-0" />
-                ) : (
-                  <XCircle size={16} className="text-slate-300 shrink-0" />
-                )}
-                <span className={hasNumber ? 'text-emerald-700' : 'text-slate-500'}>
-                  Includes at least 1 number
-                </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.8rem', fontWeight: 600, color: hasNumber ? '#4ADE80' : '#64748B' }}>
+                {hasNumber ? <IconCircleCheck size={16} /> : <IconCircleX size={16} />}
+                <span>Includes at least 1 number</span>
               </div>
 
-              <div className="flex items-center gap-2 text-xs font-semibold">
-                {passwordsMatch ? (
-                  <CheckCircle2 size={16} className="text-emerald-500 shrink-0" />
-                ) : (
-                  <XCircle size={16} className="text-slate-300 shrink-0" />
-                )}
-                <span className={passwordsMatch ? 'text-emerald-700' : 'text-slate-500'}>
-                  Passwords match
-                </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.8rem', fontWeight: 600, color: passwordsMatch ? '#4ADE80' : '#64748B' }}>
+                {passwordsMatch ? <IconCircleCheck size={16} /> : <IconCircleX size={16} />}
+                <span>Passwords match</span>
               </div>
             </div>
 
             {errorMsg && (
-              <p className="text-xs text-rose-500 font-semibold text-center">{errorMsg}</p>
+              <p style={{ fontSize: '0.78rem', fontWeight: 600, color: '#EF4444', textAlign: 'center', marginBottom: 16 }}>
+                {errorMsg}
+              </p>
             )}
 
             <button
               type="submit"
               disabled={isLoading || !isValidPassword}
-              className="w-full py-3.5 px-6 rounded-2xl text-white font-bold text-sm tracking-wide uppercase transition-all flex items-center justify-center gap-2 shadow-lg disabled:opacity-40 disabled:cursor-not-allowed"
+              className="sb-btn-primary"
               style={{
-                background: 'linear-gradient(135deg, #1A5276, #0F3248)',
-                boxShadow: isValidPassword ? '0 8px 20px rgba(26, 82, 118, 0.35)' : 'none'
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                opacity: (!isValidPassword || isLoading) ? 0.5 : 1,
+                cursor: (!isValidPassword || isLoading) ? 'not-allowed' : 'pointer'
               }}
             >
-              {isLoading ? 'Updating Password...' : 'Update Password'}
+              {isLoading ? (
+                <>
+                  <IconLoader2 size={20} className="sb-spin" />
+                  <span>Updating Password...</span>
+                </>
+              ) : (
+                <span>Update Password</span>
+              )}
             </button>
           </form>
         )}
       </div>
-    </div>
+    </main>
   );
 };
 
