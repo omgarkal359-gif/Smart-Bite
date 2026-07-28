@@ -5,6 +5,7 @@ import {
   IconBrandGoogle, IconShieldCheck, IconBuildingStore
 } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
+import { useUser, useClerk } from '@clerk/clerk-react';
 import { api } from '../api';
 import { supabase } from '../supabaseClient';
 import './LoginPage.css';
@@ -91,6 +92,48 @@ const LoginPage = () => {
   const [resendTimer,    setResendTimer]    = useState(30);
 
   const navigate = useNavigate();
+
+  /* Clerk Authentication Hook */
+  const { user: clerkUser, isSignedIn: isClerkSignedIn } = useUser();
+  const { openSignIn, openSignUp } = useClerk();
+
+  /* ── Sync Clerk User Session ── */
+  useEffect(() => {
+    if (isClerkSignedIn && clerkUser) {
+      async function syncClerkUser() {
+        try {
+          setIsLoading(true);
+          const email = clerkUser.primaryEmailAddress?.emailAddress || clerkUser.emailAddresses[0]?.emailAddress;
+          const phone = clerkUser.primaryPhoneNumber?.phoneNumber;
+          const identifier = email || phone || clerkUser.id;
+          const fullName = clerkUser.fullName || clerkUser.firstName || 'Clerk Student';
+
+          const res = await api.googleLogin(identifier, fullName);
+          if (res.success) {
+            setIsLoading(false);
+            setIsSuccess(true);
+            const ud = {
+              role: res.user.role,
+              name: res.user.name,
+              id: res.user.username,
+              shopId: res.user.shopId || res.user.shopid,
+              timestamp: new Date().toISOString(),
+              rememberMe: true,
+            };
+            localStorage.setItem('sgu_user', JSON.stringify(ud));
+            setTimeout(() => {
+              setIsSuccess(false);
+              redirectByRole(ud.role, ud.shopId);
+            }, 1000);
+          }
+        } catch (err) {
+          console.error('Clerk authentication sync error:', err);
+          setIsLoading(false);
+        }
+      }
+      syncClerkUser();
+    }
+  }, [isClerkSignedIn, clerkUser]);
 
   /* ── resend OTP timer countdown ── */
   useEffect(() => {
@@ -339,6 +382,42 @@ const LoginPage = () => {
     </button>
   );
 
+  /* ── Shared: Clerk button ── */
+  const ClerkBtn = ({ label, isSignUp }) => (
+    <button
+      type="button"
+      onClick={() => isSignUp ? openSignUp() : openSignIn()}
+      disabled={isLoading || isSuccess}
+      style={{
+        width: '100%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '10px',
+        padding: '12px',
+        borderRadius: '999px',
+        border: '1px solid rgba(108, 71, 255, 0.3)',
+        background: 'linear-gradient(135deg, #6C47FF, #5634D9)',
+        color: '#FFFFFF',
+        fontWeight: 800,
+        fontSize: '0.88rem',
+        cursor: 'pointer',
+        marginTop: '10px',
+        boxShadow: '0 4px 14px rgba(108, 71, 255, 0.3)',
+        transition: 'all 0.2s ease',
+        fontFamily: "'Outfit', sans-serif"
+      }}
+      aria-label={label}
+    >
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M2 17L12 22L22 17" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M2 12L12 17L22 12" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
+      <span>{label}</span>
+    </button>
+  );
+
   /* ── Shared: spinner / check inside primary button ── */
   const BtnInner = ({ label }) => (
     <>
@@ -551,6 +630,7 @@ const LoginPage = () => {
                 <div className="sb-divider" aria-hidden="true"><span>or</span></div>
 
                 <GoogleBtn label="Continue with Google" />
+                <ClerkBtn label="Sign in with Clerk" isSignUp={false} />
 
                 <p className="sb-switch">
                   No account?{' '}
@@ -641,6 +721,7 @@ const LoginPage = () => {
                 <div className="sb-divider" aria-hidden="true"><span>or</span></div>
 
                 <GoogleBtn label="Sign up with Google" />
+                <ClerkBtn label="Sign up with Clerk" isSignUp={true} />
 
                 <p className="sb-switch">
                   Have an account?{' '}
