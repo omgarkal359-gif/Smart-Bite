@@ -223,12 +223,7 @@ export const AdminShell = ({ activeModule, setActiveModule, user, children }) =>
                   >
                     <Settings size={16} /> Admin Settings
                   </button>
-                  <button 
-                    onClick={handleLogout}
-                    style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', background: 'rgba(239, 68, 68, 0.08)', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: '0.8rem', fontWeight: 700, color: '#DC2626', marginTop: 4 }}
-                  >
-                    <LogOut size={16} /> Sign Out
-                  </button>
+
                 </div>
               )}
             </div>
