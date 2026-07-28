@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { GlassCard } from '../components/ui/GlassCard';
 import { Button } from '../components/ui/Button';
-import { Clock, Volume2, Power, LogOut, CheckCircle, Banknote, Activity, Smartphone, Utensils, ShoppingBag, Settings, Menu, RefreshCw, X, TrendingUp, Hash, CreditCard, Star } from 'lucide-react';
+import { Clock, Volume2, Power, LogOut, CheckCircle, Banknote, Activity, Smartphone, Utensils, ShoppingBag, Settings, Menu, RefreshCw, X, TrendingUp, Hash, CreditCard, Star, History } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MenuEditor } from '../components/vendor/MenuEditor';
 import { SHOPS } from '../data/foodCourtDB';
@@ -347,9 +347,18 @@ const VendorDashboard = () => {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             className="elite-ctrl-btn management" 
-            onClick={() => setIsSidebarOpen(true)}
+            onClick={() => { setActiveSidebarTab('menu'); setIsSidebarOpen(true); }}
           >
-            <Settings size={16} /> <span>MENU & HISTORY</span>
+            <Settings size={16} /> <span>MENU</span>
+          </motion.button>
+
+          <motion.button 
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="elite-ctrl-btn management" 
+            onClick={() => { setActiveSidebarTab('history'); setIsSidebarOpen(true); }}
+          >
+            <History size={16} /> <span>HISTORY</span>
           </motion.button>
 
           <motion.button 
