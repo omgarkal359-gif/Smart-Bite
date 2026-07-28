@@ -39,12 +39,12 @@ const VendorDashboard = () => {
     try {
       const allOrders = await api.getStallOrders(targetShopId);
       
-      const active = allOrders.filter(order => order.status !== 'completed' && order.status !== 'ready').map(order => ({
+      const active = allOrders.filter(order => order.status !== 'completed').map(order => ({
         ...order,
         items: typeof order.items === 'string' ? order.items.split(', ') : order.items
       }));
 
-      const done = allOrders.filter(order => order.status === 'completed' || order.status === 'ready');
+      const done = allOrders.filter(order => order.status === 'completed');
 
       setTickets(active);
       setCompletedTickets(done);
@@ -254,7 +254,7 @@ const VendorDashboard = () => {
     try {
       await api.updateOrderStatus(id, newStatus);
       
-      if (newStatus === 'completed' || newStatus === 'ready') {
+      if (newStatus === 'completed') {
         setTickets(prev => prev.filter(t => t.id !== id));
         const ticket = tickets.find(t => t.id === id);
         if (ticket) {
