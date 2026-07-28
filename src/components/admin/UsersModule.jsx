@@ -96,9 +96,9 @@ export const UsersModule = () => {
       </div>
 
       {/* Main Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 24 }}>
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* User Table Card */}
-        <div className="admin-card-v2 flex flex-col gap-4">
+        <div className="admin-card-v2 flex flex-col gap-4 lg:col-span-3">
           {/* Controls */}
           <div style={{ display: 'flex', gap: 12 }}>
             <div style={{ position: 'relative', flex: 1 }}>
@@ -172,7 +172,7 @@ export const UsersModule = () => {
         </div>
 
         {/* Security Overrides Sidebar */}
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4 lg:col-span-1">
           <div className="admin-card-v2" style={{ borderTop: '4px solid #FF3B5C' }}>
             <h3 style={{ fontFamily: "'Oswald', sans-serif", fontSize: '1.1rem', fontWeight: 800, color: '#0F172A', margin: '0 0 8px 0', display: 'flex', alignItems: 'center', gap: 8 }}>
               <ShieldAlert size={18} color="#FF3B5C" /> PRN BLACKLIST
