@@ -10,6 +10,8 @@ import UserProfile from './pages/UserProfile';
 import SearchPage from './pages/SearchPage';
 import OrdersPage from './pages/OrdersPage';
 import LoginPage from './pages/LoginPage';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import CartPage from './pages/CartPage';
 import { MobileLayout } from './components/layout/MobileLayout';
 import { CartProvider } from './context/CartContext';
@@ -21,6 +23,8 @@ function App() {
       <Routes>
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         
         {/* Student Routes with Mobile Layout wrapper */}
         <Route path="/student" element={<MobileLayout />}>
