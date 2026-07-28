@@ -85,15 +85,16 @@ export const MenuEditor = ({ shopId }) => {
 
   return (
     <div className="menu-editor-container">
-      <div className="menu-editor-header">
-        <h2 className="heading-2 editor-title">Catalog Editor</h2>
+      <div className="flex justify-between items-center mb-8">
+        <h2 className="text-4xl font-black uppercase tracking-tighter text-black" style={{ fontFamily: 'Oswald, sans-serif', margin: 0, lineHeight: 1 }}>CATALOG EDITOR</h2>
         <motion.button 
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          className={`btn-toggle-add ${isAdding ? 'cancel' : 'add'}`}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-black text-sm tracking-wider text-white transition-all ${isAdding ? 'bg-slate-800' : 'bg-[#e30022]'}`}
           onClick={() => setIsAdding(!isAdding)}
+          style={{ border: 'none', cursor: 'pointer' }}
         >
-          {isAdding ? <X size={20} /> : <Plus size={20} />}
+          {isAdding ? <X size={20} strokeWidth={2.5} /> : <Plus size={20} strokeWidth={2.5} />}
           {isAdding ? 'CANCEL' : 'ADD NEW ITEM'}
         </motion.button>
       </div>
