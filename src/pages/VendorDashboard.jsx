@@ -611,24 +611,26 @@ const VendorDashboard = () => {
               </div>
               
               {/* Tab Switcher */}
-              <div className="flex gap-3 mb-10 bg-slate-100 p-2 rounded-2xl">
+              <div className="flex gap-3 mb-10 bg-slate-100 p-3 rounded-3xl shadow-inner">
                 <button 
-                  className="flex-1 py-4 rounded-xl font-black text-sm uppercase tracking-[0.2em] transition-all border-none cursor-pointer"
+                  className="flex-1 py-5 rounded-2xl font-black text-base lg:text-lg uppercase tracking-wide transition-all border-none cursor-pointer"
                   style={{ 
                     backgroundColor: activeSidebarTab === 'menu' ? '#ffffff' : 'transparent',
                     color: activeSidebarTab === 'menu' ? '#0f172a' : '#64748b',
-                    boxShadow: activeSidebarTab === 'menu' ? '0 4px 10px rgba(0,0,0,0.05)' : 'none'
+                    boxShadow: activeSidebarTab === 'menu' ? '0 8px 20px rgba(0,0,0,0.08)' : 'none',
+                    transform: activeSidebarTab === 'menu' ? 'scale(1.02)' : 'scale(1)'
                   }}
                   onClick={() => setActiveSidebarTab('menu')}
                 >
                   MENU EDITOR
                 </button>
                 <button 
-                  className="flex-1 py-4 rounded-xl font-black text-sm uppercase tracking-[0.2em] transition-all border-none cursor-pointer"
+                  className="flex-1 py-5 rounded-2xl font-black text-base lg:text-lg uppercase tracking-wide transition-all border-none cursor-pointer"
                   style={{ 
                     backgroundColor: activeSidebarTab === 'history' ? '#ffffff' : 'transparent',
                     color: activeSidebarTab === 'history' ? '#0f172a' : '#64748b',
-                    boxShadow: activeSidebarTab === 'history' ? '0 4px 10px rgba(0,0,0,0.05)' : 'none'
+                    boxShadow: activeSidebarTab === 'history' ? '0 8px 20px rgba(0,0,0,0.08)' : 'none',
+                    transform: activeSidebarTab === 'history' ? 'scale(1.02)' : 'scale(1)'
                   }}
                   onClick={() => setActiveSidebarTab('history')}
                 >
