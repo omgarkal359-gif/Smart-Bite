@@ -12,7 +12,7 @@ export const MobileLayout = () => {
   const { totalItems, cart, isCheckoutOpen, setIsCheckoutOpen } = useCart();
 
   return (
-    <div className="mobile-layout pb-nav page-transition bg-soft-gray">
+    <div className="mobile-layout pb-nav bg-soft-gray">
       {/* Global Fixed Header */}
       <header className="global-fixed-header">
         <div className="sgu-sharp-logo" onClick={() => navigate('/student')}>
@@ -55,7 +55,7 @@ export const MobileLayout = () => {
         </button>
       </header>
 
-      <div className="global-content-area">
+      <div className="global-content-area page-transition">
         <Outlet />
       </div>
       
