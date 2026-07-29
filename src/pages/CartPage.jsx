@@ -4,6 +4,7 @@ import { useCart } from '../context/CartContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trash2, Plus, Minus, ArrowRight, ShoppingBag, CreditCard, ChevronLeft, Loader2, Check, ExternalLink, Clock } from 'lucide-react';
 import { api, formatRelativeTime } from '../api';
+import { getFoodItemImage } from '../utils/imageHelper';
 import './pages.css';
 import './cart.css';
 
@@ -255,7 +256,7 @@ const CartPage = () => {
                 className="cart-item-card shadow-sm"
               >
                 <div className="cart-item-img">
-                  <img src={item.img || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&q=80'} alt={item.name} />
+                  <img src={getFoodItemImage(item)} alt={item.name} />
                 </div>
                 <div className="cart-item-details">
                   <h3>{item.name}</h3>

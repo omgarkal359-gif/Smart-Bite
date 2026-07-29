@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useCart } from '../context/CartContext';
 import { api, socket } from '../api';
 import { getItemsByStall, SHOPS, ALL_FOOD_ITEMS } from '../data/foodCourtDB';
+import { getFoodItemImage } from '../utils/imageHelper';
 import './pages.css';
 import './menu_v21.css';
 
@@ -23,27 +24,7 @@ const CAT_ICONS = {
   'Shakes': <Coffee size={16} />
 };
 
-const categoryImagesMap = {
-  "Tea's": 'https://images.unsplash.com/photo-1576092768241-dec231879fc3?auto=format&fit=crop&w=400&q=80',
-  'Coffee': 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=400&q=80',
-  'Cold Beverages': 'https://images.unsplash.com/photo-1517701550927-30cf4ba1dba5?auto=format&fit=crop&w=400&q=80',
-  'Wadapav': 'https://images.unsplash.com/photo-1626132647523-66f5bf380027?auto=format&fit=crop&w=400&q=80',
-  'Misal': 'https://images.unsplash.com/photo-1601050690117-94f5f6fa8bd7?auto=format&fit=crop&w=400&q=80',
-  'Thalipeeth': 'https://images.unsplash.com/photo-1608797178974-15b35a61d121?auto=format&fit=crop&w=400&q=80',
-  'Rice': 'https://images.unsplash.com/photo-1512058564366-18510be2db19?auto=format&fit=crop&w=400&q=80',
-  'Veg Wraps': 'https://images.unsplash.com/photo-1626700051175-6518c4793f4f?auto=format&fit=crop&w=400&q=80',
-  "Idli's": 'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=400&q=80',
-  "Dosa's": 'https://images.unsplash.com/photo-1668236543090-82eba5ee5976?auto=format&fit=crop&w=400&q=80',
-  'Noodles': 'https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&w=400&q=80',
-  'Shakes': 'https://images.unsplash.com/photo-1572490122747-3968b75cc699?auto=format&fit=crop&w=400&q=80',
-  'Mojito': 'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?auto=format&fit=crop&w=400&q=80',
-  'default': 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&q=80'
-};
 
-const getFoodImage = (item) => {
-  if (item && item.img && typeof item.img === 'string' && item.img.trim().startsWith('http')) return item.img;
-  return categoryImagesMap[item?.category] || categoryImagesMap['default'];
-};
 
 const getFallbackIcon = (category) => {
   switch (category) {
@@ -262,7 +243,7 @@ const InteractiveMenu = () => {
                   <div className="food-img-wrapper-v21">
                     {!isImgError ? (
                       <img 
-                        src={getFoodImage(item)} 
+                        src={getFoodItemImage(item)} 
                         alt={item.name} 
                         className="food-hd-img" 
                         onError={() => {
