@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { MenuEditor } from '../components/vendor/MenuEditor';
 import { SHOPS } from '../data/foodCourtDB';
 import { api, socket, formatRelativeTime } from '../api';
+import { supabase } from '../supabaseClient';
 import './pages.css';
 import './vendor.css';
 
@@ -169,16 +170,35 @@ const VendorDashboard = () => {
 
     setUser(parsedUser);
 
-    // Initial stall status load
-    api.getStalls()
-      .then(stalls => {
-        const stall = stalls.find(s => s.id === (cleanUrlShopId || userShopId));
-        if (stall) {
-          setShopStatus(stall.online === 1 || stall.online === true ? 'OPEN' : 'CLOSED');
-          setIsBusyMode(stall.busyMode === 1 || stall.busyMode === true);
-        }
-      })
-      .catch(console.error);
+    const currentStallId = cleanUrlShopId || userShopId;
+    if (currentStallId) {
+      // Initial stall status load
+      api.getStalls()
+        .then(stalls => {
+          const stall = stalls.find(s => s.id === currentStallId);
+          if (stall) {
+            setShopStatus(stall.online === 1 || stall.online === true ? 'OPEN' : 'CLOSED');
+            setIsBusyMode(stall.busyMode === 1 || stall.busyMode === true);
+          }
+        })
+        .catch(console.error);
+
+      // Listen to real-time stall updates
+      const stallChannel = supabase
+        .channel(`vendor-stall-${currentStallId}`)
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'stalls', filter: `id=eq.${currentStallId}` }, (payload) => {
+          const stall = payload.new;
+          if (stall) {
+            setShopStatus(stall.online === 1 || stall.online === true ? 'OPEN' : 'CLOSED');
+            setIsBusyMode(stall.busyMode === 1 || stall.busyMode === true);
+          }
+        })
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(stallChannel);
+      };
+    }
   }, [navigate, urlShopId, cleanUrlShopId]);
 
   // Today's Metrics Calculation
