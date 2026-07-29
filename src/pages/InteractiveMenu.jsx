@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { Leaf, Flame, Pizza, Coffee, Sandwich, Utensils, ArrowLeft } from 'lucide-react';
+import { Leaf, Flame, Pizza, Coffee, Sandwich, Utensils } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCart } from '../context/CartContext';
-import { api } from '../api';
+import { api, socket } from '../api';
 import { getItemsByStall, SHOPS, ALL_FOOD_ITEMS } from '../data/foodCourtDB';
 import './pages.css';
 import './menu_v21.css';
@@ -12,28 +12,37 @@ const CAT_ICONS = {
   'Pizzas': <Pizza size={16} />,
   'Burgers': <Sandwich size={16} />,
   'Beverages': <Coffee size={16} />,
-  "Idli's": <Utensils size={16} />,
+  "Tea's": <Coffee size={16} />,
+  'Coffee': <Coffee size={16} />,
+  'Cold Beverages': <Coffee size={16} />,
+  'Wadapav': <Flame size={16} />,
+  'Misal': <Flame size={16} />,
   "Dosa's": <Flame size={16} />,
-  "Paratha's": <Flame size={16} />,
-  "Pasta's": <Utensils size={16} />
+  "Idli's": <Utensils size={16} />,
+  'Noodles': <Utensils size={16} />,
+  'Shakes': <Coffee size={16} />
 };
 
-const defaultImages = {
-  'Pizzas': 'https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=400&q=80',
-  'Burgers': 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=400&q=80',
-  'Beverages': 'https://images.unsplash.com/photo-1541658016709-82535e94bc69?auto=format&fit=crop&w=400&q=80',
+const categoryImagesMap = {
+  "Tea's": 'https://images.unsplash.com/photo-1576092768241-dec231879fc3?auto=format&fit=crop&w=400&q=80',
+  'Coffee': 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=400&q=80',
+  'Cold Beverages': 'https://images.unsplash.com/photo-1517701550927-30cf4ba1dba5?auto=format&fit=crop&w=400&q=80',
+  'Wadapav': 'https://images.unsplash.com/photo-1626132647523-66f5bf380027?auto=format&fit=crop&w=400&q=80',
   'Misal': 'https://images.unsplash.com/photo-1601050690117-94f5f6fa8bd7?auto=format&fit=crop&w=400&q=80',
   'Thalipeeth': 'https://images.unsplash.com/photo-1608797178974-15b35a61d121?auto=format&fit=crop&w=400&q=80',
   'Rice': 'https://images.unsplash.com/photo-1512058564366-18510be2db19?auto=format&fit=crop&w=400&q=80',
   'Veg Wraps': 'https://images.unsplash.com/photo-1626700051175-6518c4793f4f?auto=format&fit=crop&w=400&q=80',
   "Idli's": 'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=400&q=80',
   "Dosa's": 'https://images.unsplash.com/photo-1668236543090-82eba5ee5976?auto=format&fit=crop&w=400&q=80',
+  'Noodles': 'https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&w=400&q=80',
+  'Shakes': 'https://images.unsplash.com/photo-1572490122747-3968b75cc699?auto=format&fit=crop&w=400&q=80',
+  'Mojito': 'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?auto=format&fit=crop&w=400&q=80',
   'default': 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&q=80'
 };
 
 const getFoodImage = (item) => {
   if (item && item.img && typeof item.img === 'string' && item.img.trim().startsWith('http')) return item.img;
-  return defaultImages[item?.category] || defaultImages['default'];
+  return categoryImagesMap[item?.category] || categoryImagesMap['default'];
 };
 
 const getFallbackIcon = (category) => {
@@ -43,6 +52,8 @@ const getFallbackIcon = (category) => {
     case 'Burgers':
       return <Sandwich size={36} />;
     case 'Beverages':
+    case "Tea's":
+    case 'Coffee':
       return <Coffee size={36} />;
     default:
       return <Utensils size={36} />;
@@ -51,12 +62,11 @@ const getFallbackIcon = (category) => {
 
 const InteractiveMenu = () => {
   const { shopId } = useParams();
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const highlightId = searchParams.get('highlight');
   const targetCategory = searchParams.get('category');
 
-  const { cart, addToCart, removeFromCart, totalItems, setIsCheckoutOpen } = useCart();
+  const { cart, addToCart, removeFromCart, totalItems, isCheckoutOpen, setIsCheckoutOpen } = useCart();
 
   // Initial state derived synchronously from foodCourtDB
   const initialItems = useMemo(() => {
@@ -73,6 +83,7 @@ const InteractiveMenu = () => {
   const [inventory, setInventory] = useState(initialItems);
   const [stallInfo, setStallInfo] = useState(initialStall);
   const [imgErrors, setImgErrors] = useState({});
+  const [isLoading, setIsLoading] = useState(false);
 
   // Sync inventory if shopId changes
   useEffect(() => {
@@ -100,7 +111,7 @@ const InteractiveMenu = () => {
     return unique[0] || 'All Items';
   });
 
-  // Load latest data asynchronously from API/Supabase without blocking initial render
+  // Load latest data asynchronously from API/Supabase
   useEffect(() => {
     let isMounted = true;
     async function loadStallMenu() {
@@ -124,10 +135,23 @@ const InteractiveMenu = () => {
       }
     }
     loadStallMenu();
-    return () => { isMounted = false; };
+
+    // Socket realtime listener
+    socket.emit('join', `stall-menu-${shopId}`);
+    const handleMenuItemUpdate = (updatedItem) => {
+      if (isMounted) {
+        setInventory(prev => prev.map(i => i.id === updatedItem.id ? updatedItem : i));
+      }
+    };
+    socket.on('menu_item_update', handleMenuItemUpdate);
+
+    return () => {
+      isMounted = false;
+      socket.off('menu_item_update', handleMenuItemUpdate);
+    };
   }, [shopId]);
 
-  // Keep active category synced if CATEGORIES change or targetCategory updates
+  // Keep active category synced
   useEffect(() => {
     const decodedTarget = targetCategory ? decodeURIComponent(targetCategory) : null;
     if (decodedTarget && CATEGORIES.includes(decodedTarget)) {
@@ -139,12 +163,12 @@ const InteractiveMenu = () => {
 
   // Highlight scroll
   useEffect(() => {
-    if (highlightId) {
+    if (highlightId && !isLoading) {
       setTimeout(() => {
         const el = document.getElementById(`dish-${highlightId}`);
         if (el) {
           el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          el.style.border = '2px solid #E4002B';
+          el.style.border = '2px solid var(--primary-color, #E4002B)';
           el.style.transform = 'scale(1.02)';
           el.style.boxShadow = '0 10px 25px rgba(228, 0, 43, 0.2)';
           setTimeout(() => {
@@ -153,9 +177,9 @@ const InteractiveMenu = () => {
             el.style.boxShadow = '';
           }, 2000);
         }
-      }, 400);
+      }, 300);
     }
-  }, [highlightId, activeCategory]);
+  }, [highlightId, isLoading, activeCategory]);
 
   // Derive display inventory with live cart subtraction
   const displayInventory = useMemo(() => {
@@ -188,131 +212,133 @@ const InteractiveMenu = () => {
   }, [displayInventory, activeCategory]);
 
   return (
-    <div className="menu-container page-transition" style={{ minHeight: '100vh', background: '#F8FAFC', paddingBottom: 100 }}>
-      {/* Menu Top Bar */}
-      <header className="menu-header-v21" style={{ background: '#FFFFFF', borderBottom: '1px solid #E2E8F0', padding: '16px', sticky: 'top', top: 60, zIndex: 40 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-          <button 
-            onClick={() => navigate('/student')}
-            style={{ background: '#F1F5F9', border: 'none', borderRadius: '50%', width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
-          >
-            <ArrowLeft size={20} color="#0F172A" />
-          </button>
-          <div>
-            <h1 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#0F172A', margin: 0, textTransform: 'capitalize', letterSpacing: '-0.02em' }}>
-              {stallInfo?.name || shopId?.replace(/-/g, ' ')}
-            </h1>
-            <p style={{ fontSize: '0.8rem', color: '#64748B', margin: 0, fontWeight: 600 }}>
-              {stallInfo?.category || 'Fresh & Hot Campus Food'}
-            </p>
-          </div>
-        </div>
+    <div className="menu-container page-transition">
+      {/* KFC Style Sticky Menu Header */}
+      <header className="menu-header-v21">
+        <h2 className="heading-2">{stallInfo ? stallInfo.name : `Shop #${shopId}`}</h2>
         
-        {/* Category Scroll Bar */}
-        <div className="category-scroll-wrapper" style={{ display: 'flex', overflowX: 'auto', gap: 8, paddingTop: 4, paddingBottom: 4 }}>
+        <div className="category-scroll-wrapper mt-4">
           {CATEGORIES.map(cat => (
             <button
               key={cat}
               className={`category-pill-v21 tap-effect ${activeCategory === cat ? 'active' : ''}`}
               onClick={() => setActiveCategory(cat)}
-              style={{
-                padding: '8px 16px', borderRadius: 20, fontSize: '0.85rem', fontWeight: 700,
-                border: activeCategory === cat ? 'none' : '1px solid #E2E8F0',
-                background: activeCategory === cat ? '#E4002B' : '#FFFFFF',
-                color: activeCategory === cat ? '#FFFFFF' : '#475569',
-                cursor: 'pointer', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 6
-              }}
             >
-              {CAT_ICONS[cat] || <Flame size={14} />}
+              {CAT_ICONS[cat] || <Flame size={16} />}
               <span>{cat}</span>
             </button>
           ))}
         </div>
       </header>
 
-      {/* Menu Food Grid */}
-      <main className="menu-grid-v21" style={{ padding: '16px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 16 }}>
-        {filteredInventory.map((item, index) => {
-          const isImgError = imgErrors[item.id];
-          return (
-            <div
-              key={item.id || `dish-${index}`}
-              id={`dish-${item.id}`}
-              className={`food-card-v21 shadow-sm ${item.stock === 0 ? 'out-of-stock' : ''}`}
-              style={{
-                background: '#FFFFFF', borderRadius: 16, border: '1px solid #E2E8F0',
-                overflow: 'hidden', display: 'flex', flexDirection: 'column', position: 'relative'
-              }}
-            >
-              <div className="food-img-wrapper-v21" style={{ width: '100%', height: 140, background: '#F1F5F9', position: 'relative', overflow: 'hidden' }}>
-                {!isImgError ? (
-                  <img 
-                    src={getFoodImage(item)} 
-                    alt={item.name} 
-                    className="food-hd-img" 
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                    onError={() => {
-                      setImgErrors(prev => ({ ...prev, [item.id]: true }));
-                    }}
-                  />
-                ) : (
-                  <div style={{ width: '100%', height: '100%', color: '#CBD5E1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    {getFallbackIcon(item.category)}
-                  </div>
-                )}
-
-                {/* Floating Add / Qty Controller */}
-                {cart[item.id] ? (
-                  <div className="qty-controls-v21 shadow-md" style={{ position: 'absolute', bottom: 8, right: 8, background: '#FFFFFF', borderRadius: 20, padding: '2px 8px', display: 'flex', alignItems: 'center', gap: 8, border: '1px solid #E4002B' }}>
-                    <button className="qty-btn" onClick={() => handleRemoveFromCartClick(item)} style={{ background: '#E4002B', color: '#FFF', border: 'none', borderRadius: '50%', width: 22, height: 22, fontWeight: 800, cursor: 'pointer' }}>-</button>
-                    <span className="qty-value" style={{ fontWeight: 800, color: '#E4002B', fontSize: '0.85rem' }}>{cart[item.id].quantity}</span>
-                    <button className="qty-btn" onClick={() => handleAddToCartClick(item)} disabled={item.stock === 0} style={{ background: '#E4002B', color: '#FFF', border: 'none', borderRadius: '50%', width: 22, height: 22, fontWeight: 800, cursor: 'pointer' }}>+</button>
-                  </div>
-                ) : (
-                  <button
-                    className="kfc-add-btn"
-                    onClick={() => handleAddToCartClick(item)}
-                    disabled={item.stock === 0}
-                    style={{ position: 'absolute', bottom: 8, right: 8, width: 32, height: 32, borderRadius: 8, background: '#E4002B', color: '#FFFFFF', border: 'none', fontWeight: 800, fontSize: '1.2rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 10px rgba(228, 0, 43, 0.3)' }}
-                  >
-                    +
-                  </button>
-                )}
-              </div>
-
-              <div className="food-info-v21" style={{ padding: '12px', display: 'flex', flexDirection: 'column', flex: 1 }}>
-                <h3 style={{ fontSize: '0.95rem', fontWeight: 800, color: '#0F172A', margin: '0 0 4px 0', lineHeight: 1.2 }}>{item.name}</h3>
-                <p className="food-desc-v21" style={{ fontSize: '0.75rem', color: '#64748B', margin: '0 0 8px 0', lineHeight: 1.3 }}>Freshly prepared {item.name}.</p>
-
-                <div className="food-bottom-row" style={{ marginTop: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <p className="price-v21" style={{ fontSize: '1rem', fontWeight: 900, color: '#0F172A', margin: 0 }}>₹{item.price}</p>
+      {/* KFC Style Responsive Bento Menu Grid */}
+      <main className="menu-grid-v21">
+        <AnimatePresence mode="popLayout">
+          {isLoading ? (
+            [1, 2, 3, 4].map(i => (
+              <motion.div key={`skel-${i}`} className="food-card-v21 shadow-lg skeleton" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.1 }}>
+                <div className="skeleton-food-img" />
+                <div className="p-3">
+                  <div className="skeleton-text w-3/4 mb-2" />
+                  <div className="skeleton-text w-1/2" />
                 </div>
-              </div>
-            </div>
-          );
-        })}
+              </motion.div>
+            ))
+          ) : (
+            filteredInventory.map((item, index) => {
+              const isImgError = imgErrors[item.id];
+              return (
+                <motion.div
+                  key={item.id || index}
+                  id={`dish-${item.id}`}
+                  layout
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  transition={{ type: "spring", stiffness: 100, damping: 15, delay: index * 0.05 }}
+                  whileHover={{ y: -5 }}
+                  className={`food-card-v21 shadow-sm ${item.stock === 0 ? 'out-of-stock' : ''}`}
+                >
+                  <div className="food-img-wrapper-v21">
+                    {!isImgError ? (
+                      <img 
+                        src={getFoodImage(item)} 
+                        alt={item.name} 
+                        className="food-hd-img" 
+                        onError={() => {
+                          setImgErrors(prev => ({ ...prev, [item.id]: true }));
+                        }}
+                      />
+                    ) : (
+                      <div style={{ width: '100%', height: '100%', color: '#CBD5E1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        {getFallbackIcon(item.category)}
+                      </div>
+                    )}
+
+                    {/* Floating KFC Red Add/Qty Selector */}
+                    {cart[item.id] ? (
+                      <div className="qty-controls-v21 shadow-md">
+                        <motion.button whileTap={{ scale: 0.9 }} className="qty-btn" onClick={() => handleRemoveFromCartClick(item)}>
+                          -
+                        </motion.button>
+                        <span className="qty-value">{cart[item.id].quantity}</span>
+                        <motion.button whileTap={{ scale: 0.9 }} className="qty-btn" onClick={() => handleAddToCartClick(item)} disabled={item.stock === 0}>
+                          +
+                        </motion.button>
+                      </div>
+                    ) : (
+                      <motion.button
+                        whileTap={{ scale: 0.8 }}
+                        className="kfc-add-btn"
+                        onClick={() => handleAddToCartClick(item)}
+                        disabled={item.stock === 0}
+                      >
+                        +
+                      </motion.button>
+                    )}
+                  </div>
+
+                  <div className="food-info-v21">
+                    <h3>{item.name}</h3>
+                    <p className="food-desc-v21">Freshly prepared {item.name.toLowerCase()} with signature ingredients.</p>
+
+                    <div className="food-bottom-row">
+                      <p className="price-v21">₹{item.price}</p>
+                    </div>
+
+                    {item.stock > 0 && item.stock <= 5 && (
+                      <span className="stock-warning mt-2 block" style={{ fontSize: '0.7rem' }}>Only {item.stock} left</span>
+                    )}
+                  </div>
+                </motion.div>
+              );
+            })
+          )}
+        </AnimatePresence>
       </main>
 
-      {/* Floating Cart Indicator */}
+      {/* KFC Style Floating Bottom Cart Bar */}
       {totalItems > 0 && (
-        <div
-          className="floating-cart-v21"
-          style={{ position: 'fixed', bottom: 80, left: 16, right: 16, background: '#0F172A', color: '#FFFFFF', borderRadius: 16, padding: '12px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 60, boxShadow: '0 10px 30px rgba(0,0,0,0.25)' }}
+        <motion.div
+          className="floating-cart-v21 shadow-2xl"
+          initial={{ y: 100 }}
+          animate={{ y: 0 }}
+          exit={{ y: 100 }}
         >
           <div className="cart-summary-v21">
-            <span className="cart-total" style={{ color: '#FFFFFF', fontWeight: 800, fontSize: '0.95rem' }}>
+            <span className="cart-total">
               {totalItems} item{totalItems > 1 ? 's' : ''} added
             </span>
           </div>
           <button 
             className="checkout-btn-v21 tap-effect shadow-md" 
             onClick={() => setIsCheckoutOpen(true)}
-            style={{ background: '#E4002B', color: '#FFFFFF', padding: '8px 18px', borderRadius: 10, border: 'none', fontWeight: 800, cursor: 'pointer' }}
           >
             Checkout
           </button>
-        </div>
+        </motion.div>
       )}
+
     </div>
   );
 };
