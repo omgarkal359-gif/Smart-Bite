@@ -8,6 +8,7 @@ import { MenuEditor } from '../components/vendor/MenuEditor';
 import { SHOPS } from '../data/foodCourtDB';
 import { api, socket, formatRelativeTime } from '../api';
 import { supabase } from '../supabaseClient';
+import { getStoredUser, clearStoredUser } from '../utils/auth';
 import './pages.css';
 import './vendor.css';
 
@@ -145,20 +146,9 @@ const VendorDashboard = () => {
 
   // Security Gate & Session Check
   useEffect(() => {
-    const userData = localStorage.getItem('sgu_user');
-    if (!userData) {
-      navigate('/login');
-      return;
-    }
-    let parsedUser = null;
-    try {
-      parsedUser = JSON.parse(userData);
-    } catch (e) {
-      parsedUser = null;
-    }
-
+    const parsedUser = getStoredUser();
     if (!parsedUser || !parsedUser.role) {
-      localStorage.removeItem('sgu_user');
+      clearStoredUser();
       navigate('/login', { replace: true });
       return;
     }
@@ -169,7 +159,7 @@ const VendorDashboard = () => {
       
     if (isOwnerSessionCorrupted) {
       console.warn('Clearing corrupted owner session on VendorDashboard:', parsedUser);
-      localStorage.removeItem('sgu_user');
+      clearStoredUser();
       navigate('/login', { replace: true });
       return;
     }
