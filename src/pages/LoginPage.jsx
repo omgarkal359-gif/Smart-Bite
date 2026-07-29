@@ -194,13 +194,9 @@ const LoginPage = () => {
           const bad = p.role === 'owner' && (!p.shopId || p.shopId === 'undefined' || p.shopId === 'null');
           if (bad) {
             localStorage.removeItem('sgu_user');
-          } else if (p.rememberMe) {
-            redirectByRole(p.role, p.shopId);
           } else {
-            localStorage.removeItem('sgu_user');
+            redirectByRole(p.role, p.shopId);
           }
-        } else {
-          localStorage.removeItem('sgu_user');
         }
       } catch (err) {
         localStorage.removeItem('sgu_user');
