@@ -7,7 +7,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useClerk } from '@clerk/clerk-react';
 import { MenuEditor } from '../components/vendor/MenuEditor';
 import { SHOPS } from '../data/foodCourtDB';
-import { api, socket, formatRelativeTime } from '../api';
+import { api, formatRelativeTime } from '../api';
+import { supabase } from '../supabaseClient';
 import './pages.css';
 import './vendor.css';
 
@@ -60,61 +61,55 @@ const VendorDashboard = () => {
 
     loadOrders();
     
-    // Join room for this vendor
-    socket.emit('join', `vendor-${targetShopId}`);
+    // Supabase Realtime subscription on 'orders' table in public schema
+    const channel = supabase
+      .channel(`vendor-orders-${targetShopId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'orders' },
+        (payload) => {
+          const { eventType, new: newRecord } = payload;
+          if (!newRecord) return;
+          const orderShop = newRecord.shopId || newRecord.shopid;
+          if (orderShop && orderShop !== targetShopId) return;
 
-    const handleNewOrder = (newOrder) => {
-      setTickets(prev => {
-        if (prev.some(t => t.id === newOrder.id)) return prev;
-        // Format item split
-        const formatted = {
-          ...newOrder,
-          items: typeof newOrder.items === 'string' ? newOrder.items.split(', ') : newOrder.items
-        };
-        return [formatted, ...prev];
-      });
-    };
-
-    const handleStatusUpdate = (updatedOrder) => {
-      if (updatedOrder.status === 'completed' || updatedOrder.status === 'ready') {
-        setTickets(prev => prev.filter(t => t.id !== updatedOrder.id));
-        setCompletedTickets(prev => {
           const formatted = {
-            ...updatedOrder,
-            items: typeof updatedOrder.items === 'string' ? updatedOrder.items.split(', ') : updatedOrder.items
+            ...newRecord,
+            items: typeof newRecord.items === 'string' ? newRecord.items.split(', ') : newRecord.items
           };
-          if (prev.some(t => t.id === updatedOrder.id)) {
-            return prev.map(t => t.id === updatedOrder.id ? formatted : t);
-          }
-          return [formatted, ...prev];
-        });
-      } else {
-        setTickets(prev => {
-          if (prev.some(t => t.id === updatedOrder.id)) {
-            return prev.map(t => t.id === updatedOrder.id ? { 
-              ...t, 
-              status: updatedOrder.status 
-            } : t);
-          }
-          const formatted = {
-            ...updatedOrder,
-            items: typeof updatedOrder.items === 'string' ? updatedOrder.items.split(', ') : updatedOrder.items
-          };
-          return [formatted, ...prev];
-        });
-      }
-    };
 
-    socket.on('order_new', handleNewOrder);
-    socket.on('order_status_update', handleStatusUpdate);
+          if (eventType === 'INSERT') {
+            setTickets(prev => {
+              if (prev.some(t => t.id === newRecord.id)) return prev;
+              return [formatted, ...prev];
+            });
+          } else if (eventType === 'UPDATE') {
+            if (newRecord.status === 'completed') {
+              setTickets(prev => prev.filter(t => t.id !== newRecord.id));
+              setCompletedTickets(prev => {
+                if (prev.some(t => t.id === newRecord.id)) {
+                  return prev.map(t => t.id === newRecord.id ? formatted : t);
+                }
+                return [formatted, ...prev];
+              });
+            } else {
+              setTickets(prev => {
+                if (prev.some(t => t.id === newRecord.id)) {
+                  return prev.map(t => t.id === newRecord.id ? { ...t, ...formatted } : t);
+                }
+                return [formatted, ...prev];
+              });
+            }
+          }
+        }
+      )
+      .subscribe();
 
-    // Polling fallback (poll every 2 seconds for instant order updates)
-    const intervalTime = 2000;
-    const interval = setInterval(loadOrders, intervalTime);
+    // Polling fallback every 3s
+    const interval = setInterval(loadOrders, 3000);
 
     return () => {
-      socket.off('order_new', handleNewOrder);
-      socket.off('order_status_update', handleStatusUpdate);
+      supabase.removeChannel(channel);
       clearInterval(interval);
     };
   }, [targetShopId, loadOrders]);
