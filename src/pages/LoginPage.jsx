@@ -5,7 +5,6 @@ import {
   IconBrandGoogle, IconShieldCheck, IconBuildingStore
 } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
-import { useUser, useClerk } from '@clerk/clerk-react';
 import { api } from '../api';
 import { supabase } from '../supabaseClient';
 import './LoginPage.css';
@@ -86,48 +85,6 @@ const LoginPage = () => {
   const [fieldErr,  setFieldErr]  = useState({});
 
   const navigate = useNavigate();
-
-  /* Clerk Authentication Hook */
-  const { user: clerkUser, isSignedIn: isClerkSignedIn } = useUser();
-  const { openSignIn, openSignUp } = useClerk();
-
-  /* ── Sync Clerk User Session ── */
-  useEffect(() => {
-    if (isClerkSignedIn && clerkUser) {
-      async function syncClerkUser() {
-        try {
-          setIsLoading(true);
-          const email = clerkUser.primaryEmailAddress?.emailAddress || clerkUser.emailAddresses[0]?.emailAddress;
-          const phone = clerkUser.primaryPhoneNumber?.phoneNumber;
-          const identifier = email || phone || clerkUser.id;
-          const fullName = clerkUser.fullName || clerkUser.firstName || 'Clerk Student';
-
-          const res = await api.googleLogin(identifier, fullName);
-          if (res.success) {
-            setIsLoading(false);
-            setIsSuccess(true);
-            const ud = {
-              role: res.user.role,
-              name: res.user.name,
-              id: res.user.username,
-              shopId: res.user.shopId || res.user.shopid,
-              timestamp: new Date().toISOString(),
-              rememberMe: true,
-            };
-            localStorage.setItem('sgu_user', JSON.stringify(ud));
-            setTimeout(() => {
-              setIsSuccess(false);
-              redirectByRole(ud.role, ud.shopId);
-            }, 1000);
-          }
-        } catch (err) {
-          console.error('Clerk authentication sync error:', err);
-          setIsLoading(false);
-        }
-      }
-      syncClerkUser();
-    }
-  }, [isClerkSignedIn, clerkUser]);
 
   /* ── Auto-reset loading state if login process is terminated or timed out ── */
   useEffect(() => {
@@ -337,44 +294,6 @@ const LoginPage = () => {
     </button>
   );
 
-  /* ── Shared: Clerk button ── */
-  const ClerkBtn = ({ label, isSignUp }) => (
-    <button
-      type="button"
-      onClick={() => {
-        setIsLoading(true);
-        if (isSignUp) openSignUp();
-        else openSignIn();
-        setTimeout(() => setIsLoading(false), 4000);
-      }}
-      disabled={isSuccess}
-      style={{
-        width: '100%',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: '10px',
-        padding: '12px 16px',
-        borderRadius: '12px',
-        border: '1px solid #CBD5E1',
-        background: '#FFFFFF',
-        color: '#1E293B',
-        fontWeight: 600,
-        fontSize: '0.95rem',
-        cursor: 'pointer',
-        marginTop: '10px',
-        transition: 'all 0.2s ease',
-      }}
-      aria-label={label}
-    >
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M12 2C6.477 2 2 6.477 2 12C2 17.523 6.477 22 12 22C17.523 22 22 17.523 22 12C22 6.477 17.523 2 12 2Z" fill="#6C47FF"/>
-        <path d="M12 6C8.686 6 6 8.686 6 12C6 15.314 8.686 18 12 18C15.314 18 18 15.314 18 12C18 8.686 15.314 6 12 6Z" fill="white"/>
-      </svg>
-      <span>{label}</span>
-    </button>
-  );
-
   /* ── Shared: spinner / check inside primary button ── */
   const BtnInner = ({ label }) => (
     <>
@@ -504,7 +423,6 @@ const LoginPage = () => {
                 <div className="sb-divider" aria-hidden="true"><span>or</span></div>
 
                 <GoogleBtn label="Continue with Google" isSignUp={false} />
-                <ClerkBtn label="Sign in with Clerk" isSignUp={false} />
 
                 <p className="sb-switch">
                   No account?{' '}
@@ -596,7 +514,6 @@ const LoginPage = () => {
                 <div className="sb-divider" aria-hidden="true"><span>or</span></div>
 
                 <GoogleBtn label="Sign up with Google" isSignUp={true} />
-                <ClerkBtn label="Sign up with Clerk" isSignUp={true} />
 
                 <p className="sb-switch">
                   Have an account?{' '}
