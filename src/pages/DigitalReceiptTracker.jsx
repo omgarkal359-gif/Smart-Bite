@@ -78,11 +78,32 @@ const DigitalReceiptTracker = () => {
 
     socket.on('order_status_update', handleStatusUpdate);
 
+    // Setup Supabase Realtime Broadcast Listener to bypass RLS DB blocks
+    const channel = supabase.channel(`student_sync_${orderId}`)
+      .on('broadcast', { event: 'order_status_update' }, (payload) => {
+        if (payload && payload.payload && payload.payload.status) {
+          setOrder(prev => {
+            if (!prev) return null;
+            const updated = { ...prev, status: payload.payload.status };
+            handleStatusUpdate(updated);
+            
+            // Persist to local storage
+            const savedOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
+            const newOrdersList = savedOrders.map(o => o.id === orderId ? { ...o, status: payload.payload.status } : o);
+            localStorage.setItem('sgu_orders', JSON.stringify(newOrdersList));
+            
+            return updated;
+          });
+        }
+      })
+      .subscribe();
+
     // Polling fallback
     const interval = setInterval(loadOrder, 7000); // Poll every 7 seconds
 
     return () => {
       socket.off('order_status_update', handleStatusUpdate);
+      supabase.removeChannel(channel);
       clearInterval(interval);
     };
   }, [orderId]);
