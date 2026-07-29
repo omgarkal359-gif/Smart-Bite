@@ -38,7 +38,16 @@ const VendorDashboard = () => {
   const loadOrders = useCallback(async () => {
     if (!targetShopId) return;
     try {
-      const allOrders = await api.getStallOrders(targetShopId);
+      const dbOrders = await api.getStallOrders(targetShopId);
+      const localOrders = JSON.parse(localStorage.getItem(`sgu_vendor_orders_${targetShopId}`) || '[]');
+      
+      const allOrders = [...(dbOrders || [])];
+      localOrders.forEach(localOrder => {
+        if (!allOrders.find(o => o.id === localOrder.id)) {
+          allOrders.push(localOrder);
+        }
+      });
+      allOrders.sort((a, b) => String(b.id).localeCompare(String(a.id)));
       
       const active = allOrders.filter(order => order.status !== 'completed').map(order => ({
         ...order,
@@ -107,6 +116,21 @@ const VendorDashboard = () => {
     socket.on('order_new', handleNewOrder);
     socket.on('order_status_update', handleStatusUpdate);
 
+    // Setup Supabase Realtime Broadcast Listener to bypass RLS DB blocks
+    const channel = supabase.channel(`vendor_sync_${targetShopId}`)
+      .on('broadcast', { event: 'order_new' }, (payload) => {
+        if (payload && payload.payload && payload.payload.order) {
+           const newOrd = payload.payload.order;
+           handleNewOrder(newOrd);
+           // Persist to local storage to survive refreshes
+           const existing = JSON.parse(localStorage.getItem(`sgu_vendor_orders_${targetShopId}`) || '[]');
+           if (!existing.find(o => o.id === newOrd.id)) {
+             localStorage.setItem(`sgu_vendor_orders_${targetShopId}`, JSON.stringify([newOrd, ...existing]));
+           }
+        }
+      })
+      .subscribe();
+
     // Polling fallback (poll every 2 seconds for instant order updates)
     const intervalTime = 2000;
     const interval = setInterval(loadOrders, intervalTime);
@@ -114,6 +138,7 @@ const VendorDashboard = () => {
     return () => {
       socket.off('order_new', handleNewOrder);
       socket.off('order_status_update', handleStatusUpdate);
+      supabase.removeChannel(channel);
       clearInterval(interval);
     };
   }, [targetShopId, loadOrders]);
@@ -474,12 +499,17 @@ const VendorDashboard = () => {
                 parsedItems = ticket.items.split(', ').filter(Boolean);
               }
 
-              // Use originalItems for rich display if available
-              const richItems = ticket.originalItems && Array.isArray(ticket.originalItems) ? ticket.originalItems : null;
+              // Use originalItems for rich display if available, OR if items itself is an array of objects
+              let richItems = null;
+              if (ticket.originalItems && Array.isArray(ticket.originalItems)) {
+                richItems = ticket.originalItems;
+              } else if (Array.isArray(ticket.items) && ticket.items.length > 0 && typeof ticket.items[0] === 'object') {
+                richItems = ticket.items;
+              }
 
-              const isNew = ticket.status === 'placed';
+              const isNew = ticket.status === 'placed' || (!ticket.status && ticket.payment !== 'Cash');
               const isPreparing = ticket.status === 'preparing';
-              const isPendingCash = ticket.status === 'pending_cash';
+              const isPendingCash = ticket.status === 'pending_cash' || (!ticket.status && ticket.payment === 'Cash');
               const isReady = ticket.status === 'ready';
 
               const statusColor = isPreparing ? '#3B82F6' : isReady ? '#22C55E' : isNew ? '#8B5CF6' : '#F59E0B';

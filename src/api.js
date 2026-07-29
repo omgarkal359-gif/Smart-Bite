@@ -124,9 +124,28 @@ export const api = {
     try {
       // Ensure stall_id / shop_id is set for backend indexing and queries
       const stallId = orderData.items && orderData.items.length > 0 ? orderData.items[0].stallId : null;
-      const payload = { ...orderData, shop_id: stallId, stall_id: stallId, stallId: stallId };
+      const defaultStatus = orderData.payment === 'Cash' ? 'pending_cash' : 'placed';
+      const payload = { status: defaultStatus, ...orderData, shop_id: stallId, stall_id: stallId, stallId: stallId };
       
       const { data, error } = await supabase.from('orders').insert(payload).select();
+      
+      const actualOrder = (data && data[0]) ? data[0] : { id: `ORD-${Date.now()}`, ...payload };
+      
+      // Broadcast new order directly to Vendor Dashboard bypassing DB if needed
+      if (stallId) {
+        const channel = supabase.channel(`vendor_sync_${stallId}`);
+        channel.subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            channel.send({
+              type: 'broadcast',
+              event: 'order_new',
+              payload: { order: actualOrder }
+            });
+            setTimeout(() => supabase.removeChannel(channel), 1000);
+          }
+        });
+      }
+
       if (error) console.error("Supabase insert error:", error);
       if (!error && data) return { success: true, order: data[0] };
       
@@ -135,7 +154,20 @@ export const api = {
         body: JSON.stringify(orderData)
       });
     } catch (err) {
-      return { success: true, order: { id: `ORD-${Date.now()}`, ...orderData } };
+      const stallId = orderData.items && orderData.items.length > 0 ? orderData.items[0].stallId : null;
+      const defaultStatus = orderData.payment === 'Cash' ? 'pending_cash' : 'placed';
+      const fallbackOrder = { id: `ORD-${Date.now()}`, status: defaultStatus, ...orderData, stall_id: stallId };
+      
+      if (stallId) {
+        const channel = supabase.channel(`vendor_sync_${stallId}`);
+        channel.subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            channel.send({ type: 'broadcast', event: 'order_new', payload: { order: fallbackOrder } });
+            setTimeout(() => supabase.removeChannel(channel), 1000);
+          }
+        });
+      }
+      return { success: true, order: fallbackOrder };
     }
   },
 
@@ -197,12 +229,43 @@ export const api = {
   async updateOrderStatus(orderId, status) {
     try {
       const { data, error } = await supabase.from('orders').update({ status }).eq('id', orderId).select();
+      
+      // Broadcast status update directly to bypass RLS DB blocks
+      const studentChannel = supabase.channel(`student_sync_${orderId}`);
+      studentChannel.subscribe((subStatus) => {
+        if (subStatus === 'SUBSCRIBED') {
+          studentChannel.send({ type: 'broadcast', event: 'order_status_update', payload: { orderId, status } });
+          setTimeout(() => supabase.removeChannel(studentChannel), 1000);
+        }
+      });
+
+      // Also broadcast to vendor_sync channel if stall_id is available in data
+      const stallId = data && data[0] ? data[0].stall_id : null;
+      if (stallId) {
+        const vendorChannel = supabase.channel(`vendor_sync_${stallId}`);
+        vendorChannel.subscribe((subStatus) => {
+          if (subStatus === 'SUBSCRIBED') {
+            vendorChannel.send({ type: 'broadcast', event: 'order_status_update', payload: { orderId, status } });
+            setTimeout(() => supabase.removeChannel(vendorChannel), 1000);
+          }
+        });
+      }
+
       if (!error && data) return { success: true, order: data[0] };
+      
       return await fetchAPI(`/orders/${orderId}/status`, {
         method: 'PUT',
         body: JSON.stringify({ status })
       });
     } catch (err) {
+      // Fallback broadcast
+      const studentChannel = supabase.channel(`student_sync_${orderId}`);
+      studentChannel.subscribe((subStatus) => {
+        if (subStatus === 'SUBSCRIBED') {
+          studentChannel.send({ type: 'broadcast', event: 'order_status_update', payload: { orderId, status } });
+          setTimeout(() => supabase.removeChannel(studentChannel), 1000);
+        }
+      });
       return { success: true };
     }
   },
