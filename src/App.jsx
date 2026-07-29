@@ -19,7 +19,7 @@ const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
 const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 const CartPage = lazy(() => import('./pages/CartPage'));
 
-// Dynamic Root Redirect based on Supabase auth session & role
+// Dynamic Root Redirect based on active session & role
 const RootRedirect = () => {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -39,31 +39,35 @@ const RootRedirect = () => {
   }, []);
 
   if (loading) {
-    return <div className="flex h-screen items-center justify-center font-semibold">Loading...</div>;
+    return <div className="flex h-screen items-center justify-center font-semibold">Verifying session...</div>;
   }
 
-  if (!session) {
-    const saved = localStorage.getItem('sgu_user');
-    if (saved) {
-      try {
-        const u = JSON.parse(saved);
-        if (u?.role === 'admin') return <Navigate to="/admin" replace />;
-        if (u?.role === 'owner') return <Navigate to="/vendor" replace />;
-        if (u?.role === 'student') return <Navigate to="/student" replace />;
-      } catch (e) {
-        // Fall back to login
-      }
+  // 1. Check local storage session
+  const saved = localStorage.getItem('sgu_user');
+  if (saved) {
+    try {
+      const u = JSON.parse(saved);
+      if (u?.role === 'admin') return <Navigate to="/admin" replace />;
+      if (u?.role === 'owner') return <Navigate to="/vendor" replace />;
+      if (u?.role === 'student' || u?.role === 'guest') return <Navigate to="/student" replace />;
+    } catch (e) {
+      // Fall back to login
     }
-    return <Navigate to="/login" replace />;
   }
 
-  const role = session.user?.user_metadata?.role || session.user?.app_metadata?.role || 'student';
-  if (role === 'admin') return <Navigate to="/admin" replace />;
-  if (role === 'owner') return <Navigate to="/vendor" replace />;
-  return <Navigate to="/student" replace />;
+  // 2. Check Supabase session
+  if (session?.user) {
+    const role = session.user?.user_metadata?.role || session.user?.app_metadata?.role || 'student';
+    if (role === 'admin') return <Navigate to="/admin" replace />;
+    if (role === 'owner') return <Navigate to="/vendor" replace />;
+    return <Navigate to="/student" replace />;
+  }
+
+  // Force login requirement for unauthenticated users
+  return <Navigate to="/login" replace />;
 };
 
-// Protected Route Guard component (Checks both Supabase session & local storage)
+// Strict Protected Route Guard Component
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const [isAllowed, setIsAllowed] = useState(null);
 
@@ -131,8 +135,12 @@ function App() {
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             
-            {/* Student Routes with Mobile Layout wrapper */}
-            <Route path="/student" element={<MobileLayout />}>
+            {/* Strict Protected Student Routes */}
+            <Route path="/student" element={
+              <ProtectedRoute allowedRoles={['student', 'guest', 'owner', 'admin']}>
+                <MobileLayout />
+              </ProtectedRoute>
+            }>
               <Route index element={<ShopDirectory />} />
               <Route path="shop/:shopId" element={<InteractiveMenu />} />
               <Route path="order/:orderId" element={<DigitalReceiptTracker />} />
@@ -163,7 +171,7 @@ function App() {
               </ProtectedRoute>
             } />
 
-            {/* Wildcard 404 Fallback Route */}
+            {/* Wildcard 404 Fallback Route -> Forces Login */}
             <Route path="*" element={<Navigate to="/login" replace />} />
           </Routes>
         </Suspense>
