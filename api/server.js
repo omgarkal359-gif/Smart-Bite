@@ -302,6 +302,7 @@ app.put('/api/stalls/:id/status', async (req, res) => {
       waitTime: updated.waitTime !== undefined ? updated.waitTime : updated.waittime
     };
     io.to('student').emit('stall_status_update', formatted);
+    io.to(`stall-menu-${id}`).emit('stall_status_update', formatted);
     res.json(formatted);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -839,6 +840,28 @@ app.put('/api/orders/:id/status', async (req, res) => {
 
     await db.run('UPDATE orders SET status = ? WHERE id = ?', [status, id]);
     const updated = await db.get('SELECT * FROM orders WHERE id = ?', [id]);
+
+    const orderItems = await db.all('SELECT * FROM order_items WHERE orderId = ?', [id]);
+    updated.items = orderItems;
+
+    // Group items by stall to notify vendors
+    const itemsByStall = orderItems.reduce((acc, item) => {
+      const itemStallId = item.stallId || item.stallid;
+      if (!acc[itemStallId]) acc[itemStallId] = [];
+      acc[itemStallId].push(item);
+      return acc;
+    }, {});
+
+    for (const [stallId, stallItems] of Object.entries(itemsByStall)) {
+      const stallOrder = {
+        ...updated,
+        customerName: updated.customerName || updated.customername,
+        customerId: updated.customerId || updated.customerid,
+        items: stallItems.map(si => `${si.quantity}x ${si.name}`).join(', '),
+        originalItems: stallItems
+      };
+      io.to(`vendor-${stallId}`).emit('order_status_update', stallOrder);
+    }
 
     // Send update notification to everyone listening
     io.to(`order-${id}`).emit('order_status_update', updated);
