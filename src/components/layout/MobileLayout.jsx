@@ -32,9 +32,33 @@ export const MobileLayout = () => {
           </NavLink>
         </nav>
 
-        <button className="global-cart-btn tap-effect" style={{ background: 'var(--bg-soft-gray)', border: '1px solid #E2E8F0', color: 'var(--primary-navy)' }} onClick={() => navigate('/student/profile')}>
-          <User size={22} />
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <button className="global-cart-btn tap-effect" style={{ background: 'var(--bg-soft-gray)', border: '1px solid #E2E8F0', color: 'var(--primary-navy)' }} onClick={() => navigate('/student/profile')}>
+            <User size={22} />
+          </button>
+          
+          <button className="global-cart-btn tap-effect" onClick={() => {
+            if (totalItems === 0) {
+              navigate('/student/cart');
+            } else {
+              setIsCheckoutOpen(true);
+            }
+          }}>
+            <ShoppingCart size={22} />
+            <AnimatePresence>
+              {totalItems > 0 && (
+                <motion.span 
+                  className="global-cart-badge"
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  exit={{ scale: 0 }}
+                >
+                  {totalItems}
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </button>
+        </div>
       </header>
 
       <div className="global-content-area page-transition">
