@@ -59,14 +59,15 @@ const CartPage = () => {
     };
 
     api.createOrder(orderPayload)
-      .then((createdOrder) => {
+      .then((response) => {
         setIsCheckingOut(false);
         setShowQRModal(false);
         setUpiPaymentState('idle');
+        const actualOrder = response.order || response;
         const existingOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
-        localStorage.setItem('sgu_orders', JSON.stringify([createdOrder, ...existingOrders]));
+        localStorage.setItem('sgu_orders', JSON.stringify([actualOrder, ...existingOrders]));
         clearCart();
-        navigate(`/student/order/${createdOrder.id}`);
+        navigate(`/student/order/${actualOrder.id}`);
       })
       .catch((err) => {
         console.error('Checkout failed:', err);
@@ -169,7 +170,10 @@ const CartPage = () => {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {recentOrders.slice(0, 3).map((order) => {
+              {recentOrders.slice(0, 3).map((rawOrder, index) => {
+                const order = rawOrder.order || rawOrder;
+                if (!order || !order.id) return null;
+                
                 const itemsText = typeof order.items === 'string' 
                   ? order.items 
                   : Array.isArray(order.items) 
