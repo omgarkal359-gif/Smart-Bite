@@ -13,7 +13,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.107.0",
+    "@supabase/supabase-js": "^2.111.0",
     "@tabler/icons-react": "^3.45.0",
     "canvas-confetti": "^1.9.4",
     "framer-motion": "^12.38.0",

@@ -2,13 +2,10 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { GlassCard } from '../components/ui/GlassCard';
 import { Button } from '../components/ui/Button';
-<<<<<<< Updated upstream
 import { ArrowLeft, QrCode, CheckCircle, Clock, ChefHat, BellRing, Download, Mail, ShoppingBag, ShieldAlert } from 'lucide-react';
-=======
-import { ArrowLeft, QrCode, CheckCircle, Clock, ChefHat, BellRing, Download, Mail } from 'lucide-react';
->>>>>>> Stashed changes
 import { motion, AnimatePresence } from 'framer-motion';
 import { api, socket } from '../api';
+import { supabase } from '../supabaseClient';
 import './pages.css';
 import './tracker.css';
 
