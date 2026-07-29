@@ -229,13 +229,28 @@ const VendorDashboard = () => {
   // Today's Metrics Calculation
   const metrics = useMemo(() => {
     const today = new Date().toDateString();
-    const todayCompleted = completedTickets.filter(t => new Date(t.timestamp).toDateString() === today);
-    const todayPending = tickets.filter(t => new Date(t.timestamp).toDateString() === today);
     
-    const totalOrders = todayCompleted.length + tickets.length;
-    const totalRevenue = todayCompleted.reduce((sum, t) => sum + t.total, 0);
-    const cashRevenue = todayCompleted.filter(t => t.payment === 'Cash').reduce((sum, t) => sum + t.total, 0);
-    const upiRevenue = todayCompleted.filter(t => t.payment === 'Online UPI').reduce((sum, t) => sum + t.total, 0);
+    const getOrderDate = (t) => {
+      if (t.timestamp) return new Date(t.timestamp);
+      if (t.created_at) return new Date(t.created_at);
+      if (t.id && t.id.toString().startsWith('ORD-')) {
+        const timestampStr = t.id.toString().replace('ORD-', '');
+        const num = parseInt(timestampStr, 10);
+        if (!isNaN(num)) return new Date(num);
+      }
+      return new Date();
+    };
+
+    const todayCompleted = completedTickets.filter(t => getOrderDate(t).toDateString() === today);
+    const todayPending = tickets.filter(t => getOrderDate(t).toDateString() === today);
+    
+    const totalOrders = todayCompleted.length + todayPending.length;
+    
+    const allTodayOrders = [...todayCompleted, ...todayPending];
+    
+    const totalRevenue = allTodayOrders.reduce((sum, t) => sum + t.total, 0);
+    const cashRevenue = allTodayOrders.filter(t => t.payment === 'Cash').reduce((sum, t) => sum + t.total, 0);
+    const upiRevenue = allTodayOrders.filter(t => t.payment === 'Online UPI').reduce((sum, t) => sum + t.total, 0);
 
     // Calculate Trending Item
     const itemCounts = {};
