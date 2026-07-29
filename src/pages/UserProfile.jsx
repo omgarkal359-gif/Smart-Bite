@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { UserButton, useClerk } from '@clerk/clerk-react';
 import { GlassCard } from '../components/ui/GlassCard';
 import { Button } from '../components/ui/Button';
 import { LogOut, User, Clock, ShoppingBag, ArrowRight, ExternalLink, CheckCircle } from 'lucide-react';
@@ -10,7 +9,6 @@ import './profile.css';
 
 const UserProfile = () => {
   const navigate = useNavigate();
-  const { openUserProfile } = useClerk();
   const [userData, setUserData] = useState(null);
   const [recentOrders, setRecentOrders] = useState([]);
   const [loadingOrders, setLoadingOrders] = useState(true);
