@@ -4,7 +4,6 @@ import { GlassCard } from '../components/ui/GlassCard';
 import { Button } from '../components/ui/Button';
 import { Clock, Volume2, Power, LogOut, CheckCircle, Banknote, Activity, Smartphone, Utensils, ShoppingBag, Settings, Menu, RefreshCw, X, TrendingUp, Hash, CreditCard, Star, History, User } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useClerk } from '@clerk/clerk-react';
 import { MenuEditor } from '../components/vendor/MenuEditor';
 import { SHOPS } from '../data/foodCourtDB';
 import { api, socket, formatRelativeTime } from '../api';
@@ -17,7 +16,6 @@ const COMPLETED_TICKETS_MOCK = [];
 
 const VendorDashboard = () => {
   const navigate = useNavigate();
-  const { openUserProfile } = useClerk();
   const [tickets, setTickets] = useState([]);
   const [completedTickets, setCompletedTickets] = useState([]);
   const [isPowerSaver, setIsPowerSaver] = useState(false);
