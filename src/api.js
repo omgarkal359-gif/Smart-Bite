@@ -2,7 +2,6 @@
 const savedBackend = typeof window !== 'undefined' ? localStorage.getItem('sgu_backend_url') : null;
 const BACKEND_URL = savedBackend || import.meta.env.VITE_BACKEND_URL || window.location.origin;
 const API_BASE_URL = BACKEND_URL === window.location.origin ? '/api' : `${BACKEND_URL}/api`;
-export const SOCKET_URL = BACKEND_URL;
 
 // Lightweight socket fallback
 export const socket = {
@@ -16,14 +15,11 @@ export const socket = {
 // Helper for fetch calls
 async function fetchAPI(endpoint, options = {}) {
   const url = `${API_BASE_URL}${endpoint}`;
-  const savedUser = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('sgu_user') || '{}') : {};
 
   try {
     const response = await fetch(url, {
       headers: {
         'Content-Type': 'application/json',
-        'x-user-id': savedUser.username || savedUser.id || '',
-        'x-user-role': savedUser.role || 'student',
         ...options.headers,
       },
       ...options,
@@ -36,11 +32,8 @@ async function fetchAPI(endpoint, options = {}) {
 
     return response.json();
   } catch (err) {
-    // Self-healing: if fetch fails and a custom backend URL is configured, clear it and reload the application
     if (typeof window !== 'undefined' && localStorage.getItem('sgu_backend_url')) {
       localStorage.removeItem('sgu_backend_url');
-      alert('Custom backend connection failed. Resetting connection URL to default Vercel server and reloading...');
-      window.location.reload();
     }
     throw err;
   }
