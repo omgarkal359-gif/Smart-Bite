@@ -124,7 +124,8 @@ export const api = {
     try {
       // Ensure stall_id / shop_id is set for backend indexing and queries
       const stallId = orderData.items && orderData.items.length > 0 ? orderData.items[0].stallId : null;
-      const payload = { ...orderData, shop_id: stallId, stall_id: stallId, stallId: stallId };
+      const defaultStatus = orderData.payment === 'Cash' ? 'pending_cash' : 'placed';
+      const payload = { status: defaultStatus, ...orderData, shop_id: stallId, stall_id: stallId, stallId: stallId };
       
       const { data, error } = await supabase.from('orders').insert(payload).select();
       
@@ -154,7 +155,8 @@ export const api = {
       });
     } catch (err) {
       const stallId = orderData.items && orderData.items.length > 0 ? orderData.items[0].stallId : null;
-      const fallbackOrder = { id: `ORD-${Date.now()}`, ...orderData, stall_id: stallId };
+      const defaultStatus = orderData.payment === 'Cash' ? 'pending_cash' : 'placed';
+      const fallbackOrder = { id: `ORD-${Date.now()}`, status: defaultStatus, ...orderData, stall_id: stallId };
       
       if (stallId) {
         const channel = supabase.channel(`vendor_sync_${stallId}`);
