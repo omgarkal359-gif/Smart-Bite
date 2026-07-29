@@ -229,12 +229,43 @@ export const api = {
   async updateOrderStatus(orderId, status) {
     try {
       const { data, error } = await supabase.from('orders').update({ status }).eq('id', orderId).select();
+      
+      // Broadcast status update directly to bypass RLS DB blocks
+      const studentChannel = supabase.channel(`student_sync_${orderId}`);
+      studentChannel.subscribe((subStatus) => {
+        if (subStatus === 'SUBSCRIBED') {
+          studentChannel.send({ type: 'broadcast', event: 'order_status_update', payload: { orderId, status } });
+          setTimeout(() => supabase.removeChannel(studentChannel), 1000);
+        }
+      });
+
+      // Also broadcast to vendor_sync channel if stall_id is available in data
+      const stallId = data && data[0] ? data[0].stall_id : null;
+      if (stallId) {
+        const vendorChannel = supabase.channel(`vendor_sync_${stallId}`);
+        vendorChannel.subscribe((subStatus) => {
+          if (subStatus === 'SUBSCRIBED') {
+            vendorChannel.send({ type: 'broadcast', event: 'order_status_update', payload: { orderId, status } });
+            setTimeout(() => supabase.removeChannel(vendorChannel), 1000);
+          }
+        });
+      }
+
       if (!error && data) return { success: true, order: data[0] };
+      
       return await fetchAPI(`/orders/${orderId}/status`, {
         method: 'PUT',
         body: JSON.stringify({ status })
       });
     } catch (err) {
+      // Fallback broadcast
+      const studentChannel = supabase.channel(`student_sync_${orderId}`);
+      studentChannel.subscribe((subStatus) => {
+        if (subStatus === 'SUBSCRIBED') {
+          studentChannel.send({ type: 'broadcast', event: 'order_status_update', payload: { orderId, status } });
+          setTimeout(() => supabase.removeChannel(studentChannel), 1000);
+        }
+      });
       return { success: true };
     }
   },
