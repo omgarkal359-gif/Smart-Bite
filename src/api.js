@@ -1,16 +1,17 @@
-import { io } from 'socket.io-client';
-
-// Support dynamic backend URL from local storage (useful for mobile testing with localtunnel)
+// Support dynamic backend URL from local storage
 const savedBackend = typeof window !== 'undefined' ? localStorage.getItem('sgu_backend_url') : null;
 const BACKEND_URL = savedBackend || import.meta.env.VITE_BACKEND_URL || window.location.origin;
 const API_BASE_URL = BACKEND_URL === window.location.origin ? '/api' : `${BACKEND_URL}/api`;
 export const SOCKET_URL = BACKEND_URL;
 
-
-// Initialize socket client (disabled in production Vercel to prevent connection errors since serverless doesn't support WebSockets)
-export const socket = io(SOCKET_URL, {
-  autoConnect: !SOCKET_URL.includes('vercel.app')
-});
+// Lightweight socket fallback
+export const socket = {
+  on: () => {},
+  off: () => {},
+  emit: () => {},
+  connect: () => {},
+  disconnect: () => {}
+};
 
 // Helper for fetch calls
 async function fetchAPI(endpoint, options = {}) {
