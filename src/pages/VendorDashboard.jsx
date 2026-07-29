@@ -59,12 +59,12 @@ const VendorDashboard = () => {
 
     loadOrders();
     
-    // Supabase Realtime subscription on 'orders' table in public schema
+    // Supabase Realtime subscription on 'orders' table filtered by active statuses
     const channel = supabase
       .channel(`vendor-orders-${targetShopId}`)
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'orders' },
+        { event: '*', schema: 'public', table: 'orders', filter: 'status=in.(pending,preparing)' },
         (payload) => {
           const { eventType, new: newRecord } = payload;
           if (!newRecord) return;
