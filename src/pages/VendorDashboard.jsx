@@ -366,15 +366,6 @@ const VendorDashboard = () => {
           <motion.button 
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="elite-ctrl-btn management" 
-            onClick={() => { openUserProfile(); }}
-          >
-            <User size={16} /> <span>PROFILE</span>
-          </motion.button>
-
-          <motion.button 
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
             className="elite-ctrl-btn exit" 
             onClick={() => {
               localStorage.removeItem('sgu_user');
