@@ -1,48 +1,57 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
-import { Compass, Search, Receipt, User, ShoppingCart } from 'lucide-react';
+import { Compass, Receipt, User } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
-import { api, socket } from '../../api';
+import { supabase } from '../../supabaseClient';
 import { motion } from 'framer-motion';
 import './layout.css';
 
 export const BottomNav = () => {
   const { totalItems } = useCart();
   const [activeOrdersCount, setActiveOrdersCount] = useState(0);
+  const [userId, setUserId] = useState(null);
 
-  const userData = JSON.parse(localStorage.getItem('sgu_user') || '{}');
+  // Securely fetch userId from Supabase session (no localStorage)
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      if (data?.user?.id) setUserId(data.user.id);
+    });
+  }, []);
 
   useEffect(() => {
-    if (!userData.id) return;
-    
+    if (!userId) return;
+
     async function fetchActiveCount() {
       try {
-        const orders = await api.getStudentOrders(userData.id);
-        const active = orders.filter(o => ['placed', 'preparing', 'ready', 'pending_cash'].includes(o.status));
-        setActiveOrdersCount(active.length);
+        const { data, error } = await supabase
+          .from('orders')
+          .select('id, status')
+          .eq('customer_id', userId)
+          .in('status', ['placed', 'preparing', 'ready', 'pending_cash']);
+        if (!error) setActiveOrdersCount(data?.length || 0);
       } catch (err) {
         console.error('Failed to fetch active orders for nav badge:', err);
       }
     }
-    
+
     fetchActiveCount();
-    
-    // Listen to real-time socket updates to instantly change the badge!
-    socket.emit('join', 'student');
-    socket.on('order_new_student', fetchActiveCount);
-    socket.on('order_status_update', fetchActiveCount);
-    
-    // Polling fallback
-    const interval = setInterval(fetchActiveCount, 15000); // Poll every 15 seconds
 
-    return () => {
-      socket.off('order_new_student', fetchActiveCount);
-      socket.off('order_status_update', fetchActiveCount);
-      clearInterval(interval);
-    };
-  }, [userData.id]);
+    // Supabase Realtime subscription for instant badge updates
+    const channel = supabase
+      .channel(`student-nav-orders-${userId}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'orders',
+        filter: `customer_id=eq.${userId}`
+      }, () => {
+        fetchActiveCount();
+      })
+      .subscribe();
 
-  const badgeCount = totalItems + activeOrdersCount;
+    return () => { supabase.removeChannel(channel); };
+  }, [userId]);
+
   const hasActiveOrders = activeOrdersCount > 0;
 
   return (

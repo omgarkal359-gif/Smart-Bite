@@ -3,7 +3,8 @@ import {
   ShoppingBag, Store, Search, Filter, RefreshCw, 
   CheckCircle, AlertTriangle, Clock, Banknote, Smartphone, ShieldAlert, Utensils
 } from 'lucide-react';
-import { api, socket } from '../../api';
+import { api } from '../../api';
+import { supabase } from '../../supabaseClient';
 import { SHOPS } from '../../data/foodCourtDB';
 
 export const OrdersVendorsModule = () => {
@@ -18,22 +19,19 @@ export const OrdersVendorsModule = () => {
   useEffect(() => {
     loadData();
 
-    // Listen to realtime order changes
-    const handleNewOrder = (newOrder) => {
-      setOrders(prev => [newOrder, ...prev]);
-    };
+    // Supabase Realtime subscription for live order updates
+    const channel = supabase
+      .channel('admin-orders-module')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
+        if (payload.eventType === 'INSERT') {
+          setOrders(prev => [payload.new, ...prev]);
+        } else if (payload.eventType === 'UPDATE') {
+          setOrders(prev => prev.map(o => o.id === payload.new.id ? { ...o, ...payload.new } : o));
+        }
+      })
+      .subscribe();
 
-    const handleStatusUpdate = (updatedOrder) => {
-      setOrders(prev => prev.map(o => o.id === updatedOrder.id ? { ...o, ...updatedOrder } : o));
-    };
-
-    socket.on('order_new', handleNewOrder);
-    socket.on('order_status_update', handleStatusUpdate);
-
-    return () => {
-      socket.off('order_new', handleNewOrder);
-      socket.off('order_status_update', handleStatusUpdate);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, []);
 
   async function loadData() {

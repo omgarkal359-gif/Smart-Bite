@@ -1,14 +1,16 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Flame, Pizza, Sandwich, Coffee } from 'lucide-react';
+import { Search, Flame, Coffee } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { GlassCard } from '../components/ui/GlassCard';
 import { searchFoodItems } from '../data/foodCourtDB';
+import { useDebounce } from '../hooks/useDebounce';
 import './home_v21.css';
 
 const SearchPage = () => {
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
+  const debouncedQuery = useDebounce(query, 300);
 
   return (
     <div className="directory-container page-transition">
@@ -27,7 +29,7 @@ const SearchPage = () => {
           />
         </div>
 
-        {!query ? (
+        {!debouncedQuery ? (
           <div>
             <h3 className="section-title-home text-gray-500 mb-4" style={{ fontSize: '1rem' }}>Popular Categories</h3>
             <div className="flex flex-wrap gap-3">
@@ -46,7 +48,7 @@ const SearchPage = () => {
             </div>
           </div>
         ) : (() => {
-          const results = searchFoodItems(query).slice(0, 20);
+          const results = searchFoodItems(debouncedQuery).slice(0, 20);
           return (
           <div className="flex flex-col gap-4">
             <h3 className="section-title-home text-gray-500 mb-2" style={{ fontSize: '1rem' }}>
