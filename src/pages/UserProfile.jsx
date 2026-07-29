@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { UserButton } from '@clerk/clerk-react';
+import { UserButton, useClerk } from '@clerk/clerk-react';
 import { GlassCard } from '../components/ui/GlassCard';
 import { Button } from '../components/ui/Button';
 import { LogOut, User, Clock, ShoppingBag, ArrowRight, ExternalLink, CheckCircle } from 'lucide-react';
@@ -10,6 +10,7 @@ import './profile.css';
 
 const UserProfile = () => {
   const navigate = useNavigate();
+  const { openUserProfile } = useClerk();
   const [userData, setUserData] = useState(null);
   const [recentOrders, setRecentOrders] = useState([]);
   const [loadingOrders, setLoadingOrders] = useState(true);
@@ -93,6 +94,13 @@ const UserProfile = () => {
             <span style={{ fontSize: '0.75rem', fontWeight: 800, padding: '6px 16px', borderRadius: 999, background: '#FFF1F2', color: '#FF3B5C', textTransform: 'uppercase', marginTop: 4, display: 'inline-block' }}>
               Role: {userData?.role ? userData.role.toUpperCase() : 'STUDENT'}
             </span>
+            <button 
+              onClick={() => openUserProfile()}
+              style={{ marginTop: 8, padding: '6px 16px', background: 'var(--bg-soft-gray)', border: '1px solid #E2E8F0', borderRadius: 999, fontSize: '0.8rem', fontWeight: 700, color: 'var(--primary-navy)', cursor: 'pointer' }}
+              className="tap-effect"
+            >
+              Edit Profile
+            </button>
           </div>
         </GlassCard>
 
