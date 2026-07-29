@@ -201,7 +201,8 @@
 
 .elite-ctrl-btn.busy { background: #DC2626; border-color: #EF4444; }
 .elite-ctrl-btn.active { background: #22C55E; border-color: #4ADE80; }
-.elite-ctrl-btn.management { background: var(--accent-amber); border-color: #FCA5A5; color: var(--white); }
+.elite-ctrl-btn.management { background: var(--white); border-color: rgba(220, 38, 38, 0.2); color: var(--primary-navy); }
+.elite-ctrl-btn.management:hover { background: var(--white); border-color: rgba(220, 38, 38, 0.5); }
 .elite-ctrl-btn.exit { background: #F1F5F9; border-color: #E2E8F0; color: #DC2626; }
 
 /* Floating Labels */
