@@ -154,7 +154,7 @@ export const api = {
     try {
       const { data, error } = await supabase.from('orders').select('*').in('status', ['pending', 'preparing', 'placed']).order('created_at', { ascending: false });
       if (!error && data) return data;
-      return fetchAPI('/orders/queue');
+      return await fetchAPI('/orders/queue');
     } catch (err) {
       return [];
     }
@@ -164,7 +164,7 @@ export const api = {
     try {
       const { data, error } = await supabase.from('orders').select('*').eq('id', orderId).single();
       if (!error && data) return data;
-      return fetchAPI(`/orders/${orderId}`);
+      return await fetchAPI(`/orders/${orderId}`);
     } catch (err) {
       return null;
     }
@@ -178,7 +178,7 @@ export const api = {
     try {
       const { data, error } = await supabase.from('orders').select('*').eq('customer_id', customerId).order('created_at', { ascending: false });
       if (!error && data) return data;
-      return fetchAPI(`/orders/student/${customerId}`);
+      return await fetchAPI(`/orders/student/${customerId}`);
     } catch (err) {
       return [];
     }
@@ -188,7 +188,7 @@ export const api = {
     try {
       const { data, error } = await supabase.from('orders').select('*').eq('stall_id', stallId).order('created_at', { ascending: false });
       if (!error && data) return data;
-      return fetchAPI(`/orders/stall/${stallId}`);
+      return await fetchAPI(`/orders/stall/${stallId}`);
     } catch (err) {
       return [];
     }
@@ -198,7 +198,7 @@ export const api = {
     try {
       const { data, error } = await supabase.from('orders').update({ status }).eq('id', orderId).select();
       if (!error && data) return { success: true, order: data[0] };
-      return fetchAPI(`/orders/${orderId}/status`, {
+      return await fetchAPI(`/orders/${orderId}/status`, {
         method: 'PUT',
         body: JSON.stringify({ status })
       });

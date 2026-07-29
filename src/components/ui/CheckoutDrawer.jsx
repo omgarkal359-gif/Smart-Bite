@@ -88,20 +88,21 @@ export const CheckoutDrawer = ({ isOpen, onClose, cart, inventory, onComplete })
     };
 
     api.createOrder(orderPayload)
-      .then((createdOrder) => {
+      .then((response) => {
         setIsProcessing(false);
-        setPlacedOrderId(createdOrder.id);
+        const actualOrder = response.order || response;
+        setPlacedOrderId(actualOrder.id);
         setStep(4); // Success step
         triggerConfetti();
 
         const existingOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
-        localStorage.setItem('sgu_orders', JSON.stringify([createdOrder, ...existingOrders]));
+        localStorage.setItem('sgu_orders', JSON.stringify([actualOrder, ...existingOrders]));
 
         setTimeout(() => {
           clearCart();
           onClose();
           if (typeof onComplete === 'function') onComplete();
-          navigate(`/student/order/${createdOrder.id}`);
+          navigate(`/student/order/${actualOrder.id}`);
         }, 3000);
       })
       .catch((err) => {
