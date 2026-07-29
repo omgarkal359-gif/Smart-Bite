@@ -12,7 +12,7 @@ export const socket = {
   disconnect: () => {}
 };
 
-// Helper for fetch calls with secure Supabase Authorization bearer token
+// Helper for fetch calls with secure Supabase Authorization bearer token & safe JSON validation
 async function fetchAPI(endpoint, options = {}) {
   const url = `${API_BASE_URL}${endpoint}`;
 
@@ -35,12 +35,18 @@ async function fetchAPI(endpoint, options = {}) {
     ...options,
   });
 
+  const contentType = response.headers.get('content-type') || '';
+  const isJson = contentType.includes('application/json');
+
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.message || `HTTP error! Status: ${response.status}`);
+    const errorData = isJson ? await response.json().catch(() => ({})) : {};
+    throw new Error(errorData.message || `Server error (${response.status}). Please try again later.`);
   }
 
-  return response.json();
+  if (isJson) {
+    return response.json();
+  }
+  return response.text();
 }
 
 // API Methods
@@ -125,7 +131,7 @@ export const api = {
 };
 
 export function formatRelativeTime(timestamp) {
-  if (!timestamp) return 'Just now';
+  if (!timestamp || isNaN(new Date(timestamp).getTime())) return 'Unknown time';
   const date = new Date(timestamp);
   const now = new Date();
   const diffMs = now - date;
