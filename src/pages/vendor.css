@@ -1,15 +1,15 @@
 /* Elite Operations Command Center V22 Styles */
 :root {
-  --primary-navy: #1A5276;
-  --accent-amber: #F59E0B;
+  --primary-navy: #DC2626; /* Changed to Red */
+  --accent-amber: #F87171; /* Lighter red/coral accent */
   --success-green: #22C55E;
-  --bg-operations: #F8FAFC;
+  --bg-operations: #FFFFFF; /* Changed to White */
   --white: #FFFFFF;
   --text-dark: #0F172A;
   --text-muted: #64748B;
-  --glass-bg: rgba(255, 255, 255, 0.8);
-  --glass-border: rgba(255, 255, 255, 0.2);
-  --shadow-elite: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  --glass-bg: rgba(255, 255, 255, 0.9);
+  --glass-border: rgba(220, 38, 38, 0.2);
+  --shadow-elite: 0 20px 25px -5px rgba(220, 38, 38, 0.1), 0 10px 10px -5px rgba(220, 38, 38, 0.04);
 }
 
 .vendor-kds-container {
@@ -201,7 +201,7 @@
 
 .elite-ctrl-btn.busy { background: #DC2626; border-color: #EF4444; }
 .elite-ctrl-btn.active { background: #22C55E; border-color: #4ADE80; }
-.elite-ctrl-btn.management { background: var(--accent-amber); border-color: #FBBF24; color: var(--text-dark); }
+.elite-ctrl-btn.management { background: var(--accent-amber); border-color: #FCA5A5; color: var(--white); }
 .elite-ctrl-btn.exit { background: #F1F5F9; border-color: #E2E8F0; color: #DC2626; }
 
 /* Floating Labels */
