@@ -4,60 +4,109 @@ import { motion } from 'framer-motion';
 import { Clock, CheckCircle, ShoppingBag } from 'lucide-react';
 import { GlassCard } from '../components/ui/GlassCard';
 import { api, socket, formatRelativeTime } from '../api';
+import { supabase } from '../supabaseClient';
 import './home_v21.css';
 
 const OrdersPage = () => {
   const navigate = useNavigate();
   const [orders, setOrders] = React.useState([]);
+  const [isLoading, setIsLoading] = React.useState(true);
 
   React.useEffect(() => {
     const userData = JSON.parse(localStorage.getItem('sgu_user') || '{}');
-    const customerId = userData.id || '9876543210';
+    const customerId = userData.id || userData.username || '9876543210';
 
     async function fetchOrders() {
       try {
         const liveOrders = await api.getStudentOrders(customerId);
-        setOrders(liveOrders);
-        localStorage.setItem('sgu_orders', JSON.stringify(liveOrders));
+        setOrders(liveOrders || []);
+        // Keep localStorage in sync with latest from DB
+        if (liveOrders && liveOrders.length > 0) {
+          localStorage.setItem('sgu_orders', JSON.stringify(liveOrders));
+        }
       } catch (err) {
         console.error('Failed to fetch student orders:', err);
         // Fallback to localStorage
         const savedOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
         setOrders(savedOrders);
+      } finally {
+        setIsLoading(false);
       }
     }
 
     fetchOrders();
 
-    // Listen to real-time status updates for student's orders
+    // ── Socket listener (legacy no-op in this app, kept for future) ──
     socket.emit('join', 'student');
-
-    const handleStatusUpdate = (updatedOrder) => {
-      setOrders(prev => {
-        // Only update if the order belongs to this customer
-        if (updatedOrder.customerId !== customerId) return prev;
-        
-        // If order is updated, replace it in the list
-        if (!prev.some(order => order.id === updatedOrder.id)) {
-          return [updatedOrder, ...prev];
-        }
-        return prev.map(order => order.id === updatedOrder.id ? {
-          ...order,
-          status: updatedOrder.status
-        } : order);
-      });
+    const handleSocketStatusUpdate = (updatedOrder) => {
+      setOrders(prev =>
+        prev.map(o => o.id === updatedOrder.id ? { ...o, status: updatedOrder.status } : o)
+      );
     };
+    socket.on('order_status_update', handleSocketStatusUpdate);
 
-    socket.on('order_status_update', handleStatusUpdate);
+    // ── Supabase Realtime: subscribe to all order status updates for this student ──
+    // We watch the global student_sync channel, keyed by order ID for each known order
+    // But since we don't know all order IDs upfront, we poll AND listen to a global channel
+    const studentSyncChannel = supabase
+      .channel(`student_orders_${customerId}`)
+      .on('broadcast', { event: 'order_status_update' }, (payload) => {
+        if (!payload?.payload) return;
+        const { orderId, status } = payload.payload;
+        // Update the order in state
+        setOrders(prev => {
+          const updated = prev.map(o =>
+            (o.id === orderId || String(o.id) === String(orderId))
+              ? { ...o, status }
+              : o
+          );
+          // Also update localStorage
+          localStorage.setItem('sgu_orders', JSON.stringify(updated));
+          return updated;
+        });
+      })
+      .subscribe();
 
-    // Polling fallback
-    const interval = setInterval(fetchOrders, 8000); // Poll every 8 seconds
+    // ── Polling fallback every 6 seconds ──
+    const interval = setInterval(fetchOrders, 6000);
 
     return () => {
-      socket.off('order_status_update', handleStatusUpdate);
+      socket.off('order_status_update', handleSocketStatusUpdate);
+      supabase.removeChannel(studentSyncChannel);
       clearInterval(interval);
     };
   }, []);
+
+  // Also subscribe to each individual order's sync channel (for DigitalReceiptTracker compatibility)
+  React.useEffect(() => {
+    if (orders.length === 0) return;
+    const channels = orders
+      .filter(o => o.status !== 'completed')
+      .slice(0, 5) // Subscribe to top 5 active orders only
+      .map(order => {
+        const ch = supabase
+          .channel(`student_sync_${order.id}`)
+          .on('broadcast', { event: 'order_status_update' }, (payload) => {
+            if (!payload?.payload) return;
+            const { orderId, status } = payload.payload;
+            setOrders(prev => {
+              const updated = prev.map(o =>
+                (o.id === orderId || String(o.id) === String(orderId))
+                  ? { ...o, status }
+                  : o
+              );
+              localStorage.setItem('sgu_orders', JSON.stringify(updated));
+              return updated;
+            });
+          })
+          .subscribe();
+        return ch;
+      });
+
+    return () => {
+      channels.forEach(ch => supabase.removeChannel(ch));
+    };
+  }, [orders.length]);
 
   const [displayLimit, setDisplayLimit] = React.useState(10);
   const visibleOrders = orders.slice(0, displayLimit);
@@ -69,7 +118,13 @@ const OrdersPage = () => {
         <h2 className="heading-2 section-title-home mb-6">My Orders</h2>
         
         <div className="flex flex-col gap-4">
-          {orders.length === 0 && (
+          {isLoading && (
+            <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)', fontWeight: 600 }}>
+              Loading your orders...
+            </div>
+          )}
+
+          {!isLoading && orders.length === 0 && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -87,12 +142,13 @@ const OrdersPage = () => {
               <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Your orders will appear here once you place one.</p>
             </motion.div>
           )}
+
           {visibleOrders.map((order, i) => (
             <motion.div 
               key={order.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.1 }}
+              transition={{ delay: i * 0.07 }}
             >
               <GlassCard 
                 className={`shop-card-v21 tap-effect shadow-sm transition-all ${order.status === 'completed' ? 'opacity-75' : ''}`}
@@ -103,7 +159,8 @@ const OrdersPage = () => {
                               order.status === 'placed' ? '6px solid #8B5CF6' :
                               '1px solid #EEEEEE',
                   padding: '16px',
-                  borderRadius: '16px'
+                  borderRadius: '16px',
+                  cursor: 'pointer',
                 }}
                 onClick={() => navigate(`/student/order/${order.id}`)}
               >
@@ -111,7 +168,7 @@ const OrdersPage = () => {
                   <span style={{ 
                       fontFamily: 'var(--font-heading)', 
                       fontWeight: 800, 
-                      fontSize: '1.15rem', 
+                      fontSize: '1.05rem', 
                       color: 'var(--text-dark)',
                       letterSpacing: '-0.5px',
                     }}>{order.id}</span>
@@ -121,7 +178,7 @@ const OrdersPage = () => {
                       color: 'var(--text-muted)', 
                       textTransform: 'uppercase',
                       letterSpacing: '0.5px',
-                    }}>{order.timestamp ? formatRelativeTime(order.timestamp).toUpperCase() : (order.time || 'Just now').toUpperCase()}</span>
+                    }}>{order.timestamp || order.created_at ? formatRelativeTime(order.timestamp || order.created_at).toUpperCase() : (order.time || 'Just now').toUpperCase()}</span>
                   </div>
 
                   {/* Items */}
@@ -130,11 +187,12 @@ const OrdersPage = () => {
                     fontSize: '0.85rem', 
                     color: '#64748B',
                     lineHeight: '1.4',
+                    margin: '6px 0',
                   }}>
                     {typeof order.items === 'string' 
                       ? order.items 
                       : Array.isArray(order.items) 
-                        ? order.items.map(item => `${item.quantity}x ${item.name}`).join(', ') 
+                        ? order.items.map(item => typeof item === 'string' ? item : `${item.quantity}x ${item.name}`).join(', ') 
                         : ''}
                   </p>
 
@@ -145,7 +203,7 @@ const OrdersPage = () => {
                     alignItems: 'center',
                     borderTop: '1px solid #F1F5F9',
                     paddingTop: '8px',
-                    marginTop: '2px',
+                    marginTop: '4px',
                   }}>
                     <span style={{ 
                       fontFamily: 'var(--font-heading)', 
@@ -154,17 +212,28 @@ const OrdersPage = () => {
                       color: 'var(--text-dark)' 
                     }}>₹{order.total}</span>
                     
-                    {(order.status === 'placed' || order.status === 'pending_cash') && (
+                    {(order.status === 'placed') && (
                       <span style={{
                         display: 'inline-flex', alignItems: 'center', gap: '4px',
-                        background: order.status === 'pending_cash' ? '#F59E0B' : '#8B5CF6', 
-                        color: 'white',
+                        background: '#8B5CF6', color: 'white',
                         fontWeight: 800, fontSize: '0.65rem',
                         padding: '4px 10px', borderRadius: '20px',
                         textTransform: 'uppercase', letterSpacing: '0.5px',
-                        boxShadow: order.status === 'pending_cash' ? '0 2px 8px rgba(245, 158, 11, 0.3)' : '0 2px 8px rgba(139, 92, 246, 0.3)',
+                        boxShadow: '0 2px 8px rgba(139, 92, 246, 0.3)',
                       }}>
-                        <Clock size={11} /> {order.status === 'pending_cash' ? 'Awaiting Cash' : 'Order Placed'}
+                        <Clock size={11} /> Order Placed
+                      </span>
+                    )}
+                    {order.status === 'pending_cash' && (
+                      <span style={{
+                        display: 'inline-flex', alignItems: 'center', gap: '4px',
+                        background: '#F59E0B', color: 'white',
+                        fontWeight: 800, fontSize: '0.65rem',
+                        padding: '4px 10px', borderRadius: '20px',
+                        textTransform: 'uppercase', letterSpacing: '0.5px',
+                        boxShadow: '0 2px 8px rgba(245, 158, 11, 0.3)',
+                      }}>
+                        <Clock size={11} /> Awaiting Cash
                       </span>
                     )}
                     {(order.status === 'preparing' || order.status === 'prep') && (
@@ -175,8 +244,9 @@ const OrdersPage = () => {
                         padding: '4px 10px', borderRadius: '20px',
                         textTransform: 'uppercase', letterSpacing: '0.5px',
                         boxShadow: '0 2px 8px rgba(228, 0, 43, 0.3)',
+                        animation: 'pulse 1.5s infinite',
                       }}>
-                        <Clock size={11} /> Preparing
+                        <Clock size={11} /> 🔥 Preparing
                       </span>
                     )}
                     {order.status === 'ready' && (
@@ -188,7 +258,7 @@ const OrdersPage = () => {
                         textTransform: 'uppercase', letterSpacing: '0.5px',
                         boxShadow: '0 2px 8px rgba(34, 197, 94, 0.3)',
                       }}>
-                        <CheckCircle size={11} /> Pick up Now
+                        <CheckCircle size={11} /> ✅ Pick up Now!
                       </span>
                     )}
                     {order.status === 'completed' && (
@@ -206,6 +276,20 @@ const OrdersPage = () => {
               </GlassCard>
             </motion.div>
           ))}
+
+          {hasMore && (
+            <button
+              onClick={() => setDisplayLimit(prev => prev + 10)}
+              style={{
+                width: '100%', padding: '12px', borderRadius: '12px',
+                border: '1px solid #E2E8F0', background: 'white',
+                fontWeight: 700, fontSize: '0.85rem', color: '#64748B',
+                cursor: 'pointer',
+              }}
+            >
+              Load More Orders
+            </button>
+          )}
         </div>
       </main>
     </div>
@@ -213,4 +297,3 @@ const OrdersPage = () => {
 };
 
 export default OrdersPage;
-
