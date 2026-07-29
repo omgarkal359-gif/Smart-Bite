@@ -59,6 +59,10 @@ const OrdersPage = () => {
     };
   }, []);
 
+  const [displayLimit, setDisplayLimit] = React.useState(10);
+  const visibleOrders = orders.slice(0, displayLimit);
+  const hasMore = orders.length > displayLimit;
+
   return (
     <div className="directory-container page-transition">
       <main className="shop-main-content" style={{ paddingTop: '24px' }}>
@@ -83,7 +87,7 @@ const OrdersPage = () => {
               <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Your orders will appear here once you place one.</p>
             </motion.div>
           )}
-          {orders.map((order, i) => (
+          {visibleOrders.map((order, i) => (
             <motion.div 
               key={order.id}
               initial={{ opacity: 0, y: 20 }}
@@ -99,18 +103,12 @@ const OrdersPage = () => {
                               order.status === 'placed' ? '6px solid #8B5CF6' :
                               '1px solid #EEEEEE',
                   padding: '16px',
-                  gap: '16px',
+                  borderRadius: '16px'
                 }}
                 onClick={() => navigate(`/student/order/${order.id}`)}
               >
-                <div className="shop-img-container shadow-sm" style={{ width: '90px', height: '90px', flexShrink: 0, borderRadius: '12px' }}>
-                  <img src={order.img || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&q=80'} alt="Order" className="shop-hd-img" style={{ borderRadius: '10px' }} />
-                </div>
-
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px', padding: '4px 0' }}>
-                  {/* Order ID & Time */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ 
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ 
                       fontFamily: 'var(--font-heading)', 
                       fontWeight: 800, 
                       fontSize: '1.15rem', 
@@ -205,7 +203,6 @@ const OrdersPage = () => {
                       </span>
                     )}
                   </div>
-                </div>
               </GlassCard>
             </motion.div>
           ))}
