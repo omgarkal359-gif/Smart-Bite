@@ -136,6 +136,9 @@ function App() {
                 <AdminControlCenter />
               </ProtectedRoute>
             } />
+
+            {/* Wildcard 404 Fallback Route */}
+            <Route path="*" element={<Navigate to="/login" replace />} />
           </Routes>
         </Suspense>
       </BrowserRouter>
