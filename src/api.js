@@ -70,7 +70,7 @@ export const api = {
     try {
       const { data, error } = await supabase.from('stalls').update(statusData).eq('id', stallId).select();
       if (!error && data) return data;
-      return fetchAPI(`/stalls/${stallId}/status`, {
+      return await fetchAPI(`/stalls/${stallId}/status`, {
         method: 'PUT',
         body: JSON.stringify(statusData)
       });
