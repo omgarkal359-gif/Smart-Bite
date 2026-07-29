@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { MobileLayout } from './components/layout/MobileLayout';
 import { CartProvider } from './context/CartContext';
 
-// Lazy load route components for code splitting & maximum performance
+// Dynamic route code splitting
 const ShopDirectory = lazy(() => import('./pages/ShopDirectory'));
 const InteractiveMenu = lazy(() => import('./pages/InteractiveMenu'));
 const DigitalReceiptTracker = lazy(() => import('./pages/DigitalReceiptTracker'));
@@ -18,38 +18,11 @@ const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
 const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 const CartPage = lazy(() => import('./pages/CartPage'));
 
-const BrandedLoadingSpinner = () => (
-  <div style={{
-    minHeight: '100vh',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    background: '#0F172A',
-    color: '#FFFFFF',
-    fontFamily: "'Inter', sans-serif"
-  }}>
-    <div style={{
-      width: '48px',
-      height: '48px',
-      border: '3px solid rgba(228, 0, 43, 0.2)',
-      borderTop: '3px solid #E4002B',
-      borderRadius: '50%',
-      animation: 'sbSpin 0.8s linear infinite',
-      marginBottom: '16px'
-    }} />
-    <style>{`@keyframes sbSpin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
-    <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#94A3B8', letterSpacing: '0.05em' }}>
-      LOADING SMART-BITE...
-    </div>
-  </div>
-);
-
 function App() {
   return (
     <CartProvider>
       <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-        <Suspense fallback={<BrandedLoadingSpinner />}>
+        <Suspense fallback={<div className="flex h-screen items-center justify-center font-semibold">Loading...</div>}>
           <Routes>
             <Route path="/" element={<Navigate to="/login" replace />} />
             <Route path="/login" element={<LoginPage />} />
