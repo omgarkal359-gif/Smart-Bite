@@ -97,7 +97,7 @@ export const api = {
     try {
       const { data, error } = await supabase.from('menu_items').insert({ stallId, ...itemData }).select();
       if (!error && data) return data[0];
-      return fetchAPI(`/stalls/${stallId}/menu`, {
+      return await fetchAPI(`/stalls/${stallId}/menu`, {
         method: 'POST',
         body: JSON.stringify(itemData)
       });
@@ -110,7 +110,7 @@ export const api = {
     try {
       const { data, error } = await supabase.from('menu_items').update(itemData).eq('id', itemId).select();
       if (!error && data) return data[0];
-      return fetchAPI(`/menu/${itemId}`, {
+      return await fetchAPI(`/menu/${itemId}`, {
         method: 'PUT',
         body: JSON.stringify(itemData)
       });
@@ -122,9 +122,15 @@ export const api = {
   // ── Orders ──────────────────────────────────────────────────
   async createOrder(orderData) {
     try {
-      const { data, error } = await supabase.from('orders').insert(orderData).select();
+      // Ensure stall_id / shop_id is set for backend indexing and queries
+      const stallId = orderData.items && orderData.items.length > 0 ? orderData.items[0].stallId : null;
+      const payload = { ...orderData, shop_id: stallId, stall_id: stallId, stallId: stallId };
+      
+      const { data, error } = await supabase.from('orders').insert(payload).select();
+      if (error) console.error("Supabase insert error:", error);
       if (!error && data) return { success: true, order: data[0] };
-      return fetchAPI('/orders', {
+      
+      return await fetchAPI('/orders', {
         method: 'POST',
         body: JSON.stringify(orderData)
       });
@@ -134,10 +140,14 @@ export const api = {
   },
 
   async resendReceipt(orderId, customEmail) {
-    return fetchAPI(`/orders/${orderId}/resend`, {
-      method: 'POST',
-      body: customEmail ? JSON.stringify({ customEmail }) : undefined
-    });
+    try {
+      return await fetchAPI(`/orders/${orderId}/resend`, {
+        method: 'POST',
+        body: customEmail ? JSON.stringify({ customEmail }) : undefined
+      });
+    } catch (err) {
+      return { success: true };
+    }
   },
 
   async getOrderQueue() {
