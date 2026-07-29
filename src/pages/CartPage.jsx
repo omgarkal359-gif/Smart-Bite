@@ -122,8 +122,9 @@ const CartPage = () => {
   const handleCancelPayment = () => {
     if (window.verifyTimer) clearTimeout(window.verifyTimer);
     if (window.successTimer) clearTimeout(window.successTimer);
-    setShowQRModal(false);
-    setUpiPaymentState('idle');
+    
+    // As per request: still place the order if payment is cancelled
+    executeFinalCheckout();
   };
 
   if (cartItems.length === 0) {
