@@ -24,7 +24,19 @@ const CartPage = () => {
     const customerId = (userData.id || userData.username || '9876543210').trim().toLowerCase();
 
     api.getStudentOrders(customerId)
-      .then(orders => setRecentOrders(orders))
+      .then(orders => {
+        const localOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
+        const merged = [...(orders || [])];
+        localOrders.forEach(localOrder => {
+          const orderObj = localOrder.order || localOrder;
+          if (orderObj && orderObj.id && !merged.find(o => o.id === orderObj.id)) {
+            merged.push(orderObj);
+          }
+        });
+        // Sort by id descending as a proxy for date since id includes timestamp
+        merged.sort((a, b) => String(b.id).localeCompare(String(a.id)));
+        setRecentOrders(merged);
+      })
       .catch(err => {
         console.error('Failed to load orders for cart page:', err);
         setRecentOrders(JSON.parse(localStorage.getItem('sgu_orders') || '[]'));
