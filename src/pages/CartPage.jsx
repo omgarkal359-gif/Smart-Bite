@@ -59,7 +59,7 @@ const CartPage = () => {
       customerName: userData.name || 'Guest User',
       customerId: userData.id || '9876543210',
       type: diningMode === 'dine_in' ? 'Dine-In' : 'Takeaway',
-      payment: paymentMode === 'upi' ? 'Online UPI' : 'Cash',
+      payment: 'Online UPI',
       total: totalPrice,
       items: cartItems.map(item => ({
         id: item.id,
@@ -94,8 +94,8 @@ const CartPage = () => {
   const handleCheckout = () => {
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
     
-    // If laptop user selects UPI, open the QR payment scanner modal
-    if (paymentMode === 'upi' && !isMobile) {
+    // If laptop user, open the QR payment scanner modal
+    if (!isMobile) {
       setShowQRModal(true);
       setUpiPaymentState('awaiting');
       
@@ -123,11 +123,9 @@ const CartPage = () => {
     const shopName = firstItem.stallName || 'SGU Food Court';
     const upiLink = `upi://pay?pa=${shopVpa}&pn=${encodeURIComponent(shopName)}&am=${totalPrice}&cu=INR`;
 
-    if (paymentMode === 'upi' && isMobile) {
+    if (isMobile) {
       // Mobile flow: Redirect directly to mobile payment apps (GPay, PhonePe, Paytm, etc.)
       window.location.href = upiLink;
-      // Order will be placed after the redirect attempt (user confirms in their UPI app)
-      // executeFinalCheckout is called below for both cash and mobile UPI
     }
 
     executeFinalCheckout();
@@ -314,16 +312,11 @@ const CartPage = () => {
             <h3>Payment Method</h3>
             <div className="toggle-group-v20">
               <button 
-                className={`mode-btn-v20 ${paymentMode === 'upi' ? 'active shadow-md' : ''}`}
+                className="mode-btn-v20 active shadow-md"
                 onClick={() => setPaymentMode('upi')}
+                style={{ width: '100%' }}
               >
-                Online UPI
-              </button>
-              <button 
-                className={`mode-btn-v20 ${paymentMode === 'cash' ? 'active shadow-md' : ''}`}
-                onClick={() => setPaymentMode('cash')}
-              >
-                Cash
+                Pay Online (UPI / GPay / PhonePe)
               </button>
             </div>
           </div>
