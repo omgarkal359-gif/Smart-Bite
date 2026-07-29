@@ -5,7 +5,6 @@ import {
   IconBrandGoogle, IconShieldCheck, IconBuildingStore
 } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
-import { api } from '../api';
 import { supabase } from '../supabaseClient';
 import './LoginPage.css';
 
@@ -115,15 +114,14 @@ const LoginPage = () => {
     else if (role === 'admin') navigate('/admin');
   };
 
-  const finish = (res) => {
+  const finish = (role, name, id, shopId = null) => {
     setIsLoading(false);
     setIsSuccess(true);
-    const u = res?.user || res || {};
     const ud = {
-      role: u?.role || 'student',
-      name: u?.name || u?.username || 'Student',
-      id: u?.username || u?.id || 'student',
-      shopId: u?.shopId || u?.shopid || null,
+      role: role || 'student',
+      name: name || 'Student',
+      id: id || 'student',
+      shopId: shopId || null,
       timestamp: new Date().toISOString(),
       rememberMe,
     };
@@ -135,27 +133,12 @@ const LoginPage = () => {
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session?.user) {
-        setIsLoading(true); clear();
-        try {
-          const { email, full_name, name: mName, phone } = session.user.user_metadata || {};
-          const ue = session.user.email || email;
-          const up = session.user.phone || phone;
-          const lid = ue || up;
-          if (!lid) throw new Error('No email or phone found in session.');
-          const pName = localStorage.getItem('sgu_pending_name');
-          const uName = full_name || mName || pName || (ue ? ue.split('@')[0] : up);
-          localStorage.removeItem('sgu_pending_name');
-          const isSignUp = localStorage.getItem('sgu_is_signup') === 'true' || mode === 'register';
-          localStorage.removeItem('sgu_is_signup');
-
-          const res = await api.googleLogin(lid, uName, isSignUp);
-          if (res.success) {
-            finish(res);
-          } else {
-            setErrorMsg(res.message || 'Google sign-in failed.');
-            setIsLoading(false);
-          }
-        } catch (err) { setErrorMsg(err.message || 'Could not complete Google sign-in.'); setIsLoading(false); }
+        const meta = session.user.user_metadata || {};
+        const role = meta.role || session.user.app_metadata?.role || 'student';
+        const name = meta.full_name || meta.name || session.user.email?.split('@')[0] || 'Student';
+        const id = session.user.email || session.user.phone || session.user.id;
+        const shopId = meta.shopId || null;
+        finish(role, name, id, shopId);
       }
     });
     const saved = localStorage.getItem('sgu_user');
@@ -184,31 +167,23 @@ const LoginPage = () => {
   /* ── Login ── */
   const handleLogin = async (e) => {
     e.preventDefault();
-    const id = identifier.trim();
+    const email = identifier.trim();
     const pwd = password.trim();
     const fe = {};
-    if (!id) fe.identifier = 'This field is required.';
+    if (!email) fe.identifier = 'This field is required.';
     if (!pwd) fe.password = 'Password is required.';
     if (Object.keys(fe).length) { setFieldErr(fe); return; }
     setIsLoading(true); clear();
     try {
-      let role = 'student';
-      if (id.toLowerCase().includes('admin')) role = 'admin';
-      else if (id.includes('-') || id.toLowerCase().includes('owner') || id.toLowerCase().includes('tea') || id.toLowerCase().includes('vadewale') || id.toLowerCase().includes('noodles') || id.toLowerCase().includes('narayana') || id.toLowerCase().includes('cravings')) role = 'owner';
-      
-      const res = await api.login(id, pwd, role, '');
-      if (res.success) {
-        finish(res);
-        return;
-      }
-      setErrorMsg(res.message || 'Incorrect password or account not found.');
-      setIsLoading(false);
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password: pwd });
+      if (error) throw error;
+      const meta = data.user?.user_metadata || {};
+      const role = meta.role || data.user?.app_metadata?.role || 'student';
+      const name = meta.full_name || meta.name || email.split('@')[0] || 'Student';
+      const shopId = meta.shopId || null;
+      finish(role, name, email, shopId);
     } catch (err) {
-      if (err.message?.includes('Account not found') || err.message?.includes('Sign Up')) {
-        setErrorMsg('Account not found. No student is allowed to sign in until they have created an account. Please click "Sign Up" above to register first.');
-      } else {
-        setErrorMsg(err.message || 'Could not reach server.');
-      }
+      setErrorMsg(err.message || 'Incorrect email or password.');
       setIsLoading(false);
     }
   };
@@ -216,26 +191,31 @@ const LoginPage = () => {
   /* ── Register ── */
   const handleRegister = async (e) => {
     e.preventDefault();
-    const id = identifier.trim();
+    const email = identifier.trim();
     const nm = regName.trim();
     const fe = {};
     if (!nm) fe.regName = 'Name is required.';
-    if (!id) fe.identifier = 'Email or mobile is required.';
+    if (!email) fe.identifier = 'Email is required.';
     if (!password.trim()) fe.password = 'Password is required.';
     else if (password.length < 6) fe.password = 'Minimum 6 characters.';
     if (password !== confirmPwd) fe.confirmPwd = 'Passwords do not match.';
     if (Object.keys(fe).length) { setFieldErr(fe); return; }
     setIsLoading(true); clear();
     try {
-      const res = await api.register(id, nm, password.trim(), 'student');
-      if (res.success) {
-        finish(res);
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password: password.trim(),
+        options: { data: { full_name: nm, role: 'student' } }
+      });
+      if (error) throw error;
+      if (data.user) {
+        finish('student', nm, email, null);
       } else {
-        setErrorMsg(res.message || 'Registration failed. Try again.');
+        setErrorMsg('Check your email to confirm your account.');
         setIsLoading(false);
       }
     } catch (err) {
-      setErrorMsg(err.message || 'Could not reach server.');
+      setErrorMsg(err.message || 'Registration failed. Try again.');
       setIsLoading(false);
     }
   };
