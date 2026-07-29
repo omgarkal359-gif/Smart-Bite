@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import { Compass, Search, Receipt, User, ShoppingCart } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
 import { api, socket } from '../../api';
@@ -7,8 +7,7 @@ import { motion } from 'framer-motion';
 import './layout.css';
 
 export const BottomNav = () => {
-  const { totalItems, setIsCheckoutOpen } = useCart();
-  const navigate = useNavigate();
+  const { totalItems } = useCart();
   const [activeOrdersCount, setActiveOrdersCount] = useState(0);
 
   const userData = JSON.parse(localStorage.getItem('sgu_user') || '{}');
@@ -66,29 +65,14 @@ export const BottomNav = () => {
         )}
       </NavLink>
 
-      <div 
-        className={`nav-item tap-effect ${window.location.pathname.includes('/cart') ? 'active' : ''}`}
-        onClick={() => {
-          if (totalItems === 0) {
-            navigate('/student/cart');
-          } else {
-            setIsCheckoutOpen(true);
-          }
-        }}
-        style={{ cursor: 'pointer' }}
-      >
-        <motion.div className="nav-icon-wrapper" whileTap={{ scale: 0.9 }}>
-          <div style={{ position: 'relative' }}>
-            <ShoppingCart size={24} />
-            {totalItems > 0 && (
-              <span style={{ position: 'absolute', top: -6, right: -10, background: 'var(--error-red)', color: 'white', fontSize: '0.65rem', fontWeight: 800, width: 18, height: 18, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                {totalItems}
-              </span>
-            )}
-          </div>
-          <span>Cart</span>
-        </motion.div>
-      </div>
+      <NavLink to="/student/profile" className={({ isActive }) => `nav-item tap-effect ${isActive ? 'active' : ''}`}>
+        {({ isActive }) => (
+          <motion.div className="nav-icon-wrapper" animate={{ scale: isActive ? 1.1 : 1 }} whileTap={{ scale: 0.9 }}>
+            <User size={24} />
+            <span>Profile</span>
+          </motion.div>
+        )}
+      </NavLink>
     </nav>
   );
 };
