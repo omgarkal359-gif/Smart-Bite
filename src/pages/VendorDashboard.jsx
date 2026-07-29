@@ -360,7 +360,7 @@ const VendorDashboard = () => {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             className="elite-ctrl-btn management" 
-            onClick={() => { openUserProfile(); }}
+            onClick={() => { navigate('/student/profile'); }}
           >
             <User size={16} /> <span>PROFILE</span>
           </motion.button>

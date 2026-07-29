@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GlassCard } from '../components/ui/GlassCard';
 import { Button } from '../components/ui/Button';
-import { LogOut, User, Clock, ShoppingBag, ArrowRight, ExternalLink, CheckCircle } from 'lucide-react';
-import { api, socket, formatRelativeTime } from '../api';
+import { LogOut, User, ShoppingBag, ArrowRight, ExternalLink, CheckCircle, ShieldCheck } from 'lucide-react';
+import { api, formatRelativeTime } from '../api';
+import { supabase } from '../supabaseClient';
 import './pages.css';
 import './profile.css';
 
@@ -14,21 +15,34 @@ const UserProfile = () => {
   const [loadingOrders, setLoadingOrders] = useState(true);
 
   useEffect(() => {
-    const savedSession = localStorage.getItem('sgu_user');
-    if (!savedSession) {
-      navigate('/login', { replace: true });
-      return;
-    }
+    async function loadUserData() {
+      const { data } = await supabase.auth.getUser();
+      const user = data?.user;
+      
+      const savedSession = localStorage.getItem('sgu_user');
+      let parsed = savedSession ? JSON.parse(savedSession) : null;
 
-    const parsed = JSON.parse(savedSession);
-    setUserData(parsed);
-    const customerId = (parsed.id || parsed.username || '9876543210').trim().toLowerCase();
+      if (!parsed && user) {
+        parsed = {
+          name: user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || 'Student',
+          id: user.email || user.phone || user.id,
+          role: user.user_metadata?.role || 'student'
+        };
+        localStorage.setItem('sgu_user', JSON.stringify(parsed));
+      }
 
-    async function loadOrders() {
+      if (!parsed && !user) {
+        navigate('/login', { replace: true });
+        return;
+      }
+
+      setUserData(parsed || {});
+      const customerId = (parsed?.id || parsed?.username || 'student').trim().toLowerCase();
+
       try {
         const orders = await api.getStudentOrders(customerId);
-        setRecentOrders(orders);
-        localStorage.setItem('sgu_orders', JSON.stringify(orders));
+        setRecentOrders(orders || []);
+        localStorage.setItem('sgu_orders', JSON.stringify(orders || []));
       } catch (err) {
         console.error('Failed to load user orders:', err);
         const savedOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
@@ -38,46 +52,33 @@ const UserProfile = () => {
       }
     }
 
-    loadOrders();
-
-    // Listen to real-time status updates for student's orders
-    socket.emit('join', 'student');
-
-    const handleStatusUpdate = (updatedOrder) => {
-      const updatedCustId = (updatedOrder.customerId || updatedOrder.customerid || '').trim().toLowerCase();
-      if (updatedCustId && updatedCustId !== customerId) return;
-
-      setRecentOrders(prev => {
-        if (!prev.some(order => order.id === updatedOrder.id)) {
-          return [updatedOrder, ...prev];
-        }
-        return prev.map(order => order.id === updatedOrder.id ? updatedOrder : order);
-      });
-    };
-
-    socket.on('order_status_update', handleStatusUpdate);
-    const interval = setInterval(loadOrders, 8000);
-
-    return () => {
-      socket.off('order_status_update', handleStatusUpdate);
-      clearInterval(interval);
-    };
+    loadUserData();
   }, [navigate]);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+    } catch (e) {
+      // Ignore signOut errors
+    }
     localStorage.removeItem('sgu_token');
     localStorage.removeItem('sgu_user');
-    localStorage.removeItem('sgu_cart'); // Clear cart on logout for security
+    localStorage.removeItem('sgu_cart');
     navigate('/login', { replace: true });
   };
 
   return (
-    <div className="profile-container page-transition">
+    <div className="profile-container page-transition" style={{ paddingBottom: 100 }}>
       <header className="glass-header menu-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h1 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.25rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '-0.02em', color: 'var(--text-dark)', margin: 0 }}>Profile</h1>
-        <div style={{ transform: 'scale(1.2)' }}>
-          <UserButton afterSignOutUrl="/login" />
-        </div>
+        <h1 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.25rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '-0.02em', color: 'var(--text-dark)', margin: 0 }}>
+          Student Profile
+        </h1>
+        <button 
+          onClick={handleLogout}
+          style={{ background: 'none', border: 'none', color: '#FF3B5C', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700, fontSize: '0.85rem' }}
+        >
+          <LogOut size={18} /> Sign Out
+        </button>
       </header>
 
       <main className="profile-main">
@@ -88,17 +89,13 @@ const UserProfile = () => {
           </div>
           <div className="user-details" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
             <h2 style={{ textTransform: 'capitalize', fontSize: '1.5rem', fontWeight: 800, margin: 0, fontFamily: 'var(--font-heading)' }}>{userData?.name || 'SGU Student'}</h2>
-            <p className="text-muted" style={{ margin: 0, fontSize: '0.9rem', fontWeight: 600 }}>{userData?.username || userData?.id || '+91 -'}</p>
+            <p className="text-muted" style={{ margin: 0, fontSize: '0.9rem', fontWeight: 600 }}>{userData?.username || userData?.id || 'student@sgu.edu'}</p>
             <span style={{ fontSize: '0.75rem', fontWeight: 800, padding: '6px 16px', borderRadius: 999, background: '#FFF1F2', color: '#FF3B5C', textTransform: 'uppercase', marginTop: 4, display: 'inline-block' }}>
               Role: {userData?.role ? userData.role.toUpperCase() : 'STUDENT'}
             </span>
-            <button 
-              onClick={() => openUserProfile()}
-              style={{ marginTop: 8, padding: '6px 16px', background: 'var(--bg-soft-gray)', border: '1px solid #E2E8F0', borderRadius: 999, fontSize: '0.8rem', fontWeight: 700, color: 'var(--primary-navy)', cursor: 'pointer' }}
-              className="tap-effect"
-            >
-              Edit Profile
-            </button>
+            <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8rem', fontWeight: 700, color: '#16A34A', background: '#F0FDF4', padding: '6px 16px', borderRadius: 999, border: '1px solid #DCFCE7' }}>
+              <ShieldCheck size={14} /> Verified Student Account
+            </div>
           </div>
         </GlassCard>
 
