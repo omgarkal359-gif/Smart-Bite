@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Users, ShieldAlert, UserCheck, UserX, Search, 
-  Key, LogIn, Plus, RefreshCw, CheckCircle, Shield 
+  RefreshCw, CheckCircle, Shield 
 } from 'lucide-react';
 import { api } from '../../api';
-import { useNavigate } from 'react-router-dom';
 
 export const UsersModule = () => {
-  const navigate = useNavigate();
   const [users, setUsers] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState('ALL');
@@ -38,25 +36,6 @@ export const UsersModule = () => {
       setIsLoading(false);
     }
   }
-
-  // Action: Impersonate User
-  const handleImpersonate = (user) => {
-    const confirm = window.confirm(`Impersonate user "${user.name}" (${user.username})?`);
-    if (confirm) {
-      const ud = {
-        role: user.role,
-        name: user.name,
-        id: user.username,
-        shopId: user.shopId || user.username,
-        timestamp: new Date().toISOString()
-      };
-      localStorage.setItem('sgu_user', JSON.stringify(ud));
-      alert(`Switched active session to ${user.name} (${user.role}). Redirecting...`);
-      if (user.role === 'owner') navigate(`/vendor/${user.shopId || user.username}`);
-      else if (user.role === 'admin') navigate('/admin');
-      else navigate('/student');
-    }
-  };
 
   // Action: Blacklist PRN
   const handleBlacklist = (e) => {

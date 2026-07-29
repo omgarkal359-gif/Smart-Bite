@@ -4,7 +4,8 @@ import {
   ArrowUpRight, ArrowDownRight, Clock, Activity, Flame, DollarSign,
   Calendar, Filter, ChevronRight, PieChart, BarChart2
 } from 'lucide-react';
-import { api, socket } from '../../api';
+import { api } from '../../api';
+import { supabase } from '../../supabaseClient';
 import { SHOPS } from '../../data/foodCourtDB';
 
 export const OverviewModule = ({ onNavigateModule }) => {
@@ -29,35 +30,33 @@ export const OverviewModule = ({ onNavigateModule }) => {
   useEffect(() => {
     loadOverviewData();
 
-    // Listen to realtime socket events for live metric & activity feed updates
-    const handleNewOrder = (order) => {
-      setMetrics(prev => ({
-        ...prev,
-        totalOrders: prev.totalOrders + 1,
-        activeOrders: prev.activeOrders + 1,
-        totalSales: prev.totalSales + (order.total || 0)
-      }));
-      setAllRawOrders(prev => [order, ...prev]);
-      addActivityLog(`🆕 New Order #${order.id} placed at ${order.stallName || 'Stall'} (₹${order.total})`, 'order');
-    };
+    // Supabase Realtime subscription for live metrics & activity feed
+    const channel = supabase
+      .channel('admin-overview-module')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
+        const order = payload.new;
+        if (payload.eventType === 'INSERT') {
+          setMetrics(prev => ({
+            ...prev,
+            totalOrders: prev.totalOrders + 1,
+            activeOrders: prev.activeOrders + 1,
+            totalSales: prev.totalSales + (order.total || 0)
+          }));
+          setAllRawOrders(prev => [order, ...prev]);
+          addActivityLog(`🆕 New Order #${order.id} placed at ${order.stallName || 'Stall'} (₹${order.total})`, 'order');
+        } else if (payload.eventType === 'UPDATE') {
+          if (order.status === 'completed' || order.status === 'ready') {
+            setMetrics(prev => ({
+              ...prev,
+              activeOrders: Math.max(0, prev.activeOrders - 1)
+            }));
+          }
+          addActivityLog(`⚡ Order #${order.id} status updated to ${(order.status || '').toUpperCase()}`, 'status');
+        }
+      })
+      .subscribe();
 
-    const handleStatusUpdate = (updatedOrder) => {
-      if (updatedOrder.status === 'completed' || updatedOrder.status === 'ready') {
-        setMetrics(prev => ({
-          ...prev,
-          activeOrders: Math.max(0, prev.activeOrders - 1)
-        }));
-      }
-      addActivityLog(`⚡ Order #${updatedOrder.id} status updated to ${updatedOrder.status.toUpperCase()}`, 'status');
-    };
-
-    socket.on('order_new', handleNewOrder);
-    socket.on('order_status_update', handleStatusUpdate);
-
-    return () => {
-      socket.off('order_new', handleNewOrder);
-      socket.off('order_status_update', handleStatusUpdate);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, []);
 
   useEffect(() => {
