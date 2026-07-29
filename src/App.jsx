@@ -1,7 +1,8 @@
-import React, { lazy, Suspense } from 'react';
+import React, { lazy, Suspense, useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { MobileLayout } from './components/layout/MobileLayout';
 import { CartProvider } from './context/CartContext';
+import { supabase } from './supabaseClient';
 
 // Dynamic route code splitting
 const ShopDirectory = lazy(() => import('./pages/ShopDirectory'));
@@ -17,6 +18,50 @@ const LoginPage = lazy(() => import('./pages/LoginPage'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
 const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 const CartPage = lazy(() => import('./pages/CartPage'));
+
+// Dynamic Root Redirect based on Supabase auth session & role
+const RootRedirect = () => {
+  const [session, setSession] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setLoading(false);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  if (loading) {
+    return <div className="flex h-screen items-center justify-center font-semibold">Loading...</div>;
+  }
+
+  if (!session) {
+    const saved = localStorage.getItem('sgu_user');
+    if (saved) {
+      try {
+        const u = JSON.parse(saved);
+        if (u?.role === 'admin') return <Navigate to="/admin" replace />;
+        if (u?.role === 'owner') return <Navigate to="/vendor" replace />;
+        if (u?.role === 'student') return <Navigate to="/student" replace />;
+      } catch (e) {
+        // Fall back to login
+      }
+    }
+    return <Navigate to="/login" replace />;
+  }
+
+  const role = session.user?.user_metadata?.role || session.user?.app_metadata?.role || 'student';
+  if (role === 'admin') return <Navigate to="/admin" replace />;
+  if (role === 'owner') return <Navigate to="/vendor" replace />;
+  return <Navigate to="/student" replace />;
+};
 
 // Protected Route Guard component
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -40,12 +85,22 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
 };
 
 function App() {
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_OUT') {
+        localStorage.removeItem('sgu_user');
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
   return (
     <CartProvider>
       <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <Suspense fallback={<div className="flex h-screen items-center justify-center font-semibold">Loading...</div>}>
           <Routes>
-            <Route path="/" element={<Navigate to="/login" replace />} />
+            <Route path="/" element={<RootRedirect />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
