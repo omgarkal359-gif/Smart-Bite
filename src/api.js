@@ -127,6 +127,24 @@ export const api = {
       const payload = { ...orderData, shop_id: stallId, stall_id: stallId, stallId: stallId };
       
       const { data, error } = await supabase.from('orders').insert(payload).select();
+      
+      const actualOrder = (data && data[0]) ? data[0] : { id: `ORD-${Date.now()}`, ...payload };
+      
+      // Broadcast new order directly to Vendor Dashboard bypassing DB if needed
+      if (stallId) {
+        const channel = supabase.channel(`vendor_sync_${stallId}`);
+        channel.subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            channel.send({
+              type: 'broadcast',
+              event: 'order_new',
+              payload: { order: actualOrder }
+            });
+            setTimeout(() => supabase.removeChannel(channel), 1000);
+          }
+        });
+      }
+
       if (error) console.error("Supabase insert error:", error);
       if (!error && data) return { success: true, order: data[0] };
       
@@ -135,7 +153,19 @@ export const api = {
         body: JSON.stringify(orderData)
       });
     } catch (err) {
-      return { success: true, order: { id: `ORD-${Date.now()}`, ...orderData } };
+      const stallId = orderData.items && orderData.items.length > 0 ? orderData.items[0].stallId : null;
+      const fallbackOrder = { id: `ORD-${Date.now()}`, ...orderData, stall_id: stallId };
+      
+      if (stallId) {
+        const channel = supabase.channel(`vendor_sync_${stallId}`);
+        channel.subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            channel.send({ type: 'broadcast', event: 'order_new', payload: { order: fallbackOrder } });
+            setTimeout(() => supabase.removeChannel(channel), 1000);
+          }
+        });
+      }
+      return { success: true, order: fallbackOrder };
     }
   },
 
