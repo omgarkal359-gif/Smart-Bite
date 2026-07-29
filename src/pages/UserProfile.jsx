@@ -75,7 +75,7 @@ const UserProfile = () => {
   return (
     <div className="profile-container page-transition">
       <header className="glass-header menu-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h1 className="heading-2">Profile</h1>
+        <h1 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.25rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '-0.02em', color: 'var(--text-dark)', margin: 0 }}>Profile</h1>
         <div style={{ transform: 'scale(1.2)' }}>
           <UserButton afterSignOutUrl="/login" />
         </div>
