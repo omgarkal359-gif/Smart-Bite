@@ -507,9 +507,9 @@ const VendorDashboard = () => {
                 richItems = ticket.items;
               }
 
-              const isNew = ticket.status === 'placed';
+              const isNew = ticket.status === 'placed' || (!ticket.status && ticket.payment !== 'Cash');
               const isPreparing = ticket.status === 'preparing';
-              const isPendingCash = ticket.status === 'pending_cash';
+              const isPendingCash = ticket.status === 'pending_cash' || (!ticket.status && ticket.payment === 'Cash');
               const isReady = ticket.status === 'ready';
 
               const statusColor = isPreparing ? '#3B82F6' : isReady ? '#22C55E' : isNew ? '#8B5CF6' : '#F59E0B';
