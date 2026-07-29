@@ -97,7 +97,7 @@ function App() {
 
   return (
     <CartProvider>
-      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <BrowserRouter>
         <Suspense fallback={<div className="flex h-screen items-center justify-center font-semibold">Loading...</div>}>
           <Routes>
             <Route path="/" element={<RootRedirect />} />

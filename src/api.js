@@ -49,13 +49,39 @@ async function fetchAPI(endpoint, options = {}) {
   return response.text();
 }
 
-// API Methods
+/**
+ * ============================================================
+ * ARCHITECTURE NOTE — BaaS Migration in Progress
+ * ============================================================
+ * Basic database CRUD operations (getStalls, createOrder,
+ * updateOrderStatus, etc.) are being deprecated in favour of
+ * direct Supabase SDK calls:
+ *
+ *   supabase.from('orders').select('*')
+ *   supabase.from('orders').insert({ ... })
+ *
+ * Reasons:
+ *  • Lower latency — no Express hop, data comes directly from
+ *    the Supabase Postgres edge network.
+ *  • Real-time support — SDK subscriptions work out of the box.
+ *  • Reduced serverless cold-start surface area.
+ *
+ * Methods marked "@deprecated" below should be replaced with
+ * Supabase SDK calls in their respective components.
+ * Only methods that require secret server-side logic (e.g.
+ * sending transactional email via Nodemailer, complex admin
+ * aggregations) must stay as Vercel Serverless Functions.
+ * ============================================================
+ */
 export const api = {
-  // Stalls
+  // ── Stalls ─────────────────────────────────────────────────
+
+  // @deprecated — Use: supabase.from('stalls').select('*')
   async getStalls() {
     return fetchAPI('/stalls');
   },
 
+  // @deprecated — Use: supabase.from('stalls').update(statusData).eq('id', stallId)
   async updateStallStatus(stallId, statusData) {
     return fetchAPI(`/stalls/${stallId}/status`, {
       method: 'PUT',
@@ -63,11 +89,14 @@ export const api = {
     });
   },
 
-  // Menu
+  // ── Menu ────────────────────────────────────────────────────
+
+  // @deprecated — Use: supabase.from('menu_items').select('*').eq('stall_id', stallId)
   async getStallMenu(stallId) {
     return fetchAPI(`/stalls/${stallId}/menu`);
   },
 
+  // @deprecated — Use: supabase.from('menu_items').insert({ stall_id: stallId, ...itemData })
   async addMenuItem(stallId, itemData) {
     return fetchAPI(`/stalls/${stallId}/menu`, {
       method: 'POST',
@@ -75,6 +104,7 @@ export const api = {
     });
   },
 
+  // @deprecated — Use: supabase.from('menu_items').update(itemData).eq('id', itemId)
   async updateMenuItem(itemId, itemData) {
     return fetchAPI(`/menu/${itemId}`, {
       method: 'PUT',
@@ -82,7 +112,9 @@ export const api = {
     });
   },
 
-  // Orders
+  // ── Orders ──────────────────────────────────────────────────
+
+  // @deprecated — Use: supabase.from('orders').insert(orderData)
   async createOrder(orderData) {
     return fetchAPI('/orders', {
       method: 'POST',
@@ -90,6 +122,7 @@ export const api = {
     });
   },
 
+  // ✅ KEEP — Triggers server-side Nodemailer transactional email logic
   async resendReceipt(orderId, customEmail) {
     return fetchAPI(`/orders/${orderId}/resend`, {
       method: 'POST',
@@ -97,26 +130,32 @@ export const api = {
     });
   },
 
+  // @deprecated — Use: supabase.from('orders').select('*').in('status', ['pending','preparing'])
   async getOrderQueue() {
     return fetchAPI('/orders/queue');
   },
 
+  // @deprecated — Use: supabase.from('orders').select('*').eq('id', orderId).single()
   async getOrder(orderId) {
     return fetchAPI(`/orders/${orderId}`);
   },
 
+  // @deprecated — Use: supabase.from('orders').select('*').eq('id', orderId).single()
   async getOrderDetails(orderId) {
     return fetchAPI(`/orders/${orderId}`);
   },
 
+  // @deprecated — Use: supabase.from('orders').select('*').eq('customer_id', customerId)
   async getStudentOrders(customerId) {
     return fetchAPI(`/orders/student/${customerId}`);
   },
 
+  // @deprecated — Use: supabase.from('orders').select('*').eq('stall_id', stallId)
   async getStallOrders(stallId) {
     return fetchAPI(`/orders/stall/${stallId}`);
   },
 
+  // @deprecated — Use: supabase.from('orders').update({ status }).eq('id', orderId)
   async updateOrderStatus(orderId, status) {
     return fetchAPI(`/orders/${orderId}/status`, {
       method: 'PUT',
@@ -124,7 +163,9 @@ export const api = {
     });
   },
 
-  // Admin
+  // ── Admin ───────────────────────────────────────────────────
+
+  // ✅ KEEP — Complex server-side aggregation with secret admin logic
   async getAdminMetrics() {
     return fetchAPI('/admin/metrics');
   }
