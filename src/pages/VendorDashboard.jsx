@@ -499,8 +499,13 @@ const VendorDashboard = () => {
                 parsedItems = ticket.items.split(', ').filter(Boolean);
               }
 
-              // Use originalItems for rich display if available
-              const richItems = ticket.originalItems && Array.isArray(ticket.originalItems) ? ticket.originalItems : null;
+              // Use originalItems for rich display if available, OR if items itself is an array of objects
+              let richItems = null;
+              if (ticket.originalItems && Array.isArray(ticket.originalItems)) {
+                richItems = ticket.originalItems;
+              } else if (Array.isArray(ticket.items) && ticket.items.length > 0 && typeof ticket.items[0] === 'object') {
+                richItems = ticket.items;
+              }
 
               const isNew = ticket.status === 'placed';
               const isPreparing = ticket.status === 'preparing';
