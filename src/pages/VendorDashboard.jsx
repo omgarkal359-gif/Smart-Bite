@@ -240,12 +240,17 @@ const VendorDashboard = () => {
   const handleToggleBusy = async () => {
     const nextBusy = !isBusyMode;
     const nextWait = nextBusy ? 15 : 0;
+    
+    // Optimistic UI Update
+    setIsBusyMode(nextBusy);
+    
     try {
       if (targetShopId) {
         await api.updateStallStatus(targetShopId, { busyMode: nextBusy, waitTime: nextWait });
       }
-      setIsBusyMode(nextBusy);
     } catch (err) {
+      // Revert on failure
+      setIsBusyMode(!nextBusy);
       alert('Failed to toggle busy mode: ' + err.message);
     }
   };
