@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { GlassCard } from '../components/ui/GlassCard';
 import { searchFoodItems } from '../data/foodCourtDB';
 import { useDebounce } from '../hooks/useDebounce';
+import { getFoodItemImage } from '../utils/imageHelper';
 import './home_v21.css';
 
 const SearchPage = () => {
@@ -68,12 +69,12 @@ const SearchPage = () => {
                 >
                   <div className="shop-img-container" style={{ width: '80px', height: '80px', borderRadius: '12px' }}>
                     <img 
-                      src={item.img || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=200&q=80'} 
+                      src={getFoodItemImage(item)} 
                       alt={item.name} 
                       className="shop-hd-img" 
                       onError={(e) => {
                         e.target.onerror = null;
-                        e.target.src = 'https://images.unsplash.com/photo-1495147466023-ac5c588e2e94?auto=format&fit=crop&w=200&q=80';
+                        e.target.src = 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=200&q=80';
                       }}
                     />
                   </div>
