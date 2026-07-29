@@ -7,7 +7,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import sguLogo from '../../assets/sgu-logo.jpg';
 import { CmdKSearchModal } from './CmdKSearchModal';
-import { socket } from '../../api';
+import { supabase } from '../../supabaseClient';
 import './admin_dashboard.css';
 
 export const AdminShell = ({ activeModule, setActiveModule, user, children }) => {
@@ -30,16 +30,15 @@ export const AdminShell = ({ activeModule, setActiveModule, user, children }) =>
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
   }, []);
 
-  // Monitor socket status for realtime health indicator
+  // Monitor Supabase Realtime channel status for health indicator
   useEffect(() => {
-    function onConnect() { setRealtimeStatus('ONLINE'); }
-    function onDisconnect() { setRealtimeStatus('RECONNECTING'); }
-    socket.on('connect', onConnect);
-    socket.on('disconnect', onDisconnect);
-    return () => {
-      socket.off('connect', onConnect);
-      socket.off('disconnect', onDisconnect);
-    };
+    const channel = supabase.channel('admin-health-monitor')
+      .on('system', { event: '*' }, () => {})
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') setRealtimeStatus('ONLINE');
+        else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') setRealtimeStatus('RECONNECTING');
+      });
+    return () => { supabase.removeChannel(channel); };
   }, []);
 
   // Close profile dropdown on outside click
@@ -54,9 +53,9 @@ export const AdminShell = ({ activeModule, setActiveModule, user, children }) =>
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     localStorage.removeItem('sgu_user');
-    localStorage.removeItem('sgu_token');
     navigate('/login', { replace: true });
   };
 

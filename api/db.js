@@ -1,46 +1,9 @@
-import pg from 'pg';
-import dotenv from 'dotenv';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
+import { createClient } from '@supabase/supabase-js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || 'https://hmdewtmtxgfyunyypcon.supabase.co';
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhtZGV3dG10eGdmeXVueXlwY29uIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0MDQ2NDQsImV4cCI6MjA5NTk4MDY0NH0.sy6oeke8atqEHPnkWKMZPK9ggbJp8J3HF6G-GFsJRGg';
 
-dotenv.config({ path: join(__dirname, '.env') });
-pg.types.setTypeParser(pg.types.builtins.INT8, (val) => parseInt(val, 10));
-
-const connectionString = process.env.DATABASE_URL || 'postgresql://postgres.hmdewtmtxgfyunyypcon:Omharsh%402006@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres';
-
-let isPgActive = false;
-let sqliteDb = null;
-let isSqliteActive = false;
-
-// Pure JS Memory Store (Tier 3 Fallback)
-const memStore = {
-  users: [],
-  stalls: [],
-  menu_items: [],
-  orders: [],
-  order_items: [],
-  nextId: { users: 1, menu_items: 1, order_items: 1 }
-};
-
-// Try importing sqlite3 dynamically if available
-let sqlite3 = null;
-try {
-  const mod = await import('sqlite3');
-  sqlite3 = mod.default || mod;
-} catch (e) {
-  // sqlite3 not bundled
-}
-
-const pool = new pg.Pool({
-  connectionString: connectionString,
-  connectionTimeoutMillis: 3000,
-  ssl: connectionString && (connectionString.includes('supabase.co') || connectionString.includes('supabase.com') || connectionString.includes('supabase'))
-    ? { rejectUnauthorized: false }
-    : false
-});
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 function convertSql(sql) {
   let index = 1;

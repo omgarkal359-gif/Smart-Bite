@@ -5,9 +5,8 @@ import {
   IconBrandGoogle, IconShieldCheck, IconBuildingStore
 } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
-import { useUser, useClerk } from '@clerk/clerk-react';
-import { api } from '../api';
 import { supabase } from '../supabaseClient';
+import sguLogo from '../assets/sgu-logo.jpg';
 import './LoginPage.css';
 
 /*
@@ -87,48 +86,6 @@ const LoginPage = () => {
 
   const navigate = useNavigate();
 
-  /* Clerk Authentication Hook */
-  const { user: clerkUser, isSignedIn: isClerkSignedIn } = useUser();
-  const { openSignIn, openSignUp } = useClerk();
-
-  /* ── Sync Clerk User Session ── */
-  useEffect(() => {
-    if (isClerkSignedIn && clerkUser) {
-      async function syncClerkUser() {
-        try {
-          setIsLoading(true);
-          const email = clerkUser.primaryEmailAddress?.emailAddress || clerkUser.emailAddresses[0]?.emailAddress;
-          const phone = clerkUser.primaryPhoneNumber?.phoneNumber;
-          const identifier = email || phone || clerkUser.id;
-          const fullName = clerkUser.fullName || clerkUser.firstName || 'Clerk Student';
-
-          const res = await api.googleLogin(identifier, fullName);
-          if (res.success) {
-            setIsLoading(false);
-            setIsSuccess(true);
-            const ud = {
-              role: res.user.role,
-              name: res.user.name,
-              id: res.user.username,
-              shopId: res.user.shopId || res.user.shopid,
-              timestamp: new Date().toISOString(),
-              rememberMe: true,
-            };
-            localStorage.setItem('sgu_user', JSON.stringify(ud));
-            setTimeout(() => {
-              setIsSuccess(false);
-              redirectByRole(ud.role, ud.shopId);
-            }, 1000);
-          }
-        } catch (err) {
-          console.error('Clerk authentication sync error:', err);
-          setIsLoading(false);
-        }
-      }
-      syncClerkUser();
-    }
-  }, [isClerkSignedIn, clerkUser]);
-
   /* ── Auto-reset loading state if login process is terminated or timed out ── */
   useEffect(() => {
     let timeout;
@@ -158,15 +115,59 @@ const LoginPage = () => {
     else if (role === 'admin') navigate('/admin');
   };
 
-  const finish = (res) => {
+  // Pre-seeded demo accounts + user-registered accounts storage helper
+  const getSavedUsers = () => {
+    const defaultAccounts = [
+      { id: 'student@sgu.edu', username: 'student@sgu.edu', name: 'Satej', password: 'password', role: 'student', shopId: null },
+      { id: '9876543210', username: '9876543210', name: 'Guest Satej', password: '', role: 'guest', shopId: null },
+      { id: 'admin@sgu.edu', username: 'admin@sgu.edu', name: 'Administrator', password: 'admin123', role: 'admin', shopId: null },
+      { id: 'mangales-snacks', username: 'mangales-snacks', name: 'Mangale Snacks Owner', password: '000000000', role: 'owner', shopId: 'mangales-snacks' },
+      { id: 'tea-coffee', username: 'tea-coffee', name: 'Tea & Coffee Owner', password: '000000000', role: 'owner', shopId: 'tea-coffee' },
+      { id: 'rohit-vadewale', username: 'rohit-vadewale', name: 'Rohit Vadewale Owner', password: '000000000', role: 'owner', shopId: 'rohit-vadewale' },
+      { id: 'oodles-of-noodles', username: 'oodles-of-noodles', name: 'Oodles of Noodles Owner', password: '000000000', role: 'owner', shopId: 'oodles-of-noodles' },
+      { id: 'narayana', username: 'narayana', name: 'Narayana Owner', password: '000000000', role: 'owner', shopId: 'narayana' },
+      { id: 'cool-cravings', username: 'cool-cravings', name: 'Cool Cravings Owner', password: '000000000', role: 'owner', shopId: 'cool-cravings' }
+    ];
+
+    try {
+      const stored = localStorage.getItem('sgu_registered_users');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+          return [...defaultAccounts, ...parsed];
+        }
+      }
+    } catch (e) {
+      // ignore parsing error
+    }
+    return defaultAccounts;
+  };
+
+  const saveUserLocally = (newUser) => {
+    try {
+      const stored = localStorage.getItem('sgu_registered_users');
+      const parsed = stored ? JSON.parse(stored) : [];
+      const updated = Array.isArray(parsed) ? parsed : [];
+      const existingIdx = updated.findIndex(u => (u.id || u.username || '').toLowerCase() === newUser.id.toLowerCase());
+      if (existingIdx >= 0) {
+        updated[existingIdx] = newUser;
+      } else {
+        updated.push(newUser);
+      }
+      localStorage.setItem('sgu_registered_users', JSON.stringify(updated));
+    } catch (e) {
+      console.error('Failed to save user locally:', e);
+    }
+  };
+
+  const finish = (role, name, id, shopId = null) => {
     setIsLoading(false);
     setIsSuccess(true);
-    const u = res?.user || res || {};
     const ud = {
-      role: u?.role || 'student',
-      name: u?.name || u?.username || 'Student',
-      id: u?.username || u?.id || 'student',
-      shopId: u?.shopId || u?.shopid || null,
+      role: role || 'student',
+      name: name || 'Student',
+      id: id || 'student',
+      shopId: shopId || null,
       timestamp: new Date().toISOString(),
       rememberMe,
     };
@@ -178,27 +179,12 @@ const LoginPage = () => {
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session?.user) {
-        setIsLoading(true); clear();
-        try {
-          const { email, full_name, name: mName, phone } = session.user.user_metadata || {};
-          const ue = session.user.email || email;
-          const up = session.user.phone || phone;
-          const lid = ue || up;
-          if (!lid) throw new Error('No email or phone found in session.');
-          const pName = localStorage.getItem('sgu_pending_name');
-          const uName = full_name || mName || pName || (ue ? ue.split('@')[0] : up);
-          localStorage.removeItem('sgu_pending_name');
-          const isSignUp = localStorage.getItem('sgu_is_signup') === 'true' || mode === 'register';
-          localStorage.removeItem('sgu_is_signup');
-
-          const res = await api.googleLogin(lid, uName, isSignUp);
-          if (res.success) {
-            finish(res);
-          } else {
-            setErrorMsg(res.message || 'Google sign-in failed.');
-            setIsLoading(false);
-          }
-        } catch (err) { setErrorMsg(err.message || 'Could not complete Google sign-in.'); setIsLoading(false); }
+        const meta = session.user.user_metadata || {};
+        const role = meta.role || session.user.app_metadata?.role || 'student';
+        const name = meta.full_name || meta.name || session.user.email?.split('@')[0] || 'Student';
+        const id = session.user.email || session.user.phone || session.user.id;
+        const shopId = meta.shopId || null;
+        finish(role, name, id, shopId);
       }
     });
     const saved = localStorage.getItem('sgu_user');
@@ -209,13 +195,9 @@ const LoginPage = () => {
           const bad = p.role === 'owner' && (!p.shopId || p.shopId === 'undefined' || p.shopId === 'null');
           if (bad) {
             localStorage.removeItem('sgu_user');
-          } else if (p.rememberMe) {
-            redirectByRole(p.role, p.shopId);
           } else {
-            localStorage.removeItem('sgu_user');
+            redirectByRole(p.role, p.shopId);
           }
-        } else {
-          localStorage.removeItem('sgu_user');
         }
       } catch (err) {
         localStorage.removeItem('sgu_user');
@@ -227,31 +209,48 @@ const LoginPage = () => {
   /* ── Login ── */
   const handleLogin = async (e) => {
     e.preventDefault();
-    const id = identifier.trim();
+    const idInput = identifier.trim();
     const pwd = password.trim();
     const fe = {};
-    if (!id) fe.identifier = 'This field is required.';
+    if (!idInput) fe.identifier = 'This field is required.';
     if (!pwd) fe.password = 'Password is required.';
     if (Object.keys(fe).length) { setFieldErr(fe); return; }
     setIsLoading(true); clear();
-    try {
-      let role = 'student';
-      if (id.toLowerCase().includes('admin')) role = 'admin';
-      else if (id.includes('-') || id.toLowerCase().includes('owner') || id.toLowerCase().includes('tea') || id.toLowerCase().includes('vadewale') || id.toLowerCase().includes('noodles') || id.toLowerCase().includes('narayana') || id.toLowerCase().includes('cravings')) role = 'owner';
-      
-      const res = await api.login(id, pwd, role, '');
-      if (res.success) {
-        finish(res);
-        return;
+
+    // 1. Try Supabase Auth sign-in if identifier is an email
+    if (isEmail(idInput)) {
+      try {
+        const { data, error } = await supabase.auth.signInWithPassword({ email: idInput, password: pwd });
+        if (!error && data?.user) {
+          const meta = data.user.user_metadata || {};
+          const role = meta.role || data.user.app_metadata?.role || 'student';
+          const name = meta.full_name || meta.name || idInput.split('@')[0] || 'Student';
+          const shopId = meta.shopId || null;
+          saveUserLocally({ id: idInput, username: idInput, name, password: pwd, role, shopId });
+          finish(role, name, idInput, shopId);
+          return;
+        }
+      } catch (err) {
+        // Fall back to saved local registered accounts
       }
-      setErrorMsg(res.message || 'Incorrect password or account not found.');
-      setIsLoading(false);
-    } catch (err) {
-      if (err.message?.includes('Account not found') || err.message?.includes('Sign Up')) {
-        setErrorMsg('Account not found. No student is allowed to sign in until they have created an account. Please click "Sign Up" above to register first.');
+    }
+
+    // 2. Check local registered user accounts
+    const allUsers = getSavedUsers();
+    const match = allUsers.find(u => 
+      (u.id && u.id.toLowerCase() === idInput.toLowerCase()) || 
+      (u.username && u.username.toLowerCase() === idInput.toLowerCase())
+    );
+
+    if (match) {
+      if (!match.password || match.password === pwd) {
+        finish(match.role || 'student', match.name || idInput, match.id || idInput, match.shopId || null);
       } else {
-        setErrorMsg(err.message || 'Could not reach server.');
+        setErrorMsg('Incorrect password. Please check your credentials and try again.');
+        setIsLoading(false);
       }
+    } else {
+      setErrorMsg('Account not found. Please click "Sign Up" above to create an account first.');
       setIsLoading(false);
     }
   };
@@ -259,28 +258,49 @@ const LoginPage = () => {
   /* ── Register ── */
   const handleRegister = async (e) => {
     e.preventDefault();
-    const id = identifier.trim();
+    const emailOrId = identifier.trim();
     const nm = regName.trim();
+    const pwd = password.trim();
     const fe = {};
     if (!nm) fe.regName = 'Name is required.';
-    if (!id) fe.identifier = 'Email or mobile is required.';
-    if (!password.trim()) fe.password = 'Password is required.';
-    else if (password.length < 6) fe.password = 'Minimum 6 characters.';
-    if (password !== confirmPwd) fe.confirmPwd = 'Passwords do not match.';
+    if (!emailOrId) fe.identifier = 'Email or User ID is required.';
+    if (!pwd) fe.password = 'Password is required.';
+    else if (pwd.length < 6) fe.password = 'Minimum 6 characters.';
+    if (pwd !== confirmPwd.trim()) fe.confirmPwd = 'Passwords do not match.';
     if (Object.keys(fe).length) { setFieldErr(fe); return; }
     setIsLoading(true); clear();
-    try {
-      const res = await api.register(id, nm, password.trim(), 'student');
-      if (res.success) {
-        finish(res);
-      } else {
-        setErrorMsg(res.message || 'Registration failed. Try again.');
-        setIsLoading(false);
-      }
-    } catch (err) {
-      setErrorMsg(err.message || 'Could not reach server.');
+
+    // Check if account already exists locally
+    const existingUsers = getSavedUsers();
+    const exists = existingUsers.some(u => 
+      (u.id && u.id.toLowerCase() === emailOrId.toLowerCase()) || 
+      (u.username && u.username.toLowerCase() === emailOrId.toLowerCase())
+    );
+
+    if (exists) {
+      setErrorMsg('An account with this email/ID already exists. Please Sign In below.');
       setIsLoading(false);
+      return;
     }
+
+    // Save registered user account locally
+    const newUser = { id: emailOrId, username: emailOrId, name: nm, password: pwd, role: 'student', shopId: null };
+    saveUserLocally(newUser);
+
+    // Try Supabase Auth Sign Up if it's a valid email format
+    if (isEmail(emailOrId)) {
+      try {
+        await supabase.auth.signUp({
+          email: emailOrId,
+          password: pwd,
+          options: { data: { full_name: nm, role: 'student' } }
+        }).catch(() => null);
+      } catch (err) {
+        // ignore Supabase sign-up errors (local account is saved)
+      }
+    }
+
+    finish('student', nm, emailOrId, null);
   };
 
   /* ── Google OAuth ── */
@@ -337,44 +357,6 @@ const LoginPage = () => {
     </button>
   );
 
-  /* ── Shared: Clerk button ── */
-  const ClerkBtn = ({ label, isSignUp }) => (
-    <button
-      type="button"
-      onClick={() => {
-        setIsLoading(true);
-        if (isSignUp) openSignUp();
-        else openSignIn();
-        setTimeout(() => setIsLoading(false), 4000);
-      }}
-      disabled={isSuccess}
-      style={{
-        width: '100%',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: '10px',
-        padding: '12px 16px',
-        borderRadius: '12px',
-        border: '1px solid #CBD5E1',
-        background: '#FFFFFF',
-        color: '#1E293B',
-        fontWeight: 600,
-        fontSize: '0.95rem',
-        cursor: 'pointer',
-        marginTop: '10px',
-        transition: 'all 0.2s ease',
-      }}
-      aria-label={label}
-    >
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M12 2C6.477 2 2 6.477 2 12C2 17.523 6.477 22 12 22C17.523 22 22 17.523 22 12C22 6.477 17.523 2 12 2Z" fill="#6C47FF"/>
-        <path d="M12 6C8.686 6 6 8.686 6 12C6 15.314 8.686 18 12 18C15.314 18 18 15.314 18 12C18 8.686 15.314 6 12 6Z" fill="white"/>
-      </svg>
-      <span>{label}</span>
-    </button>
-  );
-
   /* ── Shared: spinner / check inside primary button ── */
   const BtnInner = ({ label }) => (
     <>
@@ -394,12 +376,7 @@ const LoginPage = () => {
         {/* ── Brand mark ── */}
             <div className="sb-brand" aria-label="Smart Bite">
               <div className="sb-logo-ring" aria-hidden="true">
-                {/* Simple geometric mark: utensils silhouette, not hand-rolled decorative SVG */}
-                <svg viewBox="0 0 32 32" width="24" height="24" fill="none" aria-hidden="true">
-                  <rect x="14" y="2" width="4" height="14" rx="2" fill="currentColor"/>
-                  <rect x="14" y="20" width="4" height="10" rx="2" fill="currentColor"/>
-                  <ellipse cx="16" cy="16" rx="6" ry="6" stroke="currentColor" strokeWidth="2.5" fill="none"/>
-                </svg>
+                <img src={sguLogo} alt="SGU Logo" className="sb-sgu-logo-img" />
               </div>
               <h1 className="sb-heading">
                 {mode === 'login' ? 'Welcome back' : 'Create account'}
@@ -504,7 +481,6 @@ const LoginPage = () => {
                 <div className="sb-divider" aria-hidden="true"><span>or</span></div>
 
                 <GoogleBtn label="Continue with Google" isSignUp={false} />
-                <ClerkBtn label="Sign in with Clerk" isSignUp={false} />
 
                 <p className="sb-switch">
                   No account?{' '}
@@ -596,7 +572,6 @@ const LoginPage = () => {
                 <div className="sb-divider" aria-hidden="true"><span>or</span></div>
 
                 <GoogleBtn label="Sign up with Google" isSignUp={true} />
-                <ClerkBtn label="Sign up with Clerk" isSignUp={true} />
 
                 <p className="sb-switch">
                   Have an account?{' '}

@@ -4,29 +4,45 @@ import { Leaf, Flame, Pizza, Coffee, Sandwich, Utensils } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCart } from '../context/CartContext';
 import { api, socket } from '../api';
+import { getItemsByStall, SHOPS, ALL_FOOD_ITEMS } from '../data/foodCourtDB';
 import './pages.css';
 import './menu_v21.css';
 
 const CAT_ICONS = {
   'Pizzas': <Pizza size={16} />,
   'Burgers': <Sandwich size={16} />,
-  'Beverages': <Coffee size={16} />
+  'Beverages': <Coffee size={16} />,
+  "Tea's": <Coffee size={16} />,
+  'Coffee': <Coffee size={16} />,
+  'Cold Beverages': <Coffee size={16} />,
+  'Wadapav': <Flame size={16} />,
+  'Misal': <Flame size={16} />,
+  "Dosa's": <Flame size={16} />,
+  "Idli's": <Utensils size={16} />,
+  'Noodles': <Utensils size={16} />,
+  'Shakes': <Coffee size={16} />
 };
 
-const defaultImages = {
-  'Pizzas': 'https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=400&q=80',
-  'Burgers': 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=400&q=80',
-  'Beverages': 'https://images.unsplash.com/photo-1541658016709-82535e94bc69?auto=format&fit=crop&w=400&q=80',
+const categoryImagesMap = {
+  "Tea's": 'https://images.unsplash.com/photo-1576092768241-dec231879fc3?auto=format&fit=crop&w=400&q=80',
+  'Coffee': 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=400&q=80',
+  'Cold Beverages': 'https://images.unsplash.com/photo-1517701550927-30cf4ba1dba5?auto=format&fit=crop&w=400&q=80',
+  'Wadapav': 'https://images.unsplash.com/photo-1626132647523-66f5bf380027?auto=format&fit=crop&w=400&q=80',
   'Misal': 'https://images.unsplash.com/photo-1601050690117-94f5f6fa8bd7?auto=format&fit=crop&w=400&q=80',
   'Thalipeeth': 'https://images.unsplash.com/photo-1608797178974-15b35a61d121?auto=format&fit=crop&w=400&q=80',
   'Rice': 'https://images.unsplash.com/photo-1512058564366-18510be2db19?auto=format&fit=crop&w=400&q=80',
   'Veg Wraps': 'https://images.unsplash.com/photo-1626700051175-6518c4793f4f?auto=format&fit=crop&w=400&q=80',
+  "Idli's": 'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=400&q=80',
+  "Dosa's": 'https://images.unsplash.com/photo-1668236543090-82eba5ee5976?auto=format&fit=crop&w=400&q=80',
+  'Noodles': 'https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&w=400&q=80',
+  'Shakes': 'https://images.unsplash.com/photo-1572490122747-3968b75cc699?auto=format&fit=crop&w=400&q=80',
+  'Mojito': 'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?auto=format&fit=crop&w=400&q=80',
   'default': 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&q=80'
 };
 
 const getFoodImage = (item) => {
-  if (item.img && item.img.trim().startsWith('http')) return item.img;
-  return defaultImages[item.category] || defaultImages['default'];
+  if (item && item.img && typeof item.img === 'string' && item.img.trim().startsWith('http')) return item.img;
+  return categoryImagesMap[item?.category] || categoryImagesMap['default'];
 };
 
 const getFallbackIcon = (category) => {
@@ -36,6 +52,8 @@ const getFallbackIcon = (category) => {
     case 'Burgers':
       return <Sandwich size={36} />;
     case 'Beverages':
+    case "Tea's":
+    case 'Coffee':
       return <Coffee size={36} />;
     default:
       return <Utensils size={36} />;
@@ -48,74 +66,102 @@ const InteractiveMenu = () => {
   const highlightId = searchParams.get('highlight');
   const targetCategory = searchParams.get('category');
 
-  const [activeCategory, setActiveCategory] = useState('');
-  const { cart, addToCart, removeFromCart, totalItems, isCheckoutOpen, setIsCheckoutOpen, clearCart } = useCart();
+  const { cart, addToCart, removeFromCart, totalItems, isCheckoutOpen, setIsCheckoutOpen } = useCart();
 
-  const [inventory, setInventory] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [stallInfo, setStallInfo] = useState(null);
+  // Initial state derived synchronously from foodCourtDB
+  const initialItems = useMemo(() => {
+    const items = getItemsByStall(shopId);
+    return (items && items.length > 0) ? items : ALL_FOOD_ITEMS.slice(0, 20);
+  }, [shopId]);
+
+  const initialStall = useMemo(() => {
+    const found = SHOPS.find(s => s.id === shopId);
+    if (found) return found;
+    return { id: shopId, name: shopId ? shopId.replace(/-/g, ' ').toUpperCase() : 'SHOP MENU', category: 'Food Court Stall' };
+  }, [shopId]);
+
+  const [inventory, setInventory] = useState(initialItems);
+  const [stallInfo, setStallInfo] = useState(initialStall);
   const [imgErrors, setImgErrors] = useState({});
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Derive CATEGORIES dynamically from the inventory
+  // Sync inventory if shopId changes
+  useEffect(() => {
+    const items = getItemsByStall(shopId);
+    if (items && items.length > 0) {
+      setInventory(items);
+    }
+    const found = SHOPS.find(s => s.id === shopId);
+    if (found) setStallInfo(found);
+  }, [shopId]);
+
+  // Derive CATEGORIES dynamically from current inventory
   const CATEGORIES = useMemo(() => {
-    const cats = inventory.map(item => item.category);
-    return [...new Set(cats)];
+    const cats = inventory.map(item => item.category).filter(Boolean);
+    const unique = [...new Set(cats)];
+    return unique.length > 0 ? unique : ['All Items'];
   }, [inventory]);
 
-  // Set initial category & inventory when stall loads
+  // Determine active category
+  const [activeCategory, setActiveCategory] = useState(() => {
+    const decodedTarget = targetCategory ? decodeURIComponent(targetCategory) : null;
+    const initialCats = initialItems.map(i => i.category).filter(Boolean);
+    const unique = [...new Set(initialCats)];
+    if (decodedTarget && unique.includes(decodedTarget)) return decodedTarget;
+    return unique[0] || 'All Items';
+  });
+
+  // Load latest data asynchronously from API/Supabase
   useEffect(() => {
+    let isMounted = true;
     async function loadStallMenu() {
       try {
         const items = await api.getStallMenu(shopId);
-        setInventory(items);
-
-        const stalls = await api.getStalls();
-        const stall = stalls.find(s => s.id === shopId);
-        setStallInfo(stall);
-
-        const cats = [...new Set(items.map(i => i.category))];
-        if (targetCategory && cats.includes(targetCategory)) {
-          setActiveCategory(targetCategory);
-        } else if (cats.length > 0) {
-          setActiveCategory(cats[0]);
+        if (isMounted && items && Array.isArray(items) && items.length > 0) {
+          setInventory(items);
         }
       } catch (err) {
-        console.error('Failed to load menu:', err);
-      } finally {
-        setIsLoading(false);
+        console.error('Async menu load error:', err);
+      }
+
+      try {
+        const stalls = await api.getStalls();
+        if (isMounted && stalls && Array.isArray(stalls)) {
+          const stall = stalls.find(s => s.id === shopId);
+          if (stall) setStallInfo(stall);
+        }
+      } catch (err) {
+        console.error('Async stall load error:', err);
       }
     }
     loadStallMenu();
 
-    // Join room for real-time menu/stock updates
+    // Socket realtime listener
     socket.emit('join', `stall-menu-${shopId}`);
-
     const handleMenuItemUpdate = (updatedItem) => {
-      setInventory(prev => prev.map(i => i.id === updatedItem.id ? updatedItem : i));
+      if (isMounted) {
+        setInventory(prev => prev.map(i => i.id === updatedItem.id ? updatedItem : i));
+      }
     };
-
     socket.on('menu_item_update', handleMenuItemUpdate);
 
-    // Polling fallback
-    const interval = setInterval(async () => {
-      try {
-        const items = await api.getStallMenu(shopId);
-        setInventory(items);
-        
-        const stalls = await api.getStalls();
-        const stall = stalls.find(s => s.id === shopId);
-        if (stall) setStallInfo(stall);
-      } catch (err) {
-        console.error('Polling failed to fetch menu updates:', err);
-      }
-    }, 15000); // 15 seconds polling interval for menu updates
-
     return () => {
+      isMounted = false;
       socket.off('menu_item_update', handleMenuItemUpdate);
-      clearInterval(interval);
     };
-  }, [shopId, targetCategory]);
+  }, [shopId]);
 
+  // Keep active category synced
+  useEffect(() => {
+    const decodedTarget = targetCategory ? decodeURIComponent(targetCategory) : null;
+    if (decodedTarget && CATEGORIES.includes(decodedTarget)) {
+      setActiveCategory(decodedTarget);
+    } else if (!activeCategory || !CATEGORIES.includes(activeCategory)) {
+      setActiveCategory(CATEGORIES[0] || 'All Items');
+    }
+  }, [CATEGORIES, targetCategory]);
+
+  // Highlight scroll
   useEffect(() => {
     if (highlightId && !isLoading) {
       setTimeout(() => {
@@ -125,7 +171,6 @@ const InteractiveMenu = () => {
           el.style.border = '2px solid var(--primary-color, #E4002B)';
           el.style.transform = 'scale(1.02)';
           el.style.boxShadow = '0 10px 25px rgba(228, 0, 43, 0.2)';
-          el.style.transition = 'all 0.5s ease-in-out';
           setTimeout(() => {
             el.style.border = '';
             el.style.transform = '';
@@ -136,13 +181,14 @@ const InteractiveMenu = () => {
     }
   }, [highlightId, isLoading, activeCategory]);
 
-  // Derive display inventory by subtracting current cart quantities from fetched stock
+  // Derive display inventory with live cart subtraction
   const displayInventory = useMemo(() => {
     return inventory.map(item => {
       const cartQty = cart[item.id]?.quantity || 0;
+      const baseStock = item.stock !== undefined ? item.stock : 20;
       return {
         ...item,
-        stock: Math.max(0, item.stock - cartQty)
+        stock: Math.max(0, baseStock - cartQty)
       };
     });
   }, [inventory, cart]);
@@ -160,13 +206,14 @@ const InteractiveMenu = () => {
   };
 
   const filteredInventory = useMemo(() => {
-    return displayInventory.filter(item => {
-      return item.category === activeCategory;
-    });
+    if (!activeCategory || activeCategory === 'All Items') return displayInventory;
+    const matched = displayInventory.filter(item => item.category === activeCategory);
+    return matched.length > 0 ? matched : displayInventory;
   }, [displayInventory, activeCategory]);
 
   return (
     <div className="menu-container page-transition">
+      {/* KFC Style Sticky Menu Header */}
       <header className="menu-header-v21">
         <h2 className="heading-2">{stallInfo ? stallInfo.name : `Shop #${shopId}`}</h2>
         
@@ -184,6 +231,7 @@ const InteractiveMenu = () => {
         </div>
       </header>
 
+      {/* KFC Style Responsive Bento Menu Grid */}
       <main className="menu-grid-v21">
         <AnimatePresence mode="popLayout">
           {isLoading ? (
@@ -201,7 +249,7 @@ const InteractiveMenu = () => {
               const isImgError = imgErrors[item.id];
               return (
                 <motion.div
-                  key={item.id}
+                  key={item.id || index}
                   id={`dish-${item.id}`}
                   layout
                   initial={{ opacity: 0, y: 20 }}
@@ -211,7 +259,7 @@ const InteractiveMenu = () => {
                   whileHover={{ y: -5 }}
                   className={`food-card-v21 shadow-sm ${item.stock === 0 ? 'out-of-stock' : ''}`}
                 >
-                  <div className="food-img-wrapper-v21" style={{ background: '#F8FAFC', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                  <div className="food-img-wrapper-v21">
                     {!isImgError ? (
                       <img 
                         src={getFoodImage(item)} 
@@ -222,12 +270,12 @@ const InteractiveMenu = () => {
                         }}
                       />
                     ) : (
-                      <div style={{ color: '#CBD5E1', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                      <div style={{ width: '100%', height: '100%', color: '#CBD5E1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         {getFallbackIcon(item.category)}
                       </div>
                     )}
 
-                    {/* Floating Cart Add/Qty selector inside the image wrapper */}
+                    {/* Floating KFC Red Add/Qty Selector */}
                     {cart[item.id] ? (
                       <div className="qty-controls-v21 shadow-md">
                         <motion.button whileTap={{ scale: 0.9 }} className="qty-btn" onClick={() => handleRemoveFromCartClick(item)}>
@@ -252,9 +300,9 @@ const InteractiveMenu = () => {
 
                   <div className="food-info-v21">
                     <h3>{item.name}</h3>
-                    <p className="food-desc-v21">Enjoy the authentic taste of freshly prepared {item.name.toLowerCase()} with signature herbs.</p>
+                    <p className="food-desc-v21">Freshly prepared {item.name.toLowerCase()} with signature ingredients.</p>
 
-                    <div className="food-bottom-row" style={{ marginTop: 'auto', paddingTop: '8px' }}>
+                    <div className="food-bottom-row">
                       <p className="price-v21">₹{item.price}</p>
                     </div>
 
@@ -269,9 +317,10 @@ const InteractiveMenu = () => {
         </AnimatePresence>
       </main>
 
+      {/* KFC Style Floating Bottom Cart Bar */}
       {totalItems > 0 && (
         <motion.div
-          className="floating-cart-v21"
+          className="floating-cart-v21 shadow-2xl"
           initial={{ y: 100 }}
           animate={{ y: 0 }}
           exit={{ y: 100 }}
