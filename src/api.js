@@ -1,5 +1,5 @@
 import { supabase } from './supabaseClient';
-import { SHOPS, getItemsByStall } from './data/foodCourtDB';
+import { SHOPS, getItemsByStall, ALL_FOOD_ITEMS } from './data/foodCourtDB';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || window.location.origin;
 const API_BASE_URL = BACKEND_URL === window.location.origin ? '/api' : `${BACKEND_URL}/api`;
@@ -58,10 +58,12 @@ export const api = {
     try {
       const { data, error } = await supabase.from('stalls').select('*');
       if (!error && data && data.length > 0) return data;
-      return fetchAPI('/stalls');
+      const res = await fetchAPI('/stalls').catch(() => null);
+      if (res && Array.isArray(res) && res.length > 0) return res;
     } catch (err) {
-      return SHOPS;
+      // fallback below
     }
+    return SHOPS;
   },
 
   async updateStallStatus(stallId, statusData) {
@@ -80,17 +82,20 @@ export const api = {
   // ── Menu ────────────────────────────────────────────────────
   async getStallMenu(stallId) {
     try {
-      const { data, error } = await supabase.from('menu_items').select('*').eq('stall_id', stallId);
+      const { data, error } = await supabase.from('menu_items').select('*').eq('stallId', stallId);
       if (!error && data && data.length > 0) return data;
-      return fetchAPI(`/stalls/${stallId}/menu`);
+      const res = await supabase.from('menu_items').select('*').eq('stall_id', stallId);
+      if (!res.error && res.data && res.data.length > 0) return res.data;
     } catch (err) {
-      return getItemsByStall(stallId);
+      // fallback below
     }
+    const fallback = getItemsByStall(stallId);
+    return (fallback && fallback.length > 0) ? fallback : ALL_FOOD_ITEMS.slice(0, 15);
   },
 
   async addMenuItem(stallId, itemData) {
     try {
-      const { data, error } = await supabase.from('menu_items').insert({ stall_id: stallId, ...itemData }).select();
+      const { data, error } = await supabase.from('menu_items').insert({ stallId, ...itemData }).select();
       if (!error && data) return data[0];
       return fetchAPI(`/stalls/${stallId}/menu`, {
         method: 'POST',

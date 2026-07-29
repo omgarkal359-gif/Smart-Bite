@@ -4,6 +4,7 @@ import { Leaf, Flame, Pizza, Coffee, Sandwich, Utensils } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCart } from '../context/CartContext';
 import { api, socket } from '../api';
+import { getItemsByStall, SHOPS } from '../data/foodCourtDB';
 import './pages.css';
 import './menu_v21.css';
 
@@ -25,7 +26,7 @@ const defaultImages = {
 };
 
 const getFoodImage = (item) => {
-  if (item.img && item.img.trim().startsWith('http')) return item.img;
+  if (item.img && typeof item.img === 'string' && item.img.trim().startsWith('http')) return item.img;
   return defaultImages[item.category] || defaultImages['default'];
 };
 
@@ -49,16 +50,16 @@ const InteractiveMenu = () => {
   const targetCategory = searchParams.get('category');
 
   const [activeCategory, setActiveCategory] = useState('');
-  const { cart, addToCart, removeFromCart, totalItems, isCheckoutOpen, setIsCheckoutOpen, clearCart } = useCart();
+  const { cart, addToCart, removeFromCart, totalItems, setIsCheckoutOpen } = useCart();
 
-  const [inventory, setInventory] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [stallInfo, setStallInfo] = useState(null);
+  const [inventory, setInventory] = useState(() => getItemsByStall(shopId));
+  const [isLoading, setIsLoading] = useState(false);
+  const [stallInfo, setStallInfo] = useState(() => SHOPS.find(s => s.id === shopId));
   const [imgErrors, setImgErrors] = useState({});
 
   // Derive CATEGORIES dynamically from the inventory
   const CATEGORIES = useMemo(() => {
-    const cats = inventory.map(item => item.category);
+    const cats = inventory.map(item => item.category).filter(Boolean);
     return [...new Set(cats)];
   }, [inventory]);
 
@@ -67,54 +68,36 @@ const InteractiveMenu = () => {
     async function loadStallMenu() {
       try {
         const items = await api.getStallMenu(shopId);
-        setInventory(items);
+        if (items && items.length > 0) {
+          setInventory(items);
+        } else {
+          setInventory(getItemsByStall(shopId));
+        }
 
         const stalls = await api.getStalls();
-        const stall = stalls.find(s => s.id === shopId);
-        setStallInfo(stall);
-
-        const cats = [...new Set(items.map(i => i.category))];
-        if (targetCategory && cats.includes(targetCategory)) {
-          setActiveCategory(targetCategory);
-        } else if (cats.length > 0) {
-          setActiveCategory(cats[0]);
-        }
+        const stall = stalls.find(s => s.id === shopId) || SHOPS.find(s => s.id === shopId);
+        if (stall) setStallInfo(stall);
       } catch (err) {
         console.error('Failed to load menu:', err);
+        setInventory(getItemsByStall(shopId));
       } finally {
         setIsLoading(false);
       }
     }
     loadStallMenu();
+  }, [shopId]);
 
-    // Join room for real-time menu/stock updates
-    socket.emit('join', `stall-menu-${shopId}`);
-
-    const handleMenuItemUpdate = (updatedItem) => {
-      setInventory(prev => prev.map(i => i.id === updatedItem.id ? updatedItem : i));
-    };
-
-    socket.on('menu_item_update', handleMenuItemUpdate);
-
-    // Polling fallback
-    const interval = setInterval(async () => {
-      try {
-        const items = await api.getStallMenu(shopId);
-        setInventory(items);
-        
-        const stalls = await api.getStalls();
-        const stall = stalls.find(s => s.id === shopId);
-        if (stall) setStallInfo(stall);
-      } catch (err) {
-        console.error('Polling failed to fetch menu updates:', err);
+  // Auto-select category
+  useEffect(() => {
+    if (CATEGORIES.length > 0) {
+      const decodedTarget = targetCategory ? decodeURIComponent(targetCategory) : null;
+      if (decodedTarget && CATEGORIES.includes(decodedTarget)) {
+        setActiveCategory(decodedTarget);
+      } else if (!activeCategory || !CATEGORIES.includes(activeCategory)) {
+        setActiveCategory(CATEGORIES[0]);
       }
-    }, 15000); // 15 seconds polling interval for menu updates
-
-    return () => {
-      socket.off('menu_item_update', handleMenuItemUpdate);
-      clearInterval(interval);
-    };
-  }, [shopId, targetCategory]);
+    }
+  }, [CATEGORIES, activeCategory, targetCategory]);
 
   useEffect(() => {
     if (highlightId && !isLoading) {
@@ -136,13 +119,14 @@ const InteractiveMenu = () => {
     }
   }, [highlightId, isLoading, activeCategory]);
 
-  // Derive display inventory by subtracting current cart quantities from fetched stock
+  // Derive display inventory
   const displayInventory = useMemo(() => {
     return inventory.map(item => {
       const cartQty = cart[item.id]?.quantity || 0;
+      const baseStock = item.stock !== undefined ? item.stock : 20;
       return {
         ...item,
-        stock: Math.max(0, item.stock - cartQty)
+        stock: Math.max(0, baseStock - cartQty)
       };
     });
   }, [inventory, cart]);
@@ -160,9 +144,9 @@ const InteractiveMenu = () => {
   };
 
   const filteredInventory = useMemo(() => {
-    return displayInventory.filter(item => {
-      return item.category === activeCategory;
-    });
+    if (!activeCategory) return displayInventory;
+    const matched = displayInventory.filter(item => item.category === activeCategory);
+    return matched.length > 0 ? matched : displayInventory;
   }, [displayInventory, activeCategory]);
 
   return (
@@ -201,7 +185,7 @@ const InteractiveMenu = () => {
               const isImgError = imgErrors[item.id];
               return (
                 <motion.div
-                  key={item.id}
+                  key={item.id || index}
                   id={`dish-${item.id}`}
                   layout
                   initial={{ opacity: 0, y: 20 }}
