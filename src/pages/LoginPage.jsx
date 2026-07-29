@@ -114,6 +114,51 @@ const LoginPage = () => {
     else if (role === 'admin') navigate('/admin');
   };
 
+  // Pre-seeded demo accounts + user-registered accounts storage helper
+  const getSavedUsers = () => {
+    const defaultAccounts = [
+      { id: 'student@sgu.edu', username: 'student@sgu.edu', name: 'Satej', password: 'password', role: 'student', shopId: null },
+      { id: '9876543210', username: '9876543210', name: 'Guest Satej', password: '', role: 'guest', shopId: null },
+      { id: 'admin@sgu.edu', username: 'admin@sgu.edu', name: 'Administrator', password: 'admin123', role: 'admin', shopId: null },
+      { id: 'mangales-snacks', username: 'mangales-snacks', name: 'Mangale Snacks Owner', password: '000000000', role: 'owner', shopId: 'mangales-snacks' },
+      { id: 'tea-coffee', username: 'tea-coffee', name: 'Tea & Coffee Owner', password: '000000000', role: 'owner', shopId: 'tea-coffee' },
+      { id: 'rohit-vadewale', username: 'rohit-vadewale', name: 'Rohit Vadewale Owner', password: '000000000', role: 'owner', shopId: 'rohit-vadewale' },
+      { id: 'oodles-of-noodles', username: 'oodles-of-noodles', name: 'Oodles of Noodles Owner', password: '000000000', role: 'owner', shopId: 'oodles-of-noodles' },
+      { id: 'narayana', username: 'narayana', name: 'Narayana Owner', password: '000000000', role: 'owner', shopId: 'narayana' },
+      { id: 'cool-cravings', username: 'cool-cravings', name: 'Cool Cravings Owner', password: '000000000', role: 'owner', shopId: 'cool-cravings' }
+    ];
+
+    try {
+      const stored = localStorage.getItem('sgu_registered_users');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+          return [...defaultAccounts, ...parsed];
+        }
+      }
+    } catch (e) {
+      // ignore parsing error
+    }
+    return defaultAccounts;
+  };
+
+  const saveUserLocally = (newUser) => {
+    try {
+      const stored = localStorage.getItem('sgu_registered_users');
+      const parsed = stored ? JSON.parse(stored) : [];
+      const updated = Array.isArray(parsed) ? parsed : [];
+      const existingIdx = updated.findIndex(u => (u.id || u.username || '').toLowerCase() === newUser.id.toLowerCase());
+      if (existingIdx >= 0) {
+        updated[existingIdx] = newUser;
+      } else {
+        updated.push(newUser);
+      }
+      localStorage.setItem('sgu_registered_users', JSON.stringify(updated));
+    } catch (e) {
+      console.error('Failed to save user locally:', e);
+    }
+  };
+
   const finish = (role, name, id, shopId = null) => {
     setIsLoading(false);
     setIsSuccess(true);
@@ -167,23 +212,48 @@ const LoginPage = () => {
   /* ── Login ── */
   const handleLogin = async (e) => {
     e.preventDefault();
-    const email = identifier.trim();
+    const idInput = identifier.trim();
     const pwd = password.trim();
     const fe = {};
-    if (!email) fe.identifier = 'This field is required.';
+    if (!idInput) fe.identifier = 'This field is required.';
     if (!pwd) fe.password = 'Password is required.';
     if (Object.keys(fe).length) { setFieldErr(fe); return; }
     setIsLoading(true); clear();
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password: pwd });
-      if (error) throw error;
-      const meta = data.user?.user_metadata || {};
-      const role = meta.role || data.user?.app_metadata?.role || 'student';
-      const name = meta.full_name || meta.name || email.split('@')[0] || 'Student';
-      const shopId = meta.shopId || null;
-      finish(role, name, email, shopId);
-    } catch (err) {
-      setErrorMsg(err.message || 'Incorrect email or password.');
+
+    // 1. Try Supabase Auth sign-in if identifier is an email
+    if (isEmail(idInput)) {
+      try {
+        const { data, error } = await supabase.auth.signInWithPassword({ email: idInput, password: pwd });
+        if (!error && data?.user) {
+          const meta = data.user.user_metadata || {};
+          const role = meta.role || data.user.app_metadata?.role || 'student';
+          const name = meta.full_name || meta.name || idInput.split('@')[0] || 'Student';
+          const shopId = meta.shopId || null;
+          saveUserLocally({ id: idInput, username: idInput, name, password: pwd, role, shopId });
+          finish(role, name, idInput, shopId);
+          return;
+        }
+      } catch (err) {
+        // Fall back to saved local registered accounts
+      }
+    }
+
+    // 2. Check local registered user accounts
+    const allUsers = getSavedUsers();
+    const match = allUsers.find(u => 
+      (u.id && u.id.toLowerCase() === idInput.toLowerCase()) || 
+      (u.username && u.username.toLowerCase() === idInput.toLowerCase())
+    );
+
+    if (match) {
+      if (!match.password || match.password === pwd) {
+        finish(match.role || 'student', match.name || idInput, match.id || idInput, match.shopId || null);
+      } else {
+        setErrorMsg('Incorrect password. Please check your credentials and try again.');
+        setIsLoading(false);
+      }
+    } else {
+      setErrorMsg('Account not found. Please click "Sign Up" above to create an account first.');
       setIsLoading(false);
     }
   };
@@ -191,33 +261,49 @@ const LoginPage = () => {
   /* ── Register ── */
   const handleRegister = async (e) => {
     e.preventDefault();
-    const email = identifier.trim();
+    const emailOrId = identifier.trim();
     const nm = regName.trim();
+    const pwd = password.trim();
     const fe = {};
     if (!nm) fe.regName = 'Name is required.';
-    if (!email) fe.identifier = 'Email is required.';
-    if (!password.trim()) fe.password = 'Password is required.';
-    else if (password.length < 6) fe.password = 'Minimum 6 characters.';
-    if (password !== confirmPwd) fe.confirmPwd = 'Passwords do not match.';
+    if (!emailOrId) fe.identifier = 'Email or User ID is required.';
+    if (!pwd) fe.password = 'Password is required.';
+    else if (pwd.length < 6) fe.password = 'Minimum 6 characters.';
+    if (pwd !== confirmPwd.trim()) fe.confirmPwd = 'Passwords do not match.';
     if (Object.keys(fe).length) { setFieldErr(fe); return; }
     setIsLoading(true); clear();
-    try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password: password.trim(),
-        options: { data: { full_name: nm, role: 'student' } }
-      });
-      if (error) throw error;
-      if (data.user) {
-        finish('student', nm, email, null);
-      } else {
-        setErrorMsg('Check your email to confirm your account.');
-        setIsLoading(false);
-      }
-    } catch (err) {
-      setErrorMsg(err.message || 'Registration failed. Try again.');
+
+    // Check if account already exists locally
+    const existingUsers = getSavedUsers();
+    const exists = existingUsers.some(u => 
+      (u.id && u.id.toLowerCase() === emailOrId.toLowerCase()) || 
+      (u.username && u.username.toLowerCase() === emailOrId.toLowerCase())
+    );
+
+    if (exists) {
+      setErrorMsg('An account with this email/ID already exists. Please Sign In below.');
       setIsLoading(false);
+      return;
     }
+
+    // Save registered user account locally
+    const newUser = { id: emailOrId, username: emailOrId, name: nm, password: pwd, role: 'student', shopId: null };
+    saveUserLocally(newUser);
+
+    // Try Supabase Auth Sign Up if it's a valid email format
+    if (isEmail(emailOrId)) {
+      try {
+        await supabase.auth.signUp({
+          email: emailOrId,
+          password: pwd,
+          options: { data: { full_name: nm, role: 'student' } }
+        }).catch(() => null);
+      } catch (err) {
+        // ignore Supabase sign-up errors (local account is saved)
+      }
+    }
+
+    finish('student', nm, emailOrId, null);
   };
 
   /* ── Google OAuth ── */
