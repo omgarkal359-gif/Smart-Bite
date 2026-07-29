@@ -18,6 +18,27 @@ const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
 const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 const CartPage = lazy(() => import('./pages/CartPage'));
 
+// Protected Route Guard component
+const ProtectedRoute = ({ children, allowedRoles }) => {
+  const savedSession = typeof window !== 'undefined' ? localStorage.getItem('sgu_user') : null;
+  if (!savedSession) {
+    return <Navigate to="/login" replace />;
+  }
+
+  try {
+    const user = JSON.parse(savedSession);
+    if (!user || !user.role) {
+      return <Navigate to="/login" replace />;
+    }
+    if (allowedRoles && !allowedRoles.includes(user.role)) {
+      return <Navigate to="/login" replace />;
+    }
+    return children;
+  } catch (err) {
+    return <Navigate to="/login" replace />;
+  }
+};
+
 function App() {
   return (
     <CartProvider>
@@ -40,11 +61,26 @@ function App() {
               <Route path="cart" element={<CartPage />} />
             </Route>
             
-            <Route path="/vendor" element={<VendorDashboard />} />
-            <Route path="/vendor/:shopId" element={<VendorDashboard />} />
+            {/* Protected Vendor Dashboard Routes */}
+            <Route path="/vendor" element={
+              <ProtectedRoute allowedRoles={['owner', 'admin']}>
+                <VendorDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/vendor/:shopId" element={
+              <ProtectedRoute allowedRoles={['owner', 'admin']}>
+                <VendorDashboard />
+              </ProtectedRoute>
+            } />
             <Route path="/owner/dashboard" element={<Navigate to="/vendor" replace />} />
             <Route path="/board" element={<PublicOrderBoard />} />
-            <Route path="/admin" element={<AdminControlCenter />} />
+            
+            {/* Protected Admin Control Center Route */}
+            <Route path="/admin" element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <AdminControlCenter />
+              </ProtectedRoute>
+            } />
           </Routes>
         </Suspense>
       </BrowserRouter>

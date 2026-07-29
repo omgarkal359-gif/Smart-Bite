@@ -1,6 +1,4 @@
-// Support dynamic backend URL from local storage
-const savedBackend = typeof window !== 'undefined' ? localStorage.getItem('sgu_backend_url') : null;
-const BACKEND_URL = savedBackend || import.meta.env.VITE_BACKEND_URL || window.location.origin;
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || window.location.origin;
 const API_BASE_URL = BACKEND_URL === window.location.origin ? '/api' : `${BACKEND_URL}/api`;
 
 // Lightweight socket fallback
@@ -16,62 +14,24 @@ export const socket = {
 async function fetchAPI(endpoint, options = {}) {
   const url = `${API_BASE_URL}${endpoint}`;
 
-  try {
-    const response = await fetch(url, {
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
-      ...options,
-    });
+  const response = await fetch(url, {
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+    ...options,
+  });
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `HTTP error! Status: ${response.status}`);
-    }
-
-    return response.json();
-  } catch (err) {
-    if (typeof window !== 'undefined' && localStorage.getItem('sgu_backend_url')) {
-      localStorage.removeItem('sgu_backend_url');
-    }
-    throw err;
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || `HTTP error! Status: ${response.status}`);
   }
+
+  return response.json();
 }
 
 // API Methods
 export const api = {
-  // Auth
-  async login(username, password, role, name) {
-    return fetchAPI('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ username, password, role, name })
-    });
-  },
-
-  async googleLogin(email, name, isSignUp = true) {
-    return fetchAPI('/auth/google', {
-      method: 'POST',
-      body: JSON.stringify({ email, name, isSignUp })
-    });
-  },
-
-  async register(username, name, password, role) {
-    return fetchAPI('/auth/register', {
-      method: 'POST',
-      body: JSON.stringify({ username, name, password, role })
-    });
-  },
-
-  async verifyRegistration(identifier) {
-    return fetchAPI('/auth/verify-registration', {
-      method: 'POST',
-      body: JSON.stringify({ identifier })
-    });
-  },
-
-
-
   // Stalls
   async getStalls() {
     return fetchAPI('/stalls');
