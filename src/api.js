@@ -1,3 +1,5 @@
+import { supabase } from './supabaseClient';
+
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || window.location.origin;
 const API_BASE_URL = BACKEND_URL === window.location.origin ? '/api' : `${BACKEND_URL}/api`;
 
@@ -10,13 +12,24 @@ export const socket = {
   disconnect: () => {}
 };
 
-// Helper for fetch calls
+// Helper for fetch calls with secure Supabase Authorization bearer token
 async function fetchAPI(endpoint, options = {}) {
   const url = `${API_BASE_URL}${endpoint}`;
+
+  let token = '';
+  try {
+    const { data } = await supabase.auth.getSession();
+    if (data?.session?.access_token) {
+      token = data.session.access_token;
+    }
+  } catch (err) {
+    // Session optional / unauthenticated endpoints
+  }
 
   const response = await fetch(url, {
     headers: {
       'Content-Type': 'application/json',
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
       ...options.headers,
     },
     ...options,
