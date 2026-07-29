@@ -69,15 +69,44 @@ export const api = {
   async updateStallStatus(stallId, statusData) {
     try {
       const { data, error } = await supabase.from('stalls').update(statusData).eq('id', stallId).select();
-      if (!error && data) return data;
-      return await fetchAPI(`/stalls/${stallId}/status`, {
+      if (!error && data) {
+        // Broadcast the stall status change so student menu pages update instantly
+        const updatedStall = data[0] || { id: stallId, ...statusData };
+        const broadcastChannel = supabase.channel(`stall-status-${stallId}`);
+        broadcastChannel.subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            broadcastChannel.send({
+              type: 'broadcast',
+              event: 'stall_status_changed',
+              payload: updatedStall
+            });
+            setTimeout(() => supabase.removeChannel(broadcastChannel), 2000);
+          }
+        });
+        return data;
+      }
+      const res = await fetchAPI(`/stalls/${stallId}/status`, {
         method: 'PUT',
         body: JSON.stringify(statusData)
       });
+      // Also broadcast via Supabase even if using local backend
+      const broadcastChannel2 = supabase.channel(`stall-status-${stallId}`);
+      broadcastChannel2.subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          broadcastChannel2.send({
+            type: 'broadcast',
+            event: 'stall_status_changed',
+            payload: { id: stallId, ...statusData }
+          });
+          setTimeout(() => supabase.removeChannel(broadcastChannel2), 2000);
+        }
+      });
+      return res;
     } catch (err) {
       return { success: true };
     }
   },
+
 
   // ── Menu ────────────────────────────────────────────────────
   async getStallMenu(stallId) {

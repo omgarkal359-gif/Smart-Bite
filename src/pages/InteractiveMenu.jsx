@@ -1,14 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-<<<<<<< Updated upstream
-import { Leaf, Flame, Pizza, Coffee, Sandwich, Utensils } from 'lucide-react';
-=======
-import { Leaf, Flame, Pizza, Coffee, Sandwich, WifiOff } from 'lucide-react';
+import { Leaf, Flame, Pizza, Coffee, Sandwich, WifiOff, Utensils } from 'lucide-react';
 import { CheckoutDrawer } from '../components/ui/CheckoutDrawer';
->>>>>>> Stashed changes
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCart } from '../context/CartContext';
 import { api, socket } from '../api';
+import { supabase } from '../supabaseClient';
 import { getItemsByStall, SHOPS, ALL_FOOD_ITEMS } from '../data/foodCourtDB';
 import { getFoodItemImage } from '../utils/imageHelper';
 import './pages.css';
@@ -28,8 +25,6 @@ const CAT_ICONS = {
   'Noodles': <Utensils size={16} />,
   'Shakes': <Coffee size={16} />
 };
-
-
 
 const getFallbackIcon = (category) => {
   switch (category) {
@@ -52,7 +47,7 @@ const InteractiveMenu = () => {
   const highlightId = searchParams.get('highlight');
   const targetCategory = searchParams.get('category');
 
-  const { cart, addToCart, removeFromCart, totalItems, isCheckoutOpen, setIsCheckoutOpen } = useCart();
+  const { cart, addToCart, removeFromCart, clearCart, totalItems, isCheckoutOpen, setIsCheckoutOpen } = useCart();
 
   // Initial state derived synchronously from foodCourtDB
   const initialItems = useMemo(() => {
@@ -122,30 +117,53 @@ const InteractiveMenu = () => {
     }
     loadStallMenu();
 
-    // Socket realtime listener
+    // Socket realtime listener (legacy local-server mode)
     socket.emit('join', `stall-menu-${shopId}`);
     const handleMenuItemUpdate = (updatedItem) => {
       if (isMounted) {
         setInventory(prev => prev.map(i => i.id === updatedItem.id ? updatedItem : i));
       }
     };
-<<<<<<< Updated upstream
-=======
 
     const handleStallStatusUpdate = (updatedStall) => {
-      if (updatedStall.id === shopId) {
+      if (isMounted && updatedStall.id === shopId) {
         setStallInfo(updatedStall);
       }
     };
 
->>>>>>> Stashed changes
     socket.on('menu_item_update', handleMenuItemUpdate);
     socket.on('stall_status_update', handleStallStatusUpdate);
+
+    // --- Supabase Realtime: listen for stall status changes ---
+    // Broadcast channel: vendor pushes 'stall_closed' event when toggling
+    const stallBroadcastChannel = supabase
+      .channel(`stall-status-${shopId}`)
+      .on('broadcast', { event: 'stall_status_changed' }, (payload) => {
+        if (isMounted && payload?.payload) {
+          setStallInfo(prev => ({ ...prev, ...payload.payload }));
+        }
+      })
+      .subscribe();
+
+    // Polling fallback: re-fetch stall status every 5 seconds
+    const pollInterval = setInterval(async () => {
+      try {
+        const stalls = await api.getStalls();
+        if (isMounted && stalls && Array.isArray(stalls)) {
+          const stall = stalls.find(s => s.id === shopId);
+          if (stall) setStallInfo(stall);
+        }
+      } catch (_) {
+        // silent
+      }
+    }, 5000);
 
     return () => {
       isMounted = false;
       socket.off('menu_item_update', handleMenuItemUpdate);
       socket.off('stall_status_update', handleStallStatusUpdate);
+      supabase.removeChannel(stallBroadcastChannel);
+      clearInterval(pollInterval);
     };
   }, [shopId]);
 
@@ -191,8 +209,20 @@ const InteractiveMenu = () => {
     });
   }, [inventory, cart]);
 
+  // Derive isOnline — normalize all possible formats (1, true, "1", "true")
+  const isOnline = stallInfo
+    ? (stallInfo.online === 1 || stallInfo.online === true || stallInfo.online === '1' || stallInfo.online === 'true')
+    : true;
+
+  // Auto-clear cart when shop goes offline
+  useEffect(() => {
+    if (!isOnline && totalItems > 0) {
+      clearCart();
+    }
+  }, [isOnline, totalItems, clearCart]);
+
   const handleAddToCartClick = (item) => {
-    if (item.stock > 0) {
+    if (item.stock > 0 && isOnline) {
       addToCart(item);
     }
   };
@@ -203,32 +233,11 @@ const InteractiveMenu = () => {
     }
   };
 
-<<<<<<< Updated upstream
   const filteredInventory = useMemo(() => {
     if (!activeCategory || activeCategory === 'All Items') return displayInventory;
     const matched = displayInventory.filter(item => item.category === activeCategory);
     return matched.length > 0 ? matched : displayInventory;
   }, [displayInventory, activeCategory]);
-=======
-  const isOnline = stallInfo ? (stallInfo.online === 1 || stallInfo.online === true) : true;
-
-  useEffect(() => {
-    if (!isOnline && totalItems > 0) {
-      clearCart();
-    }
-  }, [isOnline, totalItems, clearCart]);
-
-  const filteredInventory = inventory.filter(item => {
-    return item.category === activeCategory;
-  });
-
-  // Expose global checkout via local state for this shop
-  useEffect(() => {
-    if (totalItems > 0) {
-      // Trigger floating button logic if needed
-    }
-  }, [totalItems]);
->>>>>>> Stashed changes
 
   return (
     <div className="menu-container page-transition">
@@ -252,6 +261,7 @@ const InteractiveMenu = () => {
 
       {/* KFC Style Responsive Bento Menu Grid */}
       <main className="menu-grid-v21">
+        {/* ── Shop Closed Banner ── */}
         {!isOnline && (
           <div className="closed-banner-v21 shadow-lg">
             <WifiOff size={24} className="text-white animate-bounce" />
@@ -261,6 +271,7 @@ const InteractiveMenu = () => {
             </div>
           </div>
         )}
+
         <AnimatePresence mode="popLayout">
           {isLoading ? (
             [1, 2, 3, 4].map(i => (
@@ -346,12 +357,8 @@ const InteractiveMenu = () => {
         </AnimatePresence>
       </main>
 
-<<<<<<< Updated upstream
-      {/* KFC Style Floating Bottom Cart Bar */}
-      {totalItems > 0 && (
-=======
+      {/* KFC Style Floating Bottom Cart Bar — hidden when shop is closed */}
       {isOnline && totalItems > 0 && (
->>>>>>> Stashed changes
         <motion.div
           className="floating-cart-v21 shadow-2xl"
           initial={{ y: 100 }}
