@@ -1,6 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+<<<<<<< Updated upstream
 import { Leaf, Flame, Pizza, Coffee, Sandwich, Utensils } from 'lucide-react';
+=======
+import { Leaf, Flame, Pizza, Coffee, Sandwich, WifiOff } from 'lucide-react';
+import { CheckoutDrawer } from '../components/ui/CheckoutDrawer';
+>>>>>>> Stashed changes
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCart } from '../context/CartContext';
 import { api, socket } from '../api';
@@ -124,11 +129,23 @@ const InteractiveMenu = () => {
         setInventory(prev => prev.map(i => i.id === updatedItem.id ? updatedItem : i));
       }
     };
+<<<<<<< Updated upstream
+=======
+
+    const handleStallStatusUpdate = (updatedStall) => {
+      if (updatedStall.id === shopId) {
+        setStallInfo(updatedStall);
+      }
+    };
+
+>>>>>>> Stashed changes
     socket.on('menu_item_update', handleMenuItemUpdate);
+    socket.on('stall_status_update', handleStallStatusUpdate);
 
     return () => {
       isMounted = false;
       socket.off('menu_item_update', handleMenuItemUpdate);
+      socket.off('stall_status_update', handleStallStatusUpdate);
     };
   }, [shopId]);
 
@@ -186,11 +203,32 @@ const InteractiveMenu = () => {
     }
   };
 
+<<<<<<< Updated upstream
   const filteredInventory = useMemo(() => {
     if (!activeCategory || activeCategory === 'All Items') return displayInventory;
     const matched = displayInventory.filter(item => item.category === activeCategory);
     return matched.length > 0 ? matched : displayInventory;
   }, [displayInventory, activeCategory]);
+=======
+  const isOnline = stallInfo ? (stallInfo.online === 1 || stallInfo.online === true) : true;
+
+  useEffect(() => {
+    if (!isOnline && totalItems > 0) {
+      clearCart();
+    }
+  }, [isOnline, totalItems, clearCart]);
+
+  const filteredInventory = inventory.filter(item => {
+    return item.category === activeCategory;
+  });
+
+  // Expose global checkout via local state for this shop
+  useEffect(() => {
+    if (totalItems > 0) {
+      // Trigger floating button logic if needed
+    }
+  }, [totalItems]);
+>>>>>>> Stashed changes
 
   return (
     <div className="menu-container page-transition">
@@ -214,6 +252,15 @@ const InteractiveMenu = () => {
 
       {/* KFC Style Responsive Bento Menu Grid */}
       <main className="menu-grid-v21">
+        {!isOnline && (
+          <div className="closed-banner-v21 shadow-lg">
+            <WifiOff size={24} className="text-white animate-bounce" />
+            <div className="flex flex-col">
+              <span className="font-extrabold uppercase tracking-wider text-sm">Shop is Temporarily Closed</span>
+              <span className="text-xs opacity-90">This shop is not accepting orders right now. Please browse other active spots.</span>
+            </div>
+          </div>
+        )}
         <AnimatePresence mode="popLayout">
           {isLoading ? (
             [1, 2, 3, 4].map(i => (
@@ -263,7 +310,7 @@ const InteractiveMenu = () => {
                           -
                         </motion.button>
                         <span className="qty-value">{cart[item.id].quantity}</span>
-                        <motion.button whileTap={{ scale: 0.9 }} className="qty-btn" onClick={() => handleAddToCartClick(item)} disabled={item.stock === 0}>
+                        <motion.button whileTap={{ scale: 0.9 }} className="qty-btn" onClick={() => handleAddToCartClick(item)} disabled={item.stock === 0 || !isOnline}>
                           +
                         </motion.button>
                       </div>
@@ -272,9 +319,10 @@ const InteractiveMenu = () => {
                         whileTap={{ scale: 0.8 }}
                         className="kfc-add-btn"
                         onClick={() => handleAddToCartClick(item)}
-                        disabled={item.stock === 0}
+                        disabled={item.stock === 0 || !isOnline}
+                        style={!isOnline ? { background: '#94A3B8', cursor: 'not-allowed', fontSize: '0.75rem', width: 'auto', padding: '0 8px' } : {}}
                       >
-                        +
+                        {isOnline ? '+' : 'Closed'}
                       </motion.button>
                     )}
                   </div>
@@ -298,8 +346,12 @@ const InteractiveMenu = () => {
         </AnimatePresence>
       </main>
 
+<<<<<<< Updated upstream
       {/* KFC Style Floating Bottom Cart Bar */}
       {totalItems > 0 && (
+=======
+      {isOnline && totalItems > 0 && (
+>>>>>>> Stashed changes
         <motion.div
           className="floating-cart-v21 shadow-2xl"
           initial={{ y: 100 }}
