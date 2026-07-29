@@ -5,18 +5,15 @@ import { Button } from '../components/ui/Button';
 import { LogOut, User, ShoppingBag, ArrowRight, ExternalLink, ShieldCheck } from 'lucide-react';
 import { api, formatRelativeTime } from '../api';
 import { supabase } from '../supabaseClient';
+import { getStoredUser, setStoredUser, clearStoredUser } from '../utils/auth';
 import './pages.css';
 import './profile.css';
 
 const UserProfile = () => {
   const navigate = useNavigate();
   const [userData, setUserData] = useState(() => {
-    try {
-      const saved = localStorage.getItem('sgu_user');
-      if (saved) return JSON.parse(saved);
-    } catch (e) {
-      // ignore
-    }
+    const saved = getStoredUser();
+    if (saved) return saved;
     return { name: 'SGU Student', id: 'student@sgu.edu', role: 'student' };
   });
 
@@ -31,13 +28,7 @@ const UserProfile = () => {
         const { data } = await supabase.auth.getUser().catch(() => ({ data: null }));
         const user = data?.user;
 
-        let parsed = null;
-        try {
-          const savedSession = localStorage.getItem('sgu_user');
-          if (savedSession) parsed = JSON.parse(savedSession);
-        } catch (e) {
-          parsed = null;
-        }
+        let parsed = getStoredUser();
 
         if (!parsed && user) {
           parsed = {
@@ -45,9 +36,7 @@ const UserProfile = () => {
             id: user.email || user.phone || user.id,
             role: user.user_metadata?.role || 'student'
           };
-          try {
-            localStorage.setItem('sgu_user', JSON.stringify(parsed));
-          } catch (e) {}
+          setStoredUser(parsed, false);
         }
 
         if (isMounted && parsed) {
@@ -90,11 +79,7 @@ const UserProfile = () => {
     try {
       await supabase.auth.signOut();
     } catch (e) {}
-    try {
-      localStorage.removeItem('sgu_token');
-      localStorage.removeItem('sgu_user');
-      localStorage.removeItem('sgu_cart');
-    } catch (e) {}
+    clearStoredUser();
     navigate('/login', { replace: true });
   };
 

@@ -6,6 +6,7 @@ import {
 } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
+import { setStoredUser, getStoredUser, clearStoredUser } from '../utils/auth';
 import sguLogo from '../assets/sgu-logo.jpg';
 import './LoginPage.css';
 
@@ -171,7 +172,7 @@ const LoginPage = () => {
       timestamp: new Date().toISOString(),
       rememberMe,
     };
-    localStorage.setItem('sgu_user', JSON.stringify(ud));
+    setStoredUser(ud, rememberMe);
     setTimeout(() => { setIsSuccess(false); redirectByRole(ud.role, ud.shopId); }, 1400);
   };
 
@@ -187,20 +188,13 @@ const LoginPage = () => {
         finish(role, name, id, shopId);
       }
     });
-    const saved = localStorage.getItem('sgu_user');
-    if (saved) {
-      try {
-        const p = JSON.parse(saved);
-        if (p && p.role) {
-          const bad = p.role === 'owner' && (!p.shopId || p.shopId === 'undefined' || p.shopId === 'null');
-          if (bad) {
-            localStorage.removeItem('sgu_user');
-          } else {
-            redirectByRole(p.role, p.shopId);
-          }
-        }
-      } catch (err) {
-        localStorage.removeItem('sgu_user');
+    const saved = getStoredUser();
+    if (saved && saved.role) {
+      const bad = saved.role === 'owner' && (!saved.shopId || saved.shopId === 'undefined' || saved.shopId === 'null');
+      if (bad) {
+        clearStoredUser();
+      } else {
+        redirectByRole(saved.role, saved.shopId);
       }
     }
     return () => subscription.unsubscribe();
