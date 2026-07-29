@@ -6,6 +6,7 @@ import {
 } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
+import sguLogo from '../assets/sgu-logo.jpg';
 import './LoginPage.css';
 
 /*
@@ -375,12 +376,7 @@ const LoginPage = () => {
         {/* ── Brand mark ── */}
             <div className="sb-brand" aria-label="Smart Bite">
               <div className="sb-logo-ring" aria-hidden="true">
-                {/* Simple geometric mark: utensils silhouette, not hand-rolled decorative SVG */}
-                <svg viewBox="0 0 32 32" width="24" height="24" fill="none" aria-hidden="true">
-                  <rect x="14" y="2" width="4" height="14" rx="2" fill="currentColor"/>
-                  <rect x="14" y="20" width="4" height="10" rx="2" fill="currentColor"/>
-                  <ellipse cx="16" cy="16" rx="6" ry="6" stroke="currentColor" strokeWidth="2.5" fill="none"/>
-                </svg>
+                <img src={sguLogo} alt="SGU Logo" className="sb-sgu-logo-img" />
               </div>
               <h1 className="sb-heading">
                 {mode === 'login' ? 'Welcome back' : 'Create account'}
