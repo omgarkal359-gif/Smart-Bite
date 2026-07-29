@@ -2,8 +2,9 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { GlassCard } from '../components/ui/GlassCard';
 import { Button } from '../components/ui/Button';
-import { Clock, Volume2, Power, LogOut, CheckCircle, Banknote, Activity, Smartphone, Utensils, ShoppingBag, Settings, Menu, RefreshCw, X, TrendingUp, Hash, CreditCard, Star, History } from 'lucide-react';
+import { Clock, Volume2, Power, LogOut, CheckCircle, Banknote, Activity, Smartphone, Utensils, ShoppingBag, Settings, Menu, RefreshCw, X, TrendingUp, Hash, CreditCard, Star, History, User } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useClerk } from '@clerk/clerk-react';
 import { MenuEditor } from '../components/vendor/MenuEditor';
 import { SHOPS } from '../data/foodCourtDB';
 import { api, socket, formatRelativeTime } from '../api';
@@ -16,6 +17,7 @@ const COMPLETED_TICKETS_MOCK = [];
 
 const VendorDashboard = () => {
   const navigate = useNavigate();
+  const { openUserProfile } = useClerk();
   const [tickets, setTickets] = useState([]);
   const [completedTickets, setCompletedTickets] = useState([]);
   const [isPowerSaver, setIsPowerSaver] = useState(false);
@@ -359,6 +361,15 @@ const VendorDashboard = () => {
             onClick={() => { setActiveSidebarTab('history'); setIsSidebarOpen(true); }}
           >
             <History size={16} /> <span>HISTORY</span>
+          </motion.button>
+
+          <motion.button 
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="elite-ctrl-btn management" 
+            onClick={() => { openUserProfile(); }}
+          >
+            <User size={16} /> <span>PROFILE</span>
           </motion.button>
 
           <motion.button 
