@@ -63,25 +63,51 @@ const RootRedirect = () => {
   return <Navigate to="/student" replace />;
 };
 
-// Protected Route Guard component
+// Protected Route Guard component (Checks both Supabase session & local storage)
 const ProtectedRoute = ({ children, allowedRoles }) => {
-  const savedSession = typeof window !== 'undefined' ? localStorage.getItem('sgu_user') : null;
-  if (!savedSession) {
+  const [isAllowed, setIsAllowed] = useState(null);
+
+  useEffect(() => {
+    async function checkAuth() {
+      // 1. Check local storage session
+      const saved = localStorage.getItem('sgu_user');
+      if (saved) {
+        try {
+          const u = JSON.parse(saved);
+          if (u && u.role && (!allowedRoles || allowedRoles.includes(u.role))) {
+            setIsAllowed(true);
+            return;
+          }
+        } catch (e) {
+          // continue to Supabase check
+        }
+      }
+
+      // 2. Check Supabase session
+      const { data } = await supabase.auth.getSession();
+      if (data?.session?.user) {
+        const role = data.session.user.user_metadata?.role || data.session.user.app_metadata?.role || 'student';
+        if (!allowedRoles || allowedRoles.includes(role)) {
+          setIsAllowed(true);
+          return;
+        }
+      }
+
+      setIsAllowed(false);
+    }
+
+    checkAuth();
+  }, [allowedRoles]);
+
+  if (isAllowed === null) {
+    return <div className="flex h-screen items-center justify-center font-semibold">Verifying permissions...</div>;
+  }
+
+  if (!isAllowed) {
     return <Navigate to="/login" replace />;
   }
 
-  try {
-    const user = JSON.parse(savedSession);
-    if (!user || !user.role) {
-      return <Navigate to="/login" replace />;
-    }
-    if (allowedRoles && !allowedRoles.includes(user.role)) {
-      return <Navigate to="/login" replace />;
-    }
-    return children;
-  } catch (err) {
-    return <Navigate to="/login" replace />;
-  }
+  return children;
 };
 
 function App() {
