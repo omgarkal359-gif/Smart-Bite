@@ -83,22 +83,16 @@ const UserProfile = () => {
 
       <main className="profile-main">
         {/* User Info Card */}
-        <GlassCard className="profile-card user-info animate-stagger-item stagger-delay-1" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <div className="avatar-placeholder">
-              <User size={40} />
-            </div>
-            <div className="user-details">
-              <h2 style={{ textTransform: 'capitalize' }}>{userData?.name || 'SGU Student'}</h2>
-              <p className="text-muted">{userData?.username || userData?.id || '+91 -'}</p>
-              <span style={{ fontSize: '0.68rem', fontWeight: 800, padding: '2px 8px', borderRadius: 999, background: '#FFF1F2', color: '#FF3B5C', textTransform: 'uppercase', marginTop: 4, display: 'inline-block' }}>
-                Role: {userData?.role ? userData.role.toUpperCase() : 'STUDENT'}
-              </span>
-            </div>
+        <GlassCard className="profile-card user-info animate-stagger-item stagger-delay-1" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 16, padding: '32px 20px' }}>
+          <div className="avatar-placeholder" style={{ width: 80, height: 80, display: 'flex', justifyContent: 'center', alignItems: 'center', borderRadius: '50%', background: 'var(--gradient-primary)', color: 'white', boxShadow: 'var(--shadow-md)' }}>
+            <User size={40} />
           </div>
-
-          <div>
-            <UserButton afterSignOutUrl="/login" />
+          <div className="user-details" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+            <h2 style={{ textTransform: 'capitalize', fontSize: '1.5rem', fontWeight: 800, margin: 0, fontFamily: 'var(--font-heading)' }}>{userData?.name || 'SGU Student'}</h2>
+            <p className="text-muted" style={{ margin: 0, fontSize: '0.9rem', fontWeight: 600 }}>{userData?.username || userData?.id || '+91 -'}</p>
+            <span style={{ fontSize: '0.75rem', fontWeight: 800, padding: '6px 16px', borderRadius: 999, background: '#FFF1F2', color: '#FF3B5C', textTransform: 'uppercase', marginTop: 4, display: 'inline-block' }}>
+              Role: {userData?.role ? userData.role.toUpperCase() : 'STUDENT'}
+            </span>
           </div>
         </GlassCard>
 
