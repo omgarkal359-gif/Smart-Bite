@@ -62,11 +62,16 @@ export const OrdersVendorsModule = () => {
 
   // Handle Stall Toggle Online/Offline
   async function handleToggleStall(stallId, currentOnline) {
+    const newStatus = !currentOnline;
+    
+    // Optimistic UI Update
+    setStalls(prev => prev.map(s => s.id === stallId ? { ...s, online: newStatus ? 1 : 0 } : s));
+    
     try {
-      const newStatus = !currentOnline;
       await api.updateStallStatus(stallId, { online: newStatus });
-      setStalls(prev => prev.map(s => s.id === stallId ? { ...s, online: newStatus ? 1 : 0 } : s));
     } catch (err) {
+      // Revert on failure
+      setStalls(prev => prev.map(s => s.id === stallId ? { ...s, online: currentOnline ? 1 : 0 } : s));
       alert('Failed to update stall: ' + err.message);
     }
   }
