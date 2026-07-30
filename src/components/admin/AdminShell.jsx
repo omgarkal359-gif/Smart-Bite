@@ -87,7 +87,7 @@ export const AdminShell = ({ activeModule, setActiveModule, user, children }) =>
       )}
 
       {/* Admin Sidebar */}
-      <aside className={`admin-sidebar ${isSidebarCollapsed ? 'collapsed' : ''} ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
+      <aside className={`admin-sidebar ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
         <div className="sidebar-header">
           <div className="sidebar-logo">
             <div className="sidebar-logo-icon">
@@ -126,7 +126,7 @@ export const AdminShell = ({ activeModule, setActiveModule, user, children }) =>
                   setActiveModule(item.id);
                   setIsMobileMenuOpen(false);
                 }}
-                title={isSidebarCollapsed ? item.label : undefined}
+                title={item.label}
               >
                 <Icon size={20} />
                 {!isSidebarCollapsed && <span>{item.label}</span>}
@@ -141,7 +141,7 @@ export const AdminShell = ({ activeModule, setActiveModule, user, children }) =>
             <button
               className="admin-nav-item admin-logout-nav-item"
               onClick={handleLogout}
-              title={isSidebarCollapsed ? 'Sign Out' : undefined}
+              title="Sign Out"
             >
               <LogOut size={18} color="#FFFFFF" />
               {!isSidebarCollapsed && <span style={{ color: '#FFFFFF', fontWeight: 800 }}>Sign Out</span>}

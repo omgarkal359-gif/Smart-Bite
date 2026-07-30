@@ -13,7 +13,7 @@ export const CheckoutDrawer = ({ isOpen, onClose, cart, inventory, onComplete })
   const { addToCart, removeFromCart, clearCart } = useCart();
   const [step, setStep] = useState(1);
   const [diningMode, setDiningMode] = useState('dine_in'); // dine_in | takeaway
-  const [paymentMode, setPaymentMode] = useState('upi'); // upi | cash
+  const paymentMode = 'upi';
   const [isProcessing, setIsProcessing] = useState(false);
   const [placedOrderId, setPlacedOrderId] = useState(null);
 

@@ -161,12 +161,11 @@ const UserProfile = () => {
                     : '';
 
                 const isReady = order.status === 'ready';
-                const isPrep = order.status === 'preparing' || order.status === 'placed' || order.status === 'pending_cash';
+                const isPrep = order.status === 'preparing' || order.status === 'placed';
                 const statusColor = isReady ? '#22C55E' : isPrep ? '#FF3B5C' : '#64748B';
                 const statusBg = isReady ? '#DCFCE7' : isPrep ? '#FFF1F2' : '#F1F5F9';
                 const statusLabel = order.status === 'ready' ? 'READY FOR PICKUP' : 
                                     order.status === 'preparing' ? 'PREPARING' : 
-                                    order.status === 'pending_cash' ? 'CASH PENDING' : 
                                     order.status === 'placed' ? 'ORDER PLACED' : 'COMPLETED';
 
                 return (
