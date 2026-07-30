@@ -74,7 +74,7 @@ export class ErrorBoundary extends React.Component {
               lineHeight: 1.5,
               margin: '0 0 24px 0'
             }}>
-              We hit a slight bump. Please refresh the page to continue.
+              {this.state.error ? this.state.error.toString() : 'We hit a slight bump. Please refresh the page to continue.'}
             </p>
 
             <button

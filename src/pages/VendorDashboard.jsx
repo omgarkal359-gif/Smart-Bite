@@ -579,7 +579,7 @@ const VendorDashboard = () => {
                       </span>
                     </div>
                     <span style={{ fontSize: '0.75rem', fontWeight: 900, color: '#E4002B', textTransform: 'uppercase', fontFamily: "'Oswald', sans-serif" }}>
-                      {(ticket.timestamp || ticket.created_at) ? formatRelativeTime(ticket.timestamp || ticket.created_at).toUpperCase() : (ticket.time || 'Just now').toUpperCase()}
+                      {(ticket.timestamp || ticket.created_at) ? String(formatRelativeTime(ticket.timestamp || ticket.created_at)).toUpperCase() : String(ticket.time || 'Just now').toUpperCase()}
                     </span>
                   </div>
 
@@ -612,7 +612,7 @@ const VendorDashboard = () => {
                         </div>
                       ))
                     ) : (
-                      parsedItems.map((item, i) => (
+                      parsedItems.map((item, i) => typeof item === 'object' && item !== null ? (<div key={i} className="ticket-item" style={{ padding: '8px 12px', background: '#F8FAFC', borderRadius: 10, borderLeft: 'none', fontWeight: 700, color: '#0F172A', fontSize: '0.85rem', marginBottom: 6 }}>{item.name || 'Item'}</div>) : (
                         <div key={i} className="ticket-item" style={{ padding: '8px 12px', background: '#F8FAFC', borderRadius: 10, borderLeft: 'none', fontWeight: 700, color: '#0F172A', fontSize: '0.85rem', marginBottom: 6 }}>
                           {item}
                         </div>
@@ -761,7 +761,7 @@ const VendorDashboard = () => {
                           {typeof order.items === 'string' 
                             ? order.items 
                             : Array.isArray(order.items) 
-                              ? order.items.map(i => typeof i === 'string' ? i : `${i.quantity}x ${i.name}`).join(', ') 
+                              ? order.items.map(i => typeof i === 'string' ? i : (i ? `${i.quantity || 1}x ${i.name || 'Item'}` : '')).filter(Boolean).join(', ') 
                               : ''}
                         </p>
 
