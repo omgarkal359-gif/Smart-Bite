@@ -27,7 +27,7 @@ export const BottomNav = () => {
           .from('orders')
           .select('id, status')
           .eq('customer_id', userId)
-          .in('status', ['placed', 'preparing', 'ready', 'pending_cash']);
+          .in('status', ['placed', 'preparing', 'ready']);
         if (!error) setActiveOrdersCount(data?.length || 0);
       } catch (err) {
         console.error('Failed to fetch active orders for nav badge:', err);

@@ -224,7 +224,7 @@ export const api = {
       return { success: true, order: actualOrder };
     } catch (err) {
       const stallId = orderData.items && orderData.items.length > 0 ? orderData.items[0].stallId : null;
-      const defaultStatus = orderData.payment === 'Cash' ? 'pending_cash' : 'placed';
+      const defaultStatus = 'placed';
       const fallbackOrder = { id: `ORD-${Date.now()}`, status: defaultStatus, ...orderData, stall_id: stallId, timestamp: new Date().toISOString() };
       
       // Save fallback order to localStorage too

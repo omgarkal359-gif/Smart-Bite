@@ -24,7 +24,7 @@ const PublicOrderBoard = () => {
 
     function updateQueueStates(orders) {
       const prepList = orders
-        .filter(o => o.status === 'placed' || o.status === 'preparing' || o.status === 'pending_cash')
+        .filter(o => o.status === 'placed' || o.status === 'preparing')
         .map(o => o.id.replace('SGU-', ''));
       
       const readyList = orders
