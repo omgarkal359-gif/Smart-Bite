@@ -57,15 +57,34 @@ const STATUS_WEIGHT = { 'placed': 1, 'pending_cash': 1, 'preparing': 2, 'ready':
 export const api = {
   // ── Stalls ─────────────────────────────────────────────────
   async getStalls() {
+    const stored = JSON.parse(localStorage.getItem('sgu_stalls') || '[]');
+
+    let stalls = null;
     try {
       const { data, error } = await supabase.from('stalls').select('*');
-      if (!error && data && data.length > 0) return data;
-      const res = await fetchAPI('/stalls').catch(() => null);
-      if (res && Array.isArray(res) && res.length > 0) return res;
-    } catch (err) {
-      // fallback below
+      if (!error && data && data.length > 0) {
+        stalls = data;
+      }
+    } catch (err) {}
+
+    if (!stalls) {
+      try {
+        const res = await fetchAPI('/stalls').catch(() => null);
+        if (res && Array.isArray(res) && res.length > 0) stalls = res;
+      } catch (err) {}
     }
-    return SHOPS;
+
+    const baseStalls = (stalls && stalls.length > 0) ? stalls : SHOPS;
+
+    return SHOPS.map(shop => {
+      const baseMatch = baseStalls.find(s => String(s.id) === String(shop.id)) || {};
+      const localMatch = stored.find(s => String(s.id) === String(shop.id)) || {};
+      return {
+        ...shop,
+        ...baseMatch,
+        ...localMatch
+      };
+    });
   },
 
   async updateStallStatus(stallId, statusData) {
@@ -73,7 +92,13 @@ export const api = {
       // Local cache update
       try {
         const stored = JSON.parse(localStorage.getItem('sgu_stalls') || '[]');
-        const updated = stored.map(s => s.id === stallId ? { ...s, ...statusData } : s);
+        const existingIdx = stored.findIndex(s => String(s.id) === String(stallId));
+        let updated;
+        if (existingIdx >= 0) {
+          updated = stored.map(s => String(s.id) === String(stallId) ? { ...s, ...statusData } : s);
+        } else {
+          updated = [...stored, { id: stallId, ...statusData }];
+        }
         localStorage.setItem('sgu_stalls', JSON.stringify(updated));
       } catch (e) {}
 
