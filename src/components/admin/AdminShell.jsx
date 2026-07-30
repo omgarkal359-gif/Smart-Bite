@@ -128,9 +128,9 @@ export const AdminShell = ({ activeModule, setActiveModule, user, children }) =>
                 }}
                 title={item.label}
               >
-                <Icon size={20} />
-                {!isSidebarCollapsed && <span>{item.label}</span>}
-                {!isSidebarCollapsed && item.badge && (
+                <div className="admin-nav-icon-wrapper"><Icon size={20} /></div>
+                <span className="admin-nav-label">{item.label}</span>
+                {item.badge && (
                   <span className="admin-nav-item-badge">{item.badge}</span>
                 )}
               </button>
@@ -143,21 +143,19 @@ export const AdminShell = ({ activeModule, setActiveModule, user, children }) =>
               onClick={handleLogout}
               title="Sign Out"
             >
-              <LogOut size={18} color="#FFFFFF" />
-              {!isSidebarCollapsed && <span style={{ color: '#FFFFFF', fontWeight: 800 }}>Sign Out</span>}
+              <div className="admin-nav-icon-wrapper"><LogOut size={18} color="#FFFFFF" /></div>
+              <span className="admin-nav-label" style={{ color: '#FFFFFF', fontWeight: 800 }}>Sign Out</span>
             </button>
           </div>
         </nav>
 
         {/* Sidebar Footer */}
-        {!isSidebarCollapsed && (
-          <div style={{ padding: '14px', borderTop: '1px solid rgba(255,255,255,0.12)', margin: '0 12px 12px 12px', background: 'rgba(0,0,0,0.15)', borderRadius: 14 }}>
+        <div className="sidebar-footer" style={{ padding: '14px', borderTop: '1px solid rgba(255,255,255,0.12)', margin: '0 12px 12px 12px', background: 'rgba(0,0,0,0.15)', borderRadius: 14 }}>
             <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>System Engine</div>
             <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#FFFFFF', display: 'flex', alignItems: 'center', gap: 6 }}>
               <Radio size={12} color="#86EFAC" /> Supabase Realtime Active
             </div>
           </div>
-        )}
       </aside>
 
       {/* Main Content Area */}
