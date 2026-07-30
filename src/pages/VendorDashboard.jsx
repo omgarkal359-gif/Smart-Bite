@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { GlassCard } from '../components/ui/GlassCard';
 import { Button } from '../components/ui/Button';
-import { Clock, Volume2, Power, LogOut, CheckCircle, Banknote, Activity, Smartphone, Utensils, ShoppingBag, Settings, Menu, RefreshCw, X, TrendingUp, Hash, CreditCard, Star, History, User } from 'lucide-react';
+import { Clock, Volume2, Power, LogOut, CheckCircle, Banknote, Activity, Smartphone, Utensils, ShoppingBag, Settings, Menu, RefreshCw, X, TrendingUp, Hash, CreditCard, Star, History, User, Flame } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MenuEditor } from '../components/vendor/MenuEditor';
 import { SHOPS } from '../data/foodCourtDB';
@@ -494,6 +494,19 @@ const VendorDashboard = () => {
             </div>
             <span className="command-value">₹{metrics.upiRevenue}</span>
             <span className="command-subvalue text-blue-600">Auto-Verified</span>
+          </motion.div>
+
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="elite-card command-card">
+            <div className="flex justify-between items-start">
+              <span className="command-label">Trending Item</span>
+              <Flame size={20} className="text-orange-500" />
+            </div>
+            <span className="command-value" style={{ fontSize: '1.4rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {metrics.trendingItem}
+            </span>
+            <span className="command-subvalue text-orange-600">
+              {metrics.trendingCount} {metrics.trendingCount === 1 ? 'Order' : 'Orders'} Today
+            </span>
           </motion.div>
 
 
