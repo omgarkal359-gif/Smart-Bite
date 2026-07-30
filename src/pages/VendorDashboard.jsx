@@ -632,15 +632,17 @@ const VendorDashboard = () => {
                           <span className={`text-[10px] font-black px-2 py-1 rounded ${
                             ticket.status === 'preparing' ? 'bg-blue-100 text-blue-700' : 
                             ticket.status === 'ready' ? 'bg-green-100 text-green-700' :
+                            ticket.status === 'pending_cash' ? 'bg-orange-100 text-orange-700' :
                             'bg-purple-100 text-purple-700'
                           }`}>
                             {ticket.status === 'preparing' ? 'PREPARING' : 
                              ticket.status === 'ready' ? 'READY' :
+                             ticket.status === 'pending_cash' ? 'AWAITING CASH' :
                              'NEW ORDER'}
                           </span>
                         </div>
 
-                        {(ticket.status === 'placed' || ticket.status === 'preparing') && (
+                        {(!['ready', 'completed', 'cancelled'].includes(ticket.status)) && (
                           <div className="flex gap-3 w-full">
                             <motion.button 
                               whileHover={{ scale: ticket.status === 'preparing' ? 1 : 1.03 }}
