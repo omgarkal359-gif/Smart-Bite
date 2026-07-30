@@ -153,7 +153,7 @@ export const api = {
     try {
       // Ensure stall_id / shop_id is set for backend indexing and queries
       const stallId = orderData.items && orderData.items.length > 0 ? orderData.items[0].stallId : null;
-      const defaultStatus = orderData.payment === 'Cash' ? 'pending_cash' : 'placed';
+      const defaultStatus = 'placed';
       const payload = { status: defaultStatus, ...orderData, shop_id: stallId, stall_id: stallId, stallId: stallId };
       
       const { data, error } = await supabase.from('orders').insert(payload).select();
@@ -191,7 +191,7 @@ export const api = {
       });
     } catch (err) {
       const stallId = orderData.items && orderData.items.length > 0 ? orderData.items[0].stallId : null;
-      const defaultStatus = orderData.payment === 'Cash' ? 'pending_cash' : 'placed';
+      const defaultStatus = 'placed';
       const fallbackOrder = { id: `ORD-${Date.now()}`, status: defaultStatus, ...orderData, stall_id: stallId, timestamp: new Date().toISOString() };
       
       // Save fallback order to localStorage too
