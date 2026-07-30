@@ -636,7 +636,7 @@ const VendorDashboard = () => {
                               whileHover={{ scale: ticket.status === 'preparing' ? 1 : 1.03 }}
                               whileTap={{ scale: ticket.status === 'preparing' ? 1 : 0.97 }}
                               disabled={ticket.status === 'preparing'}
-                              className={`vendor-btn-preparing flex-1 flex items-center justify-center gap-2 py-4 px-4 rounded-xl font-black text-[13px] uppercase tracking-wider cursor-pointer transition-all border border-solid ${
+                              className={`vendor-btn-preparing flex-1 flex items-center justify-center gap-2 py-5 px-4 rounded-xl font-black text-[13px] uppercase tracking-wider cursor-pointer transition-all border border-solid ${
                                 ticket.status === 'preparing' 
                                   ? 'bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed' 
                                   : 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100'
@@ -650,7 +650,7 @@ const VendorDashboard = () => {
                             <motion.button 
                               whileHover={{ scale: 1.03 }}
                               whileTap={{ scale: 0.97 }}
-                              className="vendor-btn-ready flex-1 flex items-center justify-center gap-2 py-4 px-4 rounded-xl font-black text-[13px] uppercase tracking-wider bg-green-50 text-green-600 border border-solid border-green-200 hover:bg-green-100 cursor-pointer transition-all"
+                              className="vendor-btn-ready flex-1 flex items-center justify-center gap-2 py-5 px-4 rounded-xl font-black text-[13px] uppercase tracking-wider bg-green-50 text-green-600 border border-solid border-green-200 hover:bg-green-100 cursor-pointer transition-all"
                               onClick={() => handleUpdateStatus(ticket.id, 'ready')}
                             >
                               <CheckCircle size={16} className="text-current" />
