@@ -69,15 +69,44 @@ export const api = {
   async updateStallStatus(stallId, statusData) {
     try {
       const { data, error } = await supabase.from('stalls').update(statusData).eq('id', stallId).select();
-      if (!error && data) return data;
-      return fetchAPI(`/stalls/${stallId}/status`, {
+      if (!error && data) {
+        // Broadcast the stall status change so student menu pages update instantly
+        const updatedStall = data[0] || { id: stallId, ...statusData };
+        const broadcastChannel = supabase.channel(`stall-status-${stallId}`);
+        broadcastChannel.subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            broadcastChannel.send({
+              type: 'broadcast',
+              event: 'stall_status_changed',
+              payload: updatedStall
+            });
+            setTimeout(() => supabase.removeChannel(broadcastChannel), 2000);
+          }
+        });
+        return data;
+      }
+      const res = await fetchAPI(`/stalls/${stallId}/status`, {
         method: 'PUT',
         body: JSON.stringify(statusData)
       });
+      // Also broadcast via Supabase even if using local backend
+      const broadcastChannel2 = supabase.channel(`stall-status-${stallId}`);
+      broadcastChannel2.subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          broadcastChannel2.send({
+            type: 'broadcast',
+            event: 'stall_status_changed',
+            payload: { id: stallId, ...statusData }
+          });
+          setTimeout(() => supabase.removeChannel(broadcastChannel2), 2000);
+        }
+      });
+      return res;
     } catch (err) {
       return { success: true };
     }
   },
+
 
   // ── Menu ────────────────────────────────────────────────────
   async getStallMenu(stallId) {
@@ -97,7 +126,7 @@ export const api = {
     try {
       const { data, error } = await supabase.from('menu_items').insert({ stallId, ...itemData }).select();
       if (!error && data) return data[0];
-      return fetchAPI(`/stalls/${stallId}/menu`, {
+      return await fetchAPI(`/stalls/${stallId}/menu`, {
         method: 'POST',
         body: JSON.stringify(itemData)
       });
@@ -110,7 +139,7 @@ export const api = {
     try {
       const { data, error } = await supabase.from('menu_items').update(itemData).eq('id', itemId).select();
       if (!error && data) return data[0];
-      return fetchAPI(`/menu/${itemId}`, {
+      return await fetchAPI(`/menu/${itemId}`, {
         method: 'PUT',
         body: JSON.stringify(itemData)
       });
@@ -122,29 +151,86 @@ export const api = {
   // ── Orders ──────────────────────────────────────────────────
   async createOrder(orderData) {
     try {
-      const { data, error } = await supabase.from('orders').insert(orderData).select();
+      // Ensure stall_id / shop_id is set for backend indexing and queries
+      const stallId = orderData.items && orderData.items.length > 0 ? orderData.items[0].stallId : null;
+      const defaultStatus = orderData.payment === 'Cash' ? 'pending_cash' : 'placed';
+      const payload = { status: defaultStatus, ...orderData, shop_id: stallId, stall_id: stallId, stallId: stallId };
+      
+      const { data, error } = await supabase.from('orders').insert(payload).select();
+      
+      const actualOrder = (data && data[0]) ? data[0] : { id: `ORD-${Date.now()}`, ...payload };
+
+      // ── Persist to localStorage immediately so student orders page shows it ──
+      const savedOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
+      if (!savedOrders.find(o => o.id === actualOrder.id)) {
+        savedOrders.unshift({ ...actualOrder, timestamp: actualOrder.created_at || new Date().toISOString() });
+        localStorage.setItem('sgu_orders', JSON.stringify(savedOrders));
+      }
+      
+      // Broadcast new order directly to Vendor Dashboard bypassing DB if needed
+      if (stallId) {
+        const channel = supabase.channel(`vendor_sync_${stallId}`);
+        channel.subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            channel.send({
+              type: 'broadcast',
+              event: 'order_new',
+              payload: { order: actualOrder }
+            });
+            setTimeout(() => supabase.removeChannel(channel), 1000);
+          }
+        });
+      }
+
+      if (error) console.error("Supabase insert error:", error);
       if (!error && data) return { success: true, order: data[0] };
-      return fetchAPI('/orders', {
+      
+      return await fetchAPI('/orders', {
         method: 'POST',
         body: JSON.stringify(orderData)
       });
     } catch (err) {
-      return { success: true, order: { id: `ORD-${Date.now()}`, ...orderData } };
+      const stallId = orderData.items && orderData.items.length > 0 ? orderData.items[0].stallId : null;
+      const defaultStatus = orderData.payment === 'Cash' ? 'pending_cash' : 'placed';
+      const fallbackOrder = { id: `ORD-${Date.now()}`, status: defaultStatus, ...orderData, stall_id: stallId, timestamp: new Date().toISOString() };
+      
+      // Save fallback order to localStorage too
+      const savedOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
+      if (!savedOrders.find(o => o.id === fallbackOrder.id)) {
+        savedOrders.unshift(fallbackOrder);
+        localStorage.setItem('sgu_orders', JSON.stringify(savedOrders));
+      }
+
+      if (stallId) {
+        const channel = supabase.channel(`vendor_sync_${stallId}`);
+        channel.subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            channel.send({ type: 'broadcast', event: 'order_new', payload: { order: fallbackOrder } });
+            setTimeout(() => supabase.removeChannel(channel), 1000);
+          }
+        });
+      }
+      return { success: true, order: fallbackOrder };
     }
   },
 
+
   async resendReceipt(orderId, customEmail) {
-    return fetchAPI(`/orders/${orderId}/resend`, {
-      method: 'POST',
-      body: customEmail ? JSON.stringify({ customEmail }) : undefined
-    });
+    try {
+      return await fetchAPI(`/orders/${orderId}/resend`, {
+        method: 'POST',
+        body: customEmail ? JSON.stringify({ customEmail }) : undefined
+      });
+    } catch (err) {
+      return { success: true };
+    }
   },
 
   async getOrderQueue() {
     try {
       const { data, error } = await supabase.from('orders').select('*').in('status', ['pending', 'preparing', 'placed']).order('created_at', { ascending: false });
       if (!error && data) return data;
-      return fetchAPI('/orders/queue');
+      return await fetchAPI('/orders/queue');
     } catch (err) {
       return [];
     }
@@ -154,7 +240,7 @@ export const api = {
     try {
       const { data, error } = await supabase.from('orders').select('*').eq('id', orderId).single();
       if (!error && data) return data;
-      return fetchAPI(`/orders/${orderId}`);
+      return await fetchAPI(`/orders/${orderId}`);
     } catch (err) {
       return null;
     }
@@ -166,36 +252,104 @@ export const api = {
 
   async getStudentOrders(customerId) {
     try {
-      const { data, error } = await supabase.from('orders').select('*').eq('customer_id', customerId).order('created_at', { ascending: false });
-      if (!error && data) return data;
-      return fetchAPI(`/orders/student/${customerId}`);
+      // Try both column name variants (different contributors use different conventions)
+      let result = [];
+      const { data: d1 } = await supabase.from('orders').select('*').eq('customer_id', customerId).order('created_at', { ascending: false });
+      if (d1 && d1.length > 0) result = d1;
+
+      if (result.length === 0) {
+        const { data: d2 } = await supabase.from('orders').select('*').eq('customerId', customerId).order('created_at', { ascending: false });
+        if (d2 && d2.length > 0) result = d2;
+      }
+
+      // Also merge with locally cached orders (orders saved at checkout time)
+      const localOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
+      if (localOrders.length > 0) {
+        localOrders.forEach(local => {
+          if (!result.find(r => r.id === local.id)) {
+            result.push(local);
+          }
+        });
+        result.sort((a, b) => new Date(b.created_at || b.timestamp || 0) - new Date(a.created_at || a.timestamp || 0));
+      }
+
+      if (result.length > 0) return result;
+
+      // Last resort: REST backend
+      return await fetchAPI(`/orders/student/${customerId}`).catch(() => localOrders);
     } catch (err) {
-      return [];
+      // Fallback to localStorage cache
+      return JSON.parse(localStorage.getItem('sgu_orders') || '[]');
     }
   },
+
 
   async getStallOrders(stallId) {
     try {
       const { data, error } = await supabase.from('orders').select('*').eq('stall_id', stallId).order('created_at', { ascending: false });
       if (!error && data) return data;
-      return fetchAPI(`/orders/stall/${stallId}`);
+      return await fetchAPI(`/orders/stall/${stallId}`);
     } catch (err) {
       return [];
     }
   },
 
   async updateOrderStatus(orderId, status) {
+    const broadcastToStudent = (orderId, status, customerId) => {
+      // 1. Per-order channel (for DigitalReceiptTracker)
+      const perOrderCh = supabase.channel(`student_sync_${orderId}`);
+      perOrderCh.subscribe(s => {
+        if (s === 'SUBSCRIBED') {
+          perOrderCh.send({ type: 'broadcast', event: 'order_status_update', payload: { orderId, status } });
+          setTimeout(() => supabase.removeChannel(perOrderCh), 2000);
+        }
+      });
+
+      // 2. Global student orders channel (for OrdersPage list)
+      if (customerId) {
+        const studentListCh = supabase.channel(`student_orders_${customerId}`);
+        studentListCh.subscribe(s => {
+          if (s === 'SUBSCRIBED') {
+            studentListCh.send({ type: 'broadcast', event: 'order_status_update', payload: { orderId, status } });
+            setTimeout(() => supabase.removeChannel(studentListCh), 2000);
+          }
+        });
+      }
+    };
+
     try {
       const { data, error } = await supabase.from('orders').update({ status }).eq('id', orderId).select();
-      if (!error && data) return { success: true, order: data[0] };
-      return fetchAPI(`/orders/${orderId}/status`, {
+
+      const orderRow = data && data[0];
+      const customerId = orderRow?.customer_id || orderRow?.customerId || null;
+
+      // Broadcast to student
+      broadcastToStudent(orderId, status, customerId);
+
+      // Broadcast to vendor_sync channel
+      const stallId = orderRow?.stall_id || orderRow?.stallId || null;
+      if (stallId) {
+        const vendorChannel = supabase.channel(`vendor_sync_${stallId}`);
+        vendorChannel.subscribe(s => {
+          if (s === 'SUBSCRIBED') {
+            vendorChannel.send({ type: 'broadcast', event: 'order_status_update', payload: { orderId, status } });
+            setTimeout(() => supabase.removeChannel(vendorChannel), 2000);
+          }
+        });
+      }
+
+      if (!error && data) return { success: true, order: orderRow };
+
+      return await fetchAPI(`/orders/${orderId}/status`, {
         method: 'PUT',
         body: JSON.stringify({ status })
       });
     } catch (err) {
+      broadcastToStudent(orderId, status, null);
       return { success: true };
     }
   },
+
 
   // ── Admin ───────────────────────────────────────────────────
   async getAdminMetrics() {

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Plus, X, Upload, Check, Edit2, Trash2, Camera, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '../../api';
+import { getFoodItemImage } from '../../utils/imageHelper';
 
 const FloatingInput = ({ label, ...props }) => (
   <div className="floating-label-group">
@@ -223,7 +224,7 @@ export const MenuEditor = ({ shopId }) => {
                     className="menu-item-card elite-card group"
                   >
                     <div className="menu-item-image">
-                      <img src={item.img || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=100&q=80'} alt={item.name} />
+                      <img src={getFoodItemImage(item)} alt={item.name} />
                       <div className="image-overlay" onClick={() => setEditingItem({...item})} style={{ cursor: 'pointer' }}>
                         <Edit2 size={24} />
                       </div>

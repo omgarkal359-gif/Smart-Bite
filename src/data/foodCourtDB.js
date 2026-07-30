@@ -1,6 +1,4 @@
-// ============================================================
-// FOOD COURT OF SGU — Complete Database
-// ============================================================
+import { getFoodItemImage } from '../utils/imageHelper';
 
 export const FOOD_COURT = {
   name: "Food Court of SGU",
@@ -575,14 +573,20 @@ export const FOOD_COURT = {
 let _idCounter = 1;
 export const ALL_FOOD_ITEMS = FOOD_COURT.stalls.flatMap((stall) =>
   stall.categories.flatMap((cat) =>
-    cat.items.map((item) => ({
-      id: _idCounter++,
-      ...item,
-      category: cat.name,
-      stallId: stall.id,
-      stallName: stall.name,
-      stock: 20,
-    }))
+    cat.items.map((item) => {
+      const fullItem = {
+        id: _idCounter++,
+        ...item,
+        category: cat.name,
+        stallId: stall.id,
+        stallName: stall.name,
+        stock: 20,
+      };
+      return {
+        ...fullItem,
+        img: getFoodItemImage(fullItem)
+      };
+    })
   )
 );
 

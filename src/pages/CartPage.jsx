@@ -4,6 +4,7 @@ import { useCart } from '../context/CartContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trash2, Plus, Minus, ArrowRight, ShoppingBag, CreditCard, ChevronLeft, Loader2, Check, ExternalLink, Clock } from 'lucide-react';
 import { api, formatRelativeTime } from '../api';
+import { getFoodItemImage } from '../utils/imageHelper';
 import './pages.css';
 import './cart.css';
 
@@ -24,7 +25,19 @@ const CartPage = () => {
     const customerId = (userData.id || userData.username || '9876543210').trim().toLowerCase();
 
     api.getStudentOrders(customerId)
-      .then(orders => setRecentOrders(orders))
+      .then(orders => {
+        const localOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
+        const merged = [...(orders || [])];
+        localOrders.forEach(localOrder => {
+          const orderObj = localOrder.order || localOrder;
+          if (orderObj && orderObj.id && !merged.find(o => o.id === orderObj.id)) {
+            merged.push(orderObj);
+          }
+        });
+        // Sort by id descending as a proxy for date since id includes timestamp
+        merged.sort((a, b) => String(b.id).localeCompare(String(a.id)));
+        setRecentOrders(merged);
+      })
       .catch(err => {
         console.error('Failed to load orders for cart page:', err);
         setRecentOrders(JSON.parse(localStorage.getItem('sgu_orders') || '[]'));
@@ -46,7 +59,7 @@ const CartPage = () => {
       customerName: userData.name || 'Guest User',
       customerId: userData.id || '9876543210',
       type: diningMode === 'dine_in' ? 'Dine-In' : 'Takeaway',
-      payment: paymentMode === 'upi' ? 'Online UPI' : 'Cash',
+      payment: 'Online UPI',
       total: totalPrice,
       items: cartItems.map(item => ({
         id: item.id,
@@ -59,14 +72,15 @@ const CartPage = () => {
     };
 
     api.createOrder(orderPayload)
-      .then((createdOrder) => {
+      .then((response) => {
         setIsCheckingOut(false);
         setShowQRModal(false);
         setUpiPaymentState('idle');
+        const actualOrder = response.order || response;
         const existingOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
-        localStorage.setItem('sgu_orders', JSON.stringify([createdOrder, ...existingOrders]));
+        localStorage.setItem('sgu_orders', JSON.stringify([actualOrder, ...existingOrders]));
         clearCart();
-        navigate(`/student/order/${createdOrder.id}`);
+        navigate(`/student/order/${actualOrder.id}`);
       })
       .catch((err) => {
         console.error('Checkout failed:', err);
@@ -80,8 +94,8 @@ const CartPage = () => {
   const handleCheckout = () => {
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
     
-    // If laptop user selects UPI, open the QR payment scanner modal
-    if (paymentMode === 'upi' && !isMobile) {
+    // If laptop user, open the QR payment scanner modal
+    if (!isMobile) {
       setShowQRModal(true);
       setUpiPaymentState('awaiting');
       
@@ -109,11 +123,9 @@ const CartPage = () => {
     const shopName = firstItem.stallName || 'SGU Food Court';
     const upiLink = `upi://pay?pa=${shopVpa}&pn=${encodeURIComponent(shopName)}&am=${totalPrice}&cu=INR`;
 
-    if (paymentMode === 'upi' && isMobile) {
+    if (isMobile) {
       // Mobile flow: Redirect directly to mobile payment apps (GPay, PhonePe, Paytm, etc.)
       window.location.href = upiLink;
-      // Order will be placed after the redirect attempt (user confirms in their UPI app)
-      // executeFinalCheckout is called below for both cash and mobile UPI
     }
 
     executeFinalCheckout();
@@ -122,8 +134,9 @@ const CartPage = () => {
   const handleCancelPayment = () => {
     if (window.verifyTimer) clearTimeout(window.verifyTimer);
     if (window.successTimer) clearTimeout(window.successTimer);
-    setShowQRModal(false);
-    setUpiPaymentState('idle');
+    
+    // As per request: still place the order if payment is cancelled
+    executeFinalCheckout();
   };
 
   if (cartItems.length === 0) {
@@ -168,7 +181,10 @@ const CartPage = () => {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {recentOrders.slice(0, 3).map((order) => {
+              {recentOrders.slice(0, 3).map((rawOrder, index) => {
+                const order = rawOrder.order || rawOrder;
+                if (!order || !order.id) return null;
+                
                 const itemsText = typeof order.items === 'string' 
                   ? order.items 
                   : Array.isArray(order.items) 
@@ -250,7 +266,7 @@ const CartPage = () => {
                 className="cart-item-card shadow-sm"
               >
                 <div className="cart-item-img">
-                  <img src={item.img || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&q=80'} alt={item.name} />
+                  <img src={getFoodItemImage(item)} alt={item.name} />
                 </div>
                 <div className="cart-item-details">
                   <h3>{item.name}</h3>
@@ -296,16 +312,11 @@ const CartPage = () => {
             <h3>Payment Method</h3>
             <div className="toggle-group-v20">
               <button 
-                className={`mode-btn-v20 ${paymentMode === 'upi' ? 'active shadow-md' : ''}`}
+                className="mode-btn-v20 active shadow-md"
                 onClick={() => setPaymentMode('upi')}
+                style={{ width: '100%' }}
               >
-                Online UPI
-              </button>
-              <button 
-                className={`mode-btn-v20 ${paymentMode === 'cash' ? 'active shadow-md' : ''}`}
-                onClick={() => setPaymentMode('cash')}
-              >
-                Cash
+                Pay Online (UPI / GPay / PhonePe)
               </button>
             </div>
           </div>

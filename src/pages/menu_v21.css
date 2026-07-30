@@ -258,3 +258,28 @@
     grid-template-columns: repeat(4, 1fr);
   }
 }
+
+.closed-banner-v21 {
+  grid-column: span 2;
+  background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%);
+  color: white;
+  padding: 16px 20px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 4px 15px rgba(220, 38, 38, 0.2);
+  margin-bottom: 8px;
+}
+
+@media (min-width: 768px) {
+  .closed-banner-v21 {
+    grid-column: span 3;
+  }
+}
+
+@media (min-width: 1024px) {
+  .closed-banner-v21 {
+    grid-column: span 4;
+  }
+}

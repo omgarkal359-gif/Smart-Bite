@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import sguLogo from '../../assets/sgu-logo.jpg';
 import { CmdKSearchModal } from './CmdKSearchModal';
 import { supabase } from '../../supabaseClient';
+import { clearStoredUser } from '../../utils/auth';
 import './admin_dashboard.css';
 
 export const AdminShell = ({ activeModule, setActiveModule, user, children }) => {
@@ -55,7 +56,7 @@ export const AdminShell = ({ activeModule, setActiveModule, user, children }) =>
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    localStorage.removeItem('sgu_user');
+    clearStoredUser();
     navigate('/login', { replace: true });
   };
 

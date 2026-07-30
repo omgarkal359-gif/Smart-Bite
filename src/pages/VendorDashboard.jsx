@@ -6,8 +6,9 @@ import { Clock, Volume2, Power, LogOut, CheckCircle, Banknote, Activity, Smartph
 import { motion, AnimatePresence } from 'framer-motion';
 import { MenuEditor } from '../components/vendor/MenuEditor';
 import { SHOPS } from '../data/foodCourtDB';
-import { api, formatRelativeTime } from '../api';
+import { api, socket, formatRelativeTime } from '../api';
 import { supabase } from '../supabaseClient';
+import { getStoredUser, clearStoredUser } from '../utils/auth';
 import './pages.css';
 import './vendor.css';
 
@@ -38,7 +39,16 @@ const VendorDashboard = () => {
   const loadOrders = useCallback(async () => {
     if (!targetShopId) return;
     try {
-      const allOrders = await api.getStallOrders(targetShopId);
+      const dbOrders = await api.getStallOrders(targetShopId);
+      const localOrders = JSON.parse(localStorage.getItem(`sgu_vendor_orders_${targetShopId}`) || '[]');
+      
+      const allOrders = [...(dbOrders || [])];
+      localOrders.forEach(localOrder => {
+        if (!allOrders.find(o => o.id === localOrder.id)) {
+          allOrders.push(localOrder);
+        }
+      });
+      allOrders.sort((a, b) => String(b.id).localeCompare(String(a.id)));
       
       const active = allOrders.filter(order => order.status !== 'completed').map(order => ({
         ...order,
@@ -59,54 +69,76 @@ const VendorDashboard = () => {
 
     loadOrders();
     
-    // Supabase Realtime subscription on 'orders' table filtered by active statuses
-    const channel = supabase
-      .channel(`vendor-orders-${targetShopId}`)
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'orders', filter: 'status=in.(pending,preparing)' },
-        (payload) => {
-          const { eventType, new: newRecord } = payload;
-          if (!newRecord) return;
-          const orderShop = newRecord.shopId || newRecord.shopid;
-          if (orderShop && orderShop !== targetShopId) return;
+    // Join room for this vendor
+    socket.emit('join', `vendor-${targetShopId}`);
 
+    const handleNewOrder = (newOrder) => {
+      setTickets(prev => {
+        if (prev.some(t => t.id === newOrder.id)) return prev;
+        // Format item split
+        const formatted = {
+          ...newOrder,
+          items: typeof newOrder.items === 'string' ? newOrder.items.split(', ') : newOrder.items
+        };
+        return [formatted, ...prev];
+      });
+    };
+
+    const handleStatusUpdate = (updatedOrder) => {
+      if (updatedOrder.status === 'completed' || updatedOrder.status === 'ready') {
+        setTickets(prev => prev.filter(t => t.id !== updatedOrder.id));
+        setCompletedTickets(prev => {
           const formatted = {
-            ...newRecord,
-            items: typeof newRecord.items === 'string' ? newRecord.items.split(', ') : newRecord.items
+            ...updatedOrder,
+            items: typeof updatedOrder.items === 'string' ? updatedOrder.items.split(', ') : updatedOrder.items
           };
-
-          if (eventType === 'INSERT') {
-            setTickets(prev => {
-              if (prev.some(t => t.id === newRecord.id)) return prev;
-              return [formatted, ...prev];
-            });
-          } else if (eventType === 'UPDATE') {
-            if (newRecord.status === 'completed') {
-              setTickets(prev => prev.filter(t => t.id !== newRecord.id));
-              setCompletedTickets(prev => {
-                if (prev.some(t => t.id === newRecord.id)) {
-                  return prev.map(t => t.id === newRecord.id ? formatted : t);
-                }
-                return [formatted, ...prev];
-              });
-            } else {
-              setTickets(prev => {
-                if (prev.some(t => t.id === newRecord.id)) {
-                  return prev.map(t => t.id === newRecord.id ? { ...t, ...formatted } : t);
-                }
-                return [formatted, ...prev];
-              });
-            }
+          if (prev.some(t => t.id === updatedOrder.id)) {
+            return prev.map(t => t.id === updatedOrder.id ? formatted : t);
           }
+          return [formatted, ...prev];
+        });
+      } else {
+        setTickets(prev => {
+          if (prev.some(t => t.id === updatedOrder.id)) {
+            return prev.map(t => t.id === updatedOrder.id ? { 
+              ...t, 
+              status: updatedOrder.status 
+            } : t);
+          }
+          const formatted = {
+            ...updatedOrder,
+            items: typeof updatedOrder.items === 'string' ? updatedOrder.items.split(', ') : updatedOrder.items
+          };
+          return [formatted, ...prev];
+        });
+      }
+    };
+
+    socket.on('order_new', handleNewOrder);
+    socket.on('order_status_update', handleStatusUpdate);
+
+    // Setup Supabase Realtime Broadcast Listener to bypass RLS DB blocks
+    const channel = supabase.channel(`vendor_sync_${targetShopId}`)
+      .on('broadcast', { event: 'order_new' }, (payload) => {
+        if (payload && payload.payload && payload.payload.order) {
+           const newOrd = payload.payload.order;
+           handleNewOrder(newOrd);
+           // Persist to local storage to survive refreshes
+           const existing = JSON.parse(localStorage.getItem(`sgu_vendor_orders_${targetShopId}`) || '[]');
+           if (!existing.find(o => o.id === newOrd.id)) {
+             localStorage.setItem(`sgu_vendor_orders_${targetShopId}`, JSON.stringify([newOrd, ...existing]));
+           }
         }
-      )
+      })
       .subscribe();
 
-    // Polling fallback every 3s
-    const interval = setInterval(loadOrders, 3000);
+    // Polling fallback (poll every 2 seconds for instant order updates)
+    const intervalTime = 2000;
+    const interval = setInterval(loadOrders, intervalTime);
 
     return () => {
+      socket.off('order_new', handleNewOrder);
+      socket.off('order_status_update', handleStatusUpdate);
       supabase.removeChannel(channel);
       clearInterval(interval);
     };
@@ -114,20 +146,9 @@ const VendorDashboard = () => {
 
   // Security Gate & Session Check
   useEffect(() => {
-    const userData = localStorage.getItem('sgu_user');
-    if (!userData) {
-      navigate('/login');
-      return;
-    }
-    let parsedUser = null;
-    try {
-      parsedUser = JSON.parse(userData);
-    } catch (e) {
-      parsedUser = null;
-    }
-
+    const parsedUser = getStoredUser();
     if (!parsedUser || !parsedUser.role) {
-      localStorage.removeItem('sgu_user');
+      clearStoredUser();
       navigate('/login', { replace: true });
       return;
     }
@@ -138,7 +159,7 @@ const VendorDashboard = () => {
       
     if (isOwnerSessionCorrupted) {
       console.warn('Clearing corrupted owner session on VendorDashboard:', parsedUser);
-      localStorage.removeItem('sgu_user');
+      clearStoredUser();
       navigate('/login', { replace: true });
       return;
     }
@@ -164,28 +185,62 @@ const VendorDashboard = () => {
 
     setUser(parsedUser);
 
-    // Initial stall status load
-    api.getStalls()
-      .then(stalls => {
-        const stall = stalls.find(s => s.id === (cleanUrlShopId || userShopId));
-        if (stall) {
-          setShopStatus(stall.online === 1 || stall.online === true ? 'OPEN' : 'CLOSED');
-          setIsBusyMode(stall.busyMode === 1 || stall.busyMode === true);
-        }
-      })
-      .catch(console.error);
+    const currentStallId = cleanUrlShopId || userShopId;
+    if (currentStallId) {
+      // Initial stall status load
+      api.getStalls()
+        .then(stalls => {
+          const stall = stalls.find(s => s.id === currentStallId);
+          if (stall) {
+            setShopStatus(stall.online === 1 || stall.online === true ? 'OPEN' : 'CLOSED');
+            setIsBusyMode(stall.busyMode === 1 || stall.busyMode === true);
+          }
+        })
+        .catch(console.error);
+
+      // Listen to real-time stall updates
+      const stallChannel = supabase
+        .channel(`vendor-stall-${currentStallId}`)
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'stalls', filter: `id=eq.${currentStallId}` }, (payload) => {
+          const stall = payload.new;
+          if (stall) {
+            setShopStatus(stall.online === 1 || stall.online === true ? 'OPEN' : 'CLOSED');
+            setIsBusyMode(stall.busyMode === 1 || stall.busyMode === true);
+          }
+        })
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(stallChannel);
+      };
+    }
   }, [navigate, urlShopId, cleanUrlShopId]);
 
   // Today's Metrics Calculation
   const metrics = useMemo(() => {
     const today = new Date().toDateString();
-    const todayCompleted = completedTickets.filter(t => new Date(t.timestamp).toDateString() === today);
-    const todayPending = tickets.filter(t => new Date(t.timestamp).toDateString() === today);
     
-    const totalOrders = todayCompleted.length + tickets.length;
-    const totalRevenue = todayCompleted.reduce((sum, t) => sum + t.total, 0);
-    const cashRevenue = todayCompleted.filter(t => t.payment === 'Cash').reduce((sum, t) => sum + t.total, 0);
-    const upiRevenue = todayCompleted.filter(t => t.payment === 'Online UPI').reduce((sum, t) => sum + t.total, 0);
+    const getOrderDate = (t) => {
+      if (t.timestamp) return new Date(t.timestamp);
+      if (t.created_at) return new Date(t.created_at);
+      if (t.id && t.id.toString().startsWith('ORD-')) {
+        const timestampStr = t.id.toString().replace('ORD-', '');
+        const num = parseInt(timestampStr, 10);
+        if (!isNaN(num)) return new Date(num);
+      }
+      return new Date();
+    };
+
+    const todayCompleted = completedTickets.filter(t => getOrderDate(t).toDateString() === today);
+    const todayPending = tickets.filter(t => getOrderDate(t).toDateString() === today);
+    
+    const totalOrders = todayCompleted.length + todayPending.length;
+    
+    const allTodayOrders = [...todayCompleted, ...todayPending];
+    
+    const totalRevenue = allTodayOrders.reduce((sum, t) => sum + t.total, 0);
+    const cashRevenue = allTodayOrders.filter(t => t.payment === 'Cash').reduce((sum, t) => sum + t.total, 0);
+    const upiRevenue = allTodayOrders.filter(t => t.payment === 'Online UPI').reduce((sum, t) => sum + t.total, 0);
 
     // Calculate Trending Item
     const itemCounts = {};
@@ -235,12 +290,17 @@ const VendorDashboard = () => {
   const handleToggleBusy = async () => {
     const nextBusy = !isBusyMode;
     const nextWait = nextBusy ? 15 : 0;
+    
+    // Optimistic UI Update
+    setIsBusyMode(nextBusy);
+    
     try {
       if (targetShopId) {
         await api.updateStallStatus(targetShopId, { busyMode: nextBusy, waitTime: nextWait });
       }
-      setIsBusyMode(nextBusy);
     } catch (err) {
+      // Revert on failure
+      setIsBusyMode(!nextBusy);
       alert('Failed to toggle busy mode: ' + err.message);
     }
   };
@@ -269,6 +329,14 @@ const VendorDashboard = () => {
   };
 
   const handleConfirmCash = (id) => handleUpdateStatus(id, 'placed');
+
+  const awaitingCashTickets = useMemo(() => {
+    return tickets.filter(t => t.status === 'pending_cash');
+  }, [tickets]);
+
+  const activeTickets = useMemo(() => {
+    return tickets.filter(t => t.status !== 'pending_cash');
+  }, [tickets]);
 
   return (
     <div className={`vendor-kds-container page-transition ${isPowerSaver ? 'power-saver' : ''}`}>
@@ -359,15 +427,6 @@ const VendorDashboard = () => {
           <motion.button 
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="elite-ctrl-btn management" 
-            onClick={() => { navigate('/student/profile'); }}
-          >
-            <User size={16} /> <span>PROFILE</span>
-          </motion.button>
-
-          <motion.button 
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
             className="elite-ctrl-btn exit" 
             onClick={() => {
               localStorage.removeItem('sgu_user');
@@ -427,6 +486,7 @@ const VendorDashboard = () => {
 
         </div>
 
+
         {/* Horizontal Ticket Scroll */}
         <div className="kds-ticket-scroll">
           <AnimatePresence>
@@ -453,12 +513,17 @@ const VendorDashboard = () => {
                 parsedItems = ticket.items.split(', ').filter(Boolean);
               }
 
-              // Use originalItems for rich display if available
-              const richItems = ticket.originalItems && Array.isArray(ticket.originalItems) ? ticket.originalItems : null;
+              // Use originalItems for rich display if available, OR if items itself is an array of objects
+              let richItems = null;
+              if (ticket.originalItems && Array.isArray(ticket.originalItems)) {
+                richItems = ticket.originalItems;
+              } else if (Array.isArray(ticket.items) && ticket.items.length > 0 && typeof ticket.items[0] === 'object') {
+                richItems = ticket.items;
+              }
 
-              const isNew = ticket.status === 'placed';
+              const isNew = ticket.status === 'placed' || (!ticket.status && ticket.payment !== 'Cash');
               const isPreparing = ticket.status === 'preparing';
-              const isPendingCash = ticket.status === 'pending_cash';
+              const isPendingCash = ticket.status === 'pending_cash' || (!ticket.status && ticket.payment === 'Cash');
               const isReady = ticket.status === 'ready';
 
               const statusColor = isPreparing ? '#3B82F6' : isReady ? '#22C55E' : isNew ? '#8B5CF6' : '#F59E0B';

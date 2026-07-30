@@ -1,10 +1,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { Leaf, Flame, Pizza, Coffee, Sandwich, Utensils } from 'lucide-react';
+import { Leaf, Flame, Pizza, Coffee, Sandwich, WifiOff, Utensils } from 'lucide-react';
+import { CheckoutDrawer } from '../components/ui/CheckoutDrawer';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCart } from '../context/CartContext';
 import { api, socket } from '../api';
+import { supabase } from '../supabaseClient';
 import { getItemsByStall, SHOPS, ALL_FOOD_ITEMS } from '../data/foodCourtDB';
+import { getFoodItemImage } from '../utils/imageHelper';
 import './pages.css';
 import './menu_v21.css';
 
@@ -21,28 +24,6 @@ const CAT_ICONS = {
   "Idli's": <Utensils size={16} />,
   'Noodles': <Utensils size={16} />,
   'Shakes': <Coffee size={16} />
-};
-
-const categoryImagesMap = {
-  "Tea's": 'https://images.unsplash.com/photo-1576092768241-dec231879fc3?auto=format&fit=crop&w=400&q=80',
-  'Coffee': 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=400&q=80',
-  'Cold Beverages': 'https://images.unsplash.com/photo-1517701550927-30cf4ba1dba5?auto=format&fit=crop&w=400&q=80',
-  'Wadapav': 'https://images.unsplash.com/photo-1626132647523-66f5bf380027?auto=format&fit=crop&w=400&q=80',
-  'Misal': 'https://images.unsplash.com/photo-1601050690117-94f5f6fa8bd7?auto=format&fit=crop&w=400&q=80',
-  'Thalipeeth': 'https://images.unsplash.com/photo-1608797178974-15b35a61d121?auto=format&fit=crop&w=400&q=80',
-  'Rice': 'https://images.unsplash.com/photo-1512058564366-18510be2db19?auto=format&fit=crop&w=400&q=80',
-  'Veg Wraps': 'https://images.unsplash.com/photo-1626700051175-6518c4793f4f?auto=format&fit=crop&w=400&q=80',
-  "Idli's": 'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=400&q=80',
-  "Dosa's": 'https://images.unsplash.com/photo-1668236543090-82eba5ee5976?auto=format&fit=crop&w=400&q=80',
-  'Noodles': 'https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&w=400&q=80',
-  'Shakes': 'https://images.unsplash.com/photo-1572490122747-3968b75cc699?auto=format&fit=crop&w=400&q=80',
-  'Mojito': 'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?auto=format&fit=crop&w=400&q=80',
-  'default': 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&q=80'
-};
-
-const getFoodImage = (item) => {
-  if (item && item.img && typeof item.img === 'string' && item.img.trim().startsWith('http')) return item.img;
-  return categoryImagesMap[item?.category] || categoryImagesMap['default'];
 };
 
 const getFallbackIcon = (category) => {
@@ -66,7 +47,7 @@ const InteractiveMenu = () => {
   const highlightId = searchParams.get('highlight');
   const targetCategory = searchParams.get('category');
 
-  const { cart, addToCart, removeFromCart, totalItems, isCheckoutOpen, setIsCheckoutOpen } = useCart();
+  const { cart, addToCart, removeFromCart, clearCart, totalItems, isCheckoutOpen, setIsCheckoutOpen } = useCart();
 
   // Initial state derived synchronously from foodCourtDB
   const initialItems = useMemo(() => {
@@ -136,18 +117,53 @@ const InteractiveMenu = () => {
     }
     loadStallMenu();
 
-    // Socket realtime listener
+    // Socket realtime listener (legacy local-server mode)
     socket.emit('join', `stall-menu-${shopId}`);
     const handleMenuItemUpdate = (updatedItem) => {
       if (isMounted) {
         setInventory(prev => prev.map(i => i.id === updatedItem.id ? updatedItem : i));
       }
     };
+
+    const handleStallStatusUpdate = (updatedStall) => {
+      if (isMounted && updatedStall.id === shopId) {
+        setStallInfo(updatedStall);
+      }
+    };
+
     socket.on('menu_item_update', handleMenuItemUpdate);
+    socket.on('stall_status_update', handleStallStatusUpdate);
+
+    // --- Supabase Realtime: listen for stall status changes ---
+    // Broadcast channel: vendor pushes 'stall_closed' event when toggling
+    const stallBroadcastChannel = supabase
+      .channel(`stall-status-${shopId}`)
+      .on('broadcast', { event: 'stall_status_changed' }, (payload) => {
+        if (isMounted && payload?.payload) {
+          setStallInfo(prev => ({ ...prev, ...payload.payload }));
+        }
+      })
+      .subscribe();
+
+    // Polling fallback: re-fetch stall status every 5 seconds
+    const pollInterval = setInterval(async () => {
+      try {
+        const stalls = await api.getStalls();
+        if (isMounted && stalls && Array.isArray(stalls)) {
+          const stall = stalls.find(s => s.id === shopId);
+          if (stall) setStallInfo(stall);
+        }
+      } catch (_) {
+        // silent
+      }
+    }, 5000);
 
     return () => {
       isMounted = false;
       socket.off('menu_item_update', handleMenuItemUpdate);
+      socket.off('stall_status_update', handleStallStatusUpdate);
+      supabase.removeChannel(stallBroadcastChannel);
+      clearInterval(pollInterval);
     };
   }, [shopId]);
 
@@ -193,8 +209,20 @@ const InteractiveMenu = () => {
     });
   }, [inventory, cart]);
 
+  // Derive isOnline — normalize all possible formats (1, true, "1", "true")
+  const isOnline = stallInfo
+    ? (stallInfo.online === 1 || stallInfo.online === true || stallInfo.online === '1' || stallInfo.online === 'true')
+    : true;
+
+  // Auto-clear cart when shop goes offline
+  useEffect(() => {
+    if (!isOnline && totalItems > 0) {
+      clearCart();
+    }
+  }, [isOnline, totalItems, clearCart]);
+
   const handleAddToCartClick = (item) => {
-    if (item.stock > 0) {
+    if (item.stock > 0 && isOnline) {
       addToCart(item);
     }
   };
@@ -233,6 +261,17 @@ const InteractiveMenu = () => {
 
       {/* KFC Style Responsive Bento Menu Grid */}
       <main className="menu-grid-v21">
+        {/* ── Shop Closed Banner ── */}
+        {!isOnline && (
+          <div className="closed-banner-v21 shadow-lg">
+            <WifiOff size={24} className="text-white animate-bounce" />
+            <div className="flex flex-col">
+              <span className="font-extrabold uppercase tracking-wider text-sm">Shop is Temporarily Closed</span>
+              <span className="text-xs opacity-90">This shop is not accepting orders right now. Please browse other active spots.</span>
+            </div>
+          </div>
+        )}
+
         <AnimatePresence mode="popLayout">
           {isLoading ? (
             [1, 2, 3, 4].map(i => (
@@ -262,7 +301,7 @@ const InteractiveMenu = () => {
                   <div className="food-img-wrapper-v21">
                     {!isImgError ? (
                       <img 
-                        src={getFoodImage(item)} 
+                        src={getFoodItemImage(item)} 
                         alt={item.name} 
                         className="food-hd-img" 
                         onError={() => {
@@ -282,7 +321,7 @@ const InteractiveMenu = () => {
                           -
                         </motion.button>
                         <span className="qty-value">{cart[item.id].quantity}</span>
-                        <motion.button whileTap={{ scale: 0.9 }} className="qty-btn" onClick={() => handleAddToCartClick(item)} disabled={item.stock === 0}>
+                        <motion.button whileTap={{ scale: 0.9 }} className="qty-btn" onClick={() => handleAddToCartClick(item)} disabled={item.stock === 0 || !isOnline}>
                           +
                         </motion.button>
                       </div>
@@ -291,9 +330,10 @@ const InteractiveMenu = () => {
                         whileTap={{ scale: 0.8 }}
                         className="kfc-add-btn"
                         onClick={() => handleAddToCartClick(item)}
-                        disabled={item.stock === 0}
+                        disabled={item.stock === 0 || !isOnline}
+                        style={!isOnline ? { background: '#94A3B8', cursor: 'not-allowed', fontSize: '0.75rem', width: 'auto', padding: '0 8px' } : {}}
                       >
-                        +
+                        {isOnline ? '+' : 'Closed'}
                       </motion.button>
                     )}
                   </div>
@@ -317,8 +357,8 @@ const InteractiveMenu = () => {
         </AnimatePresence>
       </main>
 
-      {/* KFC Style Floating Bottom Cart Bar */}
-      {totalItems > 0 && (
+      {/* KFC Style Floating Bottom Cart Bar — hidden when shop is closed */}
+      {isOnline && totalItems > 0 && (
         <motion.div
           className="floating-cart-v21 shadow-2xl"
           initial={{ y: 100 }}
