@@ -392,6 +392,30 @@ export const api = {
   },
 
   async updateOrderStatus(orderId, status) {
+    // 0. Update local storage caches immediately
+    try {
+      const savedOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
+      const updatedSaved = savedOrders.map(o => o.id === orderId ? { ...o, status } : o);
+      localStorage.setItem('sgu_orders', JSON.stringify(updatedSaved));
+
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('sgu_vendor_orders_')) {
+          try {
+            const list = JSON.parse(localStorage.getItem(key) || '[]');
+            if (list.some(o => o.id === orderId)) {
+              const newList = list.map(o => o.id === orderId ? { ...o, status } : o);
+              localStorage.setItem(key, JSON.stringify(newList));
+            }
+          } catch (e) {}
+        }
+      }
+    } catch (e) {}
+
+    try {
+      socket.emit('order_status_update', { id: orderId, orderId, status });
+    } catch (e) {}
+
     const broadcastToStudent = (orderId, status, customerId) => {
       const studentChannel = supabase.channel(`student_sync_${orderId}`);
       studentChannel.subscribe((subStatus) => {

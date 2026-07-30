@@ -34,28 +34,37 @@ const OrdersPage = () => {
     socket.emit('join', 'student');
 
     const handleStatusUpdate = (updatedOrder) => {
+      const targetId = updatedOrder?.id || updatedOrder?.orderId;
+      const nextStatus = updatedOrder?.status;
+      if (!targetId || !nextStatus) return;
+
       setOrders(prev => {
-        // Only update if the order belongs to this customer
-        if (updatedOrder.customerId !== customerId) return prev;
-        
-        // If order is updated, replace it in the list
-        if (!prev.some(order => order.id === updatedOrder.id)) {
-          return [updatedOrder, ...prev];
-        }
-        return prev.map(order => order.id === updatedOrder.id ? {
+        return prev.map(order => order.id === targetId ? {
           ...order,
-          status: updatedOrder.status
+          status: nextStatus
         } : order);
       });
     };
 
     socket.on('order_status_update', handleStatusUpdate);
 
-    // Polling fallback
-    const interval = setInterval(fetchOrders, 8000); // Poll every 8 seconds
+    // Also subscribe to Supabase broadcast channel for this student
+    const studentListCh = supabase.channel(`student_orders_${customerId}`)
+      .on('broadcast', { event: 'order_status_update' }, (payload) => {
+        const targetId = payload?.payload?.orderId || payload?.orderId || payload?.payload?.id;
+        const nextStatus = payload?.payload?.status || payload?.status;
+        if (targetId && nextStatus) {
+          setOrders(prev => prev.map(o => o.id === targetId ? { ...o, status: nextStatus } : o));
+        }
+      })
+      .subscribe();
+
+    // Fast polling fallback (every 2 seconds)
+    const interval = setInterval(fetchOrders, 2000);
 
     return () => {
       socket.off('order_status_update', handleStatusUpdate);
+      supabase.removeChannel(studentListCh);
       clearInterval(interval);
     };
   }, []);
