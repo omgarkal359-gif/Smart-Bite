@@ -19,6 +19,16 @@ export class ErrorBoundary extends React.Component {
     window.location.reload();
   };
 
+  handleResetSession = () => {
+    try {
+      localStorage.removeItem('sgu_user');
+      sessionStorage.removeItem('sgu_user');
+      localStorage.removeItem('sgu_cart');
+    } catch (e) {}
+    this.setState({ hasError: false, error: null });
+    window.location.href = '/login';
+  };
+
   render() {
     if (this.state.hasError) {
       return (
@@ -75,7 +85,7 @@ export class ErrorBoundary extends React.Component {
               lineHeight: 1.5,
               margin: '0 0 16px 0'
             }}>
-              {this.state.error ? this.state.error.toString() : 'We hit a slight bump. Please refresh the page to continue.'}
+              We hit a slight bump. Please refresh or reset your session below.
             </p>
 
             {this.state.error?.message && (
@@ -94,25 +104,46 @@ export class ErrorBoundary extends React.Component {
               </p>
             )}
 
-            <button
-              type="button"
-              onClick={this.handleReload}
-              style={{
-                width: '100%',
-                padding: '14px 20px',
-                borderRadius: '12px',
-                border: 'none',
-                background: 'linear-gradient(135deg, #E4002B 0%, #CC0026 100%)',
-                color: '#FFFFFF',
-                fontWeight: 700,
-                fontSize: '0.95rem',
-                cursor: 'pointer',
-                boxShadow: '0 4px 14px rgba(228, 0, 43, 0.4)',
-                transition: 'all 0.2s ease'
-              }}
-            >
-              Refresh Page
-            </button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <button
+                type="button"
+                onClick={this.handleReload}
+                style={{
+                  width: '100%',
+                  padding: '14px 20px',
+                  borderRadius: '12px',
+                  border: 'none',
+                  background: 'linear-gradient(135deg, #E4002B 0%, #CC0026 100%)',
+                  color: '#FFFFFF',
+                  fontWeight: 700,
+                  fontSize: '0.95rem',
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 14px rgba(228, 0, 43, 0.4)',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                Refresh Page
+              </button>
+
+              <button
+                type="button"
+                onClick={this.handleResetSession}
+                style={{
+                  width: '100%',
+                  padding: '12px 20px',
+                  borderRadius: '12px',
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  color: '#94A3B8',
+                  fontWeight: 600,
+                  fontSize: '0.85rem',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                Reset Session & Login
+              </button>
+            </div>
           </div>
         </div>
       );

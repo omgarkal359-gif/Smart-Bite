@@ -13,28 +13,40 @@ export const useCart = () => {
 
 export const CartProvider = ({ children }) => {
   const [cart, setCart] = useState(() => {
-    const savedCart = localStorage.getItem('sgu_cart');
-    return savedCart ? JSON.parse(savedCart) : {};
+    try {
+      const savedCart = localStorage.getItem('sgu_cart');
+      const parsed = savedCart ? JSON.parse(savedCart) : {};
+      return (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) ? parsed : {};
+    } catch (e) {
+      return {};
+    }
   });
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
 
   useEffect(() => {
-    localStorage.setItem('sgu_cart', JSON.stringify(cart));
+    try {
+      localStorage.setItem('sgu_cart', JSON.stringify(cart || {}));
+    } catch (e) {}
   }, [cart]);
 
   const addToCart = (item) => {
-    setCart(prev => ({
-      ...prev,
-      [item.id]: {
-        ...item,
-        quantity: (prev[item.id]?.quantity || 0) + 1
-      }
-    }));
+    if (!item || !item.id) return;
+    setCart(prev => {
+      const safePrev = (prev && typeof prev === 'object' && !Array.isArray(prev)) ? prev : {};
+      return {
+        ...safePrev,
+        [item.id]: {
+          ...item,
+          quantity: ((safePrev[item.id]?.quantity) || 0) + 1
+        }
+      };
+    });
   };
 
   const removeFromCart = (itemId) => {
     setCart(prev => {
-      const newCart = { ...prev };
+      const safePrev = (prev && typeof prev === 'object' && !Array.isArray(prev)) ? prev : {};
+      const newCart = { ...safePrev };
       if (newCart[itemId]) {
         if (newCart[itemId].quantity > 1) {
           newCart[itemId].quantity -= 1;
@@ -48,12 +60,17 @@ export const CartProvider = ({ children }) => {
 
   const clearCart = () => {
     setCart({});
+    try {
+      localStorage.removeItem('sgu_cart');
+    } catch (e) {}
   };
-  const totalItems = Object.values(cart).reduce((sum, item) => sum + item.quantity, 0);
-  const totalPrice = Object.values(cart).reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+  const safeCart = (cart && typeof cart === 'object' && !Array.isArray(cart)) ? cart : {};
+  const totalItems = Object.values(safeCart).reduce((sum, item) => sum + (item?.quantity || 0), 0);
+  const totalPrice = Object.values(safeCart).reduce((sum, item) => sum + ((item?.price || 0) * (item?.quantity || 0)), 0);
 
   return (
-    <CartContext.Provider value={{ cart, addToCart, removeFromCart, clearCart, totalItems, totalPrice, isCheckoutOpen, setIsCheckoutOpen }}>
+    <CartContext.Provider value={{ cart: safeCart, addToCart, removeFromCart, clearCart, totalItems, totalPrice, isCheckoutOpen, setIsCheckoutOpen }}>
       {children}
     </CartContext.Provider>
   );
