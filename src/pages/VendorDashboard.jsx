@@ -48,7 +48,7 @@ const VendorDashboard = () => {
           allOrders.push(localOrder);
         }
       });
-      allOrders.sort((a, b) => String(b.id).localeCompare(String(a.id)));
+      allOrders.sort((a, b) => new Date(b.timestamp || b.created_at || 0) - new Date(a.timestamp || a.created_at || 0));
       
       const active = allOrders.filter(order => order.status !== 'completed').map(order => ({
         ...order,
@@ -120,8 +120,8 @@ const VendorDashboard = () => {
     // Setup Supabase Realtime Broadcast & Postgres Database Listener
     const channel = supabase.channel(`vendor_sync_${targetShopId}`)
       .on('broadcast', { event: 'order_new' }, (payload) => {
-        if (payload && payload.payload && payload.payload.order) {
-           const newOrd = payload.payload.order;
+        const newOrd = payload?.order || payload?.payload?.order || payload;
+        if (newOrd && newOrd.id) {
            handleNewOrder(newOrd);
            // Persist to local storage to survive refreshes
            const existing = JSON.parse(localStorage.getItem(`sgu_vendor_orders_${targetShopId}`) || '[]');
