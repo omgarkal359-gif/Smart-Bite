@@ -150,34 +150,40 @@ export const api = {
   },
 
   // ── Orders ──────────────────────────────────────────────────
+  // ── Orders ──────────────────────────────────────────────────
   async createOrder(orderData) {
     try {
       const stallId = orderData.items && orderData.items.length > 0 ? orderData.items[0].stallId : null;
       const defaultStatus = orderData.payment === 'Cash' ? 'pending_cash' : 'placed';
+      const orderId = orderData.id || orderData.orderId || `ORD-${Date.now()}`;
+      const payloadWithId = { ...orderData, id: orderId };
       
       // 1. Post to local backend API first if available
       let sqliteRes = null;
       try {
         sqliteRes = await fetchAPI('/orders', {
           method: 'POST',
-          body: JSON.stringify(orderData)
+          body: JSON.stringify(payloadWithId)
         });
       } catch (err) {
         // Local API offline
       }
 
       const actualOrder = (sqliteRes && (sqliteRes.order || sqliteRes)) || { 
-        id: `ORD-${Date.now()}`, 
+        id: orderId, 
         status: defaultStatus, 
-        ...orderData, 
+        ...payloadWithId, 
         timestamp: new Date().toISOString(),
         created_at: new Date().toISOString()
       };
 
+      // Ensure actualOrder always has the correct ID
+      actualOrder.id = orderId;
+
       // 2. Sync order to Supabase table
       try {
         const supabasePayload = {
-          id: actualOrder.id,
+          id: orderId,
           customerName: orderData.customerName,
           customername: orderData.customerName,
           customer_name: orderData.customerName,
@@ -201,7 +207,7 @@ export const api = {
 
       // Persist to localStorage immediately
       const savedOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
-      if (!savedOrders.find(o => o.id === actualOrder.id)) {
+      if (!savedOrders.find(o => String(o.id) === String(orderId))) {
         savedOrders.unshift(actualOrder);
         localStorage.setItem('sgu_orders', JSON.stringify(savedOrders));
       }
@@ -225,7 +231,8 @@ export const api = {
     } catch (err) {
       const stallId = orderData.items && orderData.items.length > 0 ? orderData.items[0].stallId : null;
       const defaultStatus = orderData.payment === 'Cash' ? 'pending_cash' : 'placed';
-      const fallbackOrder = { id: `ORD-${Date.now()}`, status: defaultStatus, ...orderData, stall_id: stallId, timestamp: new Date().toISOString() };
+      const orderId = orderData.id || orderData.orderId || `ORD-${Date.now()}`;
+      const fallbackOrder = { id: orderId, status: defaultStatus, ...orderData, stall_id: stallId, timestamp: new Date().toISOString() };
       
       if (stallId) {
         const channel = supabase.channel(`vendor_sync_${stallId}`);
@@ -264,9 +271,21 @@ export const api = {
   async getOrder(orderId) {
     try {
       let order = null;
-      const { data, error } = await supabase.from('orders').select('*').eq('id', orderId).single();
-      if (!error && data) order = data;
+      // 1. Query Supabase
+      try {
+        const { data, error } = await supabase.from('orders').select('*').eq('id', orderId).single();
+        if (!error && data) {
+          order = {
+            ...data,
+            customerId: data.customer_id || data.customerId || data.customerid,
+            customerName: data.customer_name || data.customerName || data.customername,
+            stallId: data.stall_id || data.stallId || data.stallid,
+            stallName: data.stall_name || data.stallName || data.stallname,
+          };
+        }
+      } catch (e) {}
       
+      // 2. Query REST API
       const sqliteOrder = await fetchAPI(`/orders/${orderId}`).catch(() => null);
       if (sqliteOrder && sqliteOrder.id) {
         if (!order) order = sqliteOrder;
@@ -274,9 +293,35 @@ export const api = {
           order.status = sqliteOrder.status;
         }
       }
+
+      // 3. Fallback to localStorage sgu_orders
+      if (!order) {
+        const savedOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
+        const found = savedOrders.find(o => String(o.id) === String(orderId));
+        if (found) order = found;
+      }
+
+      // 4. Fallback to localStorage vendor orders
+      if (!order) {
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && key.startsWith('sgu_vendor_orders_')) {
+            try {
+              const list = JSON.parse(localStorage.getItem(key) || '[]');
+              const found = list.find(o => String(o.id) === String(orderId));
+              if (found) {
+                order = found;
+                break;
+              }
+            } catch (e) {}
+          }
+        }
+      }
+
       return order;
     } catch (err) {
-      return null;
+      const savedOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
+      return savedOrders.find(o => String(o.id) === String(orderId)) || null;
     }
   },
   

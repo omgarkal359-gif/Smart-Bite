@@ -61,16 +61,17 @@ const DigitalReceiptTracker = () => {
 
     const applyNewStatus = (newStatus) => {
       if (!newStatus) return;
+      const lower = String(newStatus).toLowerCase();
+      if (lower === 'placed' || lower === 'pending' || lower === 'pending_cash') setCurrentStep(0);
+      else if (lower === 'preparing') setCurrentStep(1);
+      else if (lower === 'ready' || lower === 'completed') setCurrentStep(2);
+
       setOrder(prev => {
-        if (!prev) return prev;
-        const updated = { ...prev, status: newStatus };
-        if (newStatus === 'placed') setCurrentStep(0);
-        else if (newStatus === 'preparing') setCurrentStep(1);
-        else if (newStatus === 'ready' || newStatus === 'completed') setCurrentStep(2);
+        const updated = prev ? { ...prev, status: newStatus } : { id: orderId, status: newStatus };
         
         try {
           const savedOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
-          const newOrdersList = savedOrders.map(o => o.id === orderId ? { ...o, status: newStatus } : o);
+          const newOrdersList = savedOrders.map(o => String(o.id) === String(orderId) ? { ...o, status: newStatus } : o);
           localStorage.setItem('sgu_orders', JSON.stringify(newOrdersList));
         } catch (e) {}
 

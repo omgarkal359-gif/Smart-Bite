@@ -377,10 +377,10 @@ app.post('/api/stalls/:id/menu', async (req, res) => {
 
 // Create Order
 app.post('/api/orders', async (req, res) => {
-  const { customerName, customerId, type, payment, total, items } = req.body;
+  const { customerName, customerId, type, payment, total, items, id: customId, orderId: reqOrderId } = req.body;
   try {
-    // Generate order ID
-    const orderId = `SGU-${Math.floor(1000 + Math.random() * 9000)}`;
+    // Preserve exact order ID from client or generate fallback
+    const orderId = customId || reqOrderId || `ORD-${Date.now()}`;
     const now = new Date().toISOString();
     const initialStatus = payment === 'Cash' ? 'pending_cash' : 'placed';
 
