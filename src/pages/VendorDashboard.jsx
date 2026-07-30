@@ -117,7 +117,7 @@ const VendorDashboard = () => {
     socket.on('order_new', handleNewOrder);
     socket.on('order_status_update', handleStatusUpdate);
 
-    // Setup Supabase Realtime Broadcast Listener to bypass RLS DB blocks
+    // Setup Supabase Realtime Broadcast & Postgres Database Listener
     const channel = supabase.channel(`vendor_sync_${targetShopId}`)
       .on('broadcast', { event: 'order_new' }, (payload) => {
         if (payload && payload.payload && payload.payload.order) {
@@ -128,6 +128,26 @@ const VendorDashboard = () => {
            if (!existing.find(o => o.id === newOrd.id)) {
              localStorage.setItem(`sgu_vendor_orders_${targetShopId}`, JSON.stringify([newOrd, ...existing]));
            }
+        }
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
+        if (payload.eventType === 'INSERT' && payload.new) {
+          const newOrd = payload.new;
+          const ordStallId = newOrd.stall_id || newOrd.stallId || newOrd.shop_id || newOrd.shopId;
+          if (ordStallId && String(ordStallId) === String(targetShopId)) {
+            handleNewOrder(newOrd);
+            // Persist to local storage to survive refreshes
+            const existing = JSON.parse(localStorage.getItem(`sgu_vendor_orders_${targetShopId}`) || '[]');
+            if (!existing.find(o => o.id === newOrd.id)) {
+              localStorage.setItem(`sgu_vendor_orders_${targetShopId}`, JSON.stringify([newOrd, ...existing]));
+            }
+          }
+        } else if (payload.eventType === 'UPDATE' && payload.new) {
+          const updatedOrd = payload.new;
+          const ordStallId = updatedOrd.stall_id || updatedOrd.stallId || updatedOrd.shop_id || updatedOrd.shopId;
+          if (ordStallId && String(ordStallId) === String(targetShopId)) {
+            handleStatusUpdate(updatedOrd);
+          }
         }
       })
       .subscribe();
