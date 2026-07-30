@@ -93,12 +93,10 @@ export const AdminShell = ({ activeModule, setActiveModule, user, children }) =>
             <div className="sidebar-logo-icon">
               <ShieldAlert size={22} />
             </div>
-            {!isSidebarCollapsed && (
-              <div className="flex flex-col">
-                <span style={{ fontSize: '1.1rem', fontWeight: 800, letterSpacing: '0.04em' }}>ADMIN DASHBOARD</span>
-                <span style={{ fontSize: '0.62rem', fontWeight: 700, color: 'rgba(255,255,255,0.75)', letterSpacing: '0.1em' }}>SGU SMARTBITE ENTERPRISE</span>
+            <div className="sidebar-logo-text flex flex-col">
+                <span style={{ fontSize: '1.1rem', fontWeight: 800, letterSpacing: '0.04em', display: 'block' }}>ADMIN DASHBOARD</span>
+                <span style={{ fontSize: '0.62rem', fontWeight: 700, color: 'rgba(255,255,255,0.75)', letterSpacing: '0.1em', display: 'block' }}>SGU SMARTBITE ENTERPRISE</span>
               </div>
-            )}
           </div>
           <button 
             onClick={() => {
