@@ -575,11 +575,11 @@ const VendorDashboard = () => {
                     <div className="flex flex-col">
                       <span className="ticket-id" style={{ fontSize: '1.4rem' }}>#{ticket.id}</span>
                       <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                        {ticket.customerName || 'Standard Order'}
+                        {ticket.customer_name || ticket.customerName || 'Standard Order'}
                       </span>
                     </div>
                     <span style={{ fontSize: '0.75rem', fontWeight: 900, color: '#E4002B', textTransform: 'uppercase', fontFamily: "'Oswald', sans-serif" }}>
-                      {ticket.timestamp ? formatRelativeTime(ticket.timestamp).toUpperCase() : (ticket.time || 'Just now').toUpperCase()}
+                      {(ticket.timestamp || ticket.created_at) ? formatRelativeTime(ticket.timestamp || ticket.created_at).toUpperCase() : (ticket.time || 'Just now').toUpperCase()}
                     </span>
                   </div>
 
@@ -750,8 +750,11 @@ const VendorDashboard = () => {
                         <div className="flex justify-between items-center">
                           <span className="font-bold text-md text-navy-900">{order.id}</span>
                           <span className="text-[10px] font-bold text-slate-400 uppercase">
-                            {new Date(order.timestamp || new Date()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            {new Date(order.timestamp || order.created_at || new Date()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </span>
+                        </div>
+                        <div className="text-[11px] font-black text-slate-500 uppercase tracking-widest mt-1 mb-2">
+                          {order.customer_name || order.customerName || 'Standard Order'}
                         </div>
                         
                         <p className="text-xs font-semibold text-slate-600 my-1">
