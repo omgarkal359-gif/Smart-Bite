@@ -85,28 +85,36 @@ const VendorDashboard = () => {
     };
 
     const handleStatusUpdate = (updatedOrder) => {
-      if (updatedOrder.status === 'completed' || updatedOrder.status === 'ready') {
-        setTickets(prev => prev.filter(t => t.id !== updatedOrder.id));
+      const targetId = updatedOrder?.id || updatedOrder?.orderId;
+      const nextStatus = updatedOrder?.status;
+      if (!targetId || !nextStatus) return;
+
+      if (nextStatus === 'completed') {
+        setTickets(prev => prev.filter(t => String(t.id) !== String(targetId)));
         setCompletedTickets(prev => {
           const formatted = {
             ...updatedOrder,
+            id: targetId,
+            status: nextStatus,
             items: typeof updatedOrder.items === 'string' ? updatedOrder.items.split(', ') : updatedOrder.items
           };
-          if (prev.some(t => t.id === updatedOrder.id)) {
-            return prev.map(t => t.id === updatedOrder.id ? formatted : t);
+          if (prev.some(t => String(t.id) === String(targetId))) {
+            return prev.map(t => String(t.id) === String(targetId) ? formatted : t);
           }
           return [formatted, ...prev];
         });
       } else {
         setTickets(prev => {
-          if (prev.some(t => t.id === updatedOrder.id)) {
-            return prev.map(t => t.id === updatedOrder.id ? { 
+          if (prev.some(t => String(t.id) === String(targetId))) {
+            return prev.map(t => String(t.id) === String(targetId) ? { 
               ...t, 
-              status: updatedOrder.status 
+              status: nextStatus 
             } : t);
           }
           const formatted = {
             ...updatedOrder,
+            id: targetId,
+            status: nextStatus,
             items: typeof updatedOrder.items === 'string' ? updatedOrder.items.split(', ') : updatedOrder.items
           };
           return [formatted, ...prev];
