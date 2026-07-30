@@ -268,7 +268,7 @@ const VendorDashboard = () => {
       }
     }
 
-    return { totalOrders, totalRevenue, cashRevenue, upiRevenue, trendingItem, trendingCount: maxCount };
+    return { totalOrders, totalRevenue, upiRevenue, trendingItem, trendingCount: maxCount };
   }, [tickets, completedTickets]);
 
   const handleToggleShop = async () => {
@@ -465,14 +465,7 @@ const VendorDashboard = () => {
             <span className="command-subvalue">Combined Total</span>
           </motion.div>
 
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="elite-card command-card">
-            <div className="flex justify-between items-start">
-              <span className="command-label">Cash Collection</span>
-              <Banknote size={20} className="text-amber-500" />
-            </div>
-            <span className="command-value">₹{metrics.cashRevenue}</span>
-            <span className="command-subvalue text-amber-600">Pending & Collected</span>
-          </motion.div>
+          
 
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="elite-card command-card">
             <div className="flex justify-between items-start">
@@ -521,13 +514,13 @@ const VendorDashboard = () => {
                 richItems = ticket.items;
               }
 
-              const isNew = ticket.status === 'placed' || (!ticket.status && ticket.payment !== 'Cash');
+              const isNew = ticket.status === 'placed' || !ticket.status;
               const isPreparing = ticket.status === 'preparing';
               const isPendingCash = ticket.status === 'pending_cash' || (!ticket.status && ticket.payment === 'Cash');
               const isReady = ticket.status === 'ready';
 
               const statusColor = isPreparing ? '#3B82F6' : isReady ? '#22C55E' : isNew ? '#8B5CF6' : '#F59E0B';
-              const statusLabel = isPreparing ? '🔥 PREPARING' : isReady ? '✅ READY' : isNew ? '🆕 NEW ORDER' : '💵 AWAITING CASH';
+              const statusLabel = isPreparing ? '🔥 PREPARING' : isReady ? '✅ READY' : '🆕 NEW ORDER';
 
               return (
                 <motion.div
@@ -544,16 +537,16 @@ const VendorDashboard = () => {
                   style={{ borderTop: `4px solid ${statusColor}` }}
                 >
                   {/* Pulsing NEW badge */}
-                  {(isNew || isPendingCash) && (
+                                    {isNew && (
                     <div style={{
                       position: 'absolute', top: 12, right: 12,
-                      background: isNew ? '#8B5CF6' : '#F59E0B',
+                      background: '#8B5CF6',
                       color: 'white', borderRadius: 8, padding: '3px 10px',
                       fontSize: '0.6rem', fontWeight: 900, letterSpacing: '0.15em',
                       fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase',
                       animation: 'pulse 1.5s infinite'
                     }}>
-                      {isNew ? 'NEW' : 'CASH'}
+                      NEW
                     </div>
                   )}
 
@@ -578,7 +571,7 @@ const VendorDashboard = () => {
                     </span>
                     <span className={`badge ${ticket.payment === 'Online UPI' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
                       {ticket.payment === 'Online UPI' ? <Smartphone size={13} /> : <Banknote size={13} />}
-                      {ticket.payment || 'Cash'}
+                      {ticket.payment || 'Online UPI'}
                     </span>
                   </div>
 
@@ -662,25 +655,7 @@ const VendorDashboard = () => {
                       </div>
                     )}
 
-                    {isPendingCash && (
-                      <motion.button
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={() => handleConfirmCash(ticket.id)}
-                        style={{
-                          width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-                          padding: '16px', borderRadius: 16, border: 'none', cursor: 'pointer',
-                          fontFamily: "'Oswald', sans-serif", fontWeight: 800, fontSize: '1rem', letterSpacing: '0.05em', textTransform: 'uppercase',
-                          background: 'linear-gradient(135deg, #F59E0B, #D97706)',
-                          color: 'white',
-                          boxShadow: '0 6px 20px rgba(245,158,11,0.4)',
-                          transition: 'all 0.2s'
-                        }}
-                      >
-                        <Banknote size={22} color="white" />
-                        Confirm Cash
-                      </motion.button>
-                    )}
+                    
 
                     {isReady && (
                       <motion.button
