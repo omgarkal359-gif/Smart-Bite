@@ -16,6 +16,41 @@ const MOCK_TICKETS = [];
 
 const COMPLETED_TICKETS_MOCK = [];
 
+const getItemText = (item) => {
+  if (!item) return '';
+  if (typeof item === 'string') return item;
+  if (typeof item === 'object') {
+    const qty = item.quantity || item.qty || 1;
+    const name = item.name || item.title || item.itemName || 'Item';
+    return `${qty}x ${name}`;
+  }
+  return String(item);
+};
+
+const formatOrderItems = (rawItems) => {
+  if (!rawItems) return [];
+  let parsed = rawItems;
+  if (typeof rawItems === 'string') {
+    try {
+      const trimmed = rawItems.trim();
+      if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
+        parsed = JSON.parse(trimmed);
+      } else {
+        return rawItems.split(', ').map(s => s.trim()).filter(Boolean);
+      }
+    } catch (e) {
+      return rawItems.split(', ').map(s => s.trim()).filter(Boolean);
+    }
+  }
+  if (Array.isArray(parsed)) {
+    return parsed.map(getItemText).filter(Boolean);
+  }
+  if (typeof parsed === 'object') {
+    return [getItemText(parsed)];
+  }
+  return [String(parsed)];
+};
+
 const VendorDashboard = () => {
   const navigate = useNavigate();
   const [tickets, setTickets] = useState([]);
@@ -52,10 +87,13 @@ const VendorDashboard = () => {
       
       const active = allOrders.filter(order => order.status !== 'completed' && order.status !== 'ready' && order.status !== 'cancelled').map(order => ({
         ...order,
-        items: typeof order.items === 'string' ? order.items.split(', ') : order.items
+        items: formatOrderItems(order.items)
       }));
 
-      const done = allOrders.filter(order => order.status === 'completed' || order.status === 'ready' || order.status === 'cancelled');
+      const done = allOrders.filter(order => order.status === 'completed' || order.status === 'ready' || order.status === 'cancelled').map(order => ({
+        ...order,
+        items: formatOrderItems(order.items)
+      }));
 
       setTickets(active);
       setCompletedTickets(done);
@@ -78,7 +116,7 @@ const VendorDashboard = () => {
         // Format item split
         const formatted = {
           ...newOrder,
-          items: typeof newOrder.items === 'string' ? newOrder.items.split(', ') : newOrder.items
+          items: formatOrderItems(newOrder.items)
         };
         return [formatted, ...prev];
       });
@@ -96,7 +134,7 @@ const VendorDashboard = () => {
             ...updatedOrder,
             id: targetId,
             status: nextStatus,
-            items: typeof updatedOrder.items === 'string' ? updatedOrder.items.split(', ') : updatedOrder.items
+            items: formatOrderItems(updatedOrder.items)
           };
           if (prev.some(t => String(t.id) === String(targetId))) {
             return prev.map(t => String(t.id) === String(targetId) ? formatted : t);
@@ -115,7 +153,7 @@ const VendorDashboard = () => {
             ...updatedOrder,
             id: targetId,
             status: nextStatus,
-            items: typeof updatedOrder.items === 'string' ? updatedOrder.items.split(', ') : updatedOrder.items
+            items: formatOrderItems(updatedOrder.items)
           };
           return [formatted, ...prev];
         });
@@ -557,7 +595,7 @@ const VendorDashboard = () => {
                       </div>
                       <div className="text-xs font-bold text-slate-300">
                         <span className="block text-[9px] text-slate-500 uppercase tracking-wider mb-0.5">Items</span>
-                        {ticket.items}
+                        {Array.isArray(ticket.items) ? ticket.items.map(getItemText).join(', ') : getItemText(ticket.items)}
                       </div>
                       <div className="flex justify-between items-end mt-2 pt-2 border-t border-dashed border-slate-700/50">
                         <div>
@@ -628,9 +666,13 @@ const VendorDashboard = () => {
                       </div>
 
                       <div className="ticket-items">
-                        {ticket.items.map((item, i) => (
-                          <div key={i} className="ticket-item font-bold text-slate-700">{item}</div>
-                        ))}
+                        {Array.isArray(ticket.items) ? (
+                          ticket.items.map((item, i) => (
+                            <div key={i} className="ticket-item font-bold text-slate-700">{getItemText(item)}</div>
+                          ))
+                        ) : (
+                          <div className="ticket-item font-bold text-slate-700">{getItemText(ticket.items)}</div>
+                        )}
                       </div>
 
                       <div className="ticket-footer mt-auto pt-4 border-t border-dashed border-slate-200">
