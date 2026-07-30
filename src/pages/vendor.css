@@ -1022,11 +1022,10 @@ select.floating-input {
     padding: 14px;
   }
 
-  /* Ticket scroll: vertical linear list on mobile for smooth lag-free vertical scrolling */
   .kds-ticket-scroll {
     flex-direction: column !important;
     overflow-x: hidden !important;
-    overflow-y: visible !important;
+    overflow-y: auto !important; /* Fixed: Allow vertical scrolling */
     gap: 16px !important;
     padding: 8px 4px 40px 4px !important;
     scroll-snap-type: none !important;
@@ -1047,6 +1046,19 @@ select.floating-input {
     will-change: transform, opacity;
     box-sizing: border-box !important;
   }
+
+  .vendor-btn-preparing {
+    background-color: #ef4444 !important;
+    color: white !important;
+    border-color: #dc2626 !important;
+  }
+
+  .vendor-btn-ready {
+    background-color: #22c55e !important;
+    color: white !important;
+    border-color: #16a34a !important;
+  }
+
 
   .kds-ticket:hover {
     transform: none;
