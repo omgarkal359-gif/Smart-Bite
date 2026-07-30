@@ -646,11 +646,12 @@ const VendorDashboard = () => {
                           <div className="flex gap-3 w-full" data-ticket-id={ticket.id}>
                             <button 
                               disabled={ticket.status === 'preparing'}
-                              className={`flex-1 flex items-center justify-center gap-2 py-5 px-4 rounded-xl font-black text-[13px] uppercase tracking-wider cursor-pointer transition-all border border-solid ${
+                              className={`flex-1 flex items-center justify-center gap-2 py-4 px-4 rounded-xl font-black text-[13px] uppercase tracking-wider cursor-pointer transition-all border border-solid ${
                                 ticket.status === 'preparing' 
                                   ? 'bg-slate-200 text-slate-500 border-slate-300 cursor-not-allowed shadow-inner' 
-                                  : 'bg-red-500 text-white border-red-600 hover:bg-red-600 active:bg-red-700 hover:scale-[1.03] active:scale-[0.97]'
+                                  : 'vendor-btn-preparing hover:scale-[1.03] active:scale-[0.97]'
                               }`}
+                              style={ticket.status !== 'preparing' ? { backgroundColor: '#ef4444', color: 'white', borderColor: '#dc2626' } : {}}
                               onClick={() => handleUpdateStatus(ticket.id, 'preparing')}
                             >
                               <Clock size={16} className={ticket.status === 'preparing' ? 'text-slate-500' : 'text-current'} />
@@ -658,7 +659,8 @@ const VendorDashboard = () => {
                             </button>
 
                             <button 
-                              className="flex-1 flex items-center justify-center gap-2 py-5 px-4 rounded-xl font-black text-[13px] uppercase tracking-wider bg-green-500 text-white border border-solid border-green-600 hover:bg-green-600 active:bg-green-700 cursor-pointer transition-all hover:scale-[1.03] active:scale-[0.97]"
+                              className="flex-1 flex items-center justify-center gap-2 py-4 px-4 rounded-xl font-black text-[13px] uppercase tracking-wider cursor-pointer transition-all border border-solid vendor-btn-ready hover:scale-[1.03] active:scale-[0.97]"
+                              style={{ backgroundColor: '#22c55e', color: 'white', borderColor: '#16a34a' }}
                               onClick={() => handleUpdateStatus(ticket.id, 'ready')}
                             >
                               <CheckCircle size={16} className="text-current" />
