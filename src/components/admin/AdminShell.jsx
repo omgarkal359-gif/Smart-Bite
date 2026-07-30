@@ -90,8 +90,8 @@ export const AdminShell = ({ activeModule, setActiveModule, user, children }) =>
       <aside className={`admin-sidebar ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
         <div style={{ padding: '24px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div className="sidebar-logo" onClick={() => navigate('/admin')} style={{ cursor: 'pointer' }}>
-            <div className="sidebar-logo-icon">
-              <ShieldAlert size={22} />
+            <div className="sidebar-logo-icon" style={{ overflow: 'hidden' }}>
+              <img src={sguLogo} alt="SGU Logo" style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '2px' }} />
             </div>
             <div className="sidebar-logo-text flex flex-col">
               <span style={{ fontSize: '1rem', fontWeight: 800, letterSpacing: '0.02em', display: 'block' }}>ADMIN DASHBOARD</span>
