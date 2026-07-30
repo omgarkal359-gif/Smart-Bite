@@ -339,9 +339,11 @@ const VendorDashboard = () => {
 
   const handleToggleShop = async () => {
     const newStatus = shopStatus === 'OPEN' ? 'CLOSED' : 'OPEN';
+    const isOnlineVal = newStatus === 'OPEN' ? 1 : 0;
     try {
       if (targetShopId) {
-        await api.updateStallStatus(targetShopId, { online: newStatus === 'OPEN' });
+        await api.updateStallStatus(targetShopId, { online: isOnlineVal });
+        socket.emit('stall_status_update', { id: targetShopId, online: isOnlineVal });
       }
       setShopStatus(newStatus);
       if (newStatus === 'OPEN') {
@@ -363,6 +365,7 @@ const VendorDashboard = () => {
     try {
       if (targetShopId) {
         await api.updateStallStatus(targetShopId, { busyMode: nextBusy, waitTime: nextWait });
+        socket.emit('stall_status_update', { id: targetShopId, busyMode: nextBusy, waitTime: nextWait });
       }
     } catch (err) {
       // Revert on failure
