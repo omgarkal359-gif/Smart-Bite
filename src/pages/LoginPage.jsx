@@ -378,9 +378,9 @@ const LoginPage = () => {
               <div className="sb-logo-ring" aria-hidden="true">
                 <img src={sguLogo} alt="SGU Logo" className="sb-sgu-logo-img" />
               </div>
-              <h1 className="sb-heading">
-                {mode === 'login' ? 'Welcome back' : 'Create account'}
-              </h1>
+              {mode === 'register' && (
+                <h1 className="sb-heading">Create account</h1>
+              )}
               <p className="sb-body">
                 {mode === 'login' ? 'Sign in to continue to Smart Bite' : 'Join Smart Bite today'}
               </p>
