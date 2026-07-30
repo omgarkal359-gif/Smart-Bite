@@ -50,7 +50,7 @@ const VendorDashboard = () => {
       });
       allOrders.sort((a, b) => new Date(b.timestamp || b.created_at || 0) - new Date(a.timestamp || a.created_at || 0));
       
-      const active = allOrders.filter(order => order.status !== 'completed').map(order => ({
+      const active = allOrders.filter(order => order.status !== 'completed' && order.status !== 'cancelled').map(order => ({
         ...order,
         items: typeof order.items === 'string' ? order.items.split(', ') : order.items
       }));
@@ -89,9 +89,10 @@ const VendorDashboard = () => {
       const nextStatus = updatedOrder?.status;
       if (!targetId || !nextStatus) return;
 
-      if (nextStatus === 'completed') {
+      if (nextStatus === 'completed' || nextStatus === 'cancelled') {
         setTickets(prev => prev.filter(t => String(t.id) !== String(targetId)));
-        setCompletedTickets(prev => {
+        if (nextStatus === 'completed') {
+          setCompletedTickets(prev => {
           const formatted = {
             ...updatedOrder,
             id: targetId,
@@ -103,6 +104,7 @@ const VendorDashboard = () => {
           }
           return [formatted, ...prev];
         });
+        }
       } else {
         setTickets(prev => {
           if (prev.some(t => String(t.id) === String(targetId))) {
