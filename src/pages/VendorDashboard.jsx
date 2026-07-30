@@ -50,12 +50,12 @@ const VendorDashboard = () => {
       });
       allOrders.sort((a, b) => new Date(b.timestamp || b.created_at || 0) - new Date(a.timestamp || a.created_at || 0));
       
-      const active = allOrders.filter(order => order.status !== 'completed').map(order => ({
+      const active = allOrders.filter(order => order.status !== 'completed' && order.status !== 'ready').map(order => ({
         ...order,
         items: typeof order.items === 'string' ? order.items.split(', ') : order.items
       }));
 
-      const done = allOrders.filter(order => order.status === 'completed');
+      const done = allOrders.filter(order => order.status === 'completed' || order.status === 'ready');
 
       setTickets(active);
       setCompletedTickets(done);
@@ -89,7 +89,7 @@ const VendorDashboard = () => {
       const nextStatus = updatedOrder?.status;
       if (!targetId || !nextStatus) return;
 
-      if (nextStatus === 'completed') {
+      if (nextStatus === 'completed' || nextStatus === 'ready') {
         setTickets(prev => prev.filter(t => String(t.id) !== String(targetId)));
         setCompletedTickets(prev => {
           const formatted = {
@@ -337,19 +337,19 @@ const VendorDashboard = () => {
     try {
       await api.updateOrderStatus(id, newStatus);
       
-      if (newStatus === 'completed') {
-        setTickets(prev => prev.filter(t => t.id !== id));
-        const ticket = tickets.find(t => t.id === id);
+      if (newStatus === 'completed' || newStatus === 'ready') {
+        setTickets(prev => prev.filter(t => String(t.id) !== String(id)));
+        const ticket = tickets.find(t => String(t.id) === String(id));
         if (ticket) {
           setCompletedTickets(prev => {
-            if (prev.some(t => t.id === id)) {
-              return prev.map(t => t.id === id ? { ...t, status: newStatus } : t);
+            if (prev.some(t => String(t.id) === String(id))) {
+              return prev.map(t => String(t.id) === String(id) ? { ...t, status: newStatus } : t);
             }
             return [{ ...ticket, status: newStatus, timestamp: new Date().toISOString() }, ...prev];
           });
         }
       } else {
-        setTickets(prev => prev.map(t => t.id === id ? { ...t, status: newStatus } : t));
+        setTickets(prev => prev.map(t => String(t.id) === String(id) ? { ...t, status: newStatus } : t));
       }
     } catch (err) {
       alert('Failed to update order status: ' + err.message);
@@ -789,15 +789,23 @@ const VendorDashboard = () => {
 
                         <div className="flex justify-between items-center pt-2 border-t border-dashed border-slate-100 mt-1">
                           <span className="font-bold text-navy-900">₹{order.total}</span>
-                          <div className="flex gap-2">
+                          <div className="flex gap-2 items-center">
                             <span className="text-[9px] font-black uppercase bg-slate-100 text-slate-600 px-2 py-1 rounded">
                               {order.payment}
                             </span>
                             <span className={`text-[9px] font-black uppercase px-2 py-1 rounded ${
-                              order.status === 'ready' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'
+                              order.status === 'ready' ? 'bg-green-100 text-green-700 font-bold' : 'bg-slate-100 text-slate-500'
                             }`}>
-                              {order.status}
+                              {order.status === 'ready' ? '✅ READY FOR PICKUP' : order.status}
                             </span>
+                            {order.status === 'ready' && (
+                              <button 
+                                onClick={() => handleUpdateStatus(order.id, 'completed')}
+                                className="text-[9px] font-black uppercase bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700 transition-colors cursor-pointer border-none"
+                              >
+                                Mark Completed
+                              </button>
+                            )}
                           </div>
                         </div>
                       </GlassCard>
