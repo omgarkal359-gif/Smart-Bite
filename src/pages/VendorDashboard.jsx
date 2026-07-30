@@ -337,10 +337,10 @@ const VendorDashboard = () => {
     try {
       await api.updateOrderStatus(id, newStatus);
       
-      if (newStatus === 'completed') {
+      if (newStatus === 'completed' || newStatus === 'cancelled') {
         setTickets(prev => prev.filter(t => t.id !== id));
         const ticket = tickets.find(t => t.id === id);
-        if (ticket) {
+        if (ticket && newStatus === 'completed') {
           setCompletedTickets(prev => {
             if (prev.some(t => t.id === id)) {
               return prev.map(t => t.id === id ? { ...t, status: newStatus } : t);
@@ -599,9 +599,24 @@ const VendorDashboard = () => {
                         {ticket.customer_name || ticket.customerName || 'Standard Order'}
                       </span>
                     </div>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 900, color: '#E4002B', textTransform: 'uppercase', fontFamily: "'Oswald', sans-serif" }}>
-                      {(ticket.timestamp || ticket.created_at) ? String(formatRelativeTime(ticket.timestamp || ticket.created_at)).toUpperCase() : String(ticket.time || 'Just now').toUpperCase()}
-                    </span>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
+                      <button 
+                        onClick={() => { if(window.confirm('Are you sure you want to cancel this order?')) handleUpdateStatus(ticket.id, 'cancelled') }}
+                        style={{ 
+                          background: '#FEE2E2', border: 'none', cursor: 'pointer', color: '#EF4444', 
+                          padding: '4px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          transition: 'background 0.2s'
+                        }}
+                        onMouseOver={(e) => e.currentTarget.style.background = '#FECACA'}
+                        onMouseOut={(e) => e.currentTarget.style.background = '#FEE2E2'}
+                        title="Cancel Order"
+                      >
+                        <X size={16} strokeWidth={3} />
+                      </button>
+                      <span style={{ fontSize: '0.75rem', fontWeight: 900, color: '#E4002B', textTransform: 'uppercase', fontFamily: "'Oswald', sans-serif" }}>
+                        {(ticket.timestamp || ticket.created_at) ? String(formatRelativeTime(ticket.timestamp || ticket.created_at)).toUpperCase() : String(ticket.time || 'Just now').toUpperCase()}
+                      </span>
+                    </div>
                   </div>
 
                   {/* Badges */}
