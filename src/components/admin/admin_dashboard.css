@@ -46,21 +46,24 @@
 
 /* Sidebar Styling - Vibrant Light Red Theme */
 .admin-sidebar {
-  width: 260px;
+  width: 76px;
   background: linear-gradient(180deg, #FF3B5C 0%, #E11D48 100%);
   color: #FFFFFF;
   display: flex;
   flex-direction: column;
-  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: width 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
   z-index: 100;
   position: relative;
   border-right: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: 4px 0 25px rgba(225, 29, 72, 0.15);
   flex-shrink: 0;
+  overflow: hidden;
 }
 
-.admin-sidebar.collapsed {
-  width: 80px;
+@media (min-width: 1025px) {
+  .admin-sidebar:hover {
+    width: 250px;
+  }
 }
 
 .sidebar-header {
@@ -82,6 +85,22 @@
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
+  white-space: nowrap;
+}
+.sidebar-logo-text {
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  transform: translateX(-10px);
+  transition: opacity 0.35s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+  pointer-events: none;
+}
+@media (min-width: 1025px) {
+  .admin-sidebar:hover .sidebar-logo-text {
+    opacity: 1;
+    transform: translateX(0);
+    pointer-events: auto;
+  }
 }
 
 .sidebar-logo-icon {
@@ -109,10 +128,10 @@
 .admin-nav-item {
   display: flex !important;
   align-items: center !important;
-  gap: 12px !important;
-  padding: 12px 16px !important;
+  gap: 14px !important;
+  padding: 12px 14px !important;
   border-radius: 12px !important;
-  color: rgba(255, 255, 255, 0.92) !important;
+  color: rgba(255, 255, 255, 0.8) !important;
   font-family: 'Inter', system-ui, sans-serif !important;
   font-weight: 600 !important;
   font-size: 0.9rem !important;
@@ -121,10 +140,42 @@
   background: transparent !important;
   width: 100% !important;
   text-align: left !important;
-  transition: all 0.2s ease !important;
+  transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1) !important;
   position: relative !important;
   white-space: nowrap !important;
   text-shadow: none !important;
+  overflow: hidden;
+}
+
+.admin-nav-icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 24px;
+  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), color 0.25s ease;
+}
+
+.admin-nav-item:hover .admin-nav-icon-wrapper {
+  transform: scale(1.08);
+  color: #FFFFFF;
+}
+
+.admin-nav-label {
+  opacity: 0;
+  transform: translateX(-5px);
+  transition: opacity 0.35s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+  white-space: nowrap;
+  font-weight: 600;
+}
+@media (min-width: 1025px) {
+  .admin-sidebar:hover .admin-nav-label {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  .admin-nav-item:hover .admin-nav-label {
+    transform: translateX(3px);
+  }
 }
 
 .admin-nav-item:hover {
@@ -135,10 +186,13 @@
 .admin-nav-item.active {
   color: #E11D48 !important;
   background: #FFFFFF !important;
-  border-left: 4px solid #0F172A !important;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15) !important;
+  border-left: none !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
   font-weight: 800 !important;
   text-shadow: none !important;
+}
+.admin-nav-item.active .admin-nav-icon-wrapper {
+  color: #E11D48 !important;
 }
 
 .admin-nav-item-badge {
@@ -151,6 +205,13 @@
   border-radius: 999px !important;
   font-family: 'Inter', sans-serif !important;
   letter-spacing: 0.05em;
+  opacity: 0;
+  transition: opacity 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@media (min-width: 1025px) {
+  .admin-sidebar:hover .admin-nav-item-badge {
+    opacity: 1;
+  }
 }
 
 .admin-nav-item.active .admin-nav-item-badge {
@@ -575,6 +636,11 @@
   .admin-sidebar.mobile-open {
     left: 0;
   }
+  .sidebar-logo-text, .admin-nav-label, .admin-nav-item-badge, .sidebar-footer {
+    opacity: 1 !important;
+    transform: translateX(0) !important;
+    pointer-events: auto !important;
+  }
   .admin-main-container {
     width: 100%;
   }
@@ -682,3 +748,24 @@
   box-shadow: 0 4px 14px rgba(255, 59, 92, 0.3);
 }
 
+
+
+/* Sidebar Footer (System Engine) */
+.sidebar-footer {
+  opacity: 0;
+  white-space: nowrap;
+  transition: opacity 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+  pointer-events: none;
+}
+@media (min-width: 1025px) {
+  .admin-sidebar:hover .sidebar-footer {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+@media (min-width: 1025px) {
+  .sidebar-mobile-close-btn {
+    display: none !important;
+  }
+}
