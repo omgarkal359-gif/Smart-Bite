@@ -70,9 +70,20 @@ export const api = {
 
   async updateStallStatus(stallId, statusData) {
     try {
+      // Local cache update
+      try {
+        const stored = JSON.parse(localStorage.getItem('sgu_stalls') || '[]');
+        const updated = stored.map(s => s.id === stallId ? { ...s, ...statusData } : s);
+        localStorage.setItem('sgu_stalls', JSON.stringify(updated));
+      } catch (e) {}
+
+      // Socket broadcast
+      try {
+        socket.emit('stall_status_update', { id: stallId, ...statusData });
+      } catch (e) {}
+
       const { data, error } = await supabase.from('stalls').update(statusData).eq('id', stallId).select();
       if (!error && data) {
-        // Broadcast the stall status change so student menu pages update instantly
         const updatedStall = data[0] || { id: stallId, ...statusData };
         const broadcastChannel = supabase.channel(`stall-status-${stallId}`);
         broadcastChannel.subscribe((status) => {
@@ -91,7 +102,6 @@ export const api = {
         method: 'PUT',
         body: JSON.stringify(statusData)
       });
-      // Also broadcast via Supabase even if using local backend
       const broadcastChannel2 = supabase.channel(`stall-status-${stallId}`);
       broadcastChannel2.subscribe((status) => {
         if (status === 'SUBSCRIBED') {
