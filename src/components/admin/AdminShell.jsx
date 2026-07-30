@@ -189,8 +189,8 @@ export const AdminShell = ({ activeModule, setActiveModule, user, children }) =>
                   {user?.name ? user.name.charAt(0).toUpperCase() : 'A'}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
-                  <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#0F172A', lineHeight: 1.1 }}>
-                    {user?.name || 'Administrator'}
+                  <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#0F172A', lineHeight: 1.1, textTransform: 'none' }}>
+                    {user?.username || 'Administrator'}
                   </span>
                   <span style={{ fontSize: '0.65rem', fontWeight: 800, color: '#FF3B5C', textTransform: 'uppercase', fontFamily: "'Oswald', sans-serif" }}>
                     SUPER ADMIN
@@ -206,8 +206,8 @@ export const AdminShell = ({ activeModule, setActiveModule, user, children }) =>
                   boxShadow: '0 15px 30px rgba(0,0,0,0.12)', padding: 8, zIndex: 100
                 }}>
                   <div style={{ padding: '10px 12px', borderBottom: '1px solid #F1F5F9', marginBottom: 4 }}>
-                    <div style={{ fontWeight: 800, fontSize: '0.85rem', color: '#0F172A' }}>{user?.name || 'Administrator'}</div>
-                    <div style={{ fontSize: '0.72rem', color: '#64748B' }}>{user?.username || 'admin@sgu.edu'}</div>
+                    <div style={{ fontWeight: 800, fontSize: '0.85rem', color: '#0F172A', wordBreak: 'break-all' }}>{user?.username || 'Administrator'}</div>
+                    <div style={{ fontSize: '0.72rem', color: '#64748B' }}>{user?.role || 'admin'}</div>
                   </div>
                   <button 
                     onClick={() => { setIsProfileMenuOpen(false); setActiveModule('config'); }}
