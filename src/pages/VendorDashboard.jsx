@@ -636,14 +636,14 @@ const VendorDashboard = () => {
                               whileHover={{ scale: ticket.status === 'preparing' ? 1 : 1.03 }}
                               whileTap={{ scale: ticket.status === 'preparing' ? 1 : 0.97 }}
                               disabled={ticket.status === 'preparing'}
-                              className={`vendor-btn-preparing flex-1 flex items-center justify-center gap-2 py-5 px-4 rounded-xl font-black text-[13px] uppercase tracking-wider cursor-pointer transition-all border border-solid ${
+                              className={`flex-1 flex items-center justify-center gap-2 py-5 px-4 rounded-xl font-black text-[13px] uppercase tracking-wider cursor-pointer transition-all border border-solid ${
                                 ticket.status === 'preparing' 
-                                  ? 'bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed' 
-                                  : 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100'
+                                  ? 'bg-slate-200 text-slate-500 border-slate-300 cursor-not-allowed shadow-inner' 
+                                  : 'vendor-btn-preparing bg-red-50 text-red-600 border-red-200 hover:bg-red-100'
                               }`}
                               onClick={() => handleUpdateStatus(ticket.id, 'preparing')}
                             >
-                              <Clock size={16} className={ticket.status === 'preparing' ? 'text-slate-400' : 'text-current'} />
+                              <Clock size={16} className={ticket.status === 'preparing' ? 'text-slate-500' : 'text-current'} />
                               Preparing
                             </motion.button>
 
