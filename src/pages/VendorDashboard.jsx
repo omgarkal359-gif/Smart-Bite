@@ -394,14 +394,8 @@ const VendorDashboard = () => {
     }
   };
 
-  const handleConfirmCash = (id) => handleUpdateStatus(id, 'placed');
-
-  const awaitingCashTickets = useMemo(() => {
-    return tickets.filter(t => t.status === 'pending_cash');
-  }, [tickets]);
-
   const activeTickets = useMemo(() => {
-    return tickets.filter(t => t.status !== 'pending_cash');
+    return tickets;
   }, [tickets]);
 
   return (
@@ -555,76 +549,13 @@ const VendorDashboard = () => {
           </motion.div>
         </div>
 
-        {/* Restructured Layout: Cash Desk & Kitchen Queue */}
-        <div className="flex gap-6 mt-4 flex-1 min-h-0" style={{ display: 'flex', gap: '24px', flex: 1, minHeight: 0 }}>
-          {/* Left Column: Cash Desk */}
-          <div className="cash-counter-column" style={{ width: '340px', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '16px', background: 'rgba(15, 23, 42, 0.4)', borderRadius: '24px', padding: '20px', border: '1px solid rgba(255, 255, 255, 0.05)', overflowY: 'auto', maxHeight: 'calc(100vh - 280px)' }}>
-            <h3 className="heading-3 text-white flex items-center gap-2 m-0" style={{ fontSize: '1.25rem', fontFamily: 'var(--font-heading)', textTransform: 'uppercase', letterSpacing: '1px' }}>
-              <Banknote size={20} className="text-amber-500" />
-              Cash Desk ({awaitingCashTickets.length})
-            </h3>
-            <div className="flex flex-col gap-4 overflow-y-auto pr-1">
-              <AnimatePresence>
-                {awaitingCashTickets.length === 0 ? (
-                  <motion.div 
-                    initial={{ opacity: 0 }} 
-                    animate={{ opacity: 1 }}
-                    className="flex flex-col items-center justify-center py-12 text-slate-400 font-bold text-sm text-center"
-                    style={{ border: '2px dashed rgba(255, 255, 255, 0.1)', borderRadius: '16px' }}
-                  >
-                    <CheckCircle size={32} className="text-slate-500 mb-2 opacity-50" />
-                    No Pending Payments
-                  </motion.div>
-                ) : (
-                  awaitingCashTickets.map(ticket => (
-                    <motion.div 
-                      key={ticket.id}
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.95 }}
-                      className="elite-card p-4 flex flex-col gap-3 border-amber-500 border-2 bg-amber-950/20"
-                      style={{ border: '2px solid #F59E0B', background: 'rgba(245, 158, 11, 0.05)', borderRadius: '16px' }}
-                    >
-                      <div className="flex justify-between items-center">
-                        <span className="font-extrabold text-lg text-white">{ticket.id}</span>
-                        <span className="text-[10px] font-black uppercase bg-amber-500/20 text-amber-400 px-2 py-1 rounded">Awaiting Cash</span>
-                      </div>
-                      <div className="text-xs font-bold text-slate-300">
-                        <span className="block text-[9px] text-slate-500 uppercase tracking-wider mb-0.5">Customer</span>
-                        {ticket.customerName}
-                      </div>
-                      <div className="text-xs font-bold text-slate-300">
-                        <span className="block text-[9px] text-slate-500 uppercase tracking-wider mb-0.5">Items</span>
-                        {Array.isArray(ticket.items) ? ticket.items.map(getItemText).join(', ') : getItemText(ticket.items)}
-                      </div>
-                      <div className="flex justify-between items-end mt-2 pt-2 border-t border-dashed border-slate-700/50">
-                        <div>
-                          <span className="text-[9px] text-slate-500 font-black uppercase block">Amount</span>
-                          <span className="text-xl font-black text-white">₹{ticket.total}</span>
-                        </div>
-                        <motion.button 
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          onClick={() => handleConfirmCash(ticket.id)}
-                          className="bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-[10px] uppercase tracking-wider py-2 px-3 rounded-lg flex items-center gap-1 shadow-sm border-none cursor-pointer"
-                        >
-                          Confirm Cash
-                        </motion.button>
-                      </div>
-                    </motion.div>
-                  ))
-                )}
-              </AnimatePresence>
-            </div>
-          </div>
-
-          {/* Right Column: Kitchen Queue */}
-          <div className="flex-1 flex flex-col min-w-0" style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
-            <h3 className="heading-3 text-white flex items-center gap-2 m-0 mb-4" style={{ fontSize: '1.25rem', fontFamily: 'var(--font-heading)', textTransform: 'uppercase', letterSpacing: '1px' }}>
-              <Utensils size={20} className="text-red-500" />
-              Kitchen Queue ({activeTickets.length})
-            </h3>
-            <div className="kds-ticket-scroll" style={{ marginTop: 0, padding: '0 0 40px 0' }}>
+        {/* Kitchen Queue */}
+        <div className="flex flex-col mt-4 flex-1 min-h-0" style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+          <h3 className="heading-3 text-white flex items-center gap-2 m-0 mb-4" style={{ fontSize: '1.25rem', fontFamily: 'var(--font-heading)', textTransform: 'uppercase', letterSpacing: '1px' }}>
+            <Utensils size={20} className="text-red-500" />
+            Kitchen Queue ({activeTickets.length})
+          </h3>
+          <div className="kds-ticket-scroll" style={{ marginTop: 0, padding: '0 0 40px 0' }}>
               <AnimatePresence>
                 {activeTickets.length === 0 ? (
                   <motion.div 
@@ -739,8 +670,7 @@ const VendorDashboard = () => {
               </AnimatePresence>
             </div>
           </div>
-        </div>
-      </main>
+        </main>
 
 
       {/* Sidebar Drawer */}
