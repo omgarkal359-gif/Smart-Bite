@@ -88,29 +88,22 @@ export const AdminShell = ({ activeModule, setActiveModule, user, children }) =>
 
       {/* Admin Sidebar */}
       <aside className={`admin-sidebar ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
-        <div className="sidebar-header">
-          <div className="sidebar-logo">
+        <div style={{ padding: '24px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div className="sidebar-logo" onClick={() => navigate('/admin')} style={{ cursor: 'pointer' }}>
             <div className="sidebar-logo-icon">
               <ShieldAlert size={22} />
             </div>
-            {!isSidebarCollapsed && (
-              <div className="flex flex-col">
-                <span style={{ fontSize: '1.1rem', fontWeight: 800, letterSpacing: '0.04em' }}>ADMIN DASHBOARD</span>
-                <span style={{ fontSize: '0.62rem', fontWeight: 700, color: 'rgba(255,255,255,0.75)', letterSpacing: '0.1em' }}>SGU SMARTBITE ENTERPRISE</span>
-              </div>
-            )}
+            <div className="sidebar-logo-text flex flex-col">
+              <span style={{ fontSize: '1rem', fontWeight: 800, letterSpacing: '0.02em', display: 'block' }}>ADMIN DASHBOARD</span>
+              <span style={{ fontSize: '0.58rem', fontWeight: 700, color: 'rgba(255,255,255,0.75)', letterSpacing: '0.08em', display: 'block' }}>SGU SMARTBITE ENTERPRISE</span>
+            </div>
           </div>
           <button 
-            onClick={() => {
-              if (isMobileMenuOpen) {
-                setIsMobileMenuOpen(false);
-              } else {
-                setIsSidebarCollapsed(!isSidebarCollapsed);
-              }
-            }}
+            className="sidebar-mobile-close-btn lg:hidden"
+            onClick={() => setIsMobileMenuOpen(false)}
             style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.85)', cursor: 'pointer', padding: 4 }}
           >
-            {isMobileMenuOpen ? <X size={20} /> : (isSidebarCollapsed ? null : <Menu size={18} />)}
+            <X size={20} />
           </button>
         </div>
 
