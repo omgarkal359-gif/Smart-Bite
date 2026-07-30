@@ -69,18 +69,16 @@ export const OverviewModule = ({ onNavigateModule }) => {
       const allOrders = data.orders || [];
       setAllRawOrders(allOrders);
 
-      const activeCount = allOrders.filter(o => ['placed', 'preparing', 'pending_cash'].includes(o.status)).length;
+      const activeCount = allOrders.filter(o => ['placed', 'preparing'].includes(o.status)).length;
       
       const digital = allOrders
-        .filter(o => o.status === 'completed' && o.payment !== 'Cash')
+        .filter(o => o.status === 'completed' )
         .reduce((sum, o) => sum + o.total, 0);
 
-      const cash = allOrders
-        .filter(o => o.status === 'completed' && o.payment === 'Cash')
-        .reduce((sum, o) => sum + o.total, 0);
+      
 
       setMetrics({
-        totalSales: data.totalSales || (digital + cash),
+        totalSales: data.totalSales || digital,
         totalOrders: data.totalOrders || allOrders.length,
         activeOrders: activeCount,
         digitalSales: digital,
@@ -457,7 +455,7 @@ export const OverviewModule = ({ onNavigateModule }) => {
                   </td>
                   <td style={{ textAlign: 'center' }}>
                     <span style={{ fontSize: '0.7rem', fontWeight: 800, padding: '3px 8px', borderRadius: 999, background: '#D1FAE5', color: '#059669', fontFamily: "'Oswald', sans-serif" }}>
-                      {shop.upiPct}% UPI · {100 - shop.upiPct}% Cash
+                      {shop.upiPct}% UPI 
                     </span>
                   </td>
                   <td style={{ textAlign: 'right' }}>
