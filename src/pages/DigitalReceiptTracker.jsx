@@ -547,7 +547,7 @@ const DigitalReceiptTracker = () => {
               UNAUTHORIZED ORDER LINK
             </h2>
             <p style={{ fontSize: '0.85rem', color: '#64748B', lineHeight: 1.5, margin: '0 0 20px 0', fontWeight: 500 }}>
-              Security Policy Alert: You are not authorized to view or access another student's order details by modifying the order number in the link.
+              Security Policy Alert: You are not authorized to view or access another student&apos;s order details by modifying the order number in the link.
             </p>
             <button 
               onClick={() => navigate('/student/orders')}
