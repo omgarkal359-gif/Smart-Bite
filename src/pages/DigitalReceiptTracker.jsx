@@ -61,12 +61,14 @@ const DigitalReceiptTracker = () => {
 
     const applyNewStatus = (newStatus) => {
       if (!newStatus) return;
+      
+      if (newStatus === 'placed') setCurrentStep(0);
+      else if (newStatus === 'preparing') setCurrentStep(1);
+      else if (newStatus === 'ready' || newStatus === 'completed') setCurrentStep(2);
+      
       setOrder(prev => {
         if (!prev) return prev;
         const updated = { ...prev, status: newStatus };
-        if (newStatus === 'placed') setCurrentStep(0);
-        else if (newStatus === 'preparing') setCurrentStep(1);
-        else if (newStatus === 'ready' || newStatus === 'completed') setCurrentStep(2);
         
         try {
           const savedOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
