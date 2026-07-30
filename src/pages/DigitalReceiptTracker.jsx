@@ -59,52 +59,53 @@ const DigitalReceiptTracker = () => {
 
     loadOrder();
 
+    const applyNewStatus = (newStatus) => {
+      if (!newStatus) return;
+      setOrder(prev => {
+        if (!prev) return prev;
+        const updated = { ...prev, status: newStatus };
+        if (newStatus === 'placed') setCurrentStep(0);
+        else if (newStatus === 'preparing') setCurrentStep(1);
+        else if (newStatus === 'ready' || newStatus === 'completed') setCurrentStep(2);
+        
+        try {
+          const savedOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
+          const newOrdersList = savedOrders.map(o => o.id === orderId ? { ...o, status: newStatus } : o);
+          localStorage.setItem('sgu_orders', JSON.stringify(newOrdersList));
+        } catch (e) {}
+
+        return updated;
+      });
+    };
+
     // Listen to real-time socket events for this order status
     socket.emit('join', `order-${orderId}`);
 
-    const handleStatusUpdate = (updatedOrder) => {
-      const savedUser = getStoredUser() || {};
-      const currentUserId = (savedUser.username || savedUser.id || '').trim().toLowerCase();
-      const currentUserRole = (savedUser.role || 'student').trim().toLowerCase();
-      const orderOwner = (updatedOrder.customerId || updatedOrder.customerid || '').trim().toLowerCase();
-
-      if ((currentUserRole === 'student' || currentUserRole === 'guest') && currentUserId && orderOwner && orderOwner !== currentUserId) {
-        return;
+    const handleSocketUpdate = (data) => {
+      const targetId = data?.id || data?.orderId;
+      if (targetId && String(targetId) === String(orderId) && data.status) {
+        applyNewStatus(data.status);
       }
-
-      setOrder(updatedOrder);
-      if (updatedOrder.status === 'placed') setCurrentStep(0);
-      else if (updatedOrder.status === 'preparing') setCurrentStep(1);
-      else if (updatedOrder.status === 'ready' || updatedOrder.status === 'completed') setCurrentStep(2);
     };
 
-    socket.on('order_status_update', handleStatusUpdate);
+    socket.on('order_status_update', handleSocketUpdate);
 
-    // Setup Supabase Realtime Broadcast Listener to bypass RLS DB blocks
+    // Setup Supabase Realtime Broadcast & Postgres Database Listener
     const channel = supabase.channel(`student_sync_${orderId}`)
       .on('broadcast', { event: 'order_status_update' }, (payload) => {
-        if (payload && payload.payload && payload.payload.status) {
-          setOrder(prev => {
-            if (!prev) return null;
-            const updated = { ...prev, status: payload.payload.status };
-            handleStatusUpdate(updated);
-            
-            // Persist to local storage
-            const savedOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
-            const newOrdersList = savedOrders.map(o => o.id === orderId ? { ...o, status: payload.payload.status } : o);
-            localStorage.setItem('sgu_orders', JSON.stringify(newOrdersList));
-            
-            return updated;
-          });
-        }
+        const status = payload?.payload?.status || payload?.status;
+        if (status) applyNewStatus(status);
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders', filter: `id=eq.${orderId}` }, (payload) => {
+        if (payload?.new?.status) applyNewStatus(payload.new.status);
       })
       .subscribe();
 
-    // Polling fallback
-    const interval = setInterval(loadOrder, 7000); // Poll every 7 seconds
+    // Fast polling fallback (every 2 seconds)
+    const interval = setInterval(loadOrder, 2000);
 
     return () => {
-      socket.off('order_status_update', handleStatusUpdate);
+      socket.off('order_status_update', handleSocketUpdate);
       supabase.removeChannel(channel);
       clearInterval(interval);
     };
