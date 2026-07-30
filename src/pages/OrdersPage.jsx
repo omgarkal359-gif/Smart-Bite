@@ -40,7 +40,7 @@ const OrdersPage = () => {
       if (!targetId || !nextStatus) return;
 
       setOrders(prev => {
-        return prev.map(order => order.id === targetId ? {
+        return prev.map(order => String(order.id) === String(targetId) ? {
           ...order,
           status: nextStatus
         } : order);
@@ -55,7 +55,17 @@ const OrdersPage = () => {
         const targetId = payload?.payload?.orderId || payload?.orderId || payload?.payload?.id;
         const nextStatus = payload?.payload?.status || payload?.status;
         if (targetId && nextStatus) {
-          setOrders(prev => prev.map(o => o.id === targetId ? { ...o, status: nextStatus } : o));
+          setOrders(prev => prev.map(o => String(o.id) === String(targetId) ? { ...o, status: nextStatus } : o));
+        }
+      })
+      .subscribe();
+
+    const globalChannel = supabase.channel('global_orders_status')
+      .on('broadcast', { event: 'order_status_update' }, (payload) => {
+        const targetId = payload?.payload?.orderId || payload?.orderId || payload?.payload?.id;
+        const nextStatus = payload?.payload?.status || payload?.status;
+        if (targetId && nextStatus) {
+          setOrders(prev => prev.map(o => String(o.id) === String(targetId) ? { ...o, status: nextStatus } : o));
         }
       })
       .subscribe();
@@ -66,6 +76,7 @@ const OrdersPage = () => {
     return () => {
       socket.off('order_status_update', handleStatusUpdate);
       supabase.removeChannel(studentListCh);
+      supabase.removeChannel(globalChannel);
       clearInterval(interval);
     };
   }, []);

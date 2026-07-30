@@ -45,10 +45,9 @@ const DigitalReceiptTracker = () => {
         setOrder(foundOrder);
         setIsAccessDenied(false);
         
-        // Map status to step index
-        if (foundOrder.status === 'placed') setCurrentStep(0);
-        else if (foundOrder.status === 'preparing') setCurrentStep(1);
-        else if (foundOrder.status === 'ready' || foundOrder.status === 'completed') setCurrentStep(2);
+        if (foundOrder && foundOrder.status) {
+          applyNewStatus(foundOrder.status);
+        }
       } catch (err) {
         console.error('Failed to load order tracker:', err);
         if (err.message?.toLowerCase().includes('denied') || err.message?.includes('403')) {
@@ -61,7 +60,7 @@ const DigitalReceiptTracker = () => {
 
     const applyNewStatus = (newStatus) => {
       if (!newStatus) return;
-      const lower = String(newStatus).toLowerCase();
+      const lower = String(newStatus).trim().toLowerCase();
       if (lower === 'placed' || lower === 'pending' || lower === 'pending_cash') setCurrentStep(0);
       else if (lower === 'preparing') setCurrentStep(1);
       else if (lower === 'ready' || lower === 'completed') setCurrentStep(2);
@@ -102,12 +101,23 @@ const DigitalReceiptTracker = () => {
       })
       .subscribe();
 
+    const globalChannel = supabase.channel('global_orders_status')
+      .on('broadcast', { event: 'order_status_update' }, (payload) => {
+        const targetId = payload?.payload?.orderId || payload?.orderId || payload?.payload?.id;
+        const status = payload?.payload?.status || payload?.status;
+        if (targetId && String(targetId) === String(orderId) && status) {
+          applyNewStatus(status);
+        }
+      })
+      .subscribe();
+
     // Fast polling fallback (every 2 seconds)
     const interval = setInterval(loadOrder, 2000);
 
     return () => {
       socket.off('order_status_update', handleSocketUpdate);
       supabase.removeChannel(channel);
+      supabase.removeChannel(globalChannel);
       clearInterval(interval);
     };
   }, [orderId]);
