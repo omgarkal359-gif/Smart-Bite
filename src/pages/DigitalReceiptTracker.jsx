@@ -6,6 +6,7 @@ import { ArrowLeft, QrCode, CheckCircle, Clock, ChefHat, BellRing, Download, Mai
 import { motion, AnimatePresence } from 'framer-motion';
 import { api, socket } from '../api';
 import { supabase } from '../supabaseClient';
+import { getStoredUser } from '../utils/auth';
 import './pages.css';
 import './tracker.css';
 
@@ -27,7 +28,7 @@ const DigitalReceiptTracker = () => {
   useEffect(() => {
     async function loadOrder() {
       try {
-        const savedUser = JSON.parse(localStorage.getItem('sgu_user') || '{}');
+        const savedUser = getStoredUser() || {};
         const currentUserId = (savedUser.username || savedUser.id || '').trim().toLowerCase();
         const currentUserRole = (savedUser.role || 'student').trim().toLowerCase();
 
@@ -62,7 +63,7 @@ const DigitalReceiptTracker = () => {
     socket.emit('join', `order-${orderId}`);
 
     const handleStatusUpdate = (updatedOrder) => {
-      const savedUser = JSON.parse(localStorage.getItem('sgu_user') || '{}');
+      const savedUser = getStoredUser() || {};
       const currentUserId = (savedUser.username || savedUser.id || '').trim().toLowerCase();
       const currentUserRole = (savedUser.role || 'student').trim().toLowerCase();
       const orderOwner = (updatedOrder.customerId || updatedOrder.customerid || '').trim().toLowerCase();

@@ -6,6 +6,7 @@ import { OrdersVendorsModule } from '../components/admin/OrdersVendorsModule';
 import { UsersModule } from '../components/admin/UsersModule';
 import { ConfigEmergencyModule } from '../components/admin/ConfigEmergencyModule';
 import { SystemLogsModule } from '../components/admin/SystemLogsModule';
+import { getStoredUser, clearStoredUser } from '../utils/auth';
 import '../components/admin/admin_dashboard.css';
 
 const AdminControlCenter = () => {
@@ -14,23 +15,13 @@ const AdminControlCenter = () => {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-    const userData = localStorage.getItem('sgu_user');
-    if (!userData) {
+    const parsedUser = getStoredUser();
+    if (!parsedUser || parsedUser.role !== 'admin') {
+      clearStoredUser();
       navigate('/login', { replace: true });
       return;
     }
-    try {
-      const parsedUser = JSON.parse(userData);
-      if (!parsedUser || parsedUser.role !== 'admin') {
-        localStorage.removeItem('sgu_user');
-        navigate('/login', { replace: true });
-        return;
-      }
-      setUser(parsedUser);
-    } catch (e) {
-      localStorage.removeItem('sgu_user');
-      navigate('/login', { replace: true });
-    }
+    setUser(parsedUser);
   }, [navigate]);
 
   if (!user) {

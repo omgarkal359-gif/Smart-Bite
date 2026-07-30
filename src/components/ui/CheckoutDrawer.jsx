@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import { useCart } from '../../context/CartContext';
 import { api } from '../../api';
+import { getStoredUser } from '../../utils/auth';
 import './checkout.css';
 
 export const CheckoutDrawer = ({ isOpen, onClose, cart, inventory, onComplete }) => {
@@ -70,7 +71,7 @@ export const CheckoutDrawer = ({ isOpen, onClose, cart, inventory, onComplete })
     setIsProcessing(true);
     
     // Submit order to API
-    const userData = JSON.parse(localStorage.getItem('sgu_user') || '{}');
+    const userData = getStoredUser() || {};
     const orderPayload = {
       customerName: userData.name || 'Guest User',
       customerId: userData.id || '9876543210',

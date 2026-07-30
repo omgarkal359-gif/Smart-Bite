@@ -159,13 +159,6 @@ export const api = {
       const { data, error } = await supabase.from('orders').insert(payload).select();
       
       const actualOrder = (data && data[0]) ? data[0] : { id: `ORD-${Date.now()}`, ...payload };
-
-      // ── Persist to localStorage immediately so student orders page shows it ──
-      const savedOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
-      if (!savedOrders.find(o => o.id === actualOrder.id)) {
-        savedOrders.unshift({ ...actualOrder, timestamp: actualOrder.created_at || new Date().toISOString() });
-        localStorage.setItem('sgu_orders', JSON.stringify(savedOrders));
-      }
       
       // Broadcast new order directly to Vendor Dashboard bypassing DB if needed
       if (stallId) {
@@ -192,15 +185,8 @@ export const api = {
     } catch (err) {
       const stallId = orderData.items && orderData.items.length > 0 ? orderData.items[0].stallId : null;
       const defaultStatus = orderData.payment === 'Cash' ? 'pending_cash' : 'placed';
-      const fallbackOrder = { id: `ORD-${Date.now()}`, status: defaultStatus, ...orderData, stall_id: stallId, timestamp: new Date().toISOString() };
+      const fallbackOrder = { id: `ORD-${Date.now()}`, status: defaultStatus, ...orderData, stall_id: stallId };
       
-      // Save fallback order to localStorage too
-      const savedOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
-      if (!savedOrders.find(o => o.id === fallbackOrder.id)) {
-        savedOrders.unshift(fallbackOrder);
-        localStorage.setItem('sgu_orders', JSON.stringify(savedOrders));
-      }
-
       if (stallId) {
         const channel = supabase.channel(`vendor_sync_${stallId}`);
         channel.subscribe((status) => {
@@ -213,7 +199,6 @@ export const api = {
       return { success: true, order: fallbackOrder };
     }
   },
-
 
   async resendReceipt(orderId, customEmail) {
     try {
@@ -252,37 +237,13 @@ export const api = {
 
   async getStudentOrders(customerId) {
     try {
-      // Try both column name variants (different contributors use different conventions)
-      let result = [];
-      const { data: d1 } = await supabase.from('orders').select('*').eq('customer_id', customerId).order('created_at', { ascending: false });
-      if (d1 && d1.length > 0) result = d1;
-
-      if (result.length === 0) {
-        const { data: d2 } = await supabase.from('orders').select('*').eq('customerId', customerId).order('created_at', { ascending: false });
-        if (d2 && d2.length > 0) result = d2;
-      }
-
-      // Also merge with locally cached orders (orders saved at checkout time)
-      const localOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
-      if (localOrders.length > 0) {
-        localOrders.forEach(local => {
-          if (!result.find(r => r.id === local.id)) {
-            result.push(local);
-          }
-        });
-        result.sort((a, b) => new Date(b.created_at || b.timestamp || 0) - new Date(a.created_at || a.timestamp || 0));
-      }
-
-      if (result.length > 0) return result;
-
-      // Last resort: REST backend
-      return await fetchAPI(`/orders/student/${customerId}`).catch(() => localOrders);
+      const { data, error } = await supabase.from('orders').select('*').eq('customer_id', customerId).order('created_at', { ascending: false });
+      if (!error && data) return data;
+      return await fetchAPI(`/orders/student/${customerId}`);
     } catch (err) {
-      // Fallback to localStorage cache
-      return JSON.parse(localStorage.getItem('sgu_orders') || '[]');
+      return [];
     }
   },
-
 
   async getStallOrders(stallId) {
     try {
@@ -295,61 +256,48 @@ export const api = {
   },
 
   async updateOrderStatus(orderId, status) {
-    const broadcastToStudent = (orderId, status, customerId) => {
-      // 1. Per-order channel (for DigitalReceiptTracker)
-      const perOrderCh = supabase.channel(`student_sync_${orderId}`);
-      perOrderCh.subscribe(s => {
-        if (s === 'SUBSCRIBED') {
-          perOrderCh.send({ type: 'broadcast', event: 'order_status_update', payload: { orderId, status } });
-          setTimeout(() => supabase.removeChannel(perOrderCh), 2000);
+    try {
+      const { data, error } = await supabase.from('orders').update({ status }).eq('id', orderId).select();
+      
+      // Broadcast status update directly to bypass RLS DB blocks
+      const studentChannel = supabase.channel(`student_sync_${orderId}`);
+      studentChannel.subscribe((subStatus) => {
+        if (subStatus === 'SUBSCRIBED') {
+          studentChannel.send({ type: 'broadcast', event: 'order_status_update', payload: { orderId, status } });
+          setTimeout(() => supabase.removeChannel(studentChannel), 1000);
         }
       });
 
-      // 2. Global student orders channel (for OrdersPage list)
-      if (customerId) {
-        const studentListCh = supabase.channel(`student_orders_${customerId}`);
-        studentListCh.subscribe(s => {
-          if (s === 'SUBSCRIBED') {
-            studentListCh.send({ type: 'broadcast', event: 'order_status_update', payload: { orderId, status } });
-            setTimeout(() => supabase.removeChannel(studentListCh), 2000);
-          }
-        });
-      }
-    };
-
-    try {
-      const { data, error } = await supabase.from('orders').update({ status }).eq('id', orderId).select();
-
-      const orderRow = data && data[0];
-      const customerId = orderRow?.customer_id || orderRow?.customerId || null;
-
-      // Broadcast to student
-      broadcastToStudent(orderId, status, customerId);
-
-      // Broadcast to vendor_sync channel
-      const stallId = orderRow?.stall_id || orderRow?.stallId || null;
+      // Also broadcast to vendor_sync channel if stall_id is available in data
+      const stallId = data && data[0] ? data[0].stall_id : null;
       if (stallId) {
         const vendorChannel = supabase.channel(`vendor_sync_${stallId}`);
-        vendorChannel.subscribe(s => {
-          if (s === 'SUBSCRIBED') {
+        vendorChannel.subscribe((subStatus) => {
+          if (subStatus === 'SUBSCRIBED') {
             vendorChannel.send({ type: 'broadcast', event: 'order_status_update', payload: { orderId, status } });
-            setTimeout(() => supabase.removeChannel(vendorChannel), 2000);
+            setTimeout(() => supabase.removeChannel(vendorChannel), 1000);
           }
         });
       }
 
-      if (!error && data) return { success: true, order: orderRow };
-
+      if (!error && data) return { success: true, order: data[0] };
+      
       return await fetchAPI(`/orders/${orderId}/status`, {
         method: 'PUT',
         body: JSON.stringify({ status })
       });
     } catch (err) {
-      broadcastToStudent(orderId, status, null);
+      // Fallback broadcast
+      const studentChannel = supabase.channel(`student_sync_${orderId}`);
+      studentChannel.subscribe((subStatus) => {
+        if (subStatus === 'SUBSCRIBED') {
+          studentChannel.send({ type: 'broadcast', event: 'order_status_update', payload: { orderId, status } });
+          setTimeout(() => supabase.removeChannel(studentChannel), 1000);
+        }
+      });
       return { success: true };
     }
   },
-
 
   // ── Admin ───────────────────────────────────────────────────
   async getAdminMetrics() {

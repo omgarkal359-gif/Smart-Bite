@@ -15,6 +15,7 @@ export class ErrorBoundary extends React.Component {
   }
 
   handleReload = () => {
+    this.setState({ hasError: false, error: null });
     window.location.reload();
   };
 
@@ -72,10 +73,26 @@ export class ErrorBoundary extends React.Component {
               fontSize: '0.95rem',
               color: '#94A3B8',
               lineHeight: 1.5,
-              margin: '0 0 24px 0'
+              margin: '0 0 16px 0'
             }}>
               We hit a slight bump. Please refresh the page to continue.
             </p>
+
+            {this.state.error?.message && (
+              <p style={{
+                fontSize: '0.78rem',
+                color: '#F87171',
+                background: 'rgba(239, 68, 68, 0.1)',
+                padding: '8px 12px',
+                borderRadius: '8px',
+                margin: '0 0 20px 0',
+                wordBreak: 'break-word',
+                textAlign: 'left',
+                fontFamily: 'monospace'
+              }}>
+                {this.state.error.message}
+              </p>
+            )}
 
             <button
               type="button"
