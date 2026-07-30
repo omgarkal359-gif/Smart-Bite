@@ -233,7 +233,8 @@ const LoginPage = () => {
     const allUsers = getSavedUsers();
     const match = allUsers.find(u => 
       (u.id && u.id.toLowerCase() === idInput.toLowerCase()) || 
-      (u.username && u.username.toLowerCase() === idInput.toLowerCase())
+      (u.username && u.username.toLowerCase() === idInput.toLowerCase()) ||
+      (idInput.toLowerCase() === 'admin' && u.role === 'admin')
     );
 
     if (match) {
