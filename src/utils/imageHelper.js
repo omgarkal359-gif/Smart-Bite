@@ -1,3 +1,11 @@
+import classicWadapav from '../assets/classic_wadapav.png';
+import cornWadapav from '../assets/corn_wadapav.png';
+import paneerWadapav from '../assets/paneer_wadapav.png';
+import mixVegWadapav from '../assets/mix_veg_wadapav.png';
+import specialWadapav from '../assets/special_wadapav.png';
+import periPeriWadapav from '../assets/peri_peri_wadapav.png';
+import cheeseWadapav from '../assets/cheese_wadapav.png';
+
 // ============================================================
 // DISH IMAGE HELPER — 100% Vegetarian, accurate per-dish images
 // This food court is STRICTLY VEGETARIAN.
@@ -123,13 +131,13 @@ const ITEM_IMAGE_MAP = {
   'Peach Iced Tea':               'https://images.unsplash.com/photo-1556881286-fc6915169721?auto=format&fit=crop&w=400&q=80',
 
   // ── Wadapav (Rohit Vadewale) — potato vada in a bun ──────
-  'Classic Wadapav':              'https://images.unsplash.com/photo-1626132647523-66f5bf380027?auto=format&fit=crop&w=400&q=80',
-  'Corn Wadapav':                 'https://images.unsplash.com/photo-1626132647523-66f5bf380027?auto=format&fit=crop&w=400&q=80',
-  'Paneer Wadapav':               'https://images.unsplash.com/photo-1626132647523-66f5bf380027?auto=format&fit=crop&w=400&q=80',
-  'Mix Veg Wadapav':              'https://images.unsplash.com/photo-1626132647523-66f5bf380027?auto=format&fit=crop&w=400&q=80',
-  'Special Wadapav':              'https://images.unsplash.com/photo-1626132647523-66f5bf380027?auto=format&fit=crop&w=400&q=80',
-  'Peri Peri Wadapav':            'https://images.unsplash.com/photo-1626132647523-66f5bf380027?auto=format&fit=crop&w=400&q=80',
-  'Cheese Wadapav':               'https://images.unsplash.com/photo-1626132647523-66f5bf380027?auto=format&fit=crop&w=400&q=80',
+  'Classic Wadapav':              classicWadapav,
+  'Corn Wadapav':                 cornWadapav,
+  'Paneer Wadapav':               paneerWadapav,
+  'Mix Veg Wadapav':              mixVegWadapav,
+  'Special Wadapav':              specialWadapav,
+  'Peri Peri Wadapav':            periPeriWadapav,
+  'Cheese Wadapav':               cheeseWadapav,
 
   // ── Breakfast ─────────────────────────────────────────────
   'Poha':                         'https://images.unsplash.com/photo-1601050690117-94f5f6fa8bd7?auto=format&fit=crop&w=400&q=80',
@@ -295,7 +303,7 @@ const CATEGORY_IMAGE_MAP = {
   'Coffee':           'https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=400&q=80',
   'Cold Beverages':   'https://images.unsplash.com/photo-1517701550927-30cf4ba1dba5?auto=format&fit=crop&w=400&q=80',
   'Cold Coffee':      'https://images.unsplash.com/photo-1517701550927-30cf4ba1dba5?auto=format&fit=crop&w=400&q=80',
-  'Wadapav':          'https://images.unsplash.com/photo-1626132647523-66f5bf380027?auto=format&fit=crop&w=400&q=80',
+  'Wadapav':          classicWadapav,
   'Misal':            'https://images.unsplash.com/photo-1601050690117-94f5f6fa8bd7?auto=format&fit=crop&w=400&q=80',
   'Thalipeeth':       'https://images.unsplash.com/photo-1608797178974-15b35a61d121?auto=format&fit=crop&w=400&q=80',
   'Rice':             'https://images.unsplash.com/photo-1512058564366-18510be2db19?auto=format&fit=crop&w=400&q=80',

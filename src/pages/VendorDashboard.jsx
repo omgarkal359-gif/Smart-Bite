@@ -505,7 +505,6 @@ const VendorDashboard = () => {
             <span className="command-value">₹{metrics.upiRevenue}</span>
             <span className="command-subvalue text-blue-600">Auto-Verified</span>
           </motion.div>
-
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="elite-card command-card">
             <div className="flex justify-between items-start">
               <span className="command-label">Trending Item</span>
@@ -518,227 +517,189 @@ const VendorDashboard = () => {
               {metrics.trendingCount} {metrics.trendingCount === 1 ? 'Order' : 'Orders'} Today
             </span>
           </motion.div>
-
-
+        </div>
         </div>
 
+        {/* Restructured Layout: Cash Desk & Kitchen Queue */}
+        <div className="flex gap-6 mt-4 flex-1 min-h-0" style={{ display: 'flex', gap: '24px', flex: 1, minHeight: 0 }}>
+          {/* Left Column: Cash Desk */}
+          <div className="cash-counter-column" style={{ width: '340px', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '16px', background: 'rgba(15, 23, 42, 0.4)', borderRadius: '24px', padding: '20px', border: '1px solid rgba(255, 255, 255, 0.05)', overflowY: 'auto', maxHeight: 'calc(100vh - 280px)' }}>
+            <h3 className="heading-3 text-white flex items-center gap-2 m-0" style={{ fontSize: '1.25rem', fontFamily: 'var(--font-heading)', textTransform: 'uppercase', letterSpacing: '1px' }}>
+              <Banknote size={20} className="text-amber-500" />
+              Cash Desk ({awaitingCashTickets.length})
+            </h3>
+            <div className="flex flex-col gap-4 overflow-y-auto pr-1">
+              <AnimatePresence>
+                {awaitingCashTickets.length === 0 ? (
+                  <motion.div 
+                    initial={{ opacity: 0 }} 
+                    animate={{ opacity: 1 }}
+                    className="flex flex-col items-center justify-center py-12 text-slate-400 font-bold text-sm text-center"
+                    style={{ border: '2px dashed rgba(255, 255, 255, 0.1)', borderRadius: '16px' }}
+                  >
+                    <CheckCircle size={32} className="text-slate-500 mb-2 opacity-50" />
+                    No Pending Payments
+                  </motion.div>
+                ) : (
+                  awaitingCashTickets.map(ticket => (
+                    <motion.div 
+                      key={ticket.id}
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      className="elite-card p-4 flex flex-col gap-3 border-amber-500 border-2 bg-amber-950/20"
+                      style={{ border: '2px solid #F59E0B', background: 'rgba(245, 158, 11, 0.05)', borderRadius: '16px' }}
+                    >
+                      <div className="flex justify-between items-center">
+                        <span className="font-extrabold text-lg text-white">{ticket.id}</span>
+                        <span className="text-[10px] font-black uppercase bg-amber-500/20 text-amber-400 px-2 py-1 rounded">Awaiting Cash</span>
+                      </div>
+                      <div className="text-xs font-bold text-slate-300">
+                        <span className="block text-[9px] text-slate-500 uppercase tracking-wider mb-0.5">Customer</span>
+                        {ticket.customerName}
+                      </div>
+                      <div className="text-xs font-bold text-slate-300">
+                        <span className="block text-[9px] text-slate-500 uppercase tracking-wider mb-0.5">Items</span>
+                        {ticket.items}
+                      </div>
+                      <div className="flex justify-between items-end mt-2 pt-2 border-t border-dashed border-slate-700/50">
+                        <div>
+                          <span className="text-[9px] text-slate-500 font-black uppercase block">Amount</span>
+                          <span className="text-xl font-black text-white">₹{ticket.total}</span>
+                        </div>
+                        <motion.button 
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => handleConfirmCash(ticket.id)}
+                          className="bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-[10px] uppercase tracking-wider py-2 px-3 rounded-lg flex items-center gap-1 shadow-sm border-none cursor-pointer"
+                        >
+                          Confirm Cash
+                        </motion.button>
+                      </div>
+                    </motion.div>
+                  ))
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
 
-        {/* Horizontal Ticket Scroll */}
-        <div className="kds-ticket-scroll">
-          <AnimatePresence>
-            {tickets.length === 0 && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="flex flex-col items-center justify-center w-full py-24 gap-4 text-center"
-              >
-                <p style={{ fontFamily: "'Oswald', sans-serif", fontSize: '1.4rem', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 700 }}>
-                  No Active Orders
-                </p>
-                <p style={{ color: '#94A3B8', fontSize: '0.875rem', fontWeight: 600 }}>
-                  New orders from customers will appear here instantly
-                </p>
-              </motion.div>
-            )}
-            {tickets.map(ticket => {
-              // Parse items: could be "1x Dosa, 2x Tea" string or an array of strings or objects
-              let parsedItems = [];
-              if (Array.isArray(ticket.items)) {
-                parsedItems = ticket.items;
-              } else if (typeof ticket.items === 'string') {
-                parsedItems = ticket.items.split(', ').filter(Boolean);
-              }
+          {/* Right Column: Kitchen Queue */}
+          <div className="flex-1 flex flex-col min-w-0" style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
+            <h3 className="heading-3 text-white flex items-center gap-2 m-0 mb-4" style={{ fontSize: '1.25rem', fontFamily: 'var(--font-heading)', textTransform: 'uppercase', letterSpacing: '1px' }}>
+              <Utensils size={20} className="text-red-500" />
+              Kitchen Queue ({activeTickets.length})
+            </h3>
+            <div className="kds-ticket-scroll" style={{ marginTop: 0, padding: '0 0 40px 0' }}>
+              <AnimatePresence>
+                {activeTickets.length === 0 ? (
+                  <motion.div 
+                    initial={{ opacity: 0 }} 
+                    animate={{ opacity: 1 }}
+                    className="flex flex-col items-center justify-center py-20 text-slate-400 font-bold text-lg w-full text-center"
+                    style={{ border: '2px dashed rgba(255, 255, 255, 0.1)', borderRadius: '24px' }}
+                  >
+                    <CheckCircle size={48} className="text-slate-500 mb-2 opacity-50" />
+                    Kitchen is Clear!
+                  </motion.div>
+                ) : (
+                  activeTickets.map(ticket => (
+                    <motion.div 
+                      key={ticket.id}
+                      layout
+                      initial={{ opacity: 0, scale: 0.8, x: 50 }}
+                      animate={{ opacity: 1, scale: 1, x: 0 }}
+                      exit={{ opacity: 0, scale: 0.8, y: -50 }}
+                      className="elite-card kds-ticket"
+                    >
+                      <div className="ticket-header">
+                        <div className="flex flex-col">
+                          <span className="ticket-id text-2xl">{ticket.id}</span>
+                          <span className="text-[10px] font-black text-navy-400 uppercase tracking-widest">{ticket.customerName || 'Standard Order'}</span>
+                        </div>
+                        <span className="ticket-time text-red-500 font-black uppercase text-xs tracking-tighter">{ticket.time}</span>
+                      </div>
+                      
+                      <div className="ticket-badges">
+                        <span className={`badge ${ticket.type === 'Dine-In' ? 'bg-blue-50 text-blue-700' : 'bg-amber-50 text-amber-700'}`}>
+                          {ticket.type === 'Dine-In' ? <Utensils size={14} /> : <ShoppingBag size={14} />}
+                          {ticket.type}
+                        </span>
+                        <span className={`badge ${ticket.payment === 'Online UPI' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+                          {ticket.payment === 'Online UPI' ? <Smartphone size={14} /> : <Banknote size={14} />}
+                          {ticket.payment}
+                        </span>
+                      </div>
 
-              // Use originalItems for rich display if available, OR if items itself is an array of objects
-              let richItems = null;
-              if (ticket.originalItems && Array.isArray(ticket.originalItems)) {
-                richItems = ticket.originalItems;
-              } else if (Array.isArray(ticket.items) && ticket.items.length > 0 && typeof ticket.items[0] === 'object') {
-                richItems = ticket.items;
-              }
+                      <div className="ticket-items">
+                        {ticket.items.map((item, i) => (
+                          <div key={i} className="ticket-item font-bold text-slate-700">{item}</div>
+                        ))}
+                      </div>
 
-              const isNew = ticket.status === 'placed' || !ticket.status;
-              const isPreparing = ticket.status === 'preparing';
-              const isPendingCash = ticket.status === 'pending_cash' || (!ticket.status && ticket.payment === 'Cash');
-              const isReady = ticket.status === 'ready';
-
-              const statusColor = isPreparing ? '#3B82F6' : isReady ? '#22C55E' : isNew ? '#8B5CF6' : '#F59E0B';
-              const statusLabel = isPreparing ? '🔥 PREPARING' : isReady ? '✅ READY' : '🆕 NEW ORDER';
-
-              return (
-                <motion.div
-                  key={ticket.id}
-                  layout="position"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.96, y: -20 }}
-                  transition={{
-                    duration: 0.25,
-                    ease: [0.16, 1, 0.3, 1]
-                  }}
-                  className={`elite-card kds-ticket`}
-                  style={{ borderTop: `4px solid ${statusColor}` }}
-                >
-                  {/* Pulsing NEW badge */}
-                                    {isNew && (
-                    <div style={{
-                      position: 'absolute', top: 12, right: 12,
-                      background: '#8B5CF6',
-                      color: 'white', borderRadius: 8, padding: '3px 10px',
-                      fontSize: '0.6rem', fontWeight: 900, letterSpacing: '0.15em',
-                      fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase',
-                      animation: 'pulse 1.5s infinite'
-                    }}>
-                      NEW
-                    </div>
-                  )}
-
-                  {/* Header */}
-                  <div className="ticket-header">
-                    <div className="flex flex-col">
-                      <span className="ticket-id" style={{ fontSize: '1.4rem' }}>#{ticket.id}</span>
-                      <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                        {ticket.customer_name || ticket.customerName || 'Standard Order'}
-                      </span>
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
-                      <button 
-                        onClick={() => { if(window.confirm('Are you sure you want to cancel this order?')) handleUpdateStatus(ticket.id, 'cancelled') }}
-                        style={{ 
-                          background: '#FEE2E2', border: 'none', cursor: 'pointer', color: '#EF4444', 
-                          padding: '4px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          transition: 'background 0.2s'
-                        }}
-                        onMouseOver={(e) => e.currentTarget.style.background = '#FECACA'}
-                        onMouseOut={(e) => e.currentTarget.style.background = '#FEE2E2'}
-                        title="Cancel Order"
-                      >
-                        <X size={16} strokeWidth={3} />
-                      </button>
-                      <span style={{ fontSize: '0.75rem', fontWeight: 900, color: '#E4002B', textTransform: 'uppercase', fontFamily: "'Oswald', sans-serif" }}>
-                        {(ticket.timestamp || ticket.created_at) ? String(formatRelativeTime(ticket.timestamp || ticket.created_at)).toUpperCase() : String(ticket.time || 'Just now').toUpperCase()}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Badges */}
-                  <div className="ticket-badges">
-                    <span className={`badge ${ticket.type === 'Dine-In' ? 'bg-blue-50 text-blue-700' : 'bg-amber-50 text-amber-700'}`}>
-                      {ticket.type === 'Dine-In' ? <Utensils size={13} /> : <ShoppingBag size={13} />}
-                      {ticket.type || 'Dine-In'}
-                    </span>
-                    <span className={`badge ${ticket.payment === 'Online UPI' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
-                      {ticket.payment === 'Online UPI' ? <Smartphone size={13} /> : <Banknote size={13} />}
-                      {ticket.payment || 'Online UPI'}
-                    </span>
-                  </div>
-
-                  {/* Items List */}
-                  <div className="ticket-items">
-                    {richItems ? (
-                      richItems.map((item, i) => (
-                        <div key={i} className="ticket-item" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: '#F8FAFC', borderRadius: 10, borderLeft: 'none', marginBottom: 6 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <span style={{ background: '#1A5276', color: 'white', borderRadius: 6, padding: '2px 7px', fontSize: '0.7rem', fontWeight: 900, fontFamily: "'Oswald', sans-serif" }}>
-                              ×{item.quantity || 1}
-                            </span>
-                            <span style={{ fontWeight: 700, fontSize: '0.85rem', color: '#0F172A' }}>{item.name}</span>
+                      <div className="ticket-footer mt-auto pt-4 border-t border-dashed border-slate-200">
+                        <div className="flex justify-between items-end mb-4">
+                          <div>
+                            <span className="text-[10px] text-slate-400 font-black uppercase block">Order Total</span>
+                            <span className="text-xl font-black text-navy-900">₹{ticket.total}</span>
                           </div>
-                          <span style={{ fontWeight: 800, color: '#1A5276', fontSize: '0.85rem', fontFamily: "'Oswald', sans-serif" }}>
-                            ₹{(item.price || 0) * (item.quantity || 1)}
+                          <span className={`text-[10px] font-black px-2 py-1 rounded ${
+                            ticket.status === 'preparing' ? 'bg-blue-100 text-blue-700' : 
+                            ticket.status === 'ready' ? 'bg-green-100 text-green-700' :
+                            'bg-purple-100 text-purple-700'
+                          }`}>
+                            {ticket.status === 'preparing' ? 'PREPARING' : 
+                             ticket.status === 'ready' ? 'READY' :
+                             'NEW ORDER'}
                           </span>
                         </div>
-                      ))
-                    ) : (
-                      parsedItems.map((item, i) => typeof item === 'object' && item !== null ? (<div key={i} className="ticket-item" style={{ padding: '8px 12px', background: '#F8FAFC', borderRadius: 10, borderLeft: 'none', fontWeight: 700, color: '#0F172A', fontSize: '0.85rem', marginBottom: 6 }}>{item.name || 'Item'}</div>) : (
-                        <div key={i} className="ticket-item" style={{ padding: '8px 12px', background: '#F8FAFC', borderRadius: 10, borderLeft: 'none', fontWeight: 700, color: '#0F172A', fontSize: '0.85rem', marginBottom: 6 }}>
-                          {item}
-                        </div>
-                      ))
-                    )}
-                  </div>
 
-                  {/* Footer */}
-                  <div style={{ marginTop: 'auto', paddingTop: 14, borderTop: '2px dashed #E2E8F0' }}>
-                    {/* Total + Status */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-                      <div>
-                        <span style={{ fontSize: '0.65rem', fontWeight: 900, color: '#94A3B8', textTransform: 'uppercase', display: 'block', letterSpacing: '0.1em' }}>Order Total</span>
-                        <span style={{ fontFamily: "'Oswald', sans-serif", fontSize: '1.6rem', fontWeight: 800, color: '#0F172A', lineHeight: 1 }}>₹{ticket.total}</span>
+                        {(ticket.status === 'placed' || ticket.status === 'preparing') && (
+                          <div className="flex gap-2 w-full">
+                            <motion.button 
+                              whileHover={{ scale: ticket.status === 'preparing' ? 1 : 1.03 }}
+                              whileTap={{ scale: ticket.status === 'preparing' ? 1 : 0.97 }}
+                              disabled={ticket.status === 'preparing'}
+                              className={`flex-1 flex items-center justify-center gap-2 py-3 px-3 rounded-xl font-black text-[11px] uppercase tracking-wider cursor-pointer transition-all border border-solid ${
+                                ticket.status === 'preparing' 
+                                  ? 'bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed' 
+                                  : 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100'
+                              }`}
+                              onClick={() => handleUpdateStatus(ticket.id, 'preparing')}
+                            >
+                              <Clock size={14} color={ticket.status === 'preparing' ? '#94A3B8' : '#DC2626'} />
+                              Preparing
+                            </motion.button>
+
+                            <motion.button 
+                              whileHover={{ scale: 1.03 }}
+                              whileTap={{ scale: 0.97 }}
+                              className="flex-1 flex items-center justify-center gap-2 py-3 px-3 rounded-xl font-black text-[11px] uppercase tracking-wider bg-green-50 text-green-600 border border-solid border-green-200 hover:bg-green-100 cursor-pointer transition-all"
+                              onClick={() => handleUpdateStatus(ticket.id, 'ready')}
+                            >
+                              <CheckCircle size={14} color="#16A34A" />
+                              Ready
+                            </motion.button>
+                          </div>
+                        )}
+
+                        {ticket.status === 'ready' && (
+                          <motion.button 
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            className="jumbo-btn bg-green-500"
+                            onClick={() => handleUpdateStatus(ticket.id, 'completed')}
+                          >
+                            <CheckCircle size={20} />
+                            MARK COMPLETED
+                          </motion.button>
+                        )}
                       </div>
-                      <span style={{ fontSize: '0.7rem', fontWeight: 900, padding: '5px 10px', borderRadius: 8, background: `${statusColor}18`, color: statusColor, fontFamily: "'Oswald', sans-serif", letterSpacing: '0.05em' }}>
-                        {statusLabel}
-                      </span>
-                    </div>
-
-                    {/* Action Buttons */}
-                    {(isNew || isPreparing) && (
-                      <div style={{ display: 'flex', gap: 10 }}>
-                        <motion.button
-                          whileHover={{ scale: isPreparing ? 1 : 1.04 }}
-                          whileTap={{ scale: isPreparing ? 1 : 0.96 }}
-                          disabled={isPreparing}
-                          onClick={() => handleUpdateStatus(ticket.id, 'preparing')}
-                          style={{
-                            flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                            padding: '14px 0', borderRadius: 14, border: 'none', cursor: isPreparing ? 'not-allowed' : 'pointer',
-                            fontFamily: "'Oswald', sans-serif", fontWeight: 800, fontSize: '0.9rem', letterSpacing: '0.05em', textTransform: 'uppercase',
-                            background: 'linear-gradient(135deg, #F59E0B, #D97706)',
-                            color: 'white',
-                            boxShadow: isPreparing ? 'inset 0 0 0 999px rgba(0,0,0,0.1)' : '0 4px 14px rgba(245,158,11,0.4)',
-                            opacity: isPreparing ? 0.85 : 1,
-                            transition: 'all 0.2s'
-                          }}
-                        >
-                          <Clock size={18} color="white" />
-                          {isPreparing ? 'PREPARING...' : 'PREPARING'}
-                        </motion.button>
-
-                        <motion.button
-                          whileHover={{ scale: 1.04 }}
-                          whileTap={{ scale: 0.96 }}
-                          onClick={() => handleUpdateStatus(ticket.id, 'ready')}
-                          style={{
-                            flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                            padding: '14px 0', borderRadius: 14, border: 'none', cursor: 'pointer',
-                            fontFamily: "'Oswald', sans-serif", fontWeight: 800, fontSize: '0.9rem', letterSpacing: '0.05em', textTransform: 'uppercase',
-                            background: 'linear-gradient(135deg, #22C55E, #16A34A)',
-                            color: 'white',
-                            boxShadow: '0 4px 14px rgba(34,197,94,0.4)',
-                            transition: 'all 0.2s'
-                          }}
-                        >
-                          <CheckCircle size={18} color="white" />
-                          Ready
-                        </motion.button>
-                      </div>
-                    )}
-
-                    
-
-                    {isReady && (
-                      <motion.button
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={() => handleUpdateStatus(ticket.id, 'completed')}
-                        style={{
-                          width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-                          padding: '16px', borderRadius: 16, border: 'none', cursor: 'pointer',
-                          fontFamily: "'Oswald', sans-serif", fontWeight: 800, fontSize: '1rem', letterSpacing: '0.05em', textTransform: 'uppercase',
-                          background: 'linear-gradient(135deg, #22C55E, #15803D)',
-                          color: 'white',
-                          boxShadow: '0 6px 20px rgba(34,197,94,0.45)',
-                        }}
-                      >
-                        <CheckCircle size={22} />
-                        Mark Completed
-                      </motion.button>
-                    )}
-                  </div>
-                </motion.div>
-              );
-            })}
-          </AnimatePresence>
+                    </motion.div>
+                  ))
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
         </div>
       </main>
 
