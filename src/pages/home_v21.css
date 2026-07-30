@@ -1,0 +1,317 @@
+/* V21 Shop Directory Mobile-Optimized Layout */
+.directory-container {
+  padding: 16px;
+  max-width: 1200px;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+/* Search Bar */
+.search-input-override {
+  width: 100%;
+}
+
+/* Hero Carousel Banner */
+.hero-slideshow-wrapper {
+  position: relative;
+  height: 180px;
+  border-radius: 20px;
+  overflow: hidden;
+  margin-bottom: 24px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  background: #0F172A;
+}
+
+.hero-slide {
+  position: relative;
+  flex: 0 0 100%;
+  height: 100%;
+  scroll-snap-align: start;
+}
+
+.hero-bg-image {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  z-index: 1;
+}
+
+.hero-parallax-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(15, 23, 42, 0.9) 0%, rgba(15, 23, 42, 0.2) 100%);
+  z-index: 2;
+}
+
+.hero-parallax-content {
+  position: relative;
+  z-index: 3;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.hero-parallax-content h2 {
+  font-size: clamp(1.3rem, 5vw, 2.2rem) !important;
+  line-height: 1.1;
+  margin: 0 0 4px 0;
+}
+
+.slide-indicators {
+  position: absolute;
+  bottom: 12px;
+  right: 16px;
+  z-index: 10;
+  display: flex;
+  gap: 6px;
+}
+
+.slide-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.4);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.slide-dot.active {
+  background: #FFFFFF;
+  width: 18px;
+  border-radius: 4px;
+}
+
+/* Full-Width Mobile Shop Grid (1 Column Stack on Mobile) */
+.shop-bento-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 90px;
+  width: 100%;
+}
+
+.shop-card-wrapper {
+  width: 100%;
+}
+
+.shop-card-v21 {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  padding: 14px !important;
+  gap: 14px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  background: #FFFFFF !important;
+  border-radius: 18px !important;
+  border: 1px solid #E2E8F0 !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03) !important;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.shop-card-v21:active {
+  transform: scale(0.98);
+}
+
+.shop-card-v21 .shop-img-container {
+  width: 84px !important;
+  height: 84px !important;
+  min-width: 84px !important;
+  min-height: 84px !important;
+  flex-shrink: 0 !important;
+  border-radius: 14px !important;
+  position: relative;
+  overflow: hidden;
+  background: #F8FAFC;
+  padding: 2px;
+  border: 1px solid #E2E8F0;
+  box-sizing: border-box;
+}
+
+.shop-hd-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 12px;
+}
+
+.shop-logo-badge {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 24px;
+  height: 24px;
+  background: #FFFFFF;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  border: 1px solid #E2E8F0;
+}
+
+.closed-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 0.68rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.shop-card-v21 .shop-card-right {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0; /* CRITICAL: Prevents mid-word letter breaks */
+  justify-content: center;
+  gap: 4px;
+}
+
+.shop-card-v21 .shop-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.shop-card-v21 .shop-name-v21 {
+  font-size: 1.05rem !important;
+  font-family: var(--font-heading, sans-serif);
+  font-weight: 800 !important;
+  text-transform: uppercase;
+  letter-spacing: -0.01em;
+  color: #0F172A;
+  margin: 0;
+  line-height: 1.2;
+  word-break: normal !important;
+  overflow-wrap: break-word !important;
+  white-space: normal;
+}
+
+.shop-card-v21 .shop-category-v21 {
+  font-size: 0.8rem;
+  color: #64748B;
+  margin: 0;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rating-v21 {
+  font-size: 0.72rem;
+  font-weight: 800;
+  background: #FEF3C7;
+  color: #D97706;
+  padding: 3px 8px;
+  border-radius: 8px;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+}
+
+.shop-footer-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 4px;
+  padding-top: 6px;
+  border-top: 1px dashed #E2E8F0;
+}
+
+.status-pill {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.status-pill.online {
+  color: #16A34A;
+}
+
+.status-pill.offline {
+  color: #94A3B8;
+}
+
+.status-dot-indicator {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.busy-pill {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #E4002B;
+}
+
+/* Skeleton Loaders */
+.skeleton {
+  pointer-events: none;
+}
+
+.skeleton-img {
+  width: 84px;
+  height: 84px;
+  border-radius: 14px;
+  background: linear-gradient(90deg, #F1F5F9 25%, #E2E8F0 50%, #F1F5F9 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite linear;
+}
+
+.skeleton-text {
+  height: 14px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #F1F5F9 25%, #E2E8F0 50%, #F1F5F9 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite linear;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* Responsive Desktop Overrides */
+@media (min-width: 768px) {
+  .shop-bento-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+
+  .shop-card-v21 .shop-img-container {
+    width: 96px !important;
+    height: 96px !important;
+    min-width: 96px !important;
+    min-height: 96px !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  .shop-bento-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}

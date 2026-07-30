@@ -1,0 +1,41 @@
+:root {
+  /* Color Palette (KFC Red Theme) */
+  --primary-navy: #E4002B; /* Kept variable name for compatibility, but it's KFC Red */
+  --accent-amber: #F59E0B;
+  --bg-soft-gray: #F8FAFC; /* Background */
+  --surface-white: #FFFFFF; /* Surface */
+  
+  --success-green: #22C55E;
+  --warning-amber: #F59E0B;
+  --error-red: #E4002B; 
+  --text-dark: #000000;
+  --text-muted: #111827;
+  --white: #FFFFFF;
+  --black: #000000;
+  
+  /* Glassmorphism */
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.5);
+  --backdrop-blur: blur(20px);
+  
+  /* Standardized Depth (High Contrast) */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 10px 24px rgba(0, 0, 0, 0.12);
+  --shadow-2xl: 0 16px 40px rgba(0, 0, 0, 0.2); 
+  
+  /* Gradients */
+  --gradient-primary: linear-gradient(135deg, #E4002B 0%, #B00020 100%);
+  --gradient-amber: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+
+  /* Typography */
+  --font-heading: 'Oswald', sans-serif;
+  --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+  
+  /* Layout */
+  --border-radius-sm: 8px;
+  --border-radius-md: 16px;
+  --border-radius-lg: 24px; /* rounded-3xl equivalent */
+  --border-radius-xl: 32px;
+}
+

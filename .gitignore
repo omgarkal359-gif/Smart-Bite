@@ -1,0 +1,14 @@
+node_modules
+.env
+.env.*
+api/.env
+dist
+.vscode
+.agents/
+skills-lock.json
+.vercel
+.env*
+api/database.sqlite
+*.sqlite
+api/check_orders.js
+scratch/
