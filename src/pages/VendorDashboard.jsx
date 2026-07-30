@@ -643,44 +643,38 @@ const VendorDashboard = () => {
                         </div>
 
                         {(!['ready', 'completed', 'cancelled'].includes(ticket.status)) && (
-                          <div className="flex gap-3 w-full">
-                            <motion.button 
-                              whileHover={{ scale: ticket.status === 'preparing' ? 1 : 1.03 }}
-                              whileTap={{ scale: ticket.status === 'preparing' ? 1 : 0.97 }}
+                          <div className="flex gap-3 w-full" data-ticket-id={ticket.id}>
+                            <button 
                               disabled={ticket.status === 'preparing'}
                               className={`flex-1 flex items-center justify-center gap-2 py-5 px-4 rounded-xl font-black text-[13px] uppercase tracking-wider cursor-pointer transition-all border border-solid ${
                                 ticket.status === 'preparing' 
                                   ? 'bg-slate-200 text-slate-500 border-slate-300 cursor-not-allowed shadow-inner' 
-                                  : 'bg-red-500 text-white border-red-600 hover:bg-red-600 active:bg-red-700'
+                                  : 'bg-red-500 text-white border-red-600 hover:bg-red-600 active:bg-red-700 hover:scale-[1.03] active:scale-[0.97]'
                               }`}
                               onClick={() => handleUpdateStatus(ticket.id, 'preparing')}
                             >
                               <Clock size={16} className={ticket.status === 'preparing' ? 'text-slate-500' : 'text-current'} />
                               Preparing
-                            </motion.button>
+                            </button>
 
-                            <motion.button 
-                              whileHover={{ scale: 1.03 }}
-                              whileTap={{ scale: 0.97 }}
-                              className="flex-1 flex items-center justify-center gap-2 py-5 px-4 rounded-xl font-black text-[13px] uppercase tracking-wider bg-green-500 text-white border border-solid border-green-600 hover:bg-green-600 active:bg-green-700 cursor-pointer transition-all"
+                            <button 
+                              className="flex-1 flex items-center justify-center gap-2 py-5 px-4 rounded-xl font-black text-[13px] uppercase tracking-wider bg-green-500 text-white border border-solid border-green-600 hover:bg-green-600 active:bg-green-700 cursor-pointer transition-all hover:scale-[1.03] active:scale-[0.97]"
                               onClick={() => handleUpdateStatus(ticket.id, 'ready')}
                             >
                               <CheckCircle size={16} className="text-current" />
                               Ready
-                            </motion.button>
+                            </button>
                           </div>
                         )}
 
                         {ticket.status === 'ready' && (
-                          <motion.button 
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            className="jumbo-btn bg-green-500"
+                          <button 
+                            className="jumbo-btn bg-green-500 hover:scale-[1.02] active:scale-[0.98]"
                             onClick={() => handleUpdateStatus(ticket.id, 'completed')}
                           >
                             <CheckCircle size={20} />
                             MARK COMPLETED
-                          </motion.button>
+                          </button>
                         )}
                       </div>
                     </motion.div>
