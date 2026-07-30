@@ -103,7 +103,6 @@ const VendorDashboard = () => {
           }
           return [formatted, ...prev];
         });
-      }
       } else {
         setTickets(prev => {
           if (prev.some(t => String(t.id) === String(targetId))) {
@@ -338,17 +337,10 @@ const VendorDashboard = () => {
     try {
       await api.updateOrderStatus(id, newStatus);
       
-<<<<<<< HEAD
-      if (newStatus === 'completed' || newStatus === 'ready') {
+      if (newStatus === 'completed' || newStatus === 'ready' || newStatus === 'cancelled') {
         setTickets(prev => prev.filter(t => String(t.id) !== String(id)));
         const ticket = tickets.find(t => String(t.id) === String(id));
         if (ticket) {
-=======
-      if (newStatus === 'completed' || newStatus === 'cancelled') {
-        setTickets(prev => prev.filter(t => t.id !== id));
-        const ticket = tickets.find(t => t.id === id);
-        if (ticket && newStatus === 'completed') {
->>>>>>> 1a618896c89243d62f1b7bf24b52a0e48198378e
           setCompletedTickets(prev => {
             if (prev.some(t => String(t.id) === String(id))) {
               return prev.map(t => String(t.id) === String(id) ? { ...t, status: newStatus } : t);
@@ -523,7 +515,6 @@ const VendorDashboard = () => {
               {metrics.trendingCount} {metrics.trendingCount === 1 ? 'Order' : 'Orders'} Today
             </span>
           </motion.div>
-        </div>
         </div>
 
         {/* Restructured Layout: Cash Desk & Kitchen Queue */}
