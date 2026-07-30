@@ -52,6 +52,8 @@ async function fetchAPI(endpoint, options = {}) {
   throw new Error(`Endpoint ${endpoint} returned non-JSON response.`);
 }
 
+const STATUS_WEIGHT = { 'placed': 1, 'pending_cash': 1, 'preparing': 2, 'ready': 3, 'completed': 4 };
+
 export const api = {
   // ── Stalls ─────────────────────────────────────────────────
   async getStalls() {
@@ -271,14 +273,23 @@ export const api = {
 
   async getOrder(orderId) {
     try {
+      let order = null;
       const { data, error } = await supabase.from('orders').select('*').eq('id', orderId).single();
-      if (!error && data) return data;
-      return await fetchAPI(`/orders/${orderId}`);
+      if (!error && data) order = data;
+      
+      const sqliteOrder = await fetchAPI(`/orders/${orderId}`).catch(() => null);
+      if (sqliteOrder && sqliteOrder.id) {
+        if (!order) order = sqliteOrder;
+        else if ((STATUS_WEIGHT[sqliteOrder.status] || 0) > (STATUS_WEIGHT[order.status] || 0)) {
+          order.status = sqliteOrder.status;
+        }
+      }
+      return order;
     } catch (err) {
       return null;
     }
   },
-
+  
   async getOrderDetails(orderId) {
     return this.getOrder(orderId);
   },
@@ -317,6 +328,11 @@ export const api = {
         res.forEach(o => {
           if (!ordersMap.has(o.id)) {
             ordersMap.set(o.id, o);
+          } else {
+            const existing = ordersMap.get(o.id);
+            if ((STATUS_WEIGHT[o.status] || 0) > (STATUS_WEIGHT[existing.status] || 0)) {
+              existing.status = o.status;
+            }
           }
         });
       }
@@ -369,6 +385,11 @@ export const api = {
         res.forEach(o => {
           if (!ordersMap.has(o.id)) {
             ordersMap.set(o.id, o);
+          } else {
+            const existing = ordersMap.get(o.id);
+            if ((STATUS_WEIGHT[o.status] || 0) > (STATUS_WEIGHT[existing.status] || 0)) {
+              existing.status = o.status;
+            }
           }
         });
       }
