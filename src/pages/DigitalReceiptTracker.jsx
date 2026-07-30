@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { GlassCard } from '../components/ui/GlassCard';
 import { Button } from '../components/ui/Button';
-import { ArrowLeft, QrCode, CheckCircle, Clock, ChefHat, BellRing, Download, Mail, ShoppingBag, ShieldAlert } from 'lucide-react';
+import { ArrowLeft, QrCode, CheckCircle, Clock, ChefHat, BellRing, Download, Mail, ShoppingBag, ShieldAlert, XCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api, socket } from '../api';
 import { supabase } from '../supabaseClient';
@@ -652,48 +652,68 @@ const DigitalReceiptTracker = () => {
               </div>
             )}
 
-            <div className="qr-section-v21">
-              <div className="qr-wrapper-v21">
-                <QrCode size={120} color="var(--primary-navy)" />
-              </div>
-              <p className="heading-2 mt-4">#{orderId}</p>
-              {order && (
-                <p className="shop-name-tracker">
-                  {order.items?.[0]?.stallName || 'SGU Food Court'}
+            {order?.status === 'cancelled' ? (
+              <div style={{ padding: '40px 20px', textAlign: 'center' }}>
+                <div style={{ display: 'inline-flex', background: '#FEE2E2', padding: '24px', borderRadius: '50%', marginBottom: '24px', boxShadow: '0 10px 25px rgba(239, 68, 68, 0.2)' }}>
+                  <XCircle size={64} color="#EF4444" strokeWidth={2.5} />
+                </div>
+                <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '2rem', color: '#EF4444', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>Order Cancelled</h2>
+                <p style={{ color: '#64748B', fontSize: '0.95rem', fontWeight: 600, marginBottom: '24px' }}>
+                  This order has been permanently cancelled by the vendor.
                 </p>
-              )}
-              <p className="text-muted mt-1">Show code at the counter</p>
-            </div>
-
-            {order && (
-              <div className="order-summary-v21">
-                <p className="font-bold text-sm mb-2">{itemsText}</p>
-                <p className="font-black text-lg">Total: ₹{order.total}</p>
+                {order && (
+                  <div className="order-summary-v21" style={{ opacity: 0.8 }}>
+                    <p className="font-bold text-sm mb-2" style={{ textDecoration: 'line-through' }}>{itemsText}</p>
+                    <p className="font-black text-lg" style={{ color: '#94A3B8' }}>Total: ₹{order.total}</p>
+                  </div>
+                )}
               </div>
+            ) : (
+              <>
+                <div className="qr-section-v21">
+                  <div className="qr-wrapper-v21">
+                    <QrCode size={120} color="var(--primary-navy)" />
+                  </div>
+                  <p className="heading-2 mt-4">#{orderId}</p>
+                  {order && (
+                    <p className="shop-name-tracker">
+                      {order.items?.[0]?.stallName || 'SGU Food Court'}
+                    </p>
+                  )}
+                  <p className="text-muted mt-1">Show code at the counter</p>
+                </div>
+
+                {order && (
+                  <div className="order-summary-v21">
+                    <p className="font-bold text-sm mb-2">{itemsText}</p>
+                    <p className="font-black text-lg">Total: ₹{order.total}</p>
+                  </div>
+                )}
+
+                <div className="timeline-v21">
+                  {STATUS_STEPS.map((step, index) => {
+                    const Icon = step.icon;
+                    const isActive = index <= currentStep;
+                    const isCurrent = index === currentStep;
+
+                    return (
+                      <div key={step.id} className={`timeline-step-v21 ${isActive ? 'active' : ''}`}>
+                        <div className={`step-icon-v21 ${isCurrent && index === 2 ? 'pulse-ready' : ''}`}>
+                          <Icon size={20} />
+                        </div>
+                        <div className="step-content-v21">
+                          <h3 className="step-label">{step.label}</h3>
+                          {isCurrent && <p className="step-desc text-muted">In progress...</p>}
+                        </div>
+                        {index < STATUS_STEPS.length - 1 && <div className="step-line-v21" />}
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
             )}
 
-            <div className="timeline-v21">
-              {STATUS_STEPS.map((step, index) => {
-                const Icon = step.icon;
-                const isActive = index <= currentStep;
-                const isCurrent = index === currentStep;
-
-                return (
-                  <div key={step.id} className={`timeline-step-v21 ${isActive ? 'active' : ''}`}>
-                    <div className={`step-icon-v21 ${isCurrent && index === 2 ? 'pulse-ready' : ''}`}>
-                      <Icon size={20} />
-                    </div>
-                    <div className="step-content-v21">
-                      <h3 className="step-label">{step.label}</h3>
-                      {isCurrent && <p className="step-desc text-muted">In progress...</p>}
-                    </div>
-                    {index < STATUS_STEPS.length - 1 && <div className="step-line-v21" />}
-                  </div>
-                );
-              })}
-            </div>
-
-            {order && (
+            {order && order.status !== 'cancelled' && (
               <>
                 <motion.div 
                   className="ready-actions-v21 mt-6"

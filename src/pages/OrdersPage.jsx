@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Clock, CheckCircle, ShoppingBag } from 'lucide-react';
+import { Clock, CheckCircle, ShoppingBag, X } from 'lucide-react';
 import { GlassCard } from '../components/ui/GlassCard';
 import { api, socket, formatRelativeTime } from '../api';
 import { getStoredUser } from '../utils/auth';
@@ -211,6 +211,18 @@ const OrdersPage = () => {
                         textTransform: 'uppercase', letterSpacing: '0.5px',
                       }}>
                         <CheckCircle size={11} /> Completed
+                      </span>
+                    )}
+                    {order.status === 'cancelled' && (
+                      <span style={{
+                        display: 'inline-flex', alignItems: 'center', gap: '4px',
+                        background: '#EF4444', color: 'white',
+                        fontWeight: 800, fontSize: '0.65rem',
+                        padding: '4px 10px', borderRadius: '20px',
+                        textTransform: 'uppercase', letterSpacing: '0.5px',
+                        boxShadow: '0 2px 8px rgba(239, 68, 68, 0.3)',
+                      }}>
+                        <X size={11} strokeWidth={3} /> Cancelled
                       </span>
                     )}
                   </div>
