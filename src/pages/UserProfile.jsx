@@ -72,7 +72,28 @@ const UserProfile = () => {
     }
 
     loadUserData();
-    return () => { isMounted = false; };
+
+    const parsed = getStoredUser();
+    const customerId = parsed ? (parsed.id || parsed.username || 'student').toString().trim().toLowerCase() : null;
+    
+    let channel;
+    if (customerId) {
+      channel = supabase.channel(`student_orders_${customerId}`);
+      channel.on('broadcast', { event: 'order_status_update' }, (payload) => {
+        if (payload.payload && payload.payload.orderId) {
+          setRecentOrders(prev => {
+            const updated = prev.map(o => o.id === payload.payload.orderId ? { ...o, status: payload.payload.status } : o);
+            try { localStorage.setItem('sgu_orders', JSON.stringify(updated)); } catch(e){}
+            return updated;
+          });
+        }
+      }).subscribe();
+    }
+
+    return () => { 
+      isMounted = false; 
+      if (channel) supabase.removeChannel(channel);
+    };
   }, [navigate]);
 
   const handleLogout = async () => {
