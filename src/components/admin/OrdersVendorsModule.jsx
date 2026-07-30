@@ -217,7 +217,7 @@ export const OrdersVendorsModule = () => {
                             {order.type || 'Dine-In'}
                           </span>
                           <span style={{ fontSize: '0.7rem', fontWeight: 800, padding: '2px 6px', borderRadius: 6, background: order.payment === 'Online UPI' ? '#DCFCE7' : '#FEF3C7', color: order.payment === 'Online UPI' ? '#15803D' : '#D97706' }}>
-                            {order.payment || 'Cash'}
+                            {order.payment || 'Online UPI'}
                           </span>
                         </div>
                       </td>

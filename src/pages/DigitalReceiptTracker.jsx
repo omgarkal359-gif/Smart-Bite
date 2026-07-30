@@ -46,7 +46,7 @@ const DigitalReceiptTracker = () => {
         setIsAccessDenied(false);
         
         // Map status to step index
-        if (foundOrder.status === 'placed' || foundOrder.status === 'pending_cash') setCurrentStep(0);
+        if (foundOrder.status === 'placed') setCurrentStep(0);
         else if (foundOrder.status === 'preparing') setCurrentStep(1);
         else if (foundOrder.status === 'ready' || foundOrder.status === 'completed') setCurrentStep(2);
       } catch (err) {
@@ -73,7 +73,7 @@ const DigitalReceiptTracker = () => {
       }
 
       setOrder(updatedOrder);
-      if (updatedOrder.status === 'placed' || updatedOrder.status === 'pending_cash') setCurrentStep(0);
+      if (updatedOrder.status === 'placed') setCurrentStep(0);
       else if (updatedOrder.status === 'preparing') setCurrentStep(1);
       else if (updatedOrder.status === 'ready' || updatedOrder.status === 'completed') setCurrentStep(2);
     };

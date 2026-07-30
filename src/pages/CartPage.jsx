@@ -14,7 +14,7 @@ const CartPage = () => {
   const navigate = useNavigate();
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [diningMode, setDiningMode] = useState('dine_in');
-  const [paymentMode, setPaymentMode] = useState('upi');
+  const paymentMode = 'upi';
   const [showQRModal, setShowQRModal] = useState(false);
   const [upiPaymentState, setUpiPaymentState] = useState('idle'); // 'idle' | 'awaiting' | 'verifying' | 'success'
   const [recentOrders, setRecentOrders] = useState([]);
@@ -193,12 +193,11 @@ const CartPage = () => {
                     : '';
 
                 const isReady = order.status === 'ready';
-                const isPrep = order.status === 'preparing' || order.status === 'placed' || order.status === 'pending_cash';
+                const isPrep = order.status === 'preparing' || order.status === 'placed';
                 const statusColor = isReady ? '#22C55E' : isPrep ? '#FF3B5C' : '#64748B';
                 const statusBg = isReady ? '#DCFCE7' : isPrep ? '#FFF1F2' : '#F1F5F9';
                 const statusLabel = order.status === 'ready' ? 'READY FOR PICKUP' : 
                                     order.status === 'preparing' ? 'PREPARING' : 
-                                    order.status === 'pending_cash' ? 'CASH PENDING' : 
                                     order.status === 'placed' ? 'ORDER PLACED' : 'COMPLETED';
 
                 return (
@@ -293,33 +292,12 @@ const CartPage = () => {
         <div className="cart-selections">
           <div className="selection-group">
             <h3>Dining Mode</h3>
-            <div className="toggle-group-v20">
-              <button 
-                className={`mode-btn-v20 ${diningMode === 'dine_in' ? 'active shadow-md' : ''}`}
-                onClick={() => setDiningMode('dine_in')}
-              >
-                Dine-In
-              </button>
-              <button 
-                className={`mode-btn-v20 ${diningMode === 'takeaway' ? 'active shadow-md' : ''}`}
-                onClick={() => setDiningMode('takeaway')}
-              >
-                Takeaway
-              </button>
-            </div>
+            <div className="toggle-group-v20"><button className={`mode-btn-v20 active shadow-md`}>Online UPI</button></div>
           </div>
 
           <div className="selection-group">
             <h3>Payment Method</h3>
-            <div className="toggle-group-v20">
-              <button 
-                className="mode-btn-v20 active shadow-md"
-                onClick={() => setPaymentMode('upi')}
-                style={{ width: '100%' }}
-              >
-                Pay Online (UPI / GPay / PhonePe)
-              </button>
-            </div>
+            <div className="toggle-group-v20"><button className={`mode-btn-v20 active shadow-md`}>Online UPI</button></div>
           </div>
         </div>
 

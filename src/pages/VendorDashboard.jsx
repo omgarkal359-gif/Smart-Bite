@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { GlassCard } from '../components/ui/GlassCard';
 import { Button } from '../components/ui/Button';
-import { Clock, Volume2, Power, LogOut, CheckCircle, Banknote, Activity, Smartphone, Utensils, ShoppingBag, Settings, Menu, RefreshCw, X, TrendingUp, Hash, CreditCard, Star, History, User } from 'lucide-react';
+import { Clock, Volume2, Power, LogOut, CheckCircle, Banknote, Activity, Smartphone, Utensils, ShoppingBag, Settings, Menu, RefreshCw, X, TrendingUp, Hash, CreditCard, Star, History, User, Flame } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MenuEditor } from '../components/vendor/MenuEditor';
 import { SHOPS } from '../data/foodCourtDB';
@@ -48,7 +48,7 @@ const VendorDashboard = () => {
           allOrders.push(localOrder);
         }
       });
-      allOrders.sort((a, b) => String(b.id).localeCompare(String(a.id)));
+      allOrders.sort((a, b) => new Date(b.timestamp || b.created_at || 0) - new Date(a.timestamp || a.created_at || 0));
       
       const active = allOrders.filter(order => order.status !== 'completed').map(order => ({
         ...order,
@@ -117,17 +117,37 @@ const VendorDashboard = () => {
     socket.on('order_new', handleNewOrder);
     socket.on('order_status_update', handleStatusUpdate);
 
-    // Setup Supabase Realtime Broadcast Listener to bypass RLS DB blocks
+    // Setup Supabase Realtime Broadcast & Postgres Database Listener
     const channel = supabase.channel(`vendor_sync_${targetShopId}`)
       .on('broadcast', { event: 'order_new' }, (payload) => {
-        if (payload && payload.payload && payload.payload.order) {
-           const newOrd = payload.payload.order;
+        const newOrd = payload?.order || payload?.payload?.order || payload;
+        if (newOrd && newOrd.id) {
            handleNewOrder(newOrd);
            // Persist to local storage to survive refreshes
            const existing = JSON.parse(localStorage.getItem(`sgu_vendor_orders_${targetShopId}`) || '[]');
            if (!existing.find(o => o.id === newOrd.id)) {
              localStorage.setItem(`sgu_vendor_orders_${targetShopId}`, JSON.stringify([newOrd, ...existing]));
            }
+        }
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
+        if (payload.eventType === 'INSERT' && payload.new) {
+          const newOrd = payload.new;
+          const ordStallId = newOrd.stall_id || newOrd.stallId || newOrd.shop_id || newOrd.shopId;
+          if (ordStallId && String(ordStallId) === String(targetShopId)) {
+            handleNewOrder(newOrd);
+            // Persist to local storage to survive refreshes
+            const existing = JSON.parse(localStorage.getItem(`sgu_vendor_orders_${targetShopId}`) || '[]');
+            if (!existing.find(o => o.id === newOrd.id)) {
+              localStorage.setItem(`sgu_vendor_orders_${targetShopId}`, JSON.stringify([newOrd, ...existing]));
+            }
+          }
+        } else if (payload.eventType === 'UPDATE' && payload.new) {
+          const updatedOrd = payload.new;
+          const ordStallId = updatedOrd.stall_id || updatedOrd.stallId || updatedOrd.shop_id || updatedOrd.shopId;
+          if (ordStallId && String(ordStallId) === String(targetShopId)) {
+            handleStatusUpdate(updatedOrd);
+          }
         }
       })
       .subscribe();
@@ -268,7 +288,7 @@ const VendorDashboard = () => {
       }
     }
 
-    return { totalOrders, totalRevenue, cashRevenue, upiRevenue, trendingItem, trendingCount: maxCount };
+    return { totalOrders, totalRevenue, upiRevenue, trendingItem, trendingCount: maxCount };
   }, [tickets, completedTickets]);
 
   const handleToggleShop = async () => {
@@ -465,14 +485,7 @@ const VendorDashboard = () => {
             <span className="command-subvalue">Combined Total</span>
           </motion.div>
 
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="elite-card command-card">
-            <div className="flex justify-between items-start">
-              <span className="command-label">Cash Collection</span>
-              <Banknote size={20} className="text-amber-500" />
-            </div>
-            <span className="command-value">₹{metrics.cashRevenue}</span>
-            <span className="command-subvalue text-amber-600">Pending & Collected</span>
-          </motion.div>
+          
 
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="elite-card command-card">
             <div className="flex justify-between items-start">
@@ -481,6 +494,19 @@ const VendorDashboard = () => {
             </div>
             <span className="command-value">₹{metrics.upiRevenue}</span>
             <span className="command-subvalue text-blue-600">Auto-Verified</span>
+          </motion.div>
+
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="elite-card command-card">
+            <div className="flex justify-between items-start">
+              <span className="command-label">Trending Item</span>
+              <Flame size={20} className="text-orange-500" />
+            </div>
+            <span className="command-value" style={{ fontSize: '1.4rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {metrics.trendingItem}
+            </span>
+            <span className="command-subvalue text-orange-600">
+              {metrics.trendingCount} {metrics.trendingCount === 1 ? 'Order' : 'Orders'} Today
+            </span>
           </motion.div>
 
 
@@ -521,13 +547,13 @@ const VendorDashboard = () => {
                 richItems = ticket.items;
               }
 
-              const isNew = ticket.status === 'placed' || (!ticket.status && ticket.payment !== 'Cash');
+              const isNew = ticket.status === 'placed' || !ticket.status;
               const isPreparing = ticket.status === 'preparing';
               const isPendingCash = ticket.status === 'pending_cash' || (!ticket.status && ticket.payment === 'Cash');
               const isReady = ticket.status === 'ready';
 
               const statusColor = isPreparing ? '#3B82F6' : isReady ? '#22C55E' : isNew ? '#8B5CF6' : '#F59E0B';
-              const statusLabel = isPreparing ? '🔥 PREPARING' : isReady ? '✅ READY' : isNew ? '🆕 NEW ORDER' : '💵 AWAITING CASH';
+              const statusLabel = isPreparing ? '🔥 PREPARING' : isReady ? '✅ READY' : '🆕 NEW ORDER';
 
               return (
                 <motion.div
@@ -544,16 +570,16 @@ const VendorDashboard = () => {
                   style={{ borderTop: `4px solid ${statusColor}` }}
                 >
                   {/* Pulsing NEW badge */}
-                  {(isNew || isPendingCash) && (
+                                    {isNew && (
                     <div style={{
                       position: 'absolute', top: 12, right: 12,
-                      background: isNew ? '#8B5CF6' : '#F59E0B',
+                      background: '#8B5CF6',
                       color: 'white', borderRadius: 8, padding: '3px 10px',
                       fontSize: '0.6rem', fontWeight: 900, letterSpacing: '0.15em',
                       fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase',
                       animation: 'pulse 1.5s infinite'
                     }}>
-                      {isNew ? 'NEW' : 'CASH'}
+                      NEW
                     </div>
                   )}
 
@@ -562,11 +588,11 @@ const VendorDashboard = () => {
                     <div className="flex flex-col">
                       <span className="ticket-id" style={{ fontSize: '1.4rem' }}>#{ticket.id}</span>
                       <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                        {ticket.customerName || 'Standard Order'}
+                        {ticket.customer_name || ticket.customerName || 'Standard Order'}
                       </span>
                     </div>
                     <span style={{ fontSize: '0.75rem', fontWeight: 900, color: '#E4002B', textTransform: 'uppercase', fontFamily: "'Oswald', sans-serif" }}>
-                      {ticket.timestamp ? formatRelativeTime(ticket.timestamp).toUpperCase() : (ticket.time || 'Just now').toUpperCase()}
+                      {(ticket.timestamp || ticket.created_at) ? String(formatRelativeTime(ticket.timestamp || ticket.created_at)).toUpperCase() : String(ticket.time || 'Just now').toUpperCase()}
                     </span>
                   </div>
 
@@ -578,7 +604,7 @@ const VendorDashboard = () => {
                     </span>
                     <span className={`badge ${ticket.payment === 'Online UPI' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
                       {ticket.payment === 'Online UPI' ? <Smartphone size={13} /> : <Banknote size={13} />}
-                      {ticket.payment || 'Cash'}
+                      {ticket.payment || 'Online UPI'}
                     </span>
                   </div>
 
@@ -599,7 +625,7 @@ const VendorDashboard = () => {
                         </div>
                       ))
                     ) : (
-                      parsedItems.map((item, i) => (
+                      parsedItems.map((item, i) => typeof item === 'object' && item !== null ? (<div key={i} className="ticket-item" style={{ padding: '8px 12px', background: '#F8FAFC', borderRadius: 10, borderLeft: 'none', fontWeight: 700, color: '#0F172A', fontSize: '0.85rem', marginBottom: 6 }}>{item.name || 'Item'}</div>) : (
                         <div key={i} className="ticket-item" style={{ padding: '8px 12px', background: '#F8FAFC', borderRadius: 10, borderLeft: 'none', fontWeight: 700, color: '#0F172A', fontSize: '0.85rem', marginBottom: 6 }}>
                           {item}
                         </div>
@@ -662,25 +688,7 @@ const VendorDashboard = () => {
                       </div>
                     )}
 
-                    {isPendingCash && (
-                      <motion.button
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={() => handleConfirmCash(ticket.id)}
-                        style={{
-                          width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-                          padding: '16px', borderRadius: 16, border: 'none', cursor: 'pointer',
-                          fontFamily: "'Oswald', sans-serif", fontWeight: 800, fontSize: '1rem', letterSpacing: '0.05em', textTransform: 'uppercase',
-                          background: 'linear-gradient(135deg, #F59E0B, #D97706)',
-                          color: 'white',
-                          boxShadow: '0 6px 20px rgba(245,158,11,0.4)',
-                          transition: 'all 0.2s'
-                        }}
-                      >
-                        <Banknote size={22} color="white" />
-                        Confirm Cash
-                      </motion.button>
-                    )}
+                    
 
                     {isReady && (
                       <motion.button
@@ -755,15 +763,18 @@ const VendorDashboard = () => {
                         <div className="flex justify-between items-center">
                           <span className="font-bold text-md text-navy-900">{order.id}</span>
                           <span className="text-[10px] font-bold text-slate-400 uppercase">
-                            {new Date(order.timestamp || new Date()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            {new Date(order.timestamp || order.created_at || new Date()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </span>
+                        </div>
+                        <div className="text-[11px] font-black text-slate-500 uppercase tracking-widest mt-1 mb-2">
+                          {order.customer_name || order.customerName || 'Standard Order'}
                         </div>
                         
                         <p className="text-xs font-semibold text-slate-600 my-1">
                           {typeof order.items === 'string' 
                             ? order.items 
                             : Array.isArray(order.items) 
-                              ? order.items.map(i => typeof i === 'string' ? i : `${i.quantity}x ${i.name}`).join(', ') 
+                              ? order.items.map(i => typeof i === 'string' ? i : (i ? `${i.quantity || 1}x ${i.name || 'Item'}` : '')).filter(Boolean).join(', ') 
                               : ''}
                         </p>
 
