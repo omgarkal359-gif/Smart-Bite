@@ -658,14 +658,15 @@ const VendorDashboard = () => {
                             flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                             padding: '14px 0', borderRadius: 14, border: 'none', cursor: isPreparing ? 'not-allowed' : 'pointer',
                             fontFamily: "'Oswald', sans-serif", fontWeight: 800, fontSize: '0.9rem', letterSpacing: '0.05em', textTransform: 'uppercase',
-                            background: isPreparing ? '#F1F5F9' : 'linear-gradient(135deg, #F59E0B, #D97706)',
-                            color: isPreparing ? '#94A3B8' : 'white',
-                            boxShadow: isPreparing ? 'none' : '0 4px 14px rgba(245,158,11,0.4)',
+                            background: 'linear-gradient(135deg, #F59E0B, #D97706)',
+                            color: 'white',
+                            boxShadow: isPreparing ? 'inset 0 0 0 999px rgba(0,0,0,0.1)' : '0 4px 14px rgba(245,158,11,0.4)',
+                            opacity: isPreparing ? 0.85 : 1,
                             transition: 'all 0.2s'
                           }}
                         >
-                          <Clock size={18} color={isPreparing ? '#94A3B8' : 'white'} />
-                          {isPreparing ? 'Preparing…' : 'Preparing'}
+                          <Clock size={18} color="white" />
+                          {isPreparing ? 'PREPARING...' : 'PREPARING'}
                         </motion.button>
 
                         <motion.button
