@@ -579,6 +579,10 @@ const VendorDashboard = () => {
                       animate={{ opacity: 1, scale: 1, x: 0 }}
                       exit={{ opacity: 0, scale: 0.8, y: -50 }}
                       className="elite-card kds-ticket"
+                      style={{
+                        borderColor: ticket.status === 'placed' ? '#F87171' : 
+                                     ticket.status === 'preparing' ? '#FBBF24' : '#4ADE80'
+                      }}
                     >
                       <div className="ticket-header">
                         <div className="flex flex-col">
@@ -627,29 +631,29 @@ const VendorDashboard = () => {
                         </div>
 
                         {(ticket.status === 'placed' || ticket.status === 'preparing') && (
-                          <div className="flex gap-2 w-full">
+                          <div className="flex gap-3 w-full">
                             <motion.button 
                               whileHover={{ scale: ticket.status === 'preparing' ? 1 : 1.03 }}
                               whileTap={{ scale: ticket.status === 'preparing' ? 1 : 0.97 }}
                               disabled={ticket.status === 'preparing'}
-                              className={`vendor-btn-preparing flex-1 flex items-center justify-center gap-2 py-3 px-3 rounded-xl font-black text-[11px] uppercase tracking-wider cursor-pointer transition-all border border-solid ${
+                              className={`flex-1 flex items-center justify-center gap-2 py-5 px-4 rounded-xl font-black text-[13px] uppercase tracking-wider cursor-pointer transition-all border border-solid ${
                                 ticket.status === 'preparing' 
-                                  ? 'bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed' 
-                                  : 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100'
+                                  ? 'bg-slate-200 text-slate-500 border-slate-300 cursor-not-allowed shadow-inner' 
+                                  : 'vendor-btn-preparing bg-red-50 text-red-600 border-red-200 hover:bg-red-100'
                               }`}
                               onClick={() => handleUpdateStatus(ticket.id, 'preparing')}
                             >
-                              <Clock size={14} className={ticket.status === 'preparing' ? 'text-slate-400' : 'text-current'} />
+                              <Clock size={16} className={ticket.status === 'preparing' ? 'text-slate-500' : 'text-current'} />
                               Preparing
                             </motion.button>
 
                             <motion.button 
                               whileHover={{ scale: 1.03 }}
                               whileTap={{ scale: 0.97 }}
-                              className="vendor-btn-ready flex-1 flex items-center justify-center gap-2 py-3 px-3 rounded-xl font-black text-[11px] uppercase tracking-wider bg-green-50 text-green-600 border border-solid border-green-200 hover:bg-green-100 cursor-pointer transition-all"
+                              className="vendor-btn-ready flex-1 flex items-center justify-center gap-2 py-5 px-4 rounded-xl font-black text-[13px] uppercase tracking-wider bg-green-50 text-green-600 border border-solid border-green-200 hover:bg-green-100 cursor-pointer transition-all"
                               onClick={() => handleUpdateStatus(ticket.id, 'ready')}
                             >
-                              <CheckCircle size={14} className="text-current" />
+                              <CheckCircle size={16} className="text-current" />
                               Ready
                             </motion.button>
                           </div>
