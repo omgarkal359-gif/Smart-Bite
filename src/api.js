@@ -152,7 +152,7 @@ export const api = {
   async createOrder(orderData) {
     try {
       const stallId = orderData.items && orderData.items.length > 0 ? orderData.items[0].stallId : null;
-      const defaultStatus = orderData.payment === 'Cash' ? 'pending_cash' : 'placed';
+      const defaultStatus = 'placed';
 
       // 1. Post to local SQLite backend API first
       let sqliteRes = null;
