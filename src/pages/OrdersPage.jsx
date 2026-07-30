@@ -5,6 +5,7 @@ import { Clock, CheckCircle, ShoppingBag } from 'lucide-react';
 import { GlassCard } from '../components/ui/GlassCard';
 import { api, socket, formatRelativeTime } from '../api';
 import { getStoredUser } from '../utils/auth';
+import { supabase } from '../supabaseClient';
 import './home_v21.css';
 
 const OrdersPage = () => {
