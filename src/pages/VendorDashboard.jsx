@@ -651,7 +651,7 @@ const VendorDashboard = () => {
                                   ? 'bg-slate-200 text-slate-500 border-slate-300 cursor-not-allowed shadow-inner' 
                                   : 'vendor-btn-preparing hover:scale-[1.03] active:scale-[0.97]'
                               }`}
-                              style={ticket.status !== 'preparing' ? { backgroundColor: '#ef4444', color: 'white', borderColor: '#dc2626' } : {}}
+                              style={ticket.status !== 'preparing' ? { backgroundColor: '#f59e0b', color: 'white', borderColor: '#d97706' } : {}}
                               onClick={() => handleUpdateStatus(ticket.id, 'preparing')}
                             >
                               <Clock size={16} className={ticket.status === 'preparing' ? 'text-slate-500' : 'text-current'} />
@@ -660,7 +660,7 @@ const VendorDashboard = () => {
 
                             <button 
                               className="flex-1 flex items-center justify-center gap-2 py-4 px-4 rounded-xl font-black text-[13px] uppercase tracking-wider cursor-pointer transition-all border border-solid vendor-btn-ready hover:scale-[1.03] active:scale-[0.97]"
-                              style={{ backgroundColor: '#22c55e', color: 'white', borderColor: '#16a34a' }}
+                              style={{ backgroundColor: '#059669', color: 'white', borderColor: '#047857' }}
                               onClick={() => handleUpdateStatus(ticket.id, 'ready')}
                             >
                               <CheckCircle size={16} className="text-current" />
