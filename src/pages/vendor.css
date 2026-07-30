@@ -1051,15 +1051,25 @@ select.floating-input {
     background-color: #ef4444 !important;
     color: white !important;
     border-color: #dc2626 !important;
+    transition: background-color 0.2s, transform 0.1s !important;
+  }
+
+  .vendor-btn-preparing:active {
+    background-color: #991b1b !important;
+    border-color: #7f1d1d !important;
   }
 
   .vendor-btn-ready {
     background-color: #22c55e !important;
     color: white !important;
     border-color: #16a34a !important;
+    transition: background-color 0.2s, transform 0.1s !important;
   }
 
-
+  .vendor-btn-ready:active {
+    background-color: #166534 !important;
+    border-color: #14532d !important;
+  }
   .kds-ticket:hover {
     transform: none;
   }
