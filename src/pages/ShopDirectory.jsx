@@ -5,6 +5,7 @@ import { Clock, Wifi, WifiOff, Search, Flame, Star } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { SHOPS, searchFoodItems } from '../data/foodCourtDB';
 import { api, socket } from '../api';
+import { supabase } from '../supabaseClient';
 import './pages.css';
 import './home_v21.css';
 
@@ -101,7 +102,7 @@ const ShopDirectory = () => {
   };
 
   useEffect(() => {
-    async function loadStalls() {
+    const loadStalls = async () => {
       try {
         const data = await api.getStalls();
         if (data && data.length > 0) {
@@ -113,8 +114,20 @@ const ShopDirectory = () => {
       } finally {
         setIsLoading(false);
       }
-    }
+    };
     loadStalls();
+
+    // Listen to real-time stall updates
+    const stallsChannel = supabase
+      .channel('directory-stalls')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'stalls' }, (payload) => {
+        if (payload.eventType === 'UPDATE') {
+          setStalls(prev => prev.map(s => s.id === payload.new.id ? { ...s, ...payload.new } : s));
+        } else if (payload.eventType === 'INSERT') {
+          setStalls(prev => [...prev, payload.new]);
+        }
+      })
+      .subscribe();
 
     socket.emit('join', 'student');
     const handleStatusUpdate = (updatedStall) => {
@@ -124,6 +137,7 @@ const ShopDirectory = () => {
     const interval = setInterval(loadStalls, 15000);
 
     return () => {
+      supabase.removeChannel(stallsChannel);
       socket.off('stall_status_update', handleStatusUpdate);
       clearInterval(interval);
     };

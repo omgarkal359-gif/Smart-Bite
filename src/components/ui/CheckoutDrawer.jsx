@@ -75,7 +75,7 @@ export const CheckoutDrawer = ({ isOpen, onClose, cart, inventory, onComplete })
       customerName: userData.name || 'Guest User',
       customerId: userData.id || '9876543210',
       type: diningMode === 'dine_in' ? 'Dine-In' : 'Takeaway',
-      payment: paymentMode === 'upi' ? 'Online UPI' : 'Cash',
+      payment: 'Online UPI',
       total: totalCartValue,
       items: cartItems.map(item => ({
         id: item.id,
@@ -88,20 +88,21 @@ export const CheckoutDrawer = ({ isOpen, onClose, cart, inventory, onComplete })
     };
 
     api.createOrder(orderPayload)
-      .then((createdOrder) => {
+      .then((response) => {
         setIsProcessing(false);
-        setPlacedOrderId(createdOrder.id);
+        const actualOrder = response.order || response;
+        setPlacedOrderId(actualOrder.id);
         setStep(4); // Success step
         triggerConfetti();
 
         const existingOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
-        localStorage.setItem('sgu_orders', JSON.stringify([createdOrder, ...existingOrders]));
+        localStorage.setItem('sgu_orders', JSON.stringify([actualOrder, ...existingOrders]));
 
         setTimeout(() => {
           clearCart();
           onClose();
           if (typeof onComplete === 'function') onComplete();
-          navigate(`/student/order/${createdOrder.id}`);
+          navigate(`/student/order/${actualOrder.id}`);
         }, 3000);
       })
       .catch((err) => {
@@ -117,7 +118,7 @@ export const CheckoutDrawer = ({ isOpen, onClose, cart, inventory, onComplete })
       return;
     }
 
-    if (step === 3 && paymentMode === 'upi') {
+    if (step === 3) {
       const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
       
       const firstItem = cartItems[0] || {};
@@ -280,23 +281,15 @@ export const CheckoutDrawer = ({ isOpen, onClose, cart, inventory, onComplete })
                   <div className="toggle-group-v20">
                     <motion.button 
                       whileTap={{ scale: 0.95 }}
-                      className={`mode-btn-v20 ${paymentMode === 'upi' ? 'active shadow-md' : ''}`}
+                      className="mode-btn-v20 active shadow-md"
                       onClick={() => setPaymentMode('upi')}
+                      style={{ width: '100%' }}
                     >
-                      <Smartphone size={32} /> Online UPI
-                    </motion.button>
-                    <motion.button 
-                      whileTap={{ scale: 0.95 }}
-                      className={`mode-btn-v20 ${paymentMode === 'cash' ? 'active shadow-md' : ''}`}
-                      onClick={() => setPaymentMode('cash')}
-                    >
-                      <Banknote size={32} /> Cash at Counter
+                      <Smartphone size={32} /> Pay Online (UPI / GPay / PhonePe)
                     </motion.button>
                   </div>
                   <p className="payment-helper-text mt-4 text-muted">
-                    {paymentMode === 'upi' 
-                      ? 'Opens GPay/PhonePe automatically.' 
-                      : 'You must pay at the counter before order preparation begins.'}
+                    Opens GPay/PhonePe or displays instant UPI QR code.
                   </p>
                 </div>
               </motion.div>

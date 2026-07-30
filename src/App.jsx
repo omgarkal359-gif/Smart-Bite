@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { MobileLayout } from './components/layout/MobileLayout';
 import { CartProvider } from './context/CartContext';
 import { supabase } from './supabaseClient';
+import { getStoredUser, clearStoredUser } from './utils/auth';
 
 // Dynamic route code splitting
 const ShopDirectory = lazy(() => import('./pages/ShopDirectory'));
@@ -42,17 +43,12 @@ const RootRedirect = () => {
     return <div className="flex h-screen items-center justify-center font-semibold">Verifying session...</div>;
   }
 
-  // 1. Check local storage session
-  const saved = localStorage.getItem('sgu_user');
+  // 1. Check stored user session (sessionStorage or localStorage)
+  const saved = getStoredUser();
   if (saved) {
-    try {
-      const u = JSON.parse(saved);
-      if (u?.role === 'admin') return <Navigate to="/admin" replace />;
-      if (u?.role === 'owner') return <Navigate to="/vendor" replace />;
-      if (u?.role === 'student' || u?.role === 'guest') return <Navigate to="/student" replace />;
-    } catch (e) {
-      // Fall back to login
-    }
+    if (saved?.role === 'admin') return <Navigate to="/admin" replace />;
+    if (saved?.role === 'owner') return <Navigate to="/vendor" replace />;
+    if (saved?.role === 'student' || saved?.role === 'guest') return <Navigate to="/student" replace />;
   }
 
   // 2. Check Supabase session
@@ -73,17 +69,12 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
 
   useEffect(() => {
     async function checkAuth() {
-      // 1. Check local storage session
-      const saved = localStorage.getItem('sgu_user');
+      // 1. Check stored session
+      const saved = getStoredUser();
       if (saved) {
-        try {
-          const u = JSON.parse(saved);
-          if (u && u.role && (!allowedRoles || allowedRoles.includes(u.role))) {
-            setIsAllowed(true);
-            return;
-          }
-        } catch (e) {
-          // continue to Supabase check
+        if (saved && saved.role && (!allowedRoles || allowedRoles.includes(saved.role))) {
+          setIsAllowed(true);
+          return;
         }
       }
 
@@ -118,7 +109,7 @@ function App() {
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'SIGNED_OUT') {
-        localStorage.removeItem('sgu_user');
+        clearStoredUser();
       }
     });
 
@@ -162,7 +153,13 @@ function App() {
               </ProtectedRoute>
             } />
             <Route path="/owner/dashboard" element={<Navigate to="/vendor" replace />} />
-            <Route path="/board" element={<PublicOrderBoard />} />
+            
+            {/* Protected Order Board Route */}
+            <Route path="/board" element={
+              <ProtectedRoute allowedRoles={['student', 'guest', 'owner', 'admin']}>
+                <PublicOrderBoard />
+              </ProtectedRoute>
+            } />
             
             {/* Protected Admin Control Center Route */}
             <Route path="/admin" element={
