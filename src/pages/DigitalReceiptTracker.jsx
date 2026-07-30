@@ -11,9 +11,9 @@ import './pages.css';
 import './tracker.css';
 
 const STATUS_STEPS = [
-  { id: 'placed', label: 'Order Placed', icon: Clock },
-  { id: 'preparing', label: 'Preparing', icon: ChefHat },
-  { id: 'ready', label: 'Ready for Pickup', icon: CheckCircle },
+  { id: 'placed', label: 'ORDER PLACED', icon: Clock, desc: 'Order received by kitchen' },
+  { id: 'preparing', label: 'PREPARING', icon: ChefHat, desc: 'Preparing your order...' },
+  { id: 'ready', label: 'READY FOR PICKUP', icon: CheckCircle, desc: 'Your order is ready at the counter!' },
 ];
 
 const DigitalReceiptTracker = () => {
@@ -703,7 +703,7 @@ const DigitalReceiptTracker = () => {
                         </div>
                         <div className="step-content-v21">
                           <h3 className="step-label">{step.label}</h3>
-                          {isCurrent && <p className="step-desc text-muted">In progress...</p>}
+                          {isCurrent && <p className="step-desc text-muted">{step.desc}</p>}
                         </div>
                         {index < STATUS_STEPS.length - 1 && <div className="step-line-v21" />}
                       </div>
