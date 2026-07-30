@@ -5,6 +5,14 @@ import mixVegWadapav from '../assets/mix_veg_wadapav.png';
 import specialWadapav from '../assets/special_wadapav.png';
 import periPeriWadapav from '../assets/peri_peri_wadapav.png';
 import cheeseWadapav from '../assets/cheese_wadapav.png';
+import pohaImage from '../assets/poha.png';
+import misalImage from '../assets/misal.png';
+import thalipeethImage from '../assets/thalipeeth.png';
+import idliImage from '../assets/idli.png';
+import dosaImage from '../assets/dosa.png';
+import samosaImage from '../assets/samosa.png';
+import pavbhajiImage from '../assets/pavbhaji.png';
+import bhajiImage from '../assets/bhaji.png';
 
 // ============================================================
 // DISH IMAGE HELPER — 100% Vegetarian, accurate per-dish images
@@ -16,19 +24,19 @@ import cheeseWadapav from '../assets/cheese_wadapav.png';
 const ITEM_IMAGE_MAP = {
   // ── Thalipeeth (Mangale Snacks) ───────────────────────────
   // Thalipeeth is a Maharashtrian flatbread — using roti/flatbread style images
-  'Dahi Thalipeeth':              'https://images.unsplash.com/photo-1626132647523-66f5bf380027?auto=format&fit=crop&w=400&q=80',
-  'Schezwan Thalipeeth':          'https://images.unsplash.com/photo-1601050690117-94f5f6fa8bd7?auto=format&fit=crop&w=400&q=80',
-  'Paneer Thalipeeth':            'https://images.unsplash.com/photo-1608797178974-15b35a61d121?auto=format&fit=crop&w=400&q=80',
-  'Cheese Thalipeeth':            'https://images.unsplash.com/photo-1608797178974-15b35a61d121?auto=format&fit=crop&w=400&q=80',
-  'Cheese Paneer Thalipeeth':     'https://images.unsplash.com/photo-1608797178974-15b35a61d121?auto=format&fit=crop&w=400&q=80',
-  'Mozzarella Cheese Thalipeeth': 'https://images.unsplash.com/photo-1513456852971-30c0b8199d4d?auto=format&fit=crop&w=400&q=80',
+  'Dahi Thalipeeth':              thalipeethImage,
+  'Schezwan Thalipeeth':          thalipeethImage,
+  'Paneer Thalipeeth':            thalipeethImage,
+  'Cheese Thalipeeth':            thalipeethImage,
+  'Cheese Paneer Thalipeeth':     thalipeethImage,
+  'Mozzarella Cheese Thalipeeth': thalipeethImage,
 
   // ── Misal (spicy sprouted beans curry, Maharashtrian) ─────
-  'Misal':                        'https://images.unsplash.com/photo-1601050690117-94f5f6fa8bd7?auto=format&fit=crop&w=400&q=80',
-  'Dahi Misal':                   'https://images.unsplash.com/photo-1601050690117-94f5f6fa8bd7?auto=format&fit=crop&w=400&q=80',
-  'Cheese Misal':                 'https://images.unsplash.com/photo-1601050690117-94f5f6fa8bd7?auto=format&fit=crop&w=400&q=80',
+  'Misal':                        misalImage,
+  'Dahi Misal':                   misalImage,
+  'Cheese Misal':                 misalImage,
   'Extra Bread':                  'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=400&q=80',
-  'Jumbo Misal':                  'https://images.unsplash.com/photo-1601050690117-94f5f6fa8bd7?auto=format&fit=crop&w=400&q=80',
+  'Jumbo Misal':                  misalImage,
 
   // ── Rice & Pulav ─────────────────────────────────────────
   'Masala Rice':                  'https://images.unsplash.com/photo-1512058564366-18510be2db19?auto=format&fit=crop&w=400&q=80',
@@ -140,52 +148,52 @@ const ITEM_IMAGE_MAP = {
   'Cheese Wadapav':               cheeseWadapav,
 
   // ── Breakfast ─────────────────────────────────────────────
-  'Poha':                         'https://images.unsplash.com/photo-1601050690117-94f5f6fa8bd7?auto=format&fit=crop&w=400&q=80',
-  'Upama':                        'https://images.unsplash.com/photo-1608797178974-15b35a61d121?auto=format&fit=crop&w=400&q=80',
-  'Poha-Upama Combo':             'https://images.unsplash.com/photo-1601050690117-94f5f6fa8bd7?auto=format&fit=crop&w=400&q=80',
+  'Poha':                         pohaImage,
+  'Upama':                        pohaImage,
+  'Poha-Upama Combo':             pohaImage,
   // Pineapple Shira is a sweet semolina pudding — using warm yellow/sweet food image
   'Pineapple Shira':              'https://images.unsplash.com/photo-1550583724-b2692b85b150?auto=format&fit=crop&w=400&q=80',
 
   // ── Samosa Chaat (potato-filled crispy pastry) ───────────
-  'Punjabi Samosa':               'https://images.unsplash.com/photo-1601050690117-94f5f6fa8bd7?auto=format&fit=crop&w=400&q=80',
-  'Dahi Samosa':                  'https://images.unsplash.com/photo-1601050690117-94f5f6fa8bd7?auto=format&fit=crop&w=400&q=80',
+  'Punjabi Samosa':               samosaImage,
+  'Dahi Samosa':                  samosaImage,
 
   // ── Fasting (Upwaas) — all veg fasting food ──────────────
-  'Sabu Khichadi':                'https://images.unsplash.com/photo-1606491956689-2ea866880c84?auto=format&fit=crop&w=400&q=80',
-  'Sabu Khichadi (Masala)':       'https://images.unsplash.com/photo-1606491956689-2ea866880c84?auto=format&fit=crop&w=400&q=80',
-  'Sabu Thalipeeth':              'https://images.unsplash.com/photo-1608797178974-15b35a61d121?auto=format&fit=crop&w=400&q=80',
+  'Sabu Khichadi':                pohaImage,
+  'Sabu Khichadi (Masala)':       pohaImage,
+  'Sabu Thalipeeth':              thalipeethImage,
   // Sabudana Wada is a tapioca fritter — using veg fritter image
-  'Sabudana Wada':                'https://images.unsplash.com/photo-1601050690117-94f5f6fa8bd7?auto=format&fit=crop&w=400&q=80',
+  'Sabudana Wada':                bhajiImage,
   'Classic Fries':                'https://images.unsplash.com/photo-1576107232684-1279f3908594?auto=format&fit=crop&w=400&q=80',
   'Peri Peri Fries':              'https://images.unsplash.com/photo-1576107232684-1279f3908594?auto=format&fit=crop&w=400&q=80',
 
   // ── Pavbhaji (spiced vegetable mash with bread) ──────────
-  'Pavbhaji':                     'https://images.unsplash.com/photo-1606491956689-2ea866880c84?auto=format&fit=crop&w=400&q=80',
-  'Cheese Pavbhaji':              'https://images.unsplash.com/photo-1606491956689-2ea866880c84?auto=format&fit=crop&w=400&q=80',
-  'Butter Cheese Pavbhaji':       'https://images.unsplash.com/photo-1606491956689-2ea866880c84?auto=format&fit=crop&w=400&q=80',
+  'Pavbhaji':                     pavbhajiImage,
+  'Cheese Pavbhaji':              pavbhajiImage,
+  'Butter Cheese Pavbhaji':       pavbhajiImage,
 
   // ── Rohit Special (Maharashtrian veg specialties) ─────────
-  'Jhataka Wada with Cheese':     'https://images.unsplash.com/photo-1626132647523-66f5bf380027?auto=format&fit=crop&w=400&q=80',
-  'Batata Wada Chutney':          'https://images.unsplash.com/photo-1626132647523-66f5bf380027?auto=format&fit=crop&w=400&q=80',
+  'Jhataka Wada with Cheese':     cheeseWadapav,
+  'Batata Wada Chutney':          bhajiImage,
   // Kothimbir Vadi is a steamed/fried coriander-chickpea cake
-  'Kothimbir Vadi (5 Pcs)':       'https://images.unsplash.com/photo-1601050690117-94f5f6fa8bd7?auto=format&fit=crop&w=400&q=80',
+  'Kothimbir Vadi (5 Pcs)':       bhajiImage,
   // Puran Poli is a sweet stuffed flatbread
   'Puran Poli (Single)':          'https://images.unsplash.com/photo-1605197184040-b8ca3c9f2f07?auto=format&fit=crop&w=400&q=80',
-  'Aloo Paratha':                 'https://images.unsplash.com/photo-1626132647523-66f5bf380027?auto=format&fit=crop&w=400&q=80',
+  'Aloo Paratha':                 thalipeethImage,
   // Shenga Poli is a peanut-stuffed flatbread
   'Shenga Poli':                  'https://images.unsplash.com/photo-1605197184040-b8ca3c9f2f07?auto=format&fit=crop&w=400&q=80',
-  'Beetroot Paratha':             'https://images.unsplash.com/photo-1626132647523-66f5bf380027?auto=format&fit=crop&w=400&q=80',
-  'Palak Dal Khichadi':           'https://images.unsplash.com/photo-1606491956689-2ea866880c84?auto=format&fit=crop&w=400&q=80',
+  'Beetroot Paratha':             thalipeethImage,
+  'Palak Dal Khichadi':           pohaImage,
 
   // ── Bhaji (veg fritters) ──────────────────────────────────
-  'Tari Cutwada (Single)':        'https://images.unsplash.com/photo-1601050690117-94f5f6fa8bd7?auto=format&fit=crop&w=400&q=80',
-  'Tari Cutwada (Double)':        'https://images.unsplash.com/photo-1601050690117-94f5f6fa8bd7?auto=format&fit=crop&w=400&q=80',
-  'Palak Bhaji':                  'https://images.unsplash.com/photo-1601050690117-94f5f6fa8bd7?auto=format&fit=crop&w=400&q=80',
-  'Moong Bhaji':                  'https://images.unsplash.com/photo-1601050690117-94f5f6fa8bd7?auto=format&fit=crop&w=400&q=80',
-  'Kanda Bhaji':                  'https://images.unsplash.com/photo-1601050690117-94f5f6fa8bd7?auto=format&fit=crop&w=400&q=80',
-  'Batata Bhaji':                 'https://images.unsplash.com/photo-1601050690117-94f5f6fa8bd7?auto=format&fit=crop&w=400&q=80',
-  'Mirchi Bhaji':                 'https://images.unsplash.com/photo-1601050690117-94f5f6fa8bd7?auto=format&fit=crop&w=400&q=80',
-  'Mutter Karanji':               'https://images.unsplash.com/photo-1601050690117-94f5f6fa8bd7?auto=format&fit=crop&w=400&q=80',
+  'Tari Cutwada (Single)':        bhajiImage,
+  'Tari Cutwada (Double)':        bhajiImage,
+  'Palak Bhaji':                  bhajiImage,
+  'Moong Bhaji':                  bhajiImage,
+  'Kanda Bhaji':                  bhajiImage,
+  'Batata Bhaji':                 bhajiImage,
+  'Mirchi Bhaji':                 bhajiImage,
+  'Mutter Karanji':               bhajiImage,
   // Modak is a sweet steamed dumpling (Ganesh festival sweet)
   'Modak':                        'https://images.unsplash.com/photo-1550583724-b2692b85b150?auto=format&fit=crop&w=400&q=80',
 
@@ -226,26 +234,26 @@ const ITEM_IMAGE_MAP = {
   'Spinach Soup':                 'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=400&q=80',
 
   // ── South Indian (Narayana) ───────────────────────────────
-  'Single Idli':                  'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=400&q=80',
-  'Idli Plate (2 Pcs)':           'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=400&q=80',
-  'Cheese Idli':                  'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=400&q=80',
-  'Idli Fry':                     'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=400&q=80',
-  'Ghee Podli Idli':              'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=400&q=80',
-  'Plain Dosa':                   'https://images.unsplash.com/photo-1668236543090-82eba5ee5976?auto=format&fit=crop&w=400&q=80',
-  'Masala Dosa':                  'https://images.unsplash.com/photo-1668236543090-82eba5ee5976?auto=format&fit=crop&w=400&q=80',
-  'Sponge Dosa':                  'https://images.unsplash.com/photo-1668236543090-82eba5ee5976?auto=format&fit=crop&w=400&q=80',
-  'Cheese Dosa':                  'https://images.unsplash.com/photo-1668236543090-82eba5ee5976?auto=format&fit=crop&w=400&q=80',
-  'Paneer Cheese Dosa':           'https://images.unsplash.com/photo-1668236543090-82eba5ee5976?auto=format&fit=crop&w=400&q=80',
-  'Spong Loni Dosa':              'https://images.unsplash.com/photo-1668236543090-82eba5ee5976?auto=format&fit=crop&w=400&q=80',
-  'Davangiri Loni Dosa':          'https://images.unsplash.com/photo-1668236543090-82eba5ee5976?auto=format&fit=crop&w=400&q=80',
-  'Mysore Masala Dosa':           'https://images.unsplash.com/photo-1668236543090-82eba5ee5976?auto=format&fit=crop&w=400&q=80',
-  'Ghee Podi Dosa':               'https://images.unsplash.com/photo-1668236543090-82eba5ee5976?auto=format&fit=crop&w=400&q=80',
-  'Tomato Uthappa':               'https://images.unsplash.com/photo-1668236543090-82eba5ee5976?auto=format&fit=crop&w=400&q=80',
-  'Onion Uthappa':                'https://images.unsplash.com/photo-1668236543090-82eba5ee5976?auto=format&fit=crop&w=400&q=80',
-  'Medu Vada':                    'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=400&q=80',
-  'Dahi Vada':                    'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=400&q=80',
-  'Appe':                         'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=400&q=80',
-  'Masala Appe':                  'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=400&q=80',
+  'Single Idli':                  idliImage,
+  'Idli Plate (2 Pcs)':           idliImage,
+  'Cheese Idli':                  idliImage,
+  'Idli Fry':                     idliImage,
+  'Ghee Podli Idli':              idliImage,
+  'Plain Dosa':                   dosaImage,
+  'Masala Dosa':                  dosaImage,
+  'Sponge Dosa':                  dosaImage,
+  'Cheese Dosa':                  dosaImage,
+  'Paneer Cheese Dosa':           dosaImage,
+  'Spong Loni Dosa':              dosaImage,
+  'Davangiri Loni Dosa':          dosaImage,
+  'Mysore Masala Dosa':           dosaImage,
+  'Ghee Podi Dosa':               dosaImage,
+  'Tomato Uthappa':               dosaImage,
+  'Onion Uthappa':                dosaImage,
+  'Medu Vada':                    idliImage,
+  'Dahi Vada':                    idliImage,
+  'Appe':                         idliImage,
+  'Masala Appe':                  idliImage,
 
   // ── Rice Bowl (South Indian) ─────────────────────────────
   'Rice with Sambar':             'https://images.unsplash.com/photo-1512058564366-18510be2db19?auto=format&fit=crop&w=400&q=80',
@@ -304,12 +312,12 @@ const CATEGORY_IMAGE_MAP = {
   'Cold Beverages':   'https://images.unsplash.com/photo-1517701550927-30cf4ba1dba5?auto=format&fit=crop&w=400&q=80',
   'Cold Coffee':      'https://images.unsplash.com/photo-1517701550927-30cf4ba1dba5?auto=format&fit=crop&w=400&q=80',
   'Wadapav':          classicWadapav,
-  'Misal':            'https://images.unsplash.com/photo-1601050690117-94f5f6fa8bd7?auto=format&fit=crop&w=400&q=80',
-  'Thalipeeth':       'https://images.unsplash.com/photo-1608797178974-15b35a61d121?auto=format&fit=crop&w=400&q=80',
+  'Misal':            misalImage,
+  'Thalipeeth':       thalipeethImage,
   'Rice':             'https://images.unsplash.com/photo-1512058564366-18510be2db19?auto=format&fit=crop&w=400&q=80',
   'Veg Wraps':        'https://images.unsplash.com/photo-1626700051175-6518c4793f4f?auto=format&fit=crop&w=400&q=80',
-  "Idli's":           'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=400&q=80',
-  "Dosa's":           'https://images.unsplash.com/photo-1668236543090-82eba5ee5976?auto=format&fit=crop&w=400&q=80',
+  "Idli's":           idliImage,
+  "Dosa's":           dosaImage,
   'Noodles':          'https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&w=400&q=80',
   'Shakes':           'https://images.unsplash.com/photo-1572490122747-3968b75cc699?auto=format&fit=crop&w=400&q=80',
   'Mojito':           'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?auto=format&fit=crop&w=400&q=80',
@@ -319,30 +327,30 @@ const CATEGORY_IMAGE_MAP = {
   // Veg Chinese starters
   'Starter':          'https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&w=400&q=80',
   'Roll':             'https://images.unsplash.com/photo-1626700051175-6518c4793f4f?auto=format&fit=crop&w=400&q=80',
-  'Breakfast':        'https://images.unsplash.com/photo-1601050690117-94f5f6fa8bd7?auto=format&fit=crop&w=400&q=80',
-  'Pavbhaji':         'https://images.unsplash.com/photo-1606491956689-2ea866880c84?auto=format&fit=crop&w=400&q=80',
+  'Breakfast':        pohaImage,
+  'Pavbhaji':         pavbhajiImage,
   'Maggi':            'https://images.unsplash.com/photo-1612966608997-303747b974a7?auto=format&fit=crop&w=400&q=80',
   'Soup':             'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=400&q=80',
   'Salad':            'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=400&q=80',
   "Pasta's":          'https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&w=400&q=80',
-  "Paratha's":        'https://images.unsplash.com/photo-1626132647523-66f5bf380027?auto=format&fit=crop&w=400&q=80',
-  'Bhaji':            'https://images.unsplash.com/photo-1601050690117-94f5f6fa8bd7?auto=format&fit=crop&w=400&q=80',
-  'Uthappa':          'https://images.unsplash.com/photo-1668236543090-82eba5ee5976?auto=format&fit=crop&w=400&q=80',
-  'Medu Vada':        'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=400&q=80',
-  'Appe (7 Pcs)':     'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=400&q=80',
+  "Paratha's":        thalipeethImage,
+  'Bhaji':            bhajiImage,
+  'Uthappa':          dosaImage,
+  'Medu Vada':        idliImage,
+  'Appe (7 Pcs)':     idliImage,
   'Rice Bowl':        'https://images.unsplash.com/photo-1512058564366-18510be2db19?auto=format&fit=crop&w=400&q=80',
   'Momos (4 Pcs)':    'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=400&q=80',
   'Spring Potato':    'https://images.unsplash.com/photo-1576107232684-1279f3908594?auto=format&fit=crop&w=400&q=80',
   'Cheese Special':   'https://images.unsplash.com/photo-1513456852971-30c0b8199d4d?auto=format&fit=crop&w=400&q=80',
-  'Puri Special':     'https://images.unsplash.com/photo-1605197184040-b8ca3c9f2f07?auto=format&fit=crop&w=400&q=80',
+  'Puri Special':     bhajiImage,
   'Papads':           'https://images.unsplash.com/photo-1605197184040-b8ca3c9f2f07?auto=format&fit=crop&w=400&q=80',
-  'Cutlets & Pattice': 'https://images.unsplash.com/photo-1606491956689-2ea866880c84?auto=format&fit=crop&w=400&q=80',
-  'Masala Pav (2 Pcs)': 'https://images.unsplash.com/photo-1606491956689-2ea866880c84?auto=format&fit=crop&w=400&q=80',
+  'Cutlets & Pattice': bhajiImage,
+  'Masala Pav (2 Pcs)': pavbhajiImage,
   'Platter':          'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=400&q=80',
-  'Samosa Chaat':     'https://images.unsplash.com/photo-1601050690117-94f5f6fa8bd7?auto=format&fit=crop&w=400&q=80',
-  'Fast (Upwaas)':    'https://images.unsplash.com/photo-1606491956689-2ea866880c84?auto=format&fit=crop&w=400&q=80',
-  'Our Speciality':   'https://images.unsplash.com/photo-1626132647523-66f5bf380027?auto=format&fit=crop&w=400&q=80',
-  'Rohit Special':    'https://images.unsplash.com/photo-1605197184040-b8ca3c9f2f07?auto=format&fit=crop&w=400&q=80',
+  'Samosa Chaat':     samosaImage,
+  'Fast (Upwaas)':    pohaImage,
+  'Our Speciality':   bhajiImage,
+  'Rohit Special':    bhajiImage,
   'Special':          'https://images.unsplash.com/photo-1542990253-0d0f5be5f0ed?auto=format&fit=crop&w=400&q=80',
 };
 
