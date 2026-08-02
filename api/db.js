@@ -328,6 +328,9 @@ export async function initDatabase() {
     } catch (err) {
       isPgActive = false;
       console.warn('[DATABASE WARNING] PostgreSQL connection failed (' + err.message + '). Fallback to local engine.');
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error(`Critical Database Error: PostgreSQL connection failed in production. Details: ${err.message}`);
+      }
     } finally {
       if (client) {
         client.release();
@@ -335,6 +338,9 @@ export async function initDatabase() {
     }
   } else {
     isPgActive = false;
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('Critical Database Error: PostgreSQL connection string (DATABASE_URL) is missing or unconfigured in production.');
+    }
   }
 
   // 2. Try SQLite if PostgreSQL is not active
@@ -388,7 +394,8 @@ export async function initDatabase() {
       category TEXT,
       stock INTEGER,
       img TEXT,
-      available INTEGER DEFAULT 1
+      available INTEGER DEFAULT 1,
+      FOREIGN KEY (stallId) REFERENCES stalls(id) ON DELETE CASCADE
     );
   `);
 
@@ -419,9 +426,16 @@ export async function initDatabase() {
       price REAL,
       quantity INTEGER,
       stallId TEXT,
-      stallName TEXT
+      stallName TEXT,
+      FOREIGN KEY (orderId) REFERENCES orders(id) ON DELETE CASCADE,
+      FOREIGN KEY (stallId) REFERENCES stalls(id) ON DELETE SET NULL
     );
   `);
+
+  // Create indices to optimize query performance (Finding 9)
+  await db.exec('CREATE INDEX IF NOT EXISTS idx_menu_items_stall_id ON menu_items (stallId);');
+  await db.exec('CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON order_items (orderId);');
+  await db.exec('CREATE INDEX IF NOT EXISTS idx_order_items_stall_id ON order_items (stallId);');
 
   // Seed Users if empty
   const userCount = await db.get('SELECT COUNT(*) as count FROM users');
@@ -646,5 +660,35 @@ export async function initDatabase() {
         [item.stallId, item.name, item.price, item.isVeg, item.category, item.stock, 1, img]
       );
     }
+  }
+}
+
+export async function ping() {
+  if (isPgActive && pool) {
+    const res = await pool.query('SELECT 1');
+    return res.rowCount > 0;
+  } else if (isSqliteActive && sqliteDb) {
+    return new Promise((resolve) => {
+      sqliteDb.get('SELECT 1', (err) => {
+        resolve(!err);
+      });
+    });
+  }
+  return true; // fallback memory engine is always active
+}
+
+export async function close() {
+  if (pool) {
+    await pool.end();
+    console.log('[DATABASE] PostgreSQL connection pool closed.');
+  }
+  if (sqliteDb) {
+    await new Promise((resolve, reject) => {
+      sqliteDb.close((err) => {
+        if (err) reject(err);
+        else resolve();
+      });
+    });
+    console.log('[DATABASE] SQLite database connection closed.');
   }
 }

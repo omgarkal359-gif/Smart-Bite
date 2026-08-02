@@ -1,6 +1,6 @@
 import bcrypt from 'bcrypt';
 
-const SALT_ROUNDS = 12;
+const SALT_ROUNDS = parseInt(process.env.BCRYPT_SALT_ROUNDS, 10) || 12;
 
 /**
  * Hash a plaintext password using bcrypt.
