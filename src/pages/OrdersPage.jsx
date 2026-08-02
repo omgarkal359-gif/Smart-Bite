@@ -51,8 +51,9 @@ const OrdersPage = () => {
     const studentSyncChannel = supabase
       .channel(`student_orders_${customerId}`)
       .on('broadcast', { event: 'order_status_update' }, (payload) => {
-        if (!payload?.payload) return;
-        const { orderId, status } = payload.payload;
+        const orderId = payload?.orderId || payload?.payload?.orderId || payload?.order_id || payload?.payload?.order_id;
+        const status = payload?.status || payload?.payload?.status;
+        if (!orderId || !status) return;
         // Update the order in state
         setOrders(prev => {
           const updated = prev.map(o =>
@@ -87,8 +88,9 @@ const OrdersPage = () => {
         const ch = supabase
           .channel(`student_sync_${order.id}`)
           .on('broadcast', { event: 'order_status_update' }, (payload) => {
-            if (!payload?.payload) return;
-            const { orderId, status } = payload.payload;
+            const orderId = payload?.orderId || payload?.payload?.orderId || payload?.order_id || payload?.payload?.order_id;
+            const status = payload?.status || payload?.payload?.status;
+            if (!orderId || !status) return;
             setOrders(prev => {
               const updated = prev.map(o =>
                 (o.id === orderId || String(o.id) === String(orderId))
