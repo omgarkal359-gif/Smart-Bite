@@ -2,17 +2,18 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { GlassCard } from '../components/ui/GlassCard';
 import { Button } from '../components/ui/Button';
-import { ArrowLeft, QrCode, CheckCircle, Clock, ChefHat, BellRing, Download, Mail, ShoppingBag, ShieldAlert } from 'lucide-react';
+import { ArrowLeft, QrCode, CheckCircle, Clock, ChefHat, BellRing, Download, Mail, ShoppingBag, ShieldAlert, XCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api, socket } from '../api';
 import { supabase } from '../supabaseClient';
+import { getStoredUser } from '../utils/auth';
 import './pages.css';
 import './tracker.css';
 
 const STATUS_STEPS = [
-  { id: 'placed', label: 'Order Placed', icon: Clock },
-  { id: 'preparing', label: 'Preparing', icon: ChefHat },
-  { id: 'ready', label: 'Ready for Pickup', icon: CheckCircle },
+  { id: 'placed', label: 'ORDER PLACED', icon: Clock, desc: 'Order received by kitchen' },
+  { id: 'preparing', label: 'PREPARING', icon: ChefHat, desc: 'Preparing your order...' },
+  { id: 'ready', label: 'READY FOR PICKUP', icon: CheckCircle, desc: 'Your order is ready at the counter!' },
 ];
 
 const DigitalReceiptTracker = () => {
@@ -27,7 +28,7 @@ const DigitalReceiptTracker = () => {
   useEffect(() => {
     async function loadOrder() {
       try {
-        const savedUser = JSON.parse(localStorage.getItem('sgu_user') || '{}');
+        const savedUser = getStoredUser() || {};
         const currentUserId = (savedUser.username || savedUser.id || '').trim().toLowerCase();
         const currentUserRole = (savedUser.role || 'student').trim().toLowerCase();
 
@@ -44,10 +45,9 @@ const DigitalReceiptTracker = () => {
         setOrder(foundOrder);
         setIsAccessDenied(false);
         
-        // Map status to step index
-        if (foundOrder.status === 'placed') setCurrentStep(0);
-        else if (foundOrder.status === 'preparing') setCurrentStep(1);
-        else if (foundOrder.status === 'ready' || foundOrder.status === 'completed') setCurrentStep(2);
+        if (foundOrder && foundOrder.status) {
+          applyNewStatus(foundOrder.status);
+        }
       } catch (err) {
         console.error('Failed to load order tracker:', err);
         if (err.message?.toLowerCase().includes('denied') || err.message?.includes('403')) {
@@ -58,54 +58,66 @@ const DigitalReceiptTracker = () => {
 
     loadOrder();
 
+    const applyNewStatus = (newStatus) => {
+      if (!newStatus) return;
+      const lower = String(newStatus).trim().toLowerCase();
+      if (lower === 'placed' || lower === 'pending' || lower === 'pending_cash') setCurrentStep(0);
+      else if (lower === 'preparing') setCurrentStep(1);
+      else if (lower === 'ready' || lower === 'completed') setCurrentStep(2);
+
+      setOrder(prev => {
+        const updated = prev ? { ...prev, status: newStatus } : { id: orderId, status: newStatus };
+        
+        try {
+          const savedOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
+          const newOrdersList = savedOrders.map(o => String(o.id) === String(orderId) ? { ...o, status: newStatus } : o);
+          localStorage.setItem('sgu_orders', JSON.stringify(newOrdersList));
+        } catch (e) {}
+
+        return updated;
+      });
+    };
+
     // Listen to real-time socket events for this order status
     socket.emit('join', `order-${orderId}`);
 
-    const handleStatusUpdate = (updatedOrder) => {
-      const savedUser = JSON.parse(localStorage.getItem('sgu_user') || '{}');
-      const currentUserId = (savedUser.username || savedUser.id || '').trim().toLowerCase();
-      const currentUserRole = (savedUser.role || 'student').trim().toLowerCase();
-      const orderOwner = (updatedOrder.customerId || updatedOrder.customerid || '').trim().toLowerCase();
-
-      if ((currentUserRole === 'student' || currentUserRole === 'guest') && currentUserId && orderOwner && orderOwner !== currentUserId) {
-        return;
+    const handleSocketUpdate = (data) => {
+      const targetId = data?.id || data?.orderId;
+      if (targetId && String(targetId) === String(orderId) && data.status) {
+        applyNewStatus(data.status);
       }
-
-      setOrder(updatedOrder);
-      if (updatedOrder.status === 'placed') setCurrentStep(0);
-      else if (updatedOrder.status === 'preparing') setCurrentStep(1);
-      else if (updatedOrder.status === 'ready' || updatedOrder.status === 'completed') setCurrentStep(2);
     };
 
-    socket.on('order_status_update', handleStatusUpdate);
+    socket.on('order_status_update', handleSocketUpdate);
 
-    // Setup Supabase Realtime Broadcast Listener to bypass RLS DB blocks
+    // Setup Supabase Realtime Broadcast & Postgres Database Listener
     const channel = supabase.channel(`student_sync_${orderId}`)
       .on('broadcast', { event: 'order_status_update' }, (payload) => {
-        const status = payload?.status || payload?.payload?.status;
-        if (status) {
-          setOrder(prev => {
-            if (!prev) return null;
-            const updated = { ...prev, status };
-            handleStatusUpdate(updated);
-            
-            // Persist to local storage
-            const savedOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
-            const newOrdersList = savedOrders.map(o => o.id === orderId ? { ...o, status } : o);
-            localStorage.setItem('sgu_orders', JSON.stringify(newOrdersList));
-            
-            return updated;
-          });
+        const status = payload?.payload?.status || payload?.status;
+        if (status) applyNewStatus(status);
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders', filter: `id=eq.${orderId}` }, (payload) => {
+        if (payload?.new?.status) applyNewStatus(payload.new.status);
+      })
+      .subscribe();
+
+    const globalChannel = supabase.channel('global_orders_status')
+      .on('broadcast', { event: 'order_status_update' }, (payload) => {
+        const targetId = payload?.payload?.orderId || payload?.orderId || payload?.payload?.id;
+        const status = payload?.payload?.status || payload?.status;
+        if (targetId && String(targetId) === String(orderId) && status) {
+          applyNewStatus(status);
         }
       })
       .subscribe();
 
-    // Polling fallback
-    const interval = setInterval(loadOrder, 7000); // Poll every 7 seconds
+    // Fast polling fallback (every 2 seconds)
+    const interval = setInterval(loadOrder, 2000);
 
     return () => {
-      socket.off('order_status_update', handleStatusUpdate);
+      socket.off('order_status_update', handleSocketUpdate);
       supabase.removeChannel(channel);
+      supabase.removeChannel(globalChannel);
       clearInterval(interval);
     };
   }, [orderId]);
@@ -545,7 +557,7 @@ const DigitalReceiptTracker = () => {
               UNAUTHORIZED ORDER LINK
             </h2>
             <p style={{ fontSize: '0.85rem', color: '#64748B', lineHeight: 1.5, margin: '0 0 20px 0', fontWeight: 500 }}>
-              Security Policy Alert: You are not authorized to view or access another student's order details by modifying the order number in the link.
+              Security Policy Alert: You are not authorized to view or access another student&apos;s order details by modifying the order number in the link.
             </p>
             <button 
               onClick={() => navigate('/student/orders')}
@@ -650,48 +662,68 @@ const DigitalReceiptTracker = () => {
               </div>
             )}
 
-            <div className="qr-section-v21">
-              <div className="qr-wrapper-v21">
-                <QrCode size={120} color="var(--primary-navy)" />
-              </div>
-              <p className="heading-2 mt-4">#{orderId}</p>
-              {order && (
-                <p className="shop-name-tracker">
-                  {order.items?.[0]?.stallName || 'SGU Food Court'}
+            {order?.status === 'cancelled' ? (
+              <div style={{ padding: '40px 20px', textAlign: 'center' }}>
+                <div style={{ display: 'inline-flex', background: '#FEE2E2', padding: '24px', borderRadius: '50%', marginBottom: '24px', boxShadow: '0 10px 25px rgba(239, 68, 68, 0.2)' }}>
+                  <XCircle size={64} color="#EF4444" strokeWidth={2.5} />
+                </div>
+                <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '2rem', color: '#EF4444', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>Order Cancelled</h2>
+                <p style={{ color: '#64748B', fontSize: '0.95rem', fontWeight: 600, marginBottom: '24px' }}>
+                  This order has been permanently cancelled by the vendor.
                 </p>
-              )}
-              <p className="text-muted mt-1">Show code at the counter</p>
-            </div>
-
-            {order && (
-              <div className="order-summary-v21">
-                <p className="font-bold text-sm mb-2">{itemsText}</p>
-                <p className="font-black text-lg">Total: ₹{order.total}</p>
+                {order && (
+                  <div className="order-summary-v21" style={{ opacity: 0.8 }}>
+                    <p className="font-bold text-sm mb-2" style={{ textDecoration: 'line-through' }}>{itemsText}</p>
+                    <p className="font-black text-lg" style={{ color: '#94A3B8' }}>Total: ₹{order.total}</p>
+                  </div>
+                )}
               </div>
+            ) : (
+              <>
+                <div className="qr-section-v21">
+                  <div className="qr-wrapper-v21">
+                    <QrCode size={120} color="var(--primary-navy)" />
+                  </div>
+                  <p className="heading-2 mt-4">#{orderId}</p>
+                  {order && (
+                    <p className="shop-name-tracker">
+                      {order.items?.[0]?.stallName || 'SGU Food Court'}
+                    </p>
+                  )}
+                  <p className="text-muted mt-1">Show code at the counter</p>
+                </div>
+
+                {order && (
+                  <div className="order-summary-v21">
+                    <p className="font-bold text-sm mb-2">{itemsText}</p>
+                    <p className="font-black text-lg">Total: ₹{order.total}</p>
+                  </div>
+                )}
+
+                <div className="timeline-v21">
+                  {STATUS_STEPS.map((step, index) => {
+                    const Icon = step.icon;
+                    const isActive = index <= currentStep;
+                    const isCurrent = index === currentStep;
+
+                    return (
+                      <div key={step.id} className={`timeline-step-v21 ${isActive ? 'active' : ''}`}>
+                        <div className={`step-icon-v21 ${isCurrent && index === 2 ? 'pulse-ready' : ''}`}>
+                          <Icon size={20} />
+                        </div>
+                        <div className="step-content-v21">
+                          <h3 className="step-label">{step.label}</h3>
+                          {isCurrent && <p className="step-desc text-muted">{step.desc}</p>}
+                        </div>
+                        {index < STATUS_STEPS.length - 1 && <div className="step-line-v21" />}
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
             )}
 
-            <div className="timeline-v21">
-              {STATUS_STEPS.map((step, index) => {
-                const Icon = step.icon;
-                const isActive = index <= currentStep;
-                const isCurrent = index === currentStep;
-
-                return (
-                  <div key={step.id} className={`timeline-step-v21 ${isActive ? 'active' : ''}`}>
-                    <div className={`step-icon-v21 ${isCurrent && index === 2 ? 'pulse-ready' : ''}`}>
-                      <Icon size={20} />
-                    </div>
-                    <div className="step-content-v21">
-                      <h3 className="step-label">{step.label}</h3>
-                      {isCurrent && <p className="step-desc text-muted">In progress...</p>}
-                    </div>
-                    {index < STATUS_STEPS.length - 1 && <div className="step-line-v21" />}
-                  </div>
-                );
-              })}
-            </div>
-
-            {order && (
+            {order && order.status !== 'cancelled' && (
               <>
                 <motion.div 
                   className="ready-actions-v21 mt-6"

@@ -87,30 +87,23 @@ export const AdminShell = ({ activeModule, setActiveModule, user, children }) =>
       )}
 
       {/* Admin Sidebar */}
-      <aside className={`admin-sidebar ${isSidebarCollapsed ? 'collapsed' : ''} ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
-        <div className="sidebar-header">
-          <div className="sidebar-logo">
-            <div className="sidebar-logo-icon">
-              <ShieldAlert size={22} />
+      <aside className={`admin-sidebar ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
+        <div style={{ padding: '24px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div className="sidebar-logo" onClick={() => navigate('/admin')} style={{ cursor: 'pointer' }}>
+            <div className="sidebar-logo-icon" style={{ overflow: 'hidden' }}>
+              <img src={sguLogo} alt="SGU Logo" style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '2px' }} />
             </div>
-            {!isSidebarCollapsed && (
-              <div className="flex flex-col">
-                <span style={{ fontSize: '1.1rem', fontWeight: 800, letterSpacing: '0.04em' }}>ADMIN DASHBOARD</span>
-                <span style={{ fontSize: '0.62rem', fontWeight: 700, color: 'rgba(255,255,255,0.75)', letterSpacing: '0.1em' }}>SGU SMARTBITE ENTERPRISE</span>
-              </div>
-            )}
+            <div className="sidebar-logo-text flex flex-col">
+              <span style={{ fontSize: '1rem', fontWeight: 800, letterSpacing: '0.02em', display: 'block' }}>ADMIN DASHBOARD</span>
+              <span style={{ fontSize: '0.58rem', fontWeight: 700, color: 'rgba(255,255,255,0.75)', letterSpacing: '0.08em', display: 'block' }}>SGU SMARTBITE ENTERPRISE</span>
+            </div>
           </div>
           <button 
-            onClick={() => {
-              if (isMobileMenuOpen) {
-                setIsMobileMenuOpen(false);
-              } else {
-                setIsSidebarCollapsed(!isSidebarCollapsed);
-              }
-            }}
+            className="sidebar-mobile-close-btn lg:hidden"
+            onClick={() => setIsMobileMenuOpen(false)}
             style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.85)', cursor: 'pointer', padding: 4 }}
           >
-            {isMobileMenuOpen ? <X size={20} /> : (isSidebarCollapsed ? null : <Menu size={18} />)}
+            <X size={20} />
           </button>
         </div>
 
@@ -126,11 +119,11 @@ export const AdminShell = ({ activeModule, setActiveModule, user, children }) =>
                   setActiveModule(item.id);
                   setIsMobileMenuOpen(false);
                 }}
-                title={isSidebarCollapsed ? item.label : undefined}
+                title={item.label}
               >
-                <Icon size={20} />
-                {!isSidebarCollapsed && <span>{item.label}</span>}
-                {!isSidebarCollapsed && item.badge && (
+                <div className="admin-nav-icon-wrapper"><Icon size={20} /></div>
+                <span className="admin-nav-label">{item.label}</span>
+                {item.badge && (
                   <span className="admin-nav-item-badge">{item.badge}</span>
                 )}
               </button>
@@ -141,23 +134,21 @@ export const AdminShell = ({ activeModule, setActiveModule, user, children }) =>
             <button
               className="admin-nav-item admin-logout-nav-item"
               onClick={handleLogout}
-              title={isSidebarCollapsed ? 'Sign Out' : undefined}
+              title="Sign Out"
             >
-              <LogOut size={18} color="#FFFFFF" />
-              {!isSidebarCollapsed && <span style={{ color: '#FFFFFF', fontWeight: 800 }}>Sign Out</span>}
+              <div className="admin-nav-icon-wrapper"><LogOut size={18} color="#FFFFFF" /></div>
+              <span className="admin-nav-label" style={{ color: '#FFFFFF', fontWeight: 800 }}>Sign Out</span>
             </button>
           </div>
         </nav>
 
         {/* Sidebar Footer */}
-        {!isSidebarCollapsed && (
-          <div style={{ padding: '14px', borderTop: '1px solid rgba(255,255,255,0.12)', margin: '0 12px 12px 12px', background: 'rgba(0,0,0,0.15)', borderRadius: 14 }}>
+        <div className="sidebar-footer" style={{ padding: '14px', borderTop: '1px solid rgba(255,255,255,0.12)', margin: '0 12px 12px 12px', background: 'rgba(0,0,0,0.15)', borderRadius: 14 }}>
             <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>System Engine</div>
             <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#FFFFFF', display: 'flex', alignItems: 'center', gap: 6 }}>
               <Radio size={12} color="#86EFAC" /> Supabase Realtime Active
             </div>
           </div>
-        )}
       </aside>
 
       {/* Main Content Area */}
@@ -198,8 +189,8 @@ export const AdminShell = ({ activeModule, setActiveModule, user, children }) =>
                   {user?.name ? user.name.charAt(0).toUpperCase() : 'A'}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
-                  <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#0F172A', lineHeight: 1.1 }}>
-                    {user?.name || 'Administrator'}
+                  <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#0F172A', lineHeight: 1.1, textTransform: 'none' }}>
+                    {user?.username || 'Administrator'}
                   </span>
                   <span style={{ fontSize: '0.65rem', fontWeight: 800, color: '#FF3B5C', textTransform: 'uppercase', fontFamily: "'Oswald', sans-serif" }}>
                     SUPER ADMIN
@@ -215,8 +206,8 @@ export const AdminShell = ({ activeModule, setActiveModule, user, children }) =>
                   boxShadow: '0 15px 30px rgba(0,0,0,0.12)', padding: 8, zIndex: 100
                 }}>
                   <div style={{ padding: '10px 12px', borderBottom: '1px solid #F1F5F9', marginBottom: 4 }}>
-                    <div style={{ fontWeight: 800, fontSize: '0.85rem', color: '#0F172A' }}>{user?.name || 'Administrator'}</div>
-                    <div style={{ fontSize: '0.72rem', color: '#64748B' }}>{user?.username || 'admin@sgu.edu'}</div>
+                    <div style={{ fontWeight: 800, fontSize: '0.85rem', color: '#0F172A', wordBreak: 'break-all' }}>{user?.username || 'Administrator'}</div>
+                    <div style={{ fontSize: '0.72rem', color: '#64748B' }}>{user?.role || 'admin'}</div>
                   </div>
                   <button 
                     onClick={() => { setIsProfileMenuOpen(false); setActiveModule('config'); }}

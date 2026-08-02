@@ -139,9 +139,8 @@ const InteractiveMenu = () => {
     const stallBroadcastChannel = supabase
       .channel(`stall-status-${shopId}`)
       .on('broadcast', { event: 'stall_status_changed' }, (payload) => {
-        const updatedStall = payload?.payload || payload;
-        if (isMounted && updatedStall) {
-          setStallInfo(prev => ({ ...prev, ...updatedStall }));
+        if (isMounted && payload?.payload) {
+          setStallInfo(prev => ({ ...prev, ...payload.payload }));
         }
       })
       .subscribe();
@@ -210,10 +209,16 @@ const InteractiveMenu = () => {
     });
   }, [inventory, cart]);
 
-  // Derive isOnline — normalize all possible formats (1, true, "1", "true")
-  const isOnline = stallInfo
-    ? (stallInfo.online === 1 || stallInfo.online === true || stallInfo.online === '1' || stallInfo.online === 'true')
-    : true;
+  // Derive isOnline — strictly check for offline values (0, false, "0", "false")
+  const isOnline = Boolean(
+    stallInfo &&
+    stallInfo.online !== 0 &&
+    stallInfo.online !== false &&
+    stallInfo.online !== '0' &&
+    stallInfo.online !== 'false' &&
+    stallInfo.online !== undefined &&
+    stallInfo.online !== null
+  );
 
   // Auto-clear cart when shop goes offline
   useEffect(() => {

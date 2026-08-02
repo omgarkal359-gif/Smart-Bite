@@ -4,6 +4,8 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import dotenv from 'dotenv';
 import nodemailer from 'nodemailer';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
@@ -12,10 +14,49 @@ const __dirname = dirname(__filename);
 dotenv.config({ path: join(__dirname, '.env') });
 
 import { db, initDatabase } from './db.js';
+import { requireAuth, requireRole } from './middleware/auth.js';
+import { hashPassword, verifyPassword } from './utils/password.js';
+import { validate, loginSchema, registerSchema, orderSchema, statusUpdateSchema } from './utils/validators.js';
+
+const ALLOWED_ORIGINS = [
+  'https://smart-bite-rosy.vercel.app',
+  'http://localhost:5173',
+  'http://localhost:3000'
+];
 
 const app = express();
-app.use(cors());
-app.use(express.json());
+app.use(helmet());
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, curl in dev)
+    if (!origin || ALLOWED_ORIGINS.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true
+}));
+app.use(express.json({ limit: '1mb' }));
+
+// Rate limiter for auth endpoints — 10 attempts per 15 min per IP
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: { success: false, message: 'Too many attempts. Please try again in 15 minutes.' },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+// General API rate limiter — 100 requests per minute per IP
+const generalLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 100,
+  message: { success: false, message: 'Rate limit exceeded.' }
+});
+
+app.use('/api/auth/', authLimiter);
+app.use('/api/', generalLimiter);
 
 // Database initialization middleware for Serverless environment
 let dbInitialized = false;
@@ -36,7 +77,8 @@ app.use(async (req, res, next) => {
     try {
       await dbInitPromise;
     } catch (err) {
-      return res.status(500).json({ success: false, message: 'Database initialization failed: ' + err.message });
+      console.error('[DATABASE INIT ERROR]', err);
+      return res.status(503).json({ success: false, message: 'Service temporarily unavailable.' });
     }
   }
   next();
@@ -45,8 +87,9 @@ app.use(async (req, res, next) => {
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
-    origin: '*',
-    methods: ['GET', 'POST', 'PUT']
+    origin: ALLOWED_ORIGINS,
+    methods: ['GET', 'POST', 'PUT'],
+    credentials: true
   }
 });
 
@@ -92,7 +135,7 @@ function sanitizeUser(user) {
 // REST Endpoints
 
 // Auth
-app.post('/api/auth/login', async (req, res) => {
+app.post('/api/auth/login', validate(loginSchema), async (req, res) => {
   const { username, password, role, name } = req.body;
   try {
     if (role === 'guest') {
@@ -109,77 +152,69 @@ app.post('/api/auth/login', async (req, res) => {
     }
 
     if (role === 'student') {
-      // Strictly enforce account existence rule: No student is allowed to login until they have created an account first
       const cleanUsername = username.trim().toLowerCase();
       const user = await db.get('SELECT * FROM users WHERE LOWER(username) = ?', [cleanUsername]);
       
       if (!user) {
-        return res.status(404).json({
-          success: false,
-          message: 'Account not found. No student is allowed to sign in until they have created an account. Please click "Sign Up" to create your account first.'
-        });
+        return res.status(401).json({ success: false, message: 'Invalid credentials.' });
       }
 
-      // Verify password if provided
-      if (password && password.trim() !== '' && user.password && user.password !== password.trim()) {
-        return res.status(401).json({ success: false, message: 'Incorrect password. Please try again.' });
+      // Verify password using bcrypt (with legacy plaintext fallback)
+      if (password && password.trim() !== '') {
+        const isValid = await verifyPassword(password.trim(), user.password);
+        if (!isValid) {
+          return res.status(401).json({ success: false, message: 'Invalid credentials.' });
+        }
       }
 
       return res.json({ success: true, user: sanitizeUser(user) });
     }
 
     if (role === 'owner') {
-      // Create vendor/owner dynamically or update password if exists
+      // Owner accounts must be pre-created by an admin — no auto-creation
       let user = await db.get('SELECT * FROM users WHERE username = ? AND role = ?', [username, 'owner']);
       if (!user) {
-        const displayName = `${username.charAt(0).toUpperCase() + username.slice(1).replace('-', ' ')} Owner`;
-        await db.run(
-          'INSERT INTO users (username, name, password, role, shopId) VALUES (?, ?, ?, ?, ?)',
-          [username, displayName, password, 'owner', username]
-        );
-        user = await db.get('SELECT * FROM users WHERE username = ? AND role = ?', [username, 'owner']);
-
-        // Check if corresponding stall exists, if not create default
-        const stall = await db.get('SELECT * FROM stalls WHERE id = ?', [username]);
-        if (!stall) {
-          const stallName = username.charAt(0).toUpperCase() + username.slice(1).replace('-', ' ');
-          await db.run(
-            'INSERT INTO stalls (id, name, category, online, busyMode, waitTime, rating, logo, img) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-            [username, stallName, 'Fresh & delicious food', 1, 0, 0, 4.5, '🍽️', 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=400&q=80']
-          );
-        }
-      } else {
-        // If password is different, update it
-        if (user.password !== password) {
-          await db.run('UPDATE users SET password = ? WHERE id = ?', [password, user.id]);
-          user.password = password;
-        }
+        return res.status(401).json({ success: false, message: 'Invalid credentials. Owner accounts must be created by an administrator.' });
+      }
+      const isValid = await verifyPassword(password, user.password);
+      if (!isValid) {
+        return res.status(401).json({ success: false, message: 'Invalid credentials.' });
       }
       return res.json({ success: true, user: sanitizeUser(user) });
     }
 
-    // Auto-detect role: look up by username + password regardless of role (covers admin & edge cases)
+    // Auto-detect role: look up by username regardless of role (covers admin & edge cases)
     if (!role || role === 'admin') {
       const user = await db.get(
-        'SELECT * FROM users WHERE LOWER(username) = LOWER(?) AND password = ?',
-        [username, password]
+        'SELECT * FROM users WHERE LOWER(username) = LOWER(?)',
+        [username]
       );
-      if (user) return res.json({ success: true, user: sanitizeUser(user) });
-      return res.status(401).json({ success: false, message: 'Invalid ID or password.' });
+      if (!user) {
+        return res.status(401).json({ success: false, message: 'Invalid credentials.' });
+      }
+      const isValid = await verifyPassword(password, user.password);
+      if (!isValid) {
+        return res.status(401).json({ success: false, message: 'Invalid credentials.' });
+      }
+      return res.json({ success: true, user: sanitizeUser(user) });
     }
 
     const user = await db.get(
-      'SELECT * FROM users WHERE LOWER(username) = LOWER(?) AND password = ? AND role = ?',
-      [username, password, role]
+      'SELECT * FROM users WHERE LOWER(username) = LOWER(?) AND role = ?',
+      [username, role]
     );
 
-    if (user) {
-      res.json({ success: true, user: sanitizeUser(user) });
-    } else {
-      res.status(401).json({ success: false, message: 'Invalid credentials.' });
+    if (!user) {
+      return res.status(401).json({ success: false, message: 'Invalid credentials.' });
     }
+    const isValidPwd = await verifyPassword(password, user.password);
+    if (!isValidPwd) {
+      return res.status(401).json({ success: false, message: 'Invalid credentials.' });
+    }
+    res.json({ success: true, user: sanitizeUser(user) });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    console.error(`[ERROR] POST /api/auth/login:`, err);
+    res.status(500).json({ success: false, message: 'An internal error occurred.' });
   }
 });
 
@@ -202,16 +237,14 @@ app.post('/api/auth/google', async (req, res) => {
 
     res.json({ success: true, user: sanitizeUser(user) });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    console.error(`[ERROR] POST /api/auth/google:`, err);
+    res.status(500).json({ success: false, message: 'An internal error occurred.' });
   }
 });
 
 // Register new account
-app.post('/api/auth/register', async (req, res) => {
-  const { username, name, password, role } = req.body;
-  if (!username || !name || !password) {
-    return res.status(400).json({ success: false, message: 'Name, username/email/mobile, and password are required.' });
-  }
+app.post('/api/auth/register', validate(registerSchema), async (req, res) => {
+  const { username, name, password, role } = req.validatedBody;
   const allowedRoles = ['student', 'guest'];
   const userRole = allowedRoles.includes(role) ? role : 'student';
   try {
@@ -219,14 +252,16 @@ app.post('/api/auth/register', async (req, res) => {
     if (existing) {
       return res.status(409).json({ success: false, message: 'An account with this email or mobile already exists.' });
     }
+    const hashedPwd = await hashPassword(password.trim());
     await db.run(
       'INSERT INTO users (username, name, password, role, shopId) VALUES (?, ?, ?, ?, ?)',
-      [username.trim(), name.trim(), password.trim(), userRole, null]
+      [username.trim(), name.trim(), hashedPwd, userRole, null]
     );
     const user = await db.get('SELECT * FROM users WHERE LOWER(username) = LOWER(?)', [username]);
     res.json({ success: true, user: sanitizeUser(user) });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    console.error(`[ERROR] POST /api/auth/register:`, err);
+    res.status(500).json({ success: false, message: 'An internal error occurred.' });
   }
 });
 
@@ -257,7 +292,8 @@ app.post('/api/auth/verify-registration', async (req, res) => {
       message: 'Account verified successfully.'
     });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    console.error(`[ERROR] POST /api/auth/verify-registration:`, err);
+    res.status(500).json({ success: false, message: 'An internal error occurred.' });
   }
 });
 
@@ -279,7 +315,7 @@ app.get('/api/stalls', async (req, res) => {
 });
 
 // Toggle online / update wait time for stalls
-app.put('/api/stalls/:id/status', async (req, res) => {
+app.put('/api/stalls/:id/status', requireAuth, requireRole('owner', 'admin'), async (req, res) => {
   const { id } = req.params;
   const { online, waitTime, busyMode } = req.body;
   try {
@@ -325,7 +361,7 @@ app.get('/api/stalls/:id/menu', async (req, res) => {
 });
 
 // Update menu item availability/stock/details
-app.put('/api/menu/:itemId', async (req, res) => {
+app.put('/api/menu/:itemId', requireAuth, requireRole('owner', 'admin'), async (req, res) => {
   const { itemId } = req.params;
   const { stock, price, available, name, category } = req.body;
   try {
@@ -352,7 +388,7 @@ app.put('/api/menu/:itemId', async (req, res) => {
 });
 
 // Add new menu item to stall
-app.post('/api/stalls/:id/menu', async (req, res) => {
+app.post('/api/stalls/:id/menu', requireAuth, requireRole('owner', 'admin'), async (req, res) => {
   const { id } = req.params;
   const { name, price, isVeg, category, stock, img } = req.body;
   try {
@@ -376,11 +412,11 @@ app.post('/api/stalls/:id/menu', async (req, res) => {
 });
 
 // Create Order
-app.post('/api/orders', async (req, res) => {
-  const { customerName, customerId, type, payment, total, items } = req.body;
+app.post('/api/orders', requireAuth, validate(orderSchema), async (req, res) => {
+  const { customerName, customerId, type, payment, total, items, id: customId, orderId: reqOrderId } = req.body;
   try {
-    // Generate order ID
-    const orderId = `SGU-${Math.floor(1000 + Math.random() * 9000)}`;
+    // Preserve exact order ID from client or generate fallback
+    const orderId = customId || reqOrderId || `ORD-${Date.now()}`;
     const now = new Date().toISOString();
     const initialStatus = payment === 'Cash' ? 'pending_cash' : 'placed';
 
@@ -661,7 +697,7 @@ Thank you for dining with us!
 }
 
 // Resend Digital Receipt Endpoint
-app.post('/api/orders/:id/resend', async (req, res) => {
+app.post('/api/orders/:id/resend', requireAuth, async (req, res) => {
   const { id } = req.params;
   const { customEmail } = req.body || {};
   try {
@@ -743,7 +779,7 @@ app.get('/api/orders/queue', async (req, res) => {
 });
 
 // Fetch active student orders  ← must be BEFORE /api/orders/:id
-app.get('/api/orders/student/:customerId', async (req, res) => {
+app.get('/api/orders/student/:customerId', requireAuth, async (req, res) => {
   const { customerId } = req.params;
   const reqUserId = (req.headers['x-user-id'] || '').trim().toLowerCase();
   const reqUserRole = (req.headers['x-user-role'] || '').trim().toLowerCase();
@@ -769,7 +805,7 @@ app.get('/api/orders/student/:customerId', async (req, res) => {
 });
 
 // Fetch vendor stall orders  ← must be BEFORE /api/orders/:id
-app.get('/api/orders/stall/:stallId', async (req, res) => {
+app.get('/api/orders/stall/:stallId', requireAuth, requireRole('owner', 'admin'), async (req, res) => {
   const { stallId } = req.params;
   try {
     // Get all order IDs that contain items from this stall
@@ -801,7 +837,7 @@ app.get('/api/orders/stall/:stallId', async (req, res) => {
 });
 
 // Fetch single order details  ← generic wildcard LAST
-app.get('/api/orders/:id', async (req, res) => {
+app.get('/api/orders/:id', requireAuth, async (req, res) => {
   const { id } = req.params;
   const reqUserId = (req.headers['x-user-id'] || '').trim().toLowerCase();
   const reqUserRole = (req.headers['x-user-role'] || '').trim().toLowerCase();
@@ -831,7 +867,7 @@ app.get('/api/orders/:id', async (req, res) => {
 });
 
 // Update order status
-app.put('/api/orders/:id/status', async (req, res) => {
+app.put('/api/orders/:id/status', requireAuth, requireRole('owner', 'admin'), validate(statusUpdateSchema), async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
   try {
@@ -875,7 +911,7 @@ app.put('/api/orders/:id/status', async (req, res) => {
 });
 
 // Admin Analytics API
-app.get('/api/admin/metrics', async (req, res) => {
+app.get('/api/admin/metrics', requireAuth, requireRole('admin'), async (req, res) => {
   try {
     const totalOrders = await db.get('SELECT COUNT(*) as count FROM orders');
     const totalSales = await db.get('SELECT SUM(total) as sum FROM orders');

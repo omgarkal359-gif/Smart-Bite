@@ -5,20 +5,44 @@ import { CartProvider } from './context/CartContext';
 import { supabase } from './supabaseClient';
 import { getStoredUser, clearStoredUser } from './utils/auth';
 
+// Helper to automatically reload the page if a chunk fails to load (due to a new deployment)
+const lazyWithRetry = (componentImport) => {
+  return lazy(async () => {
+    const pageHasAlreadyBeenForceRefreshed = JSON.parse(
+      window.sessionStorage.getItem('sgu-page-refreshed') || 'false'
+    );
+
+    try {
+      const component = await componentImport();
+      window.sessionStorage.setItem('sgu-page-refreshed', 'false');
+      return component;
+    } catch (error) {
+      if (!pageHasAlreadyBeenForceRefreshed) {
+        console.warn('Chunk load failed, forcing a reload to get the latest build...');
+        window.sessionStorage.setItem('sgu-page-refreshed', 'true');
+        window.location.reload();
+        // Return a pending promise so React doesn't crash while the page is reloading
+        return new Promise(() => {});
+      }
+      throw error; // If it already refreshed and still failed, throw the actual error
+    }
+  });
+};
+
 // Dynamic route code splitting
-const ShopDirectory = lazy(() => import('./pages/ShopDirectory'));
-const InteractiveMenu = lazy(() => import('./pages/InteractiveMenu'));
-const DigitalReceiptTracker = lazy(() => import('./pages/DigitalReceiptTracker'));
-const VendorDashboard = lazy(() => import('./pages/VendorDashboard'));
-const PublicOrderBoard = lazy(() => import('./pages/PublicOrderBoard'));
-const AdminControlCenter = lazy(() => import('./pages/AdminControlCenter'));
-const UserProfile = lazy(() => import('./pages/UserProfile'));
-const SearchPage = lazy(() => import('./pages/SearchPage'));
-const OrdersPage = lazy(() => import('./pages/OrdersPage'));
-const LoginPage = lazy(() => import('./pages/LoginPage'));
-const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
-const ResetPassword = lazy(() => import('./pages/ResetPassword'));
-const CartPage = lazy(() => import('./pages/CartPage'));
+const ShopDirectory = lazyWithRetry(() => import('./pages/ShopDirectory'));
+const InteractiveMenu = lazyWithRetry(() => import('./pages/InteractiveMenu'));
+const DigitalReceiptTracker = lazyWithRetry(() => import('./pages/DigitalReceiptTracker'));
+const VendorDashboard = lazyWithRetry(() => import('./pages/VendorDashboard'));
+const PublicOrderBoard = lazyWithRetry(() => import('./pages/PublicOrderBoard'));
+const AdminControlCenter = lazyWithRetry(() => import('./pages/AdminControlCenter'));
+const UserProfile = lazyWithRetry(() => import('./pages/UserProfile'));
+const SearchPage = lazyWithRetry(() => import('./pages/SearchPage'));
+const OrdersPage = lazyWithRetry(() => import('./pages/OrdersPage'));
+const LoginPage = lazyWithRetry(() => import('./pages/LoginPage'));
+const ForgotPassword = lazyWithRetry(() => import('./pages/ForgotPassword'));
+const ResetPassword = lazyWithRetry(() => import('./pages/ResetPassword'));
+const CartPage = lazyWithRetry(() => import('./pages/CartPage'));
 
 // Dynamic Root Redirect based on active session & role
 const RootRedirect = () => {
