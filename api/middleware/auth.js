@@ -3,6 +3,16 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
+// Check configuration on startup in production to prevent silent fallbacks
+if (process.env.NODE_ENV === 'production' && (!supabaseUrl || !supabaseServiceKey)) {
+  throw new Error('Critical Configuration Error: SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY environment variables are required in production.');
+}
+
+// Create a single reusable Supabase client instance
+const supabase = (supabaseUrl && supabaseServiceKey) 
+  ? createClient(supabaseUrl, supabaseServiceKey) 
+  : null;
+
 /**
  * Middleware that verifies the Supabase JWT from the Authorization header.
  * Sets req.user = { id, email, role } on success.
@@ -19,7 +29,7 @@ export function requireAuth(req, res, next) {
 
   const token = authHeader.split(' ')[1];
 
-  if (!supabaseUrl || !supabaseServiceKey) {
+  if (!supabaseUrl || !supabaseServiceKey || !supabase) {
     // Local dev fallback: decode JWT payload without verification
     try {
       const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
@@ -35,7 +45,6 @@ export function requireAuth(req, res, next) {
   }
 
   // Verify with Supabase
-  const supabase = createClient(supabaseUrl, supabaseServiceKey);
   supabase.auth.getUser(token)
     .then(({ data, error }) => {
       if (error || !data?.user) {

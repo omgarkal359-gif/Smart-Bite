@@ -1,9 +1,33 @@
 import { createClient } from '@supabase/supabase-js';
+import pg from 'pg';
+import sqlite3 from 'sqlite3';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+const { Pool } = pg;
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || 'https://hmdewtmtxgfyunyypcon.supabase.co';
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhtZGV3dG10eGdmeXVueXlwY29uIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0MDQ2NDQsImV4cCI6MjA5NTk4MDY0NH0.sy6oeke8atqEHPnkWKMZPK9ggbJp8J3HF6G-GFsJRGg';
 
 const supabase = createClient(supabaseUrl, supabaseKey);
+
+// Connection configuration & variables
+const connectionString = process.env.DATABASE_URL || process.env.SUPABASE_DB_URL || '';
+let pool = null;
+if (connectionString && !connectionString.includes('[YOUR-PASSWORD]')) {
+  pool = new Pool({
+    connectionString,
+    idleTimeoutMillis: 5000, // Close idle connections after 5 seconds
+    max: 10 // Maximum pool size
+  });
+}
+
+let isPgActive = false;
+let isSqliteActive = false;
+let sqliteDb = null;
 
 function convertSql(sql) {
   let index = 1;
@@ -294,16 +318,20 @@ function executeMemAll(sql, params) {
 
 export async function initDatabase() {
   // 1. Test PostgreSQL connection
-  if (connectionString && !connectionString.includes('[YOUR-PASSWORD]')) {
+  if (connectionString && !connectionString.includes('[YOUR-PASSWORD]') && pool) {
+    let client;
     try {
-      const client = await pool.connect();
+      client = await pool.connect();
       await client.query('SELECT 1');
-      client.release();
       isPgActive = true;
       console.log('[DATABASE] Connected to PostgreSQL database.');
     } catch (err) {
       isPgActive = false;
       console.warn('[DATABASE WARNING] PostgreSQL connection failed (' + err.message + '). Fallback to local engine.');
+    } finally {
+      if (client) {
+        client.release();
+      }
     }
   } else {
     isPgActive = false;
