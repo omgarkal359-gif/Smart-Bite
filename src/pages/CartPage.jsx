@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Trash2, Plus, Minus, ArrowRight, ShoppingBag, CreditCard, ChevronLeft, Loader2, Check, ExternalLink, Clock } from 'lucide-react';
 import { api, formatRelativeTime } from '../api';
 import { getFoodItemImage } from '../utils/imageHelper';
+import { getStoredUser } from '../utils/auth';
 import './pages.css';
 import './cart.css';
 
@@ -21,7 +22,7 @@ const CartPage = () => {
   const cartItems = Object.values(cart);
 
   useEffect(() => {
-    const userData = JSON.parse(localStorage.getItem('sgu_user') || '{}');
+    const userData = getStoredUser() || {};
     const customerId = (userData.id || userData.username || '9876543210').trim().toLowerCase();
 
     api.getStudentOrders(customerId)
@@ -54,7 +55,7 @@ const CartPage = () => {
 
   const executeFinalCheckout = () => {
     setIsCheckingOut(true);
-    const userData = JSON.parse(localStorage.getItem('sgu_user') || '{}');
+    const userData = getStoredUser() || {};
     const orderPayload = {
       customerName: userData.name || 'Guest User',
       customerId: userData.id || '9876543210',

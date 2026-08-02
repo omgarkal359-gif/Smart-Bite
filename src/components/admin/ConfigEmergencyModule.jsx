@@ -3,6 +3,7 @@ import {
   Settings, AlertTriangle, Power, ShieldAlert, 
   Trash2, Radio, Server, CheckCircle2, Lock, Unlock, Database, Cpu, RefreshCw 
 } from 'lucide-react';
+import { clearStoredUser } from '../../utils/auth';
 
 export const ConfigEmergencyModule = () => {
   const [isMaintenanceMode, setIsMaintenanceMode] = useState(false);
@@ -20,7 +21,7 @@ export const ConfigEmergencyModule = () => {
   const handleSessionWipe = () => {
     const confirm = window.confirm("Reset all corrupted user sessions across local storage?");
     if (confirm) {
-      localStorage.removeItem('sgu_user');
+      clearStoredUser();
       localStorage.removeItem('sgu_pending_name');
       alert("Local session storage cleared.");
     }

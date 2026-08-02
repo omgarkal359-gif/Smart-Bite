@@ -121,9 +121,9 @@ const ShopDirectory = () => {
     const stallsChannel = supabase
       .channel('directory-stalls')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'stalls' }, (payload) => {
-        if (payload.eventType === 'UPDATE') {
-          setStalls(prev => prev.map(s => s.id === payload.new.id ? { ...s, ...payload.new } : s));
-        } else if (payload.eventType === 'INSERT') {
+        if (payload.eventType === 'UPDATE' && payload.new) {
+          setStalls(prev => prev.map(s => String(s.id) === String(payload.new.id) ? { ...s, ...payload.new } : s));
+        } else if (payload.eventType === 'INSERT' && payload.new) {
           setStalls(prev => [...prev, payload.new]);
         }
       })
@@ -131,13 +131,30 @@ const ShopDirectory = () => {
 
     socket.emit('join', 'student');
     const handleStatusUpdate = (updatedStall) => {
-      setStalls(prev => prev.map(s => s.id === updatedStall.id ? updatedStall : s));
+      const targetId = updatedStall?.id || updatedStall?.stallId;
+      if (targetId) {
+        setStalls(prev => prev.map(s => String(s.id) === String(targetId) ? { ...s, ...updatedStall } : s));
+      }
     };
     socket.on('stall_status_update', handleStatusUpdate);
-    const interval = setInterval(loadStalls, 15000);
+
+    // Subscribe to Supabase broadcast event for real-time stall updates
+    const broadcastChannel = supabase
+      .channel('global-stall-broadcasts')
+      .on('broadcast', { event: 'stall_status_changed' }, (payload) => {
+        const data = payload?.payload;
+        const targetId = data?.id || data?.stallId;
+        if (targetId) {
+          setStalls(prev => prev.map(s => String(s.id) === String(targetId) ? { ...s, ...data } : s));
+        }
+      })
+      .subscribe();
+
+    const interval = setInterval(loadStalls, 2000);
 
     return () => {
       supabase.removeChannel(stallsChannel);
+      supabase.removeChannel(broadcastChannel);
       socket.off('stall_status_update', handleStatusUpdate);
       clearInterval(interval);
     };
@@ -300,7 +317,14 @@ const ShopDirectory = () => {
                 ))
               ) : (
                 stalls.map((shop, index) => {
-                  const isOnline = shop.online === 1 || shop.online === true;
+                  const isOnline = Boolean(
+                    shop.online !== 0 &&
+                    shop.online !== false &&
+                    shop.online !== '0' &&
+                    shop.online !== 'false' &&
+                    shop.online !== undefined &&
+                    shop.online !== null
+                  );
 
                   return (
                     <motion.div
@@ -312,8 +336,14 @@ const ShopDirectory = () => {
                       className="shop-card-wrapper"
                     >
                       <GlassCard 
-                        className={`shop-card-v21 tap-effect ${!isOnline ? 'opacity-40 grayscale pointer-events-none' : ''}`}
-                        onClick={() => isOnline && navigate(`/student/shop/${shop.id}`)}
+                        className={`shop-card-v21 tap-effect ${!isOnline ? 'opacity-50 grayscale' : ''}`}
+                        onClick={() => {
+                          if (!isOnline) {
+                            alert(`${shop.name} is currently CLOSED and not accepting orders right now.`);
+                            return;
+                          }
+                          navigate(`/student/shop/${shop.id}`);
+                        }}
                       >
                         <div className="shop-img-container shadow-sm">
                           <img src={shop.img} alt={shop.name} className="shop-hd-img" />
