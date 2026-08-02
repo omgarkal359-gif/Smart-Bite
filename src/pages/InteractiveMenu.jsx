@@ -139,8 +139,9 @@ const InteractiveMenu = () => {
     const stallBroadcastChannel = supabase
       .channel(`stall-status-${shopId}`)
       .on('broadcast', { event: 'stall_status_changed' }, (payload) => {
-        if (isMounted && payload?.payload) {
-          setStallInfo(prev => ({ ...prev, ...payload.payload }));
+        const updatedStall = payload?.payload || payload;
+        if (isMounted && updatedStall) {
+          setStallInfo(prev => ({ ...prev, ...updatedStall }));
         }
       })
       .subscribe();
