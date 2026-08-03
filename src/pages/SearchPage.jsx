@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Flame, Coffee } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -22,6 +22,8 @@ const SearchPage = () => {
           <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={24} />
           <input 
             type="text" 
+            id="food-search-input"
+            aria-label="Search food items across campus stalls"
             placeholder="What are you craving?" 
             className="w-full pl-14 pr-4 py-4 rounded-2xl border-2 focus:outline-none transition-all text-lg font-bold"
             style={{ background: 'var(--white)', color: 'var(--text-dark)', borderColor: 'var(--glass-border)' }}

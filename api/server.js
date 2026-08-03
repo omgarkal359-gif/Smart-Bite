@@ -12,6 +12,7 @@ const __dirname = dirname(__filename);
 dotenv.config({ path: join(__dirname, '.env') });
 
 import { db, initDatabase } from './db.js';
+import emailService from './services/EmailService.js';
 
 const app = express();
 app.use(cors());
@@ -458,207 +459,61 @@ app.post('/api/orders', async (req, res) => {
   }
 });
 
-// Setup Nodemailer transporter
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || 'smtp.ethereal.email',
-  port: parseInt(process.env.SMTP_PORT || '587'),
-  secure: process.env.SMTP_SECURE === 'true',
-  auth: {
-    user: process.env.SMTP_USER || '',
-    pass: process.env.SMTP_PASS || '',
-  },
-});
-
-let dynamicTransporter = null;
-
-async function getTransporter() {
-  if (process.env.SMTP_USER) {
-    return transporter;
-  }
-  if (!dynamicTransporter) {
-    console.log('[RECEIPT SMTP] No SMTP_USER configured. Generating temporary Ethereal SMTP credentials...');
-    try {
-      const testAccount = await nodemailer.createTestAccount();
-      dynamicTransporter = nodemailer.createTransport({
-        host: testAccount.smtp.host,
-        port: testAccount.smtp.port,
-        secure: testAccount.smtp.secure,
-        auth: {
-          user: testAccount.user,
-          pass: testAccount.pass
-        }
-      });
-      console.log(`[RECEIPT SMTP] Temporary Ethereal account generated: ${testAccount.user}`);
-    } catch (err) {
-      console.error('[RECEIPT SMTP] Failed to generate temporary Ethereal account:', err);
-    }
-  }
-  return dynamicTransporter;
-}
-
 async function sendReceiptEmail(toEmail, order, items) {
-  const itemsText = items.map(item => `   - ${item.quantity}x ${item.name} (₹${item.price} each) - Stall: ${item.stallName || item.stallname}`).join('\n');
-  
-  const totalVal = parseFloat(order.total) || 0;
-  const subtotalVal = totalVal / 1.05;
-  const gstVal = totalVal - subtotalVal;
-  
-  const subtotal = subtotalVal.toFixed(2);
-  const gst = gstVal.toFixed(2);
-  const total = totalVal.toFixed(2);
-
-  const shopName = items[0]?.stallName || items[0]?.stallname || 'SGU Food Court';
-  const paymentMethod = order.payment === 'Online UPI' ? 'UPI' : 'CASH';
-  const itemCount = items.reduce((sum, item) => sum + (item.quantity || 1), 0);
-  const now = new Date().toISOString();
-
-  const itemsHtml = items.map(item => `
-    <tr>
-      <td style="padding-top: 4px; padding-bottom: 4px; text-align: left; vertical-align: top; text-transform: uppercase;">
-        ${item.name}
-      </td>
-      <td style="padding-top: 4px; padding-bottom: 4px; text-align: center; vertical-align: top; width: 40px;">
-        ${item.quantity || 1}
-      </td>
-      <td style="padding-top: 4px; padding-bottom: 4px; text-align: right; vertical-align: top; width: 80px;">
-        ₹${((item.price || 0) * (item.quantity || 1)).toFixed(2)}
-      </td>
-    </tr>
-  `).join('');
-
-  const emailBodyText = `
-RECEIPT
-==================================================
-ORDERS #${order.id}
-
-PREPARED BY
-${shopName.toUpperCase()}
-Hours: 10 AM-10:45 PM
-
---------------------------------------------------
-${itemCount} ${itemCount === 1 ? 'ITEM' : 'ITEMS'}
---------------------------------------------------
-${itemsText}
-
---------------------------------------------------
-Subtotal                : ₹${subtotal}
-GST                     : ₹${gst}
---------------------------------------------------
-TOTAL (GST INCLUDED)    : ₹${total}
-PAYMENT                 : ${paymentMethod.toUpperCase()}
-
-Thank you for dining with us!
-==================================================
-`;
-
-  const emailBodyHtml = `
-    <div style="background-color: #f3f4f6; padding: 30px 15px; font-family: 'Courier New', Courier, monospace; min-height: 100%;">
-      <div style="background-color: #ffffff; max-width: 380px; width: 100%; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-top: 5px dashed #000000; border-bottom: 5px dashed #000000; margin: 0 auto; color: #000000; box-sizing: border-box;">
-        
-        <div style="text-align: center; margin-bottom: 15px;">
-          <h1 style="margin: 0; font-size: 24px; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; line-height: 1.2;">SGU FOOD COURT</h1>
-          <h2 style="margin: 5px 0 0 0; font-size: 14px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">STALL: ${shopName.toUpperCase()}</h2>
-          <p style="margin: 5px 0 0 0; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">HOURS: 10 AM-10:45 PM</p>
-        </div>
-        
-        <div style="border-bottom: 2px dashed #000000; margin: 15px 0;"></div>
-        
-        <div style="font-size: 12px; font-weight: bold; margin-bottom: 12px;">
-          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-            <span style="font-weight: 900; text-transform: uppercase;">ORDER ID:</span>
-            <span style="font-weight: 900;">${order.id.toUpperCase()}</span>
-          </div>
-          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-            <span style="font-weight: 900; text-transform: uppercase;">DATE:</span>
-            <span>${new Date(order.timestamp || now).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }).toUpperCase()}</span>
-          </div>
-          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-            <span style="font-weight: 900; text-transform: uppercase;">CUSTOMER:</span>
-            <span>${order.customerName ? order.customerName.toUpperCase() : (order.customername ? order.customername.toUpperCase() : 'STUDENT')}</span>
-          </div>
-          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-            <span style="font-weight: 900; text-transform: uppercase;">PAYMENT:</span>
-            <span style="font-weight: 900;">${paymentMethod.toUpperCase()}</span>
-          </div>
-        </div>
-        
-        <div style="border-bottom: 2px dashed #000000; margin: 15px 0;"></div>
-        
-        <div style="margin-bottom: 15px;">
-          <div style="font-size: 12px; font-weight: 900; display: flex; justify-content: space-between; padding-bottom: 8px; border-bottom: 1px dashed #000000;">
-            <span>ITEM DESCRIPTION</span>
-            <span style="text-align: center; width: 40px;">QTY</span>
-            <span style="text-align: right; width: 80px;">AMOUNT</span>
-          </div>
-          <table cellpadding="0" cellspacing="0" border="0" style="width: 100%; font-family: 'Courier New', Courier, monospace; font-size: 12px; font-weight: bold; margin-top: 8px;">
-            ${itemsHtml}
-          </table>
-        </div>
-        
-        <div style="border-bottom: 2px dashed #000000; margin: 15px 0;"></div>
-        
-        <div style="font-size: 12px; font-weight: bold; margin-bottom: 15px;">
-          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-            <span style="font-weight: 900; text-transform: uppercase;">SUBTOTAL:</span>
-            <span>₹${subtotal}</span>
-          </div>
-          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-            <span style="font-weight: 900; text-transform: uppercase;">GST (5.0%):</span>
-            <span>₹${gst}</span>
-          </div>
-          
-          <div style="border-bottom: 1px solid #000000; margin: 8px 0;"></div>
-          
-          <div style="display: flex; justify-content: space-between; font-size: 14px; font-weight: 900; margin-top: 8px;">
-            <span style="font-weight: 900; text-transform: uppercase;">TOTAL (INCL. GST):</span>
-            <span>₹${total}</span>
-          </div>
-        </div>
-        
-        <div style="border-bottom: 2px dashed #000000; margin: 15px 0;"></div>
-        
-        <div style="text-align: center; margin-top: 15px;">
-          <p style="margin: 0; font-size: 11px; font-weight: 900; letter-spacing: 1px;">*** THANK YOU FOR YOUR VISIT ***</p>
-          <p style="margin: 3px 0 0 0; font-size: 9px; font-weight: bold;">SGU SMARTBITE DIGITAL RECEIPT</p>
-        </div>
-        
-        <div style="text-align: center; margin-top: 20px;">
-          <div style="display: inline-block; font-size: 20px; font-weight: 300; letter-spacing: 1px; transform: scaleY(1.3); line-height: 1;">
-            ||| | || |||| | | ||| || ||| || ||
-          </div>
-          <div style="font-size: 9px; letter-spacing: 2px; text-transform: uppercase; margin-top: 5px;">*SGU-ORDER-${order.id}*</div>
-        </div>
-        
-      </div>
-    </div>
-  `;
-
-  const activeTransporter = await getTransporter();
-  if (activeTransporter) {
-    try {
-      const fromEmail = process.env.SMTP_USER || activeTransporter.options.auth.user;
-      const info = await activeTransporter.sendMail({
-        from: `"SGU Food Court" <${fromEmail}>`,
-        to: toEmail,
-        subject: `Your SGU Food Court Digital Receipt - #${order.id}`,
-        text: emailBodyText,
-        html: emailBodyHtml,
-      });
-      console.log(`[RECEIPT SMTP] Receipt sent to ${toEmail} successfully.`);
-      const previewUrl = nodemailer.getTestMessageUrl(info);
-      if (previewUrl) {
-        console.log(`[RECEIPT SMTP] Preview URL (Click to view): ${previewUrl}`);
-      }
-      return { success: true, previewUrl };
-    } catch (err) {
-      console.error('[RECEIPT SMTP] Failed to send email via nodemailer:', err);
-      throw err;
-    }
-  } else {
-    console.log(`[RECEIPT SMTP] No SMTP_USER and failed to generate temporary Ethereal account. Simulating email send to: ${toEmail}`);
-    return { simulated: true, toEmail };
-  }
+  return emailService.sendOrderConfirmation(toEmail, order, items);
 }
+
+// Developer Email Template Preview Route
+app.get('/api/dev/email-preview/:template', async (req, res) => {
+  const { template } = req.params;
+  try {
+    const mockOrder = {
+      id: 'ORD-98765',
+      total: 250,
+      payment: 'Online UPI',
+      timestamp: new Date().toISOString(),
+      customerName: 'Rahul Sharma',
+    };
+    const mockItems = [
+      { name: 'Paneer Cheese Burger', price: 120, quantity: 1, stallName: 'Burger Craft' },
+      { name: 'Cold Coffee Thick', price: 130, quantity: 1, stallName: 'Cafe Beans' }
+    ];
+
+    const mockData = {
+      order: mockOrder,
+      items: mockItems,
+      shopName: 'Burger Craft & Cafe Beans',
+      paymentMethod: 'UPI',
+      customerName: 'Rahul Sharma',
+      subtotal: '238.10',
+      gst: '11.90',
+      total: '250.00',
+      dateFormatted: new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }),
+      userName: 'Rahul Sharma',
+      actionLink: 'https://smart-bite-rosy.vercel.app/reset-password?token=mock123',
+      otp: '849201',
+      verificationLink: 'https://smart-bite-rosy.vercel.app/verify?token=mock123',
+      loginLink: 'https://smart-bite-rosy.vercel.app/login',
+      senderName: 'Priya Verma',
+      senderEmail: 'priya@example.com',
+      subject: 'Inquiry regarding bulk order discount',
+      message: 'Hi SGU SmartBite Team,\nWe are organizing a college fest event and would like to place a bulk order of 50 pizzas.',
+      title: 'Order Ready for Pickup!',
+      actionUrl: 'https://smart-bite-rosy.vercel.app/orders/ORD-98765',
+      actionText: 'View Order Status',
+      inviteeName: 'Amit Patel',
+      role: 'Stall Vendor',
+      stallName: 'Dominos Express',
+      inviteLink: 'https://smart-bite-rosy.vercel.app/vendor/accept-invite?token=mock123',
+    };
+
+    const html = await emailService.renderTemplate(template, mockData);
+    res.setHeader('Content-Type', 'text/html');
+    return res.send(html);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
 
 // Resend Digital Receipt Endpoint
 app.post('/api/orders/:id/resend', async (req, res) => {
@@ -784,11 +639,11 @@ app.get('/api/orders/stall/:stallId', async (req, res) => {
     // Filter items to show only those belonging to this stall for the vendor dashboard
     const formattedOrders = orders.map(order => {
       const orderIdVal = order.id;
-      const filteredItems = orderItems.filter(oi => (oi.orderId || oi.orderid) === orderIdVal);
+      const filteredItems = orderItems.filter(oi => oi.orderId === orderIdVal);
       return {
         ...order,
-        customerName: order.customerName || order.customername,
-        customerId: order.customerId || order.customerid,
+        customerName: order.customerName,
+        customerId: order.customerId,
         items: filteredItems.map(oi => `${oi.quantity}x ${oi.name}`).join(', '),
         originalItems: filteredItems
       };
@@ -812,7 +667,7 @@ app.get('/api/orders/:id', async (req, res) => {
 
     // Security Access Guard: Verify order ownership if requester is student or guest
     if ((reqUserRole === 'student' || reqUserRole === 'guest') && reqUserId) {
-      const orderOwner = (order.customerId || order.customerid || '').trim().toLowerCase();
+      const orderOwner = (order.customerId || '').trim().toLowerCase();
       if (orderOwner && orderOwner !== reqUserId) {
         console.warn(`[SECURITY GUARD ALERT] Unauthorized single order view attempt! User '${reqUserId}' attempted to view order #${id} owned by '${orderOwner}'`);
         return res.status(403).json({
@@ -888,19 +743,31 @@ app.get('/api/admin/metrics', async (req, res) => {
     }
 
     res.json({
-      totalOrders: totalOrders.count,
-      totalSales: totalSales.sum || 0,
-      activeStalls: activeStalls.count,
-      averageWaitTime: 12, // mock metric, or calculate if wanted
+      totalOrders: totalOrders ? Number(totalOrders.count || 0) : 0,
+      totalSales: totalSales ? Number(totalSales.sum || 0) : 0,
+      activeStalls: activeStalls ? Number(activeStalls.count || 0) : 0,
+      averageWaitTime: 12,
       orders: allOrdersList
     });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
+// System Health & Diagnostics API Endpoint
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'UP',
+    timestamp: new Date().toISOString(),
+    service: 'SGU Smart-Bite Enterprise Backend',
+    version: '10.0.0',
+    uptimeSeconds: Math.floor(process.uptime()),
+    environment: process.env.NODE_ENV || 'development',
+    serverless: Boolean(process.env.VERCEL)
+  });
+});
 
-// Boot Database and listen (only run local HTTP listener when NOT deploying to serverless/Vercel)
-if (!process.env.VERCEL) {
+// Boot Database and listen (only run local HTTP listener when NOT in test mode & NOT deploying to serverless/Vercel)
+if (!process.env.VERCEL && process.env.NODE_ENV !== 'test' && !process.env.NO_LISTEN) {
   const PORT = 3001;
   initDatabase()
     .then(() => {

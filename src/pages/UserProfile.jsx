@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GlassCard } from '../components/ui/GlassCard';
 import { Button } from '../components/ui/Button';
@@ -52,14 +52,14 @@ const UserProfile = () => {
             setRecentOrders(validOrders);
             try {
               localStorage.setItem('sgu_orders', JSON.stringify(validOrders));
-            } catch (e) {}
+            } catch (_err) {}
           }
-        } catch (err) {
+        } catch (_err) {
           if (isMounted) {
             try {
               const savedOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
               setRecentOrders(Array.isArray(savedOrders) ? savedOrders : []);
-            } catch (e) {
+            } catch (_e) {
               setRecentOrders([]);
             }
           }
@@ -83,7 +83,7 @@ const UserProfile = () => {
         if (payload.payload && payload.payload.orderId) {
           setRecentOrders(prev => {
             const updated = prev.map(o => o.id === payload.payload.orderId ? { ...o, status: payload.payload.status } : o);
-            try { localStorage.setItem('sgu_orders', JSON.stringify(updated)); } catch(e){}
+            try { localStorage.setItem('sgu_orders', JSON.stringify(updated)); } catch(_err){}
             return updated;
           });
         }
@@ -99,7 +99,7 @@ const UserProfile = () => {
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut();
-    } catch (e) {}
+    } catch (_err) {}
     clearStoredUser();
     navigate('/login', { replace: true });
   };

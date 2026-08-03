@@ -13,9 +13,13 @@ export const socket = {
   disconnect: () => {}
 };
 
-// Helper for fetch calls with secure Supabase Authorization bearer token & strict JSON validation
-async function fetchAPI(endpoint, options = {}) {
+// Local storage memory cache helper for offline resilience
+const memoryCache = new Map();
+
+async function fetchAPI(endpoint, options = {}, retries = 2) {
   const url = `${API_BASE_URL}${endpoint}`;
+  const method = (options.method || 'GET').toUpperCase();
+  const cacheKey = `sb_cache_${endpoint}`;
 
   let token = '';
   try {
@@ -23,33 +27,58 @@ async function fetchAPI(endpoint, options = {}) {
     if (data?.session?.access_token) {
       token = data.session.access_token;
     }
-  } catch (err) {
-    // Session optional / unauthenticated endpoints
+  } catch (_err) {
+    // Session optional
   }
 
-  const response = await fetch(url, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-      ...options.headers,
-    },
-    ...options,
-  });
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const response = await fetch(url, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+          ...options.headers,
+        },
+        ...options,
+      });
 
-  const contentType = response.headers.get('content-type') || '';
-  const isJson = contentType.includes('application/json');
+      const contentType = response.headers.get('content-type') || '';
+      const isJson = contentType.includes('application/json');
 
-  if (!response.ok) {
-    const errorData = isJson ? await response.json().catch(() => ({})) : {};
-    throw new Error(errorData.message || `Server error (${response.status}). Please try again later.`);
+      if (!response.ok) {
+        const errorData = isJson ? await response.json().catch(() => ({})) : {};
+        throw new Error(errorData.message || `Server error (${response.status}). Please try again later.`);
+      }
+
+      if (isJson) {
+        const result = await response.json();
+        if (method === 'GET') {
+          memoryCache.set(cacheKey, result);
+          try { localStorage.setItem(cacheKey, JSON.stringify(result)); } catch (_e) {}
+        }
+        return result;
+      }
+      return null;
+    } catch (err) {
+      if (attempt < retries && method === 'GET') {
+        await new Promise(res => setTimeout(res, 500 * (attempt + 1)));
+        continue;
+      }
+
+      // Offline Cache Fallback for GET requests
+      if (method === 'GET') {
+        if (memoryCache.has(cacheKey)) {
+          return memoryCache.get(cacheKey);
+        }
+        try {
+          const cached = localStorage.getItem(cacheKey);
+          if (cached) return JSON.parse(cached);
+        } catch (_e) {}
+      }
+
+      throw err;
+    }
   }
-
-  if (isJson) {
-    return response.json();
-  }
-
-  // If endpoint returns non-JSON (like Vite SPA HTML fallback), throw so component catches and uses fallback data
-  throw new Error(`Endpoint ${endpoint} returned non-JSON response.`);
 }
 
 const STATUS_WEIGHT = { 'placed': 1, 'pending_cash': 1, 'preparing': 2, 'ready': 3, 'completed': 4 };
