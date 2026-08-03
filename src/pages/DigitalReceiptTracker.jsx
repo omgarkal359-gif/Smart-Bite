@@ -1,7 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { GlassCard } from '../components/ui/GlassCard';
-import { Button } from '../components/ui/Button';
 import { ArrowLeft, QrCode, CheckCircle, Clock, ChefHat, BellRing, Download, Mail, ShoppingBag, ShieldAlert, XCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api, socket } from '../api';
@@ -72,7 +71,9 @@ const DigitalReceiptTracker = () => {
           const savedOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
           const newOrdersList = savedOrders.map(o => String(o.id) === String(orderId) ? { ...o, status: newStatus } : o);
           localStorage.setItem('sgu_orders', JSON.stringify(newOrdersList));
-        } catch (e) {}
+        } catch (_err) {
+          // localStorage parse or quota error ignored safely
+        }
 
         return updated;
       });
@@ -580,7 +581,7 @@ const DigitalReceiptTracker = () => {
     <div className="tracker-container-v21 page-transition">
       <header className="glass-header blur-header">
         <div className="menu-header-top">
-          <button className="btn-icon tap-effect" onClick={() => navigate('/student')}>
+          <button className="btn-icon tap-effect" aria-label="Return to Student Home" onClick={() => navigate('/student')}>
             <ArrowLeft size={24} />
           </button>
           <h1 className="heading-2">Order #{orderId}</h1>
@@ -592,6 +593,8 @@ const DigitalReceiptTracker = () => {
       <AnimatePresence>
         {toastMsg && (
           <motion.div 
+            role="status"
+            aria-live="polite"
             initial={{ opacity: 0, y: -50, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -20, scale: 0.9 }}

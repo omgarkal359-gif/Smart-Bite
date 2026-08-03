@@ -1,0 +1,12 @@
+<div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 28px 24px; background: #0B132B; color: #FFFFFF; border-radius: 16px;">
+  <h2 style="color: #E4002B; text-align: center; margin-top: 0;"><%= typeof title !== 'undefined' ? title : 'SGU Smart-Bite Notification' %></h2>
+  <p style="font-size: 14px; color: #CBD5E1; line-height: 1.6;">Hello <%= typeof userName !== 'undefined' && userName ? userName : 'User' %>,</p>
+  <div style="background: #1C2541; padding: 18px; border-radius: 12px; margin: 20px 0; color: #F8FAFC; font-size: 14px; line-height: 1.6;">
+    <%= typeof message !== 'undefined' ? message : '' %>
+  </div>
+  <% if (typeof actionUrl !== 'undefined' && actionUrl) { %>
+    <div style="text-align: center; margin: 24px 0;">
+      <a href="<%= actionUrl %>" style="background: #E4002B; color: #FFFFFF; padding: 12px 28px; border-radius: 10px; text-decoration: none; font-weight: bold; display: inline-block;"><%= typeof actionText !== 'undefined' ? actionText : 'View Details' %></a>
+    </div>
+  <% } %>
+</div>

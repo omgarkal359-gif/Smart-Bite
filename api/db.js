@@ -5,9 +5,48 @@ const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SU
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
+const connectionString = process.env.DATABASE_URL || '';
+let pool = null;
+let isPgActive = false;
+let isSqliteActive = false;
+let sqliteDb = null;
+let sqlite3 = null;
+
+const memStore = {
+  users: [],
+  stalls: [],
+  menu_items: [],
+  orders: [],
+  order_items: [],
+  nextId: { users: 1, menu_items: 1, order_items: 1 }
+};
+
 function convertSql(sql) {
   let index = 1;
   return sql.replace(/\?/g, () => `$${index++}`);
+}
+
+export function normalizeRow(row) {
+  if (!row || typeof row !== 'object' || Array.isArray(row)) return row;
+  const normalized = { ...row };
+  
+  // Standardize Order fields
+  if (normalized.customername !== undefined && normalized.customerName === undefined) normalized.customerName = normalized.customername;
+  if (normalized.customerid !== undefined && normalized.customerId === undefined) normalized.customerId = normalized.customerid;
+
+  // Standardize Order Items & Menu Items fields
+  if (normalized.orderid !== undefined && normalized.orderId === undefined) normalized.orderId = normalized.orderid;
+  if (normalized.stallid !== undefined && normalized.stallId === undefined) normalized.stallId = normalized.stallid;
+  if (normalized.stallname !== undefined && normalized.stallName === undefined) normalized.stallName = normalized.stallname;
+  if (normalized.itemid !== undefined && normalized.itemId === undefined) normalized.itemId = normalized.itemid;
+  if (normalized.isveg !== undefined && normalized.isVeg === undefined) normalized.isVeg = normalized.isveg;
+
+  // Standardize Users & Stalls fields
+  if (normalized.shopid !== undefined && normalized.shopId === undefined) normalized.shopId = normalized.shopid;
+  if (normalized.busymode !== undefined && normalized.busyMode === undefined) normalized.busyMode = normalized.busymode;
+  if (normalized.waittime !== undefined && normalized.waitTime === undefined) normalized.waitTime = normalized.waittime;
+
+  return normalized;
 }
 
 export const db = {
@@ -33,38 +72,42 @@ export const db = {
   },
 
   async all(sql, params = []) {
+    let rows = [];
     if (isPgActive) {
       const pgSql = convertSql(sql);
       const res = await pool.query(pgSql, params);
-      return res.rows;
+      rows = res.rows || [];
     } else if (isSqliteActive && sqliteDb) {
-      return new Promise((resolve, reject) => {
-        sqliteDb.all(sql, params, (err, rows) => {
+      rows = await new Promise((resolve, reject) => {
+        sqliteDb.all(sql, params, (err, r) => {
           if (err) reject(err);
-          else resolve(rows || []);
+          else resolve(r || []);
         });
       });
     } else {
-      return executeMemAll(sql, params);
+      rows = executeMemAll(sql, params);
     }
+    return rows.map(normalizeRow);
   },
 
   async get(sql, params = []) {
+    let row = null;
     if (isPgActive) {
       const pgSql = convertSql(sql);
       const res = await pool.query(pgSql, params);
-      return res.rows[0] || null;
+      row = res.rows[0] || null;
     } else if (isSqliteActive && sqliteDb) {
-      return new Promise((resolve, reject) => {
-        sqliteDb.get(sql, params, (err, row) => {
+      row = await new Promise((resolve, reject) => {
+        sqliteDb.get(sql, params, (err, r) => {
           if (err) reject(err);
-          else resolve(row || null);
+          else resolve(r || null);
         });
       });
     } else {
       const rows = executeMemAll(sql, params);
-      return rows[0] || null;
+      row = rows[0] || null;
     }
+    return normalizeRow(row);
   },
 
   async exec(sql) {

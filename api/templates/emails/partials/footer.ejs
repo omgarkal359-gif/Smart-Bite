@@ -1,0 +1,13 @@
+<div style="background-color: #0F172A; padding: 24px; text-align: center; border-top: 1px solid #334155;">
+  <p style="margin: 0 0 12px 0; color: #64748B; font-size: 12px; line-height: 1.5;">
+    Need help? Reach out to support at 
+    <a href="mailto:<%= typeof supportEmail !== 'undefined' && supportEmail ? supportEmail : 'support@sgusmartbite.edu' %>" style="color: #38BDF8; text-decoration: none; font-weight: 600;">
+      <%= typeof supportEmail !== 'undefined' && supportEmail ? supportEmail : 'support@sgusmartbite.edu' %>
+    </a>
+  </p>
+  <%- include('social-links') %>
+  <p style="margin: 16px 0 0 0; color: #475569; font-size: 11px;">
+    &copy; <%= typeof currentYear !== 'undefined' && currentYear ? currentYear : new Date().getFullYear() %> 
+    <%= typeof companyName !== 'undefined' && companyName ? companyName : 'SGU Smart-Bite' %>. All rights reserved.
+  </p>
+</div>

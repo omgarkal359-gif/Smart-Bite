@@ -1,5 +1,5 @@
 import React, { lazy, Suspense, useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { MobileLayout } from './components/layout/MobileLayout';
 import { CartProvider } from './context/CartContext';
 import { supabase } from './supabaseClient';
@@ -129,6 +129,33 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
   return children;
 };
 
+const PageTitleManager = () => {
+  const location = useLocation();
+
+  useEffect(() => {
+    const path = location.pathname;
+    let title = 'SGU Smart-Bite Enterprise';
+
+    if (path === '/login') title = 'Sign In | SGU Smart-Bite';
+    else if (path === '/forgot-password') title = 'Account Security & Recovery | SGU Smart-Bite';
+    else if (path === '/reset-password') title = 'Reset Password | SGU Smart-Bite';
+    else if (path.startsWith('/student/shop')) title = 'Campus Stall Menu | SGU Smart-Bite';
+    else if (path.startsWith('/student/order')) title = 'Digital Receipt & Order Tracker | SGU Smart-Bite';
+    else if (path === '/student/orders') title = 'My Placed Orders | SGU Smart-Bite';
+    else if (path === '/student/cart') title = 'My Food Cart | SGU Smart-Bite';
+    else if (path === '/student/profile') title = 'Student Profile | SGU Smart-Bite';
+    else if (path === '/student/search') title = 'Search Campus Food | SGU Smart-Bite';
+    else if (path.startsWith('/student')) title = 'Food Court Directory | SGU Smart-Bite';
+    else if (path.startsWith('/vendor')) title = 'Vendor Admin Dashboard | SGU Smart-Bite';
+    else if (path === '/admin') title = 'System Control Center | SGU Smart-Bite';
+    else if (path === '/board') title = 'Live Pickup Board | SGU Smart-Bite';
+
+    document.title = title;
+  }, [location]);
+
+  return null;
+};
+
 function App() {
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
@@ -143,6 +170,7 @@ function App() {
   return (
     <CartProvider>
       <BrowserRouter>
+        <PageTitleManager />
         <Suspense fallback={<div className="flex h-screen items-center justify-center font-semibold">Loading...</div>}>
           <Routes>
             <Route path="/" element={<RootRedirect />} />
