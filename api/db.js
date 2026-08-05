@@ -36,6 +36,27 @@ function convertSql(sql) {
   return sql.replace(/\?/g, () => `$${index++}`);
 }
 
+function normalizeRow(row) {
+  if (!row) return row;
+  const normalized = {};
+  for (const [key, value] of Object.entries(row)) {
+    let camelKey = key;
+    if (key === 'busymode') camelKey = 'busyMode';
+    else if (key === 'waittime') camelKey = 'waitTime';
+    else if (key === 'customername') camelKey = 'customerName';
+    else if (key === 'customerid') camelKey = 'customerId';
+    else if (key === 'orderid') camelKey = 'orderId';
+    else if (key === 'itemid') camelKey = 'itemId';
+    else if (key === 'stallid') camelKey = 'stallId';
+    else if (key === 'stallname') camelKey = 'stallName';
+    else if (key === 'shopid') camelKey = 'shopId';
+    else if (key === 'isveg') camelKey = 'isVeg';
+    
+    normalized[camelKey] = value;
+  }
+  return normalized;
+}
+
 export const db = {
   async run(sql, params = []) {
     if (isPgActive) {
@@ -62,16 +83,16 @@ export const db = {
     if (isPgActive) {
       const pgSql = convertSql(sql);
       const res = await pool.query(pgSql, params);
-      return res.rows;
+      return res.rows.map(normalizeRow);
     } else if (isSqliteActive && sqliteDb) {
       return new Promise((resolve, reject) => {
         sqliteDb.all(sql, params, (err, rows) => {
           if (err) reject(err);
-          else resolve(rows || []);
+          else resolve((rows || []).map(normalizeRow));
         });
       });
     } else {
-      return executeMemAll(sql, params);
+      return executeMemAll(sql, params).map(normalizeRow);
     }
   },
 
@@ -79,17 +100,17 @@ export const db = {
     if (isPgActive) {
       const pgSql = convertSql(sql);
       const res = await pool.query(pgSql, params);
-      return res.rows[0] || null;
+      return res.rows[0] ? normalizeRow(res.rows[0]) : null;
     } else if (isSqliteActive && sqliteDb) {
       return new Promise((resolve, reject) => {
         sqliteDb.get(sql, params, (err, row) => {
           if (err) reject(err);
-          else resolve(row || null);
+          else resolve(row ? normalizeRow(row) : null);
         });
       });
     } else {
       const rows = executeMemAll(sql, params);
-      return rows[0] || null;
+      return rows[0] ? normalizeRow(rows[0]) : null;
     }
   },
 
@@ -125,12 +146,12 @@ export const db = {
           async all(sql, params = []) {
             const pgSql = convertSql(sql);
             const res = await client.query(pgSql, params);
-            return res.rows;
+            return res.rows.map(normalizeRow);
           },
           async get(sql, params = []) {
             const pgSql = convertSql(sql);
             const res = await client.query(pgSql, params);
-            return res.rows[0] || null;
+            return res.rows[0] ? normalizeRow(res.rows[0]) : null;
           },
           async exec(sql) {
             const pgSql = convertSql(sql);
