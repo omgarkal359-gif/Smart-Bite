@@ -2,16 +2,9 @@ import express from 'express';
 import cors from 'cors';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
-import dotenv from 'dotenv';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
-
-// Load environmental variables
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-dotenv.config({ path: join(__dirname, '.env') });
+import { config } from './config.js';
 
 // Backend components
 import { initDatabase, close as closeDb, ping as pingDb } from './db.js';
@@ -30,8 +23,8 @@ const DEFAULT_ORIGINS = [
   'http://localhost:5173',
   'http://localhost:3000'
 ];
-const envOrigins = process.env.ALLOWED_ORIGINS 
-  ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim()) 
+const envOrigins = config.ALLOWED_ORIGINS 
+  ? config.ALLOWED_ORIGINS.split(',').map(o => o.trim()) 
   : [];
 const ALLOWED_ORIGINS = [...new Set([...DEFAULT_ORIGINS, ...envOrigins])];
 

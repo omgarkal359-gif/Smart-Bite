@@ -1,6 +1,7 @@
 import bcrypt from 'bcrypt';
+import { config } from '../config.js';
 
-const SALT_ROUNDS = parseInt(process.env.BCRYPT_SALT_ROUNDS, 10) || 12;
+const SALT_ROUNDS = config.BCRYPT_SALT_ROUNDS;
 
 /**
  * Hash a plaintext password using bcrypt.

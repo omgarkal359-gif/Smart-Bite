@@ -1,12 +1,13 @@
 import nodemailer from 'nodemailer';
+import { config } from '../config.js';
 
 const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || 'smtp.ethereal.email',
-  port: parseInt(process.env.SMTP_PORT || '587'),
-  secure: process.env.SMTP_SECURE === 'true',
+  host: config.SMTP_HOST || 'smtp.ethereal.email',
+  port: config.SMTP_PORT || 587,
+  secure: config.SMTP_SECURE,
   auth: {
-    user: process.env.SMTP_USER || '',
-    pass: process.env.SMTP_PASS || '',
+    user: config.SMTP_USER || '',
+    pass: config.SMTP_PASS || '',
   },
 });
 
@@ -15,7 +16,7 @@ let etherealInitPromise = null;
 
 // Bootstrap Ethereal transporter asynchronously on startup to avoid blocking API threads
 export function initSmtp() {
-  if (process.env.SMTP_USER) return Promise.resolve();
+  if (config.SMTP_USER && config.SMTP_PASS) return Promise.resolve();
 
   console.log('[RECEIPT SMTP] No SMTP_USER configured. Bootstrapping Ethereal SMTP test account asynchronously...');
   etherealInitPromise = nodemailer.createTestAccount()
@@ -38,7 +39,7 @@ export function initSmtp() {
 }
 
 async function getTransporter() {
-  if (process.env.SMTP_USER) {
+  if (config.SMTP_USER && config.SMTP_PASS) {
     return transporter;
   }
   if (etherealInitPromise) {
@@ -187,7 +188,7 @@ Thank you for dining with us!
   const activeTransporter = await getTransporter();
   if (activeTransporter) {
     try {
-      const fromEmail = process.env.SMTP_USER || activeTransporter.options.auth.user;
+      const fromEmail = config.SMTP_USER || activeTransporter.options.auth.user;
       const info = await activeTransporter.sendMail({
         from: `"SGU Food Court" <${fromEmail}>`,
         to: toEmail,
@@ -207,6 +208,52 @@ Thank you for dining with us!
     }
   } else {
     console.log(`[RECEIPT SMTP] No SMTP_USER and failed to generate temporary Ethereal account. Simulating email send to: ${toEmail}`);
+    return { simulated: true, toEmail };
+  }
+}
+
+export async function sendPasswordResetEmail(toEmail, actionLink) {
+  const activeTransporter = await getTransporter();
+  const fromEmail = config.SMTP_USER || (activeTransporter ? activeTransporter.options.auth.user : '');
+
+  const emailBodyText = `
+Click the link below to reset your SGU Smart-Bite password:
+${actionLink}
+`;
+
+  const emailBodyHtml = `
+    <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 24px; background: #0B132B; color: #FFFFFF; border-radius: 16px;">
+      <h2 style="color: #E4002B; text-align: center;">SGU Smart-Bite</h2>
+      <p style="font-size: 14px; text-align: center; color: #CBD5E1;">Hello!</p>
+      <p style="font-size: 14px; text-align: center; color: #CBD5E1;">Click the link below to reset your SGU Smart-Bite password:</p>
+      <div style="text-align: center; margin: 24px 0;">
+        <a href="${actionLink}" style="background: #E4002B; color: #FFFFFF; padding: 14px 28px; border-radius: 12px; text-decoration: none; font-weight: bold; display: inline-block;">Reset Password</a>
+      </div>
+      <p style="font-size: 12px; color: #94A3B8; text-align: center;">If you did not request a password reset, please ignore this email.</p>
+    </div>
+  `;
+
+  if (activeTransporter) {
+    try {
+      const info = await activeTransporter.sendMail({
+        from: `"SGU Smart-Bite" <${fromEmail}>`,
+        to: toEmail,
+        subject: 'Reset your Smart-Bite Password',
+        text: emailBodyText,
+        html: emailBodyHtml
+      });
+      console.log(`[RESET SMTP] Password reset email sent to ${toEmail} successfully.`);
+      const previewUrl = nodemailer.getTestMessageUrl(info);
+      if (previewUrl) {
+        console.log(`[RESET SMTP] Preview URL (Click to view): ${previewUrl}`);
+      }
+      return { success: true, previewUrl };
+    } catch (err) {
+      console.error('[RESET SMTP] Failed to send reset email via nodemailer:', err);
+      throw err;
+    }
+  } else {
+    console.log(`[RESET SMTP] No SMTP configured. Simulating password reset email to: ${toEmail}`);
     return { simulated: true, toEmail };
   }
 }

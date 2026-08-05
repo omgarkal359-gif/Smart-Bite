@@ -4,18 +4,20 @@ import sqlite3 from 'sqlite3';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
+import { config } from './config.js';
+
 const { Pool } = pg;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || 'https://hmdewtmtxgfyunyypcon.supabase.co';
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhtZGV3dG10eGdmeXVueXlwY29uIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0MDQ2NDQsImV4cCI6MjA5NTk4MDY0NH0.sy6oeke8atqEHPnkWKMZPK9ggbJp8J3HF6G-GFsJRGg';
+const supabaseUrl = config.SUPABASE_URL;
+const supabaseKey = config.SUPABASE_SERVICE_ROLE_KEY || config.SUPABASE_ANON_KEY;
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Connection configuration & variables
-const connectionString = process.env.DATABASE_URL || process.env.SUPABASE_DB_URL || '';
+const connectionString = config.DATABASE_URL;
 let pool = null;
 if (connectionString && !connectionString.includes('[YOUR-PASSWORD]')) {
   pool = new Pool({
