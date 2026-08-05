@@ -25,17 +25,19 @@ export async function createOrder(req, res, next) {
     const now = new Date().toISOString();
     const initialStatus = payment === 'Cash' ? 'pending_cash' : 'placed';
 
-    await db.run(
-      'INSERT INTO orders (id, customerName, customerId, type, payment, status, total, time, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [orderId, customerName, customerId, type, payment, initialStatus, total, 'Just now', now]
-    );
-
-    for (const item of items) {
-      await db.run(
-        'INSERT INTO order_items (orderId, itemId, name, price, quantity, stallId, stallName) VALUES (?, ?, ?, ?, ?, ?, ?)',
-        [orderId, item.id, item.name, item.price, item.quantity, item.stallId, item.stallName]
+    await db.transaction(async (tx) => {
+      await tx.run(
+        'INSERT INTO orders (id, customerName, customerId, type, payment, status, total, time, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [orderId, customerName, customerId, type, payment, initialStatus, total, 'Just now', now]
       );
-    }
+
+      for (const item of items) {
+        await tx.run(
+          'INSERT INTO order_items (orderId, itemId, name, price, quantity, stallId, stallName) VALUES (?, ?, ?, ?, ?, ?, ?)',
+          [orderId, item.id, item.name, item.price, item.quantity, item.stallId, item.stallName]
+        );
+      }
+    });
 
     const createdOrder = await db.get('SELECT * FROM orders WHERE id = ?', [orderId]);
     const createdItems = await db.all('SELECT * FROM order_items WHERE orderId = ?', [orderId]);

@@ -22,3 +22,12 @@ export async function getMetrics(req, res, next) {
     next(err);
   }
 }
+
+export async function getUsers(req, res, next) {
+  try {
+    const users = await db.all('SELECT id, username, name, role, shopId FROM users');
+    res.json(users);
+  } catch (err) {
+    next(err);
+  }
+}
