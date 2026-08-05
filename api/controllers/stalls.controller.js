@@ -3,12 +3,7 @@ import { db } from '../db.js';
 export async function getStalls(req, res, next) {
   try {
     const stalls = await db.all('SELECT * FROM stalls');
-    const formatted = stalls.map(s => ({
-      ...s,
-      busyMode: s.busyMode !== undefined ? s.busyMode : s.busymode,
-      waitTime: s.waitTime !== undefined ? s.waitTime : s.waittime
-    }));
-    res.json(formatted);
+    res.json(stalls);
   } catch (err) {
     next(err);
   }
@@ -22,8 +17,8 @@ export async function updateStallStatus(req, res, next) {
     if (!current) return res.status(404).json({ message: 'Stall not found' });
 
     const newOnline = online !== undefined ? (online ? 1 : 0) : (current.online !== undefined ? current.online : 0);
-    const newWaitTime = waitTime !== undefined ? waitTime : (current.waitTime !== undefined ? current.waitTime : current.waittime || 0);
-    const newBusy = busyMode !== undefined ? (busyMode ? 1 : 0) : (current.busyMode !== undefined ? current.busyMode : current.busymode || 0);
+    const newWaitTime = waitTime !== undefined ? waitTime : (current.waitTime !== undefined ? current.waitTime : 0);
+    const newBusy = busyMode !== undefined ? (busyMode ? 1 : 0) : (current.busyMode !== undefined ? current.busyMode : 0);
 
     await db.run(
       'UPDATE stalls SET online = ?, waitTime = ?, busyMode = ? WHERE id = ?',
@@ -31,19 +26,14 @@ export async function updateStallStatus(req, res, next) {
     );
 
     const updated = await db.get('SELECT * FROM stalls WHERE id = ?', [id]);
-    const formatted = {
-      ...updated,
-      busyMode: updated.busyMode !== undefined ? updated.busyMode : updated.busymode,
-      waitTime: updated.waitTime !== undefined ? updated.waitTime : updated.waittime
-    };
     
     const io = req.app.get('io');
     if (io) {
-      io.to('student').emit('stall_status_update', formatted);
-      io.to(`stall-menu-${id}`).emit('stall_status_update', formatted);
+      io.to('student').emit('stall_status_update', updated);
+      io.to(`stall-menu-${id}`).emit('stall_status_update', updated);
     }
     
-    res.json(formatted);
+    res.json(updated);
   } catch (err) {
     next(err);
   }

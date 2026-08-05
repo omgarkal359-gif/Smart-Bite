@@ -10,7 +10,7 @@ export async function broadcastQueueUpdate(io) {
     const formatted = activeOrders.map(o => ({
       id: o.id,
       status: o.status,
-      customerName: o.customerName || o.customername
+      customerName: o.customerName
     }));
     io.to('public-board').emit('queue_update', formatted);
   } catch (err) {
@@ -72,7 +72,7 @@ export async function createOrder(req, res, next) {
     const io = req.app.get('io');
     if (io) {
       const itemsByStall = createdItems.reduce((acc, item) => {
-        const itemStallId = item.stallId || item.stallid;
+        const itemStallId = item.stallId;
         if (!acc[itemStallId]) acc[itemStallId] = [];
         acc[itemStallId].push(item);
         return acc;
@@ -81,8 +81,6 @@ export async function createOrder(req, res, next) {
       for (const [stallId, stallItems] of Object.entries(itemsByStall)) {
         const stallOrder = {
           ...createdOrder,
-          customerName: createdOrder.customerName || createdOrder.customername,
-          customerId: createdOrder.customerId || createdOrder.customerid,
           items: stallItems.map(si => `${si.quantity}x ${si.name}`).join(', '),
           originalItems: stallItems
         };
@@ -108,8 +106,8 @@ export async function resendReceipt(req, res, next) {
 
     const orderItems = await db.all('SELECT * FROM order_items WHERE orderId = ?', [id]);
     
-    const customerIdVal = order.customerId || order.customerid || '';
-    const customerNameVal = order.customerName || order.customername || 'Student';
+    const customerIdVal = order.customerId || '';
+    const customerNameVal = order.customerName || 'Student';
     const paymentVal = order.payment || 'Online UPI';
     const totalVal = order.total || 0;
     const targetRecipient = customEmail || customerIdVal;
@@ -173,7 +171,7 @@ export async function getActiveQueue(req, res, next) {
     const formatted = activeOrders.map(o => ({
       id: o.id,
       status: o.status,
-      customerName: o.customerName || o.customername
+      customerName: o.customerName
     }));
     res.json(formatted);
   } catch (err) {
@@ -216,7 +214,7 @@ export async function getStallOrders(req, res, next) {
   const offset = parseInt(req.query.offset, 10) || 0;
   try {
     const orderItems = await db.all('SELECT * FROM order_items WHERE stallId = ?', [stallId]);
-    const orderIds = [...new Set(orderItems.map(oi => oi.orderId || oi.orderid))];
+    const orderIds = [...new Set(orderItems.map(oi => oi.orderId))];
 
     if (orderIds.length === 0) return res.json([]);
 
@@ -229,11 +227,9 @@ export async function getStallOrders(req, res, next) {
 
     const formattedOrders = orders.map(order => {
       const orderIdVal = order.id;
-      const filteredItems = orderItems.filter(oi => (oi.orderId || oi.orderid) === orderIdVal);
+      const filteredItems = orderItems.filter(oi => oi.orderId === orderIdVal);
       return {
         ...order,
-        customerName: order.customerName || order.customername,
-        customerId: order.customerId || order.customerid,
         items: filteredItems.map(oi => `${oi.quantity}x ${oi.name}`).join(', '),
         originalItems: filteredItems
       };
@@ -255,7 +251,7 @@ export async function getOrderById(req, res, next) {
     if (!order) return res.status(404).json({ message: 'Order not found' });
 
     if ((reqUserRole === 'student' || reqUserRole === 'guest') && reqUserId) {
-      const orderOwner = (order.customerId || order.customerid || '').trim().toLowerCase();
+      const orderOwner = (order.customerId || '').trim().toLowerCase();
       if (orderOwner && orderOwner !== reqUserId) {
         console.warn(`[SECURITY GUARD ALERT] Unauthorized single order view attempt! User '${reqUserId}' attempted to view order #${id} owned by '${orderOwner}'`);
         return res.status(403).json({
@@ -289,7 +285,7 @@ export async function updateOrderStatus(req, res, next) {
     const io = req.app.get('io');
     if (io) {
       const itemsByStall = orderItems.reduce((acc, item) => {
-        const itemStallId = item.stallId || item.stallid;
+        const itemStallId = item.stallId;
         if (!acc[itemStallId]) acc[itemStallId] = [];
         acc[itemStallId].push(item);
         return acc;
@@ -298,8 +294,6 @@ export async function updateOrderStatus(req, res, next) {
       for (const [stallId, stallItems] of Object.entries(itemsByStall)) {
         const stallOrder = {
           ...updated,
-          customerName: updated.customerName || updated.customername,
-          customerId: updated.customerId || updated.customerid,
           items: stallItems.map(si => `${si.quantity}x ${si.name}`).join(', '),
           originalItems: stallItems
         };
