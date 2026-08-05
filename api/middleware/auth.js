@@ -1,12 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+import { config } from '../config.js';
 
-// Check configuration on startup in production to prevent silent fallbacks
-if (process.env.NODE_ENV === 'production' && (!supabaseUrl || !supabaseServiceKey)) {
-  throw new Error('Critical Configuration Error: SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY environment variables are required in production.');
-}
+const supabaseUrl = config.SUPABASE_URL;
+const supabaseServiceKey = config.SUPABASE_SERVICE_ROLE_KEY;
 
 // Create a single reusable Supabase client instance
 const supabase = (supabaseUrl && supabaseServiceKey) 
