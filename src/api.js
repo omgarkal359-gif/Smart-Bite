@@ -52,6 +52,28 @@ async function fetchAPI(endpoint, options = {}) {
 }
 
 export const api = {
+  // ── Auth ────────────────────────────────────────────────────
+  async login(username, password, role) {
+    return await fetchAPI('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ username, password, role })
+    });
+  },
+
+  async register(username, name, password, role) {
+    return await fetchAPI('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({ username, name, password, role })
+    });
+  },
+
+  async loginGoogle(email, name) {
+    return await fetchAPI('/auth/login-google', {
+      method: 'POST',
+      body: JSON.stringify({ email, name })
+    });
+  },
+
   // ── Stalls ─────────────────────────────────────────────────
   async getStalls() {
     try {
