@@ -104,6 +104,80 @@ export const db = {
       });
     }
     // For pure JS memory store, schema initialization is dynamic
+  },
+
+  async transaction(callback) {
+    if (isPgActive && pool) {
+      const client = await pool.connect();
+      try {
+        await client.query('BEGIN');
+        const tx = {
+          async run(sql, params = []) {
+            let pgSql = convertSql(sql);
+            if (pgSql.trim().toUpperCase().startsWith('INSERT ') && !pgSql.trim().toUpperCase().includes('RETURNING')) {
+              pgSql = `${pgSql} RETURNING id`;
+            }
+            const res = await client.query(pgSql, params);
+            return { id: res.rows[0]?.id || null, changes: res.rowCount };
+          },
+          async all(sql, params = []) {
+            const pgSql = convertSql(sql);
+            const res = await client.query(pgSql, params);
+            return res.rows;
+          },
+          async get(sql, params = []) {
+            const pgSql = convertSql(sql);
+            const res = await client.query(pgSql, params);
+            return res.rows[0] || null;
+          },
+          async exec(sql) {
+            const pgSql = convertSql(sql);
+            await client.query(pgSql);
+          }
+        };
+        const result = await callback(tx);
+        await client.query('COMMIT');
+        return result;
+      } catch (err) {
+        await client.query('ROLLBACK');
+        throw err;
+      } finally {
+        client.release();
+      }
+    } else if (isSqliteActive && sqliteDb) {
+      return new Promise((resolve, reject) => {
+        sqliteDb.serialize(async () => {
+          try {
+            await new Promise((res, rej) => {
+              sqliteDb.run('BEGIN TRANSACTION', (err) => {
+                if (err) rej(err);
+                else res();
+              });
+            });
+            const result = await callback(db);
+            await new Promise((res, rej) => {
+              sqliteDb.run('COMMIT', (err) => {
+                if (err) rej(err);
+                else res();
+              });
+            });
+            resolve(result);
+          } catch (err) {
+            sqliteDb.run('ROLLBACK', () => {});
+            reject(err);
+          }
+        });
+      });
+    } else {
+      const backup = JSON.parse(JSON.stringify(memStore));
+      try {
+        const result = await callback(db);
+        return result;
+      } catch (err) {
+        Object.assign(memStore, backup);
+        throw err;
+      }
+    }
   }
 };
 
