@@ -1,6 +1,8 @@
 // 1. Import our tools
 import { createClient } from '@supabase/supabase-js';
 import emailService from './services/EmailService.js';
+import { config } from './config.js';
+
 
 export default async function handler(request, response) {
   // Only allow our React app to "POST" data to this file
@@ -16,8 +18,8 @@ export default async function handler(request, response) {
   }
 
   try {
-    const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://hmdewtmtxgfyunyypcon.supabase.co';
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+    const supabaseUrl = config.SUPABASE_URL;
+    const serviceRoleKey = config.SUPABASE_SERVICE_ROLE_KEY || config.SUPABASE_ANON_KEY;
 
     // 2. Connect to Supabase using Admin / Service Role Key
     const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);

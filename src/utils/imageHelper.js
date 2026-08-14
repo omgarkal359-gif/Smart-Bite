@@ -13,6 +13,14 @@ import dosaImage from '../assets/dosa.png';
 import samosaImage from '../assets/samosa.png';
 import pavbhajiImage from '../assets/pavbhaji.png';
 import bhajiImage from '../assets/bhaji.png';
+import hakkaNoodles from '../assets/hakka_noodles.png';
+import garlicNoodles from '../assets/garlic_noodles.png';
+import singapuriNoodles from '../assets/singapuri_noodles.png';
+import hongKongNoodles from '../assets/hong_kong_noodles.png';
+import schezwanNoodles from '../assets/schezwan_noodles.png';
+import manchurianNoodles from '../assets/manchurian_noodles.png';
+import paneerNoodles from '../assets/paneer_noodles.png';
+import tripleNoodles from '../assets/triple_noodles.png';
 
 // ============================================================
 // DISH IMAGE HELPER — 100% Vegetarian, accurate per-dish images
@@ -206,14 +214,14 @@ const ITEM_IMAGE_MAP = {
   // Paneer Chilli = paneer cubes in chilli sauce (vegetarian)
   'Paneer Chilli':                'https://images.unsplash.com/photo-1633945274405-b6c8069047b0?auto=format&fit=crop&w=400&q=80',
   'Soya 69':                      'https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&w=400&q=80',
-  'Hakka Noodles':                'https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&w=400&q=80',
-  'Garlic Noodles':               'https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&w=400&q=80',
-  'Singapuri Noodles':            'https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&w=400&q=80',
-  'Hong Kong Noodles':            'https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&w=400&q=80',
-  'Schezwan Noodles':             'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=400&q=80',
-  'Manchurian Noodles':           'https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&w=400&q=80',
-  'Paneer Noodles':               'https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&w=400&q=80',
-  'Triple Noodles':               'https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&w=400&q=80',
+  'Hakka Noodles':                hakkaNoodles,
+  'Garlic Noodles':               garlicNoodles,
+  'Singapuri Noodles':            singapuriNoodles,
+  'Hong Kong Noodles':            hongKongNoodles,
+  'Schezwan Noodles':             schezwanNoodles,
+  'Manchurian Noodles':           manchurianNoodles,
+  'Paneer Noodles':               paneerNoodles,
+  'Triple Noodles':               tripleNoodles,
   'Fried Rice':                   'https://images.unsplash.com/photo-1603133872878-684f208fb84b?auto=format&fit=crop&w=400&q=80',
   'Garlic Rice':                  'https://images.unsplash.com/photo-1603133872878-684f208fb84b?auto=format&fit=crop&w=400&q=80',
   'Singapuri Rice':               'https://images.unsplash.com/photo-1603133872878-684f208fb84b?auto=format&fit=crop&w=400&q=80',

@@ -72,13 +72,15 @@ export const OverviewModule = ({ onNavigateModule }) => {
       const activeCount = allOrders.filter(o => ['placed', 'preparing'].includes(o.status)).length;
       
       const digital = allOrders
-        .filter(o => o.status === 'completed' )
+        .filter(o => o.payment === 'Online UPI')
         .reduce((sum, o) => sum + o.total, 0);
 
-      
+      const cash = allOrders
+        .filter(o => o.payment === 'Cash')
+        .reduce((sum, o) => sum + o.total, 0);
 
       setMetrics({
-        totalSales: data.totalSales || digital,
+        totalSales: data.totalSales || (digital + cash),
         totalOrders: data.totalOrders || allOrders.length,
         activeOrders: activeCount,
         digitalSales: digital,

@@ -7,23 +7,11 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import { setStoredUser, getStoredUser, clearStoredUser } from '../utils/auth';
+import { GoogleIcon } from '../components/icons/GoogleIcon';
+import { api } from '../api';
 import sguLogo from '../assets/sgu-logo.jpg';
 import { GoogleMarkIcon } from '../components/icons';
 import './LoginPage.css';
-
-/*
-  Design Read: Premium consumer auth page for Smart Bite food court app.
-  Audience: Students, shop owners, admins on mobile-first.
-  Vibe: Clean, premium consumer, brand-anchored (KFC Red #E4002B).
-  Dials: DESIGN_VARIANCE: 7 | MOTION_INTENSITY: 5 | VISUAL_DENSITY: 3
-  Font: Outfit (display) + Geist (body) via @font-face/Google Fonts
-  Icons: @tabler/icons-react (single family, strokeWidth 1.75)
-  Accent: #E4002B (locked for entire page)
-  Shape system: 16px cards, 12px inputs, 999px pills (buttons)
-  No emoji in UI per skill default (food theme gets a pass for the logo mark only)
-*/
-
-
 
 /* ── Reusable: labelled input block (label above, error below, no placeholder-as-label) ── */
 const Field = ({
@@ -109,50 +97,7 @@ const LoginPage = () => {
     else if (role === 'admin') navigate('/admin');
   };
 
-  // Pre-seeded demo accounts + user-registered accounts storage helper
-  const getSavedUsers = () => {
-    const defaultAccounts = [
-      { id: 'student@sgu.edu', username: 'student@sgu.edu', name: 'Satej', password: 'password', role: 'student', shopId: null },
-      { id: '9876543210', username: '9876543210', name: 'Guest Satej', password: '', role: 'guest', shopId: null },
-      { id: 'admin@sgu.edu', username: 'admin@sgu.edu', name: 'Administrator', password: 'admin123', role: 'admin', shopId: null },
-      { id: 'mangales-snacks', username: 'mangales-snacks', name: 'Mangale Snacks Owner', password: '000000000', role: 'owner', shopId: 'mangales-snacks' },
-      { id: 'tea-coffee', username: 'tea-coffee', name: 'Tea & Coffee Owner', password: '000000000', role: 'owner', shopId: 'tea-coffee' },
-      { id: 'rohit-vadewale', username: 'rohit-vadewale', name: 'Rohit Vadewale Owner', password: '000000000', role: 'owner', shopId: 'rohit-vadewale' },
-      { id: 'oodles-of-noodles', username: 'oodles-of-noodles', name: 'Oodles of Noodles Owner', password: '000000000', role: 'owner', shopId: 'oodles-of-noodles' },
-      { id: 'narayana', username: 'narayana', name: 'Narayana Owner', password: '000000000', role: 'owner', shopId: 'narayana' },
-      { id: 'cool-cravings', username: 'cool-cravings', name: 'Cool Cravings Owner', password: '000000000', role: 'owner', shopId: 'cool-cravings' }
-    ];
 
-    try {
-      const stored = localStorage.getItem('sgu_registered_users');
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) {
-          return [...defaultAccounts, ...parsed];
-        }
-      }
-    } catch (e) {
-      // ignore parsing error
-    }
-    return defaultAccounts;
-  };
-
-  const saveUserLocally = (newUser) => {
-    try {
-      const stored = localStorage.getItem('sgu_registered_users');
-      const parsed = stored ? JSON.parse(stored) : [];
-      const updated = Array.isArray(parsed) ? parsed : [];
-      const existingIdx = updated.findIndex(u => (u.id || u.username || '').toLowerCase() === newUser.id.toLowerCase());
-      if (existingIdx >= 0) {
-        updated[existingIdx] = newUser;
-      } else {
-        updated.push(newUser);
-      }
-      localStorage.setItem('sgu_registered_users', JSON.stringify(updated));
-    } catch (e) {
-      console.error('Failed to save user locally:', e);
-    }
-  };
 
   const finish = (role, name, id, shopId = null) => {
     setIsLoading(false);
@@ -200,7 +145,7 @@ const LoginPage = () => {
     const pwd = password.trim();
     const fe = {};
     if (!idInput) fe.identifier = 'This field is required.';
-    if (!pwd) fe.password = 'Password is required.';
+    if (!pwd && idInput !== '9876543210') fe.password = 'Password is required.';
     if (Object.keys(fe).length) { setFieldErr(fe); return; }
     setIsLoading(true); clear();
 
@@ -209,36 +154,37 @@ const LoginPage = () => {
       try {
         const { data, error } = await supabase.auth.signInWithPassword({ email: idInput, password: pwd });
         if (!error && data?.user) {
-          const meta = data.user.user_metadata || {};
-          const role = meta.role || data.user.app_metadata?.role || 'student';
-          const name = meta.full_name || meta.name || idInput.split('@')[0] || 'Student';
-          const shopId = meta.shopId || null;
-          saveUserLocally({ id: idInput, username: idInput, name, password: pwd, role, shopId });
-          finish(role, name, idInput, shopId);
-          return;
+          // Sync login with backend
+          const syncRes = await api.loginGoogle(idInput, data.user.user_metadata?.full_name || idInput.split('@')[0]);
+          if (syncRes?.success && syncRes?.user) {
+            const user = syncRes.user;
+            finish(user.role, user.name, user.username, user.shopId);
+            return;
+          }
         }
       } catch (err) {
-        // Fall back to saved local registered accounts
+        // Fall back to backend API direct login
       }
     }
 
-    // 2. Check local registered user accounts
-    const allUsers = getSavedUsers();
-    const match = allUsers.find(u => 
-      (u.id && u.id.toLowerCase() === idInput.toLowerCase()) || 
-      (u.username && u.username.toLowerCase() === idInput.toLowerCase()) ||
-      (idInput.toLowerCase() === 'admin' && u.role === 'admin')
-    );
+    // 2. Direct Backend API Login
+    try {
+      let assumedRole = 'student';
+      const lowerId = idInput.toLowerCase();
+      if (lowerId === 'admin' || lowerId.startsWith('admin@')) assumedRole = 'admin';
+      else if (['mangales-snacks', 'tea-coffee', 'rohit-vadewale', 'oodles-of-noodles', 'narayana', 'cool-cravings'].includes(lowerId)) assumedRole = 'owner';
+      else if (lowerId === '9876543210') assumedRole = 'guest';
 
-    if (match) {
-      if (!match.password || match.password === pwd) {
-        finish(match.role || 'student', match.name || idInput, match.id || idInput, match.shopId || null);
+      const resData = await api.login(idInput, pwd, assumedRole);
+      if (resData?.success && resData?.user) {
+        const user = resData.user;
+        finish(user.role, user.name, user.username, user.shopId);
       } else {
-        setErrorMsg('Incorrect password. Please check your credentials and try again.');
+        setErrorMsg('Invalid username or password.');
         setIsLoading(false);
       }
-    } else {
-      setErrorMsg('Account not found. Please click "Sign Up" above to create an account first.');
+    } catch (err) {
+      setErrorMsg(err.message || 'Login failed. Please check your credentials.');
       setIsLoading(false);
     }
   };
@@ -258,37 +204,33 @@ const LoginPage = () => {
     if (Object.keys(fe).length) { setFieldErr(fe); return; }
     setIsLoading(true); clear();
 
-    // Check if account already exists locally
-    const existingUsers = getSavedUsers();
-    const exists = existingUsers.some(u => 
-      (u.id && u.id.toLowerCase() === emailOrId.toLowerCase()) || 
-      (u.username && u.username.toLowerCase() === emailOrId.toLowerCase())
-    );
-
-    if (exists) {
-      setErrorMsg('An account with this email/ID already exists. Please Sign In below.');
-      setIsLoading(false);
-      return;
-    }
-
-    // Save registered user account locally
-    const newUser = { id: emailOrId, username: emailOrId, name: nm, password: pwd, role: 'student', shopId: null };
-    saveUserLocally(newUser);
-
-    // Try Supabase Auth Sign Up if it's a valid email format
+    // 1. Try Supabase Auth Sign Up if it's a valid email format
     if (isEmail(emailOrId)) {
       try {
         await supabase.auth.signUp({
           email: emailOrId,
           password: pwd,
           options: { data: { full_name: nm, role: 'student' } }
-        }).catch(() => null);
+        });
       } catch (err) {
-        // ignore Supabase sign-up errors (local account is saved)
+        // Let backend register
       }
     }
 
-    finish('student', nm, emailOrId, null);
+    // 2. Direct Backend API Registration
+    try {
+      const resData = await api.register(emailOrId, nm, pwd, 'student');
+      if (resData?.success && resData?.user) {
+        const user = resData.user;
+        finish(user.role, user.name, user.username, user.shopId);
+      } else {
+        setErrorMsg('Registration failed.');
+        setIsLoading(false);
+      }
+    } catch (err) {
+      setErrorMsg(err.message || 'Registration failed. Username may already be taken.');
+      setIsLoading(false);
+    }
   };
 
   /* ── Google OAuth ── */
@@ -340,7 +282,7 @@ const LoginPage = () => {
       className="sb-btn-google"
       aria-label={label}
     >
-      <GoogleMarkIcon size={18} />
+      <GoogleIcon />
       <span>{label}</span>
     </button>
   );

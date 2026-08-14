@@ -117,8 +117,12 @@ const OrdersPage = () => {
               transition={{ delay: i * 0.1 }}
             >
               <GlassCard 
-                className={`shop-card-v21 tap-effect shadow-sm transition-all ${order.status === 'completed' ? 'opacity-75' : ''}`}
+                className={`tap-effect shadow-sm transition-all ${order.status === 'completed' ? 'opacity-75' : ''}`}
                 style={{ 
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '12px',
+                  background: '#FFFFFF',
                   borderLeft: (order.status === 'prep' || order.status === 'preparing') ? '6px solid #E4002B' : 
                               order.status === 'ready' ? '6px solid var(--success-green)' : 
                               order.status === 'pending_cash' ? '6px solid #F59E0B' :
@@ -129,30 +133,29 @@ const OrdersPage = () => {
                 }}
                 onClick={() => navigate(`/student/order/${order.id}`)}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ 
-                      fontFamily: 'var(--font-heading)', 
-                      fontWeight: 800, 
-                      fontSize: '1.15rem', 
-                      color: 'var(--text-dark)',
-                      letterSpacing: '-0.5px',
-                    }}>{order.id}</span>
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6">
+                  {/* Left: ID & Time */}
+                  <div className="flex flex-row md:flex-col items-center md:items-start justify-between md:justify-center gap-2 md:w-48 flex-shrink-0">
                     <span style={{ 
-                      fontWeight: 700, 
-                      fontSize: '0.7rem', 
-                      color: 'var(--text-muted)', 
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.5px',
-                    }}>{order.timestamp ? formatRelativeTime(order.timestamp).toUpperCase() : (order.time || 'Just now').toUpperCase()}</span>
+                        fontFamily: 'var(--font-heading)', 
+                        fontWeight: 800, 
+                        fontSize: '1.15rem', 
+                        color: 'var(--text-dark)',
+                        letterSpacing: '-0.5px',
+                      }}>{order.id}</span>
+                    <span style={{ 
+                        fontWeight: 800, 
+                        fontSize: '0.75rem', 
+                        color: '#94A3B8', 
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px',
+                      }}>
+                        {order.timestamp ? formatRelativeTime(order.timestamp).toUpperCase() : (order.time || 'Just now').toUpperCase()}
+                    </span>
                   </div>
 
-                  {/* Items */}
-                  <p style={{ 
-                    fontWeight: 600, 
-                    fontSize: '0.85rem', 
-                    color: '#64748B',
-                    lineHeight: '1.4',
-                  }}>
+                  {/* Middle: Items */}
+                  <p className="flex-1 m-0 text-slate-600 font-semibold text-[0.9rem] leading-relaxed">
                     {typeof order.items === 'string' 
                       ? order.items 
                       : Array.isArray(order.items) 
@@ -160,19 +163,12 @@ const OrdersPage = () => {
                         : ''}
                   </p>
 
-                  {/* Price & Status */}
-                  <div style={{ 
-                    display: 'flex', 
-                    justifyContent: 'space-between', 
-                    alignItems: 'center',
-                    borderTop: '1px solid #F1F5F9',
-                    paddingTop: '8px',
-                    marginTop: '2px',
-                  }}>
+                  {/* Right: Price & Status */}
+                  <div className="flex flex-row md:flex-col items-center md:items-end justify-between md:justify-center gap-3 md:w-32 flex-shrink-0 border-t md:border-t-0 border-slate-100 pt-3 md:pt-0 mt-1 md:mt-0">
                     <span style={{ 
                       fontFamily: 'var(--font-heading)', 
                       fontWeight: 800, 
-                      fontSize: '1.2rem', 
+                      fontSize: '1.25rem', 
                       color: 'var(--text-dark)' 
                     }}>₹{order.total}</span>
                     
@@ -237,6 +233,7 @@ const OrdersPage = () => {
                       </span>
                     )}
                   </div>
+                </div>
               </GlassCard>
             </motion.div>
           ))}

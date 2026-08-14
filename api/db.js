@@ -1,16 +1,42 @@
 import { createClient } from '@supabase/supabase-js';
+import pg from 'pg';
+import sqlite3 from 'sqlite3';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || 'https://hmdewtmtxgfyunyypcon.supabase.co';
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhtZGV3dG10eGdmeXVueXlwY29uIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0MDQ2NDQsImV4cCI6MjA5NTk4MDY0NH0.sy6oeke8atqEHPnkWKMZPK9ggbJp8J3HF6G-GFsJRGg';
+import { config } from './config.js';
 
-const supabase = createClient(supabaseUrl, supabaseKey);
+const { Pool } = pg;
 
-const connectionString = process.env.DATABASE_URL || '';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+const supabaseUrl = config.SUPABASE_URL;
+const supabaseKey = config.SUPABASE_SERVICE_ROLE_KEY || config.SUPABASE_ANON_KEY;
+
+let supabase = null;
+if (supabaseUrl && supabaseKey && supabaseUrl.startsWith('http')) {
+  try {
+    supabase = createClient(supabaseUrl, supabaseKey);
+  } catch (_err) {
+    // Ignored in offline / test environments
+  }
+}
+
+// Connection configuration & variables
+const connectionString = config.DATABASE_URL || process.env.DATABASE_URL || '';
 let pool = null;
+if (connectionString && !connectionString.includes('[YOUR-PASSWORD]')) {
+  pool = new Pool({
+    connectionString,
+    idleTimeoutMillis: 5000, // Close idle connections after 5 seconds
+    max: 10 // Maximum pool size
+  });
+}
+
 let isPgActive = false;
 let isSqliteActive = false;
 let sqliteDb = null;
-let sqlite3 = null;
 
 const memStore = {
   users: [],
@@ -28,24 +54,22 @@ function convertSql(sql) {
 
 export function normalizeRow(row) {
   if (!row || typeof row !== 'object' || Array.isArray(row)) return row;
-  const normalized = { ...row };
-  
-  // Standardize Order fields
-  if (normalized.customername !== undefined && normalized.customerName === undefined) normalized.customerName = normalized.customername;
-  if (normalized.customerid !== undefined && normalized.customerId === undefined) normalized.customerId = normalized.customerid;
-
-  // Standardize Order Items & Menu Items fields
-  if (normalized.orderid !== undefined && normalized.orderId === undefined) normalized.orderId = normalized.orderid;
-  if (normalized.stallid !== undefined && normalized.stallId === undefined) normalized.stallId = normalized.stallid;
-  if (normalized.stallname !== undefined && normalized.stallName === undefined) normalized.stallName = normalized.stallname;
-  if (normalized.itemid !== undefined && normalized.itemId === undefined) normalized.itemId = normalized.itemid;
-  if (normalized.isveg !== undefined && normalized.isVeg === undefined) normalized.isVeg = normalized.isveg;
-
-  // Standardize Users & Stalls fields
-  if (normalized.shopid !== undefined && normalized.shopId === undefined) normalized.shopId = normalized.shopid;
-  if (normalized.busymode !== undefined && normalized.busyMode === undefined) normalized.busyMode = normalized.busymode;
-  if (normalized.waittime !== undefined && normalized.waitTime === undefined) normalized.waitTime = normalized.waittime;
-
+  const normalized = {};
+  for (const [key, value] of Object.entries(row)) {
+    let camelKey = key;
+    if (key === 'busymode') camelKey = 'busyMode';
+    else if (key === 'waittime') camelKey = 'waitTime';
+    else if (key === 'customername') camelKey = 'customerName';
+    else if (key === 'customerid') camelKey = 'customerId';
+    else if (key === 'orderid') camelKey = 'orderId';
+    else if (key === 'itemid') camelKey = 'itemId';
+    else if (key === 'stallid') camelKey = 'stallId';
+    else if (key === 'stallname') camelKey = 'stallName';
+    else if (key === 'shopid') camelKey = 'shopId';
+    else if (key === 'isveg') camelKey = 'isVeg';
+    
+    normalized[camelKey] = value;
+  }
   return normalized;
 }
 
@@ -107,7 +131,7 @@ export const db = {
       const rows = executeMemAll(sql, params);
       row = rows[0] || null;
     }
-    return normalizeRow(row);
+    return row ? normalizeRow(row) : null;
   },
 
   async exec(sql) {
@@ -123,6 +147,80 @@ export const db = {
       });
     }
     // For pure JS memory store, schema initialization is dynamic
+  },
+
+  async transaction(callback) {
+    if (isPgActive && pool) {
+      const client = await pool.connect();
+      try {
+        await client.query('BEGIN');
+        const tx = {
+          async run(sql, params = []) {
+            let pgSql = convertSql(sql);
+            if (pgSql.trim().toUpperCase().startsWith('INSERT ') && !pgSql.trim().toUpperCase().includes('RETURNING')) {
+              pgSql = `${pgSql} RETURNING id`;
+            }
+            const res = await client.query(pgSql, params);
+            return { id: res.rows[0]?.id || null, changes: res.rowCount };
+          },
+          async all(sql, params = []) {
+            const pgSql = convertSql(sql);
+            const res = await client.query(pgSql, params);
+            return res.rows.map(normalizeRow);
+          },
+          async get(sql, params = []) {
+            const pgSql = convertSql(sql);
+            const res = await client.query(pgSql, params);
+            return res.rows[0] ? normalizeRow(res.rows[0]) : null;
+          },
+          async exec(sql) {
+            const pgSql = convertSql(sql);
+            await client.query(pgSql);
+          }
+        };
+        const result = await callback(tx);
+        await client.query('COMMIT');
+        return result;
+      } catch (err) {
+        await client.query('ROLLBACK');
+        throw err;
+      } finally {
+        client.release();
+      }
+    } else if (isSqliteActive && sqliteDb) {
+      return new Promise((resolve, reject) => {
+        sqliteDb.serialize(async () => {
+          try {
+            await new Promise((res, rej) => {
+              sqliteDb.run('BEGIN TRANSACTION', (err) => {
+                if (err) rej(err);
+                else res();
+              });
+            });
+            const result = await callback(db);
+            await new Promise((res, rej) => {
+              sqliteDb.run('COMMIT', (err) => {
+                if (err) rej(err);
+                else res();
+              });
+            });
+            resolve(result);
+          } catch (err) {
+            sqliteDb.run('ROLLBACK', () => {});
+            reject(err);
+          }
+        });
+      });
+    } else {
+      const backup = JSON.parse(JSON.stringify(memStore));
+      try {
+        const result = await callback(db);
+        return result;
+      } catch (err) {
+        Object.assign(memStore, backup);
+        throw err;
+      }
+    }
   }
 };
 
@@ -337,19 +435,29 @@ function executeMemAll(sql, params) {
 
 export async function initDatabase() {
   // 1. Test PostgreSQL connection
-  if (connectionString && !connectionString.includes('[YOUR-PASSWORD]')) {
+  if (connectionString && !connectionString.includes('[YOUR-PASSWORD]') && pool) {
+    let client;
     try {
-      const client = await pool.connect();
+      client = await pool.connect();
       await client.query('SELECT 1');
-      client.release();
       isPgActive = true;
       console.log('[DATABASE] Connected to PostgreSQL database.');
     } catch (err) {
       isPgActive = false;
       console.warn('[DATABASE WARNING] PostgreSQL connection failed (' + err.message + '). Fallback to local engine.');
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error(`Critical Database Error: PostgreSQL connection failed in production. Details: ${err.message}`);
+      }
+    } finally {
+      if (client) {
+        client.release();
+      }
     }
   } else {
     isPgActive = false;
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('Critical Database Error: PostgreSQL connection string (DATABASE_URL) is missing or unconfigured in production.');
+    }
   }
 
   // 2. Try SQLite if PostgreSQL is not active
@@ -403,7 +511,8 @@ export async function initDatabase() {
       category TEXT,
       stock INTEGER,
       img TEXT,
-      available INTEGER DEFAULT 1
+      available INTEGER DEFAULT 1,
+      FOREIGN KEY (stallId) REFERENCES stalls(id) ON DELETE CASCADE
     );
   `);
 
@@ -434,9 +543,16 @@ export async function initDatabase() {
       price REAL,
       quantity INTEGER,
       stallId TEXT,
-      stallName TEXT
+      stallName TEXT,
+      FOREIGN KEY (orderId) REFERENCES orders(id) ON DELETE CASCADE,
+      FOREIGN KEY (stallId) REFERENCES stalls(id) ON DELETE SET NULL
     );
   `);
+
+  // Create indices to optimize query performance (Finding 9)
+  await db.exec('CREATE INDEX IF NOT EXISTS idx_menu_items_stall_id ON menu_items (stallId);');
+  await db.exec('CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON order_items (orderId);');
+  await db.exec('CREATE INDEX IF NOT EXISTS idx_order_items_stall_id ON order_items (stallId);');
 
   // Seed Users if empty
   const userCount = await db.get('SELECT COUNT(*) as count FROM users');
@@ -661,5 +777,35 @@ export async function initDatabase() {
         [item.stallId, item.name, item.price, item.isVeg, item.category, item.stock, 1, img]
       );
     }
+  }
+}
+
+export async function ping() {
+  if (isPgActive && pool) {
+    const res = await pool.query('SELECT 1');
+    return res.rowCount > 0;
+  } else if (isSqliteActive && sqliteDb) {
+    return new Promise((resolve) => {
+      sqliteDb.get('SELECT 1', (err) => {
+        resolve(!err);
+      });
+    });
+  }
+  return true; // fallback memory engine is always active
+}
+
+export async function close() {
+  if (pool) {
+    await pool.end();
+    console.log('[DATABASE] PostgreSQL connection pool closed.');
+  }
+  if (sqliteDb) {
+    await new Promise((resolve, reject) => {
+      sqliteDb.close((err) => {
+        if (err) reject(err);
+        else resolve();
+      });
+    });
+    console.log('[DATABASE] SQLite database connection closed.');
   }
 }

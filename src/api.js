@@ -84,6 +84,28 @@ async function fetchAPI(endpoint, options = {}, retries = 2) {
 const STATUS_WEIGHT = { 'placed': 1, 'pending_cash': 1, 'preparing': 2, 'ready': 3, 'completed': 4 };
 
 export const api = {
+  // ── Auth ────────────────────────────────────────────────────
+  async login(username, password, role) {
+    return await fetchAPI('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ username, password, role })
+    });
+  },
+
+  async register(username, name, password, role) {
+    return await fetchAPI('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({ username, name, password, role })
+    });
+  },
+
+  async loginGoogle(email, name) {
+    return await fetchAPI('/auth/login-google', {
+      method: 'POST',
+      body: JSON.stringify({ email, name })
+    });
+  },
+
   // ── Stalls ─────────────────────────────────────────────────
   async getStalls() {
     const stored = JSON.parse(localStorage.getItem('sgu_stalls') || '[]');
@@ -176,44 +198,29 @@ export const api = {
   // ── Menu ────────────────────────────────────────────────────
   async getStallMenu(stallId) {
     try {
-      const { data, error } = await supabase.from('menu_items').select('*').eq('stallId', stallId);
-      if (!error && data && data.length > 0) return data;
-      const res = await supabase.from('menu_items').select('*').eq('stall_id', stallId);
-      if (!res.error && res.data && res.data.length > 0) return res.data;
+      const res = await fetchAPI(`/stalls/${stallId}/menu`);
+      if (Array.isArray(res)) return res;
     } catch (err) {
-      // fallback below
+      console.warn("Fetch menu failed, falling back to local list:", err);
     }
     const fallback = getItemsByStall(stallId);
     return (fallback && fallback.length > 0) ? fallback : ALL_FOOD_ITEMS.slice(0, 15);
   },
 
   async addMenuItem(stallId, itemData) {
-    try {
-      const { data, error } = await supabase.from('menu_items').insert({ stallId, ...itemData }).select();
-      if (!error && data) return data[0];
-      return await fetchAPI(`/stalls/${stallId}/menu`, {
-        method: 'POST',
-        body: JSON.stringify(itemData)
-      });
-    } catch (err) {
-      return { id: Date.now(), ...itemData };
-    }
+    return await fetchAPI(`/stalls/${stallId}/menu`, {
+      method: 'POST',
+      body: JSON.stringify(itemData)
+    });
   },
 
   async updateMenuItem(itemId, itemData) {
-    try {
-      const { data, error } = await supabase.from('menu_items').update(itemData).eq('id', itemId).select();
-      if (!error && data) return data[0];
-      return await fetchAPI(`/menu/${itemId}`, {
-        method: 'PUT',
-        body: JSON.stringify(itemData)
-      });
-    } catch (err) {
-      return { id: itemId, ...itemData };
-    }
+    return await fetchAPI(`/menu/${itemId}`, {
+      method: 'PUT',
+      body: JSON.stringify(itemData)
+    });
   },
 
-  // ── Orders ──────────────────────────────────────────────────
   // ── Orders ──────────────────────────────────────────────────
   async createOrder(orderData) {
     try {
@@ -312,20 +319,14 @@ export const api = {
   },
 
   async resendReceipt(orderId, customEmail) {
-    try {
-      return await fetchAPI(`/orders/${orderId}/resend`, {
-        method: 'POST',
-        body: customEmail ? JSON.stringify({ customEmail }) : undefined
-      });
-    } catch (err) {
-      return { success: true };
-    }
+    return await fetchAPI(`/orders/${orderId}/resend`, {
+      method: 'POST',
+      body: customEmail ? JSON.stringify({ customEmail }) : undefined
+    });
   },
 
   async getOrderQueue() {
     try {
-      const { data, error } = await supabase.from('orders').select('*').in('status', ['pending', 'preparing', 'placed']).order('created_at', { ascending: false });
-      if (!error && data) return data;
       return await fetchAPI('/orders/queue');
     } catch (err) {
       return [];
@@ -395,30 +396,23 @@ export const api = {
 
   async getStudentOrders(customerId) {
     const ordersMap = new Map();
-
     // 1. Fetch from Supabase
     try {
-      const { data: d1 } = await supabase.from('orders').select('*').eq('customer_id', customerId).order('created_at', { ascending: false });
-      if (d1) {
-        d1.forEach(o => ordersMap.set(o.id, {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*')
+        .or(`customer_id.eq.${customerId},customerId.eq.${customerId},customerid.eq.${customerId}`);
+      if (!error && Array.isArray(data)) {
+        data.forEach(o => ordersMap.set(o.id, {
           ...o,
-          customerName: o.customerName || o.customername || o.customer_name,
-          customerId: o.customerId || o.customerid || o.customer_id,
-          timestamp: o.created_at || o.timestamp
+          customerId: o.customer_id || o.customerId || o.customerid,
+          customerName: o.customer_name || o.customerName || o.customername,
+          stallId: o.stall_id || o.stallId || o.stallid,
+          stallName: o.stall_name || o.stallName || o.stallname,
+          items: typeof o.items === 'string' ? JSON.parse(o.items || '[]') : (o.items || [])
         }));
       }
-      const { data: d2 } = await supabase.from('orders').select('*').eq('customerId', customerId).order('created_at', { ascending: false });
-      if (d2) {
-        d2.forEach(o => ordersMap.set(o.id, {
-          ...o,
-          customerName: o.customerName || o.customername || o.customer_name,
-          customerId: o.customerId || o.customerid || o.customer_id,
-          timestamp: o.created_at || o.timestamp
-        }));
-      }
-    } catch (err) {
-      console.warn("Supabase fetch student orders failed:", err);
-    }
+    } catch (err) {}
 
     // 2. Fetch from REST backend API
     try {
@@ -458,23 +452,23 @@ export const api = {
 
   async getStallOrders(stallId) {
     const ordersMap = new Map();
-
     // 1. Fetch from Supabase
     try {
-      const { data, error } = await supabase.from('orders').select('*').eq('stall_id', stallId).order('created_at', { ascending: false });
-      if (!error && data) {
-        data.forEach(o => {
-          ordersMap.set(o.id, {
-            ...o,
-            customerName: o.customerName || o.customername || o.customer_name || 'Guest User',
-            customerId: o.customerId || o.customerid || o.customer_id || 'guest',
-            timestamp: o.created_at || o.timestamp || new Date().toISOString()
-          });
-        });
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*')
+        .or(`stall_id.eq.${stallId},stallId.eq.${stallId},shop_id.eq.${stallId}`);
+      if (!error && Array.isArray(data)) {
+        data.forEach(o => ordersMap.set(o.id, {
+          ...o,
+          customerId: o.customer_id || o.customerId || o.customerid,
+          customerName: o.customer_name || o.customerName || o.customername,
+          stallId: o.stall_id || o.stallId || o.stallid,
+          stallName: o.stall_name || o.stallName || o.stallname,
+          items: typeof o.items === 'string' ? JSON.parse(o.items || '[]') : (o.items || [])
+        }));
       }
-    } catch (err) {
-      console.warn("Supabase fetch stall orders failed:", err);
-    }
+    } catch (err) {}
 
     // 2. Fetch from REST backend API
     try {
@@ -586,6 +580,20 @@ export const api = {
   // ── Admin ───────────────────────────────────────────────────
   async getAdminMetrics() {
     try {
+      const metrics = await fetchAPI('/admin/metrics').catch(() => null);
+      if (metrics && metrics.orders) {
+        return {
+          metrics: {
+            totalSales: metrics.totalSales || 0,
+            totalOrders: metrics.totalOrders || 0,
+            activeOrders: metrics.orders.filter(o => ['placed', 'preparing', 'pending', 'pending_cash'].includes(o.status)).length,
+            totalVendors: SHOPS.length,
+            healthScore: 99.9
+          },
+          orders: metrics.orders || []
+        };
+      }
+
       const { data, error } = await supabase.from('orders').select('*');
       if (!error && data) {
         const totalSales = data.reduce((acc, o) => acc + (Number(o.total) || 0), 0);
@@ -601,7 +609,10 @@ export const api = {
           orders: data
         };
       }
-      return fetchAPI('/admin/metrics');
+      return {
+        metrics: { totalSales: 0, totalOrders: 0, activeOrders: 0, totalVendors: SHOPS.length, healthScore: 99.9 },
+        orders: []
+      };
     } catch (err) {
       return {
         metrics: { totalSales: 0, totalOrders: 0, activeOrders: 0, totalVendors: SHOPS.length, healthScore: 99.9 },
@@ -612,9 +623,7 @@ export const api = {
 
   async getAdminUsers() {
     try {
-      const { data, error } = await supabase.from('profiles').select('*');
-      if (!error && data) return data;
-      return fetchAPI('/admin/users');
+      return await fetchAPI('/admin/users');
     } catch (err) {
       return [];
     }

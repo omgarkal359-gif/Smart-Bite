@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { GlassCard } from '../components/ui/GlassCard';
+import { Button } from '../components/ui/Button';
 import { ArrowLeft, QrCode, CheckCircle, Clock, ChefHat, BellRing, Download, Mail, ShoppingBag, ShieldAlert, XCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api, socket } from '../api';

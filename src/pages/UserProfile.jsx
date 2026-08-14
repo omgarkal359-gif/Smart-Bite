@@ -83,7 +83,7 @@ const UserProfile = () => {
         if (payload.payload && payload.payload.orderId) {
           setRecentOrders(prev => {
             const updated = prev.map(o => o.id === payload.payload.orderId ? { ...o, status: payload.payload.status } : o);
-            try { localStorage.setItem('sgu_orders', JSON.stringify(updated)); } catch(_err){}
+            try { localStorage.setItem('sgu_orders', JSON.stringify(updated)); } catch (_err) {}
             return updated;
           });
         }
