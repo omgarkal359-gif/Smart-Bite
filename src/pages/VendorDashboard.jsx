@@ -314,12 +314,22 @@ const VendorDashboard = () => {
       let itemsList = [];
       if (t.originalItems && Array.isArray(t.originalItems)) {
         itemsList = t.originalItems;
+      } else if (Array.isArray(t.items)) {
+        itemsList = t.items.map(str => {
+          const match = String(str).match(/^(\d+)x\s+(.+)$/i);
+          if (match) return { name: match[2].trim(), quantity: parseInt(match[1], 10) || 1 };
+          return { name: String(str).trim(), quantity: 1 };
+        });
       } else if (typeof t.items === 'string') {
-        itemsList = t.items.split(',').map(s => ({ name: s.trim(), quantity: 1 }));
+        itemsList = t.items.split(',').map(s => {
+          const match = s.trim().match(/^(\d+)x\s+(.+)$/i);
+          if (match) return { name: match[2].trim(), quantity: parseInt(match[1], 10) || 1 };
+          return { name: s.trim(), quantity: 1 };
+        });
       }
       
       itemsList.forEach(item => {
-        if (item.name) {
+        if (item.name && item.name !== 'undefined' && item.name !== 'null') {
           itemCounts[item.name] = (itemCounts[item.name] || 0) + (Number(item.quantity) || 1);
         }
       });
@@ -622,53 +632,51 @@ const VendorDashboard = () => {
                           <span className={`text-[10px] font-black px-2 py-1 rounded ${
                             ticket.status === 'preparing' ? 'bg-blue-100 text-blue-700' : 
                             ticket.status === 'ready' ? 'bg-green-100 text-green-700' :
+                            ticket.status === 'pending_cash' ? 'bg-orange-100 text-orange-700' :
                             'bg-purple-100 text-purple-700'
                           }`}>
                             {ticket.status === 'preparing' ? 'PREPARING' : 
                              ticket.status === 'ready' ? 'READY' :
+                             ticket.status === 'pending_cash' ? 'AWAITING CASH' :
                              'NEW ORDER'}
                           </span>
                         </div>
 
-                        {(ticket.status === 'placed' || ticket.status === 'preparing') && (
-                          <div className="flex gap-3 w-full">
-                            <motion.button 
-                              whileHover={{ scale: ticket.status === 'preparing' ? 1 : 1.03 }}
-                              whileTap={{ scale: ticket.status === 'preparing' ? 1 : 0.97 }}
+                        {(!['ready', 'completed', 'cancelled'].includes(ticket.status)) && (
+                          <div className="flex gap-3 w-full" data-ticket-id={ticket.id}>
+                            <button 
                               disabled={ticket.status === 'preparing'}
-                              className={`flex-1 flex items-center justify-center gap-2 py-5 px-4 rounded-xl font-black text-[13px] uppercase tracking-wider cursor-pointer transition-all border border-solid ${
+                              className={`flex-1 flex items-center justify-center gap-2 py-4 px-4 rounded-xl font-black text-[13px] uppercase tracking-wider cursor-pointer transition-all border border-solid ${
                                 ticket.status === 'preparing' 
                                   ? 'bg-slate-200 text-slate-500 border-slate-300 cursor-not-allowed shadow-inner' 
-                                  : 'vendor-btn-preparing bg-red-50 text-red-600 border-red-200 hover:bg-red-100'
+                                  : 'vendor-btn-preparing hover:scale-[1.03] active:scale-[0.97]'
                               }`}
+                              style={ticket.status !== 'preparing' ? { backgroundColor: '#f59e0b', color: 'white', borderColor: '#d97706' } : {}}
                               onClick={() => handleUpdateStatus(ticket.id, 'preparing')}
                             >
                               <Clock size={16} className={ticket.status === 'preparing' ? 'text-slate-500' : 'text-current'} />
                               Preparing
-                            </motion.button>
+                            </button>
 
-                            <motion.button 
-                              whileHover={{ scale: 1.03 }}
-                              whileTap={{ scale: 0.97 }}
-                              className="vendor-btn-ready flex-1 flex items-center justify-center gap-2 py-5 px-4 rounded-xl font-black text-[13px] uppercase tracking-wider bg-green-50 text-green-600 border border-solid border-green-200 hover:bg-green-100 cursor-pointer transition-all"
+                            <button 
+                              className="flex-1 flex items-center justify-center gap-2 py-4 px-4 rounded-xl font-black text-[13px] uppercase tracking-wider cursor-pointer transition-all border border-solid vendor-btn-ready hover:scale-[1.03] active:scale-[0.97]"
+                              style={{ backgroundColor: '#059669', color: 'white', borderColor: '#047857' }}
                               onClick={() => handleUpdateStatus(ticket.id, 'ready')}
                             >
                               <CheckCircle size={16} className="text-current" />
                               Ready
-                            </motion.button>
+                            </button>
                           </div>
                         )}
 
                         {ticket.status === 'ready' && (
-                          <motion.button 
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            className="jumbo-btn bg-green-500"
+                          <button 
+                            className="jumbo-btn bg-green-500 hover:scale-[1.02] active:scale-[0.98]"
                             onClick={() => handleUpdateStatus(ticket.id, 'completed')}
                           >
                             <CheckCircle size={20} />
                             MARK COMPLETED
-                          </motion.button>
+                          </button>
                         )}
                       </div>
                     </motion.div>
