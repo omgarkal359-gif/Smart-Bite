@@ -2,10 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trash2, Plus, Minus, ArrowRight, ShoppingBag, CreditCard, ChevronLeft, Loader2, Check, ExternalLink, Clock } from 'lucide-react';
-import { api, formatRelativeTime } from '../api';
+import { 
+  Trash2, Plus, Minus, ArrowRight, ShoppingBag, ChevronLeft, 
+  Loader2, Check, ExternalLink, Smartphone, Copy, ShieldCheck, 
+  Utensils, AlertCircle, XCircle, CheckCircle, Hash
+} from 'lucide-react';
+import { api } from '../api';
 import { getFoodItemImage } from '../utils/imageHelper';
 import { getStoredUser } from '../utils/auth';
+import { SHOP_PAYMENT_CONFIG, isMobileDevice } from '../config/paymentConfig';
 import './pages.css';
 import './cart.css';
 
@@ -13,15 +18,19 @@ const CartPage = () => {
   const { cart, addToCart, removeFromCart, totalPrice, totalItems, clearCart } = useCart();
   const navigate = useNavigate();
   const [isCheckingOut, setIsCheckingOut] = useState(false);
-  const [diningMode, setDiningMode] = useState('dine_in');
-  const paymentMode = 'upi';
+  const [diningMode, setDiningMode] = useState('dine_in'); // 'dine_in' | 'takeaway'
   const [showQRModal, setShowQRModal] = useState(false);
-  const [upiPaymentState, setUpiPaymentState] = useState('idle'); // 'idle' | 'awaiting' | 'verifying' | 'success'
+  const [upiPaymentState, setUpiPaymentState] = useState('idle'); // 'idle' | 'verifying' | 'success' | 'failed'
+  const [errorMessage, setErrorMessage] = useState('');
   const [recentOrders, setRecentOrders] = useState([]);
+  const [copiedField, setCopiedField] = useState('');
+  const [isMobile, setIsMobile] = useState(false);
+  const [utrNumber, setUtrNumber] = useState('');
 
   const cartItems = Object.values(cart);
 
   useEffect(() => {
+    setIsMobile(isMobileDevice());
     const userData = getStoredUser() || {};
     const customerId = (userData.id || userData.username || '9876543210').trim().toLowerCase();
 
@@ -35,7 +44,6 @@ const CartPage = () => {
             merged.push(orderObj);
           }
         });
-        // Sort by id descending as a proxy for date since id includes timestamp
         merged.sort((a, b) => String(b.id).localeCompare(String(a.id)));
         setRecentOrders(merged);
       })
@@ -45,100 +53,132 @@ const CartPage = () => {
       });
   }, []);
 
-  // Clear timers on unmount
-  useEffect(() => {
-    return () => {
-      if (window.verifyTimer) clearTimeout(window.verifyTimer);
-      if (window.successTimer) clearTimeout(window.successTimer);
-    };
-  }, []);
+  const handleCopy = (text, type) => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopiedField(type);
+      setTimeout(() => setCopiedField(''), 2500);
+    }).catch(() => {
+      setCopiedField(type);
+      setTimeout(() => setCopiedField(''), 2500);
+    });
+  };
 
-  const executeFinalCheckout = () => {
+  /**
+   * STRICT POST-PAYMENT FINAL CHECKOUT:
+   * Only called when the user verifies their payment with a valid 12-digit UTR.
+   * If payment is not done, NO ORDER is placed and NO vendor event is sent.
+   */
+  const handleVerifyAndConfirmPayment = () => {
+    setErrorMessage('');
+    const cleanUtr = utrNumber.trim();
+
+    if (!cleanUtr || cleanUtr.length !== 12 || !/^\d{12}$/.test(cleanUtr)) {
+      setErrorMessage('Payment not completed: Please complete the payment on your UPI app and enter the 12-digit UPI Ref / UTR number from your payment receipt.');
+      return;
+    }
+
+    setUpiPaymentState('verifying');
     setIsCheckingOut(true);
+
     const userData = getStoredUser() || {};
+    const firstItem = cartItems[0] || {};
+    const stallId = firstItem.stallId || firstItem.stallid || 'general';
+    const stallName = firstItem.stallName || firstItem.stallname || 'SGU Food Court';
+
     const orderPayload = {
       customerName: userData.name || 'Guest User',
-      customerId: userData.id || '9876543210',
+      customerId: (userData.id || userData.username || '9876543210').toString(),
       type: diningMode === 'dine_in' ? 'Dine-In' : 'Takeaway',
       payment: 'Online UPI',
       total: totalPrice,
+      utr: cleanUtr,
       items: cartItems.map(item => ({
         id: item.id,
         name: item.name,
         price: item.price,
         quantity: item.quantity,
-        stallId: item.stallId || item.stallid,
-        stallName: item.stallName || item.stallname
+        stallId: item.stallId || item.stallid || stallId,
+        stallName: item.stallName || item.stallname || stallName
       }))
     };
 
     api.createOrder(orderPayload)
       .then((response) => {
         setIsCheckingOut(false);
-        setShowQRModal(false);
-        setUpiPaymentState('idle');
+        setUpiPaymentState('success');
         const actualOrder = response.order || response;
         const existingOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
         localStorage.setItem('sgu_orders', JSON.stringify([actualOrder, ...existingOrders]));
-        clearCart();
-        navigate(`/student/order/${actualOrder.id}`);
+
+        setTimeout(() => {
+          clearCart();
+          setShowQRModal(false);
+          setUpiPaymentState('idle');
+          navigate(`/student/order/${actualOrder.id}`);
+        }, 2200);
       })
       .catch((err) => {
-        console.error('Checkout failed:', err);
-        alert('Order placement failed: ' + err.message);
-        setIsCheckingOut(false);
-        setShowQRModal(false);
+        console.error('Checkout verification failed:', err);
         setUpiPaymentState('idle');
+        setIsCheckingOut(false);
+        setErrorMessage(err.message || 'Payment verification failed: No payment detected for account 9607102196.');
       });
   };
 
+  /**
+   * Handle Proceed to Pay:
+   * - Laptop: Displays QR code with locked amount.
+   * - Mobile: Redirects directly to UPI app.
+   */
   const handleCheckout = () => {
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
-    
-    // If laptop user, open the QR payment scanner modal
-    if (!isMobile) {
-      setShowQRModal(true);
-      setUpiPaymentState('awaiting');
-      
-      // Simulate real-time UPI scan and payment completion
-      const verifyTimer = setTimeout(() => {
-        setUpiPaymentState('verifying');
-        
-        const successTimer = setTimeout(() => {
-          setUpiPaymentState('success');
-          // Automatically proceed with order creation
-          executeFinalCheckout();
-        }, 2000);
-        
-        window.successTimer = successTimer;
-      }, 4500);
-      
-      window.verifyTimer = verifyTimer;
-      return;
-    }
+    const mobileDetected = isMobileDevice();
+    setIsMobile(mobileDetected);
+    setShowQRModal(true);
+    setUpiPaymentState('idle');
+    setErrorMessage('');
+    setUtrNumber('');
 
-    setIsCheckingOut(true);
-    
+    if (mobileDetected) {
+      const firstItem = cartItems[0] || {};
+      const shopName = firstItem.stallName || 'SGU Food Court';
+      const upiUri = SHOP_PAYMENT_CONFIG.getUpiUri(totalPrice, shopName);
+      
+      const link = document.createElement('a');
+      link.href = upiUri;
+      link.target = '_blank';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  };
+
+  const handleOpenUpiAppAgain = () => {
     const firstItem = cartItems[0] || {};
-    const shopVpa = firstItem.stallId ? `${firstItem.stallId.replace('-', '')}@bank` : 'sgu_foodcourt@bank';
     const shopName = firstItem.stallName || 'SGU Food Court';
-    const upiLink = `upi://pay?pa=${shopVpa}&pn=${encodeURIComponent(shopName)}&am=${totalPrice}&cu=INR`;
-
-    if (isMobile) {
-      // Mobile flow: Redirect directly to mobile payment apps (GPay, PhonePe, Paytm, etc.)
-      window.location.href = upiLink;
-    }
-
-    executeFinalCheckout();
+    const upiUri = SHOP_PAYMENT_CONFIG.getUpiUri(totalPrice, shopName);
+    window.location.href = upiUri;
   };
 
-  const handleCancelPayment = () => {
-    if (window.verifyTimer) clearTimeout(window.verifyTimer);
-    if (window.successTimer) clearTimeout(window.successTimer);
-    
-    // As per request: still place the order if payment is cancelled
-    executeFinalCheckout();
+  /**
+   * CANCEL PAYMENT / PAYMENT INCOMPLETE:
+   * Cancels payment completely, displays "Payment Incomplete", and redirects back to cart.
+   * NO order is placed, NO Order ID generated, and NOTHING is sent to vendor dashboard.
+   */
+  const handlePaymentIncomplete = () => {
+    setUpiPaymentState('failed');
+    setErrorMessage('Payment Incomplete: Transaction cancelled. Returning to cart...');
+
+    setTimeout(() => {
+      setShowQRModal(false);
+      setUpiPaymentState('idle');
+      setIsCheckingOut(false);
+      setErrorMessage('');
+    }, 1400);
   };
+
+  const firstItem = cartItems[0] || {};
+  const currentShopName = firstItem.stallName || 'SGU Food Court';
+  const qrUrl = SHOP_PAYMENT_CONFIG.getQrCodeUrl(totalPrice, currentShopName);
 
   if (cartItems.length === 0) {
     return (
@@ -182,7 +222,7 @@ const CartPage = () => {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {recentOrders.slice(0, 3).map((rawOrder, index) => {
+              {recentOrders.slice(0, 3).map((rawOrder) => {
                 const order = rawOrder.order || rawOrder;
                 if (!order || !order.id) return null;
                 
@@ -292,12 +332,64 @@ const CartPage = () => {
         <div className="cart-selections">
           <div className="selection-group">
             <h3>Dining Mode</h3>
-            <div className="toggle-group-v20"><button className={`mode-btn-v20 active shadow-md`}>Online UPI</button></div>
+            <div className="toggle-group-v20">
+              <button 
+                className={`mode-btn-v20 ${diningMode === 'dine_in' ? 'active shadow-md' : ''}`}
+                onClick={() => setDiningMode('dine_in')}
+              >
+                <Utensils size={18} /> Dine-In
+              </button>
+              <button 
+                className={`mode-btn-v20 ${diningMode === 'takeaway' ? 'active shadow-md' : ''}`}
+                onClick={() => setDiningMode('takeaway')}
+              >
+                <ShoppingBag size={18} /> Takeaway
+              </button>
+            </div>
           </div>
 
           <div className="selection-group">
-            <h3>Payment Method</h3>
-            <div className="toggle-group-v20"><button className={`mode-btn-v20 active shadow-md`}>Online UPI</button></div>
+            <h3>Shop Bank Account & Locked Bill</h3>
+            <div className="bank-account-box">
+              <div className="flex justify-between items-center mb-2">
+                <span className="bank-badge">
+                  <ShieldCheck size={12} /> Shop Bank Account
+                </span>
+                <span className="text-[11px] font-bold text-blue-700">Non-Editable Bill</span>
+              </div>
+
+              <div className="text-xs text-slate-600 font-semibold mb-1">
+                Beneficiary: <strong className="text-navy-900">{SHOP_PAYMENT_CONFIG.payeeName}</strong>
+              </div>
+
+              <div className="bank-detail-row">
+                <div>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block">UPI ID</span>
+                  <span className="text-sm font-black text-navy-900">{SHOP_PAYMENT_CONFIG.primaryUpiId}</span>
+                </div>
+                <button 
+                  className="copy-pill-btn"
+                  onClick={() => handleCopy(SHOP_PAYMENT_CONFIG.primaryUpiId, 'upi')}
+                >
+                  {copiedField === 'upi' ? <Check size={14} color="#10B981" /> : <Copy size={14} />}
+                  {copiedField === 'upi' ? 'Copied' : 'Copy'}
+                </button>
+              </div>
+
+              <div className="bank-detail-row">
+                <div>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block">Bank Linked Phone</span>
+                  <span className="text-sm font-black text-navy-900">{SHOP_PAYMENT_CONFIG.phone}</span>
+                </div>
+                <button 
+                  className="copy-pill-btn"
+                  onClick={() => handleCopy(SHOP_PAYMENT_CONFIG.phone, 'phone')}
+                >
+                  {copiedField === 'phone' ? <Check size={14} color="#10B981" /> : <Copy size={14} />}
+                  {copiedField === 'phone' ? 'Copied' : 'Copy'}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -309,7 +401,7 @@ const CartPage = () => {
             </div>
             <div className="summary-row">
               <span>Delivery / Platform Fee</span>
-              <span className="text-green-600">FREE</span>
+              <span className="text-green-600 font-bold">FREE</span>
             </div>
             <div className="summary-row total">
               <span>Grand Total</span>
@@ -335,7 +427,7 @@ const CartPage = () => {
         </motion.button>
       </footer>
 
-      {/* Custom Laptop UPI QR Modal */}
+      {/* Payment Verification & Order Finalization Modal */}
       <AnimatePresence>
         {showQRModal && (
           <div 
@@ -350,7 +442,7 @@ const CartPage = () => {
               justifyContent: 'center',
               padding: '20px',
             }}
-            onClick={handleCancelPayment}
+            onClick={upiPaymentState === 'idle' ? handlePaymentIncomplete : undefined}
           >
             <motion.div 
               initial={{ scale: 0.9, opacity: 0 }}
@@ -358,125 +450,311 @@ const CartPage = () => {
               exit={{ scale: 0.9, opacity: 0 }}
               style={{
                 width: '100%',
-                maxWidth: '400px',
-                background: 'var(--white)',
-                borderRadius: '24px',
+                maxWidth: '420px',
+                background: '#FFFFFF',
+                borderRadius: '28px',
                 padding: '24px',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
                 textAlign: 'center',
-                boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
+                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
                 border: '1px solid rgba(226, 232, 240, 0.8)',
               }}
               onClick={e => e.stopPropagation()}
             >
-              {upiPaymentState === 'awaiting' && (
-                <>
-                  <div className="bg-white p-4 rounded-3xl shadow-lg border border-solid border-slate-100 mb-4" style={{ display: 'inline-block', position: 'relative' }}>
-                    <img 
-                      src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
-                        `upi://pay?pa=${(cartItems[0]?.stallId || 'general').replace('-', '')}@bank&pn=${encodeURIComponent(cartItems[0]?.stallName || 'SGU Food Court')}&am=${totalPrice}&cu=INR`
-                      )}`} 
-                      alt="Payment QR" 
-                      style={{ width: 180, height: 180, display: 'block' }}
-                    />
-                    {/* Simulated laser scan bar animation */}
-                    <div style={{
-                      position: 'absolute',
-                      left: '16px',
-                      right: '16px',
-                      height: '2px',
-                      background: 'rgba(228, 0, 43, 0.75)',
-                      boxShadow: '0 0 8px #E4002B',
-                      animation: 'scan-laser 2.5s infinite ease-in-out',
-                      top: '16px',
-                    }} />
-                    <style>{`
-                      @keyframes scan-laser {
-                        0% { top: 16px; }
-                        50% { top: 196px; }
-                        100% { top: 16px; }
-                      }
-                    `}</style>
-                  </div>
-                  <h3 className="font-bold text-navy-900 text-lg mb-1">{cartItems[0]?.stallName || 'SGU Food Court'}</h3>
-                  <p className="text-xs text-slate-400 font-bold mb-4">UPI VPA: {(cartItems[0]?.stallId || 'general').replace('-', '')}@bank</p>
-                  
-                  <div className="bg-slate-50 p-3 rounded-2xl w-full flex justify-between items-center mb-4 border border-solid border-slate-100">
-                    <span className="text-xs text-slate-500 font-bold uppercase">Amount to Scan</span>
-                    <span className="text-xl font-black text-[#E4002B]">₹{totalPrice}</span>
-                  </div>
-                  
-                  <div className="flex items-center gap-2 mb-6" style={{ color: 'var(--primary-navy)', fontWeight: 700, fontSize: '0.85rem' }}>
-                    <Loader2 className="animate-spin" size={18} />
-                    <span>Awaiting scan from your mobile app...</span>
-                  </div>
-                </>
+              {/* Error Banner */}
+              {errorMessage && (
+                <div className="w-full mb-3 p-3 bg-red-50 border border-red-200 rounded-xl text-left flex items-start gap-2">
+                  <AlertCircle size={18} className="text-red-600 flex-shrink-0 mt-0.5" />
+                  <span className="text-xs font-bold text-red-800">{errorMessage}</span>
+                </div>
               )}
 
-              {upiPaymentState === 'verifying' && (
-                <div style={{ padding: '40px 0', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                  <div style={{
-                    width: '64px',
-                    height: '64px',
-                    borderRadius: '50%',
-                    border: '3px solid rgba(26, 82, 118, 0.1)',
-                    borderTopColor: 'var(--primary-navy)',
-                    animation: 'spin 1s infinite linear',
-                    marginBottom: '24px'
-                  }} />
-                  <style>{`
-                    @keyframes spin {
-                      0% { transform: rotate(0deg); }
-                      100% { transform: rotate(360deg); }
-                    }
-                  `}</style>
-                  <h3 className="font-bold text-navy-900 text-lg mb-2">Scan Detected!</h3>
-                  <p className="text-sm text-slate-500 font-medium px-4">
-                    Verifying transaction with your bank. Please do not close this window.
+              {upiPaymentState === 'failed' ? (
+                /* ─── PAYMENT INCOMPLETE STATE ─── */
+                <div className="payment-incomplete-box w-full my-2">
+                  <XCircle size={52} color="#DC2626" />
+                  <h3 className="font-bold text-red-900 text-xl">Payment Incomplete</h3>
+                  <p className="text-xs text-red-700 font-medium">
+                    Payment was not completed. Order has been cancelled and was <strong>not</strong> sent to the vendor dashboard.
                   </p>
+                  <span className="text-[11px] text-slate-500 font-bold">Redirecting you back to cart...</span>
+                </div>
+              ) : !isMobile ? (
+                /* ─── LAPTOP VIEW: DYNAMIC QR CODE WITH STRICT VERIFICATION ─── */
+                <>
+                  <div className="qr-frame-wrapper mb-2">
+                    <img 
+                      src={qrUrl} 
+                      alt="Payment QR" 
+                      style={{ width: 170, height: 170, display: 'block', borderRadius: 12 }}
+                    />
+                    <div className="qr-laser-line" />
+                  </div>
+
+                  <h3 className="font-bold text-navy-900 text-base mb-0">{currentShopName}</h3>
+                  
+                  <div className="flex items-center gap-2 justify-center my-1.5 flex-wrap">
+                    <button 
+                      onClick={() => handleCopy(SHOP_PAYMENT_CONFIG.primaryUpiId, 'upi')}
+                      className="copy-pill-btn text-xs font-bold"
+                    >
+                      UPI: {SHOP_PAYMENT_CONFIG.primaryUpiId}
+                      {copiedField === 'upi' ? <Check size={12} color="#10B981" /> : <Copy size={12} />}
+                    </button>
+                    <button 
+                      onClick={() => handleCopy(SHOP_PAYMENT_CONFIG.phone, 'phone')}
+                      className="copy-pill-btn text-xs font-bold"
+                    >
+                      Phone: {SHOP_PAYMENT_CONFIG.phone}
+                      {copiedField === 'phone' ? <Check size={12} color="#10B981" /> : <Copy size={12} />}
+                    </button>
+                  </div>
+                  
+                  <div className="bg-slate-50 p-2.5 rounded-2xl w-full flex justify-between items-center my-1.5 border border-solid border-slate-100">
+                    <div className="text-left">
+                      <span className="text-[10px] text-slate-400 font-bold uppercase block">Exact Locked Total</span>
+                      <span className="text-xs text-green-700 font-bold">Non-Editable</span>
+                    </div>
+                    <span className="text-2xl font-black text-[#E4002B]">₹{totalPrice}</span>
+                  </div>
+
+                  {/* 12-Digit UTR Entry */}
+                  <div className="w-full mt-2 mb-1 text-left">
+                    <label className="text-[11px] font-bold text-slate-700 flex items-center gap-1 mb-1">
+                      <Hash size={13} className="text-blue-700" />
+                      12-Digit UPI Ref / UTR No. (From your payment receipt):
+                    </label>
+                    <input 
+                      type="text"
+                      maxLength={12}
+                      placeholder="e.g. 423891028471"
+                      value={utrNumber}
+                      onChange={(e) => {
+                        setErrorMessage('');
+                        setUtrNumber(e.target.value.replace(/[^0-9]/g, ''));
+                      }}
+                      style={{
+                        width: '100%',
+                        padding: '10px 12px',
+                        border: errorMessage ? '2px solid #EF4444' : '1.5px solid #CBD5E1',
+                        borderRadius: '12px',
+                        fontSize: '0.9rem',
+                        fontWeight: 700,
+                        color: '#0F172A',
+                        boxSizing: 'border-box',
+                        outline: 'none',
+                        letterSpacing: '1px'
+                      }}
+                    />
+                    <span className="text-[10px] text-slate-400 mt-1 block">
+                      {utrNumber.length}/12 digits entered
+                    </span>
+                  </div>
+
+                  {/* Verify & Place Order Button */}
+                  <div className="w-full mt-2">
+                    <button 
+                      onClick={handleVerifyAndConfirmPayment}
+                      disabled={upiPaymentState === 'verifying'}
+                      style={{
+                        width: '100%',
+                        padding: '14px',
+                        background: upiPaymentState === 'verifying' ? '#94A3B8' : 'linear-gradient(135deg, #16A34A, #15803D)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '14px',
+                        fontWeight: 800,
+                        fontSize: '1rem',
+                        fontFamily: "var(--font-heading, 'Oswald', sans-serif)",
+                        letterSpacing: '0.5px',
+                        textTransform: 'uppercase',
+                        cursor: upiPaymentState === 'verifying' ? 'not-allowed' : 'pointer',
+                        boxShadow: '0 6px 18px rgba(22, 163, 74, 0.3)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px'
+                      }}
+                      className="tap-effect"
+                    >
+                      {upiPaymentState === 'verifying' ? (
+                        <>
+                          <Loader2 className="animate-spin" size={18} />
+                          <span>Verifying Bank Transaction...</span>
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle size={18} />
+                          <span>Verify Payment & Place Order</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </>
+              ) : (
+                /* ─── MOBILE VIEW: REDIRECTION SCREEN ─── */
+                <div className="w-full flex flex-col items-center py-2">
+                  <div style={{
+                    width: 56, height: 56, borderRadius: '50%',
+                    background: 'rgba(30, 64, 175, 0.1)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: '#1E40AF', marginBottom: 12
+                  }}>
+                    <Smartphone size={32} />
+                  </div>
+
+                  <h3 className="font-bold text-navy-900 text-lg mb-1">Redirected to UPI App</h3>
+                  <p className="text-xs text-slate-500 font-medium px-4 mb-3">
+                    Your payment app was opened with the pre-filled, non-editable amount of <strong>₹{totalPrice}</strong> for account <strong>{SHOP_PAYMENT_CONFIG.phone}</strong>.
+                  </p>
+
+                  <div className="bg-slate-50 p-2.5 rounded-2xl w-full flex justify-between items-center mb-3 border border-solid border-slate-100">
+                    <div className="text-left">
+                      <span className="text-[10px] text-slate-400 font-bold uppercase block">Bill Amount</span>
+                      <span className="text-xs text-blue-700 font-bold">Non-Editable</span>
+                    </div>
+                    <span className="text-2xl font-black text-[#E4002B]">₹{totalPrice}</span>
+                  </div>
+
+                  <button 
+                    onClick={handleOpenUpiAppAgain}
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      background: '#EFF6FF',
+                      color: '#1E40AF',
+                      border: '1.5px solid #BFDBFE',
+                      borderRadius: '12px',
+                      fontWeight: 700,
+                      fontSize: '0.85rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px',
+                      cursor: 'pointer',
+                      marginBottom: '10px'
+                    }}
+                    className="tap-effect"
+                  >
+                    <ExternalLink size={15} /> Re-open Payment App
+                  </button>
+
+                  {/* UTR Entry */}
+                  <div className="w-full text-left mb-2">
+                    <label className="text-[11px] font-bold text-slate-700 flex items-center gap-1 mb-1">
+                      <Hash size={13} className="text-blue-700" />
+                      12-Digit UPI Ref / UTR No.:
+                    </label>
+                    <input 
+                      type="text"
+                      maxLength={12}
+                      placeholder="e.g. 423891028471"
+                      value={utrNumber}
+                      onChange={(e) => {
+                        setErrorMessage('');
+                        setUtrNumber(e.target.value.replace(/[^0-9]/g, ''));
+                      }}
+                      style={{
+                        width: '100%',
+                        padding: '10px 12px',
+                        border: errorMessage ? '2px solid #EF4444' : '1.5px solid #CBD5E1',
+                        borderRadius: '12px',
+                        fontSize: '0.9rem',
+                        fontWeight: 700,
+                        color: '#0F172A',
+                        boxSizing: 'border-box',
+                        outline: 'none',
+                        letterSpacing: '1px'
+                      }}
+                    />
+                    <span className="text-[10px] text-slate-400 mt-1 block">
+                      {utrNumber.length}/12 digits entered
+                    </span>
+                  </div>
+
+                  {/* Verify Action */}
+                  <div className="w-full mt-1">
+                    <button 
+                      onClick={handleVerifyAndConfirmPayment}
+                      disabled={upiPaymentState === 'verifying'}
+                      style={{
+                        width: '100%',
+                        padding: '14px',
+                        background: upiPaymentState === 'verifying' ? '#94A3B8' : 'linear-gradient(135deg, #16A34A, #15803D)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '14px',
+                        fontWeight: 800,
+                        fontSize: '1rem',
+                        fontFamily: "var(--font-heading, 'Oswald', sans-serif)",
+                        letterSpacing: '0.5px',
+                        textTransform: 'uppercase',
+                        cursor: upiPaymentState === 'verifying' ? 'not-allowed' : 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px'
+                      }}
+                      className="tap-effect shadow-md"
+                    >
+                      {upiPaymentState === 'verifying' ? (
+                        <>
+                          <Loader2 className="animate-spin" size={18} />
+                          <span>Verifying Bank Transaction...</span>
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle size={18} />
+                          <span>Verify Payment & Place Order</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </div>
               )}
 
               {upiPaymentState === 'success' && (
-                <div style={{ padding: '40px 0', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <div style={{ padding: '20px 0', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                   <div style={{
                     width: '64px',
                     height: '64px',
                     borderRadius: '50%',
-                    background: 'var(--success-green)',
+                    background: '#10B981',
                     color: 'white',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    marginBottom: '24px',
-                    boxShadow: '0 10px 20px rgba(34, 197, 94, 0.3)'
+                    marginBottom: '16px',
+                    boxShadow: '0 10px 20px rgba(16, 185, 129, 0.3)'
                   }}>
                     <Check size={36} strokeWidth={3} />
                   </div>
-                  <h3 className="font-bold text-navy-900 text-lg mb-2">Payment Successful!</h3>
+                  <h3 className="font-bold text-navy-900 text-xl mb-2">Payment Verified!</h3>
                   <p className="text-sm text-slate-500 font-medium px-4">
-                    Your payment of ₹{totalPrice} is verified. Redirecting to your receipt...
+                    Order confirmed and transmitted to kitchen dashboard. Redirecting to receipt ticket...
                   </p>
                 </div>
               )}
 
-              <div className="w-full">
-                <button 
-                  onClick={handleCancelPayment}
-                  disabled={upiPaymentState === 'success'}
-                  style={{
-                    width: '100%', padding: '12px', borderRadius: '12px',
-                    border: '1px solid #E2E8F0', background: 'none',
-                    fontWeight: 700, fontSize: '0.85rem', cursor: upiPaymentState === 'success' ? 'not-allowed' : 'pointer',
-                    color: 'var(--text-muted)',
-                    opacity: upiPaymentState === 'success' ? 0.5 : 1
-                  }}
-                >
-                  Cancel Payment
-                </button>
-              </div>
+              {/* Cancel Button */}
+              {upiPaymentState !== 'failed' && upiPaymentState !== 'success' && (
+                <div className="w-full mt-2">
+                  <button 
+                    onClick={handlePaymentIncomplete}
+                    disabled={upiPaymentState === 'verifying'}
+                    style={{
+                      width: '100%', padding: '10px', borderRadius: '12px',
+                      border: '1px solid #E2E8F0', background: 'none',
+                      fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer',
+                      color: '#DC2626'
+                    }}
+                  >
+                    Payment Incomplete / Cancel Order
+                  </button>
+                </div>
+              )}
             </motion.div>
           </div>
         )}

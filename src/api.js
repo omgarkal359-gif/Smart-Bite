@@ -22,7 +22,15 @@ async function fetchAPI(endpoint, options = {}, retries = 2) {
   const cacheKey = `sb_cache_${endpoint}`;
 
   let token = '';
+  let storedUserId = 'student-local';
+  let storedUserRole = 'student';
   try {
+    const rawUser = localStorage.getItem('user');
+    if (rawUser) {
+      const parsed = JSON.parse(rawUser);
+      storedUserId = parsed.id || parsed.username || storedUserId;
+      storedUserRole = parsed.role || storedUserRole;
+    }
     const { data } = await supabase.auth.getSession();
     if (data?.session?.access_token) {
       token = data.session.access_token;
@@ -36,6 +44,8 @@ async function fetchAPI(endpoint, options = {}, retries = 2) {
       const response = await fetch(url, {
         headers: {
           'Content-Type': 'application/json',
+          'x-user-id': String(storedUserId),
+          'x-user-role': String(storedUserRole),
           ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
           ...options.headers,
         },
@@ -47,7 +57,11 @@ async function fetchAPI(endpoint, options = {}, retries = 2) {
 
       if (!response.ok) {
         const errorData = isJson ? await response.json().catch(() => ({})) : {};
-        throw new Error(errorData.message || `Server error (${response.status}). Please try again later.`);
+        const errorMsg = errorData.error || errorData.message || `Server error (${response.status}). Please try again later.`;
+        const err = new Error(errorMsg);
+        err.status = response.status;
+        err.errorData = errorData;
+        throw err;
       }
 
       if (isJson) {
@@ -223,99 +237,83 @@ export const api = {
 
   // ── Orders ──────────────────────────────────────────────────
   async createOrder(orderData) {
-    try {
-      const stallId = orderData.items && orderData.items.length > 0 ? orderData.items[0].stallId : null;
-      const defaultStatus = orderData.payment === 'Cash' ? 'pending_cash' : 'placed';
-      const orderId = orderData.id || orderData.orderId || `ORD-${Date.now()}`;
-      const payloadWithId = { ...orderData, id: orderId };
-      
-      // 1. Post to local backend API first if available
-      let sqliteRes = null;
-      try {
-        sqliteRes = await fetchAPI('/orders', {
-          method: 'POST',
-          body: JSON.stringify(payloadWithId)
-        });
-      } catch (err) {
-        // Local API offline
+    const stallId = orderData.items && orderData.items.length > 0 ? orderData.items[0].stallId : null;
+    const defaultStatus = orderData.payment === 'Cash' ? 'pending_cash' : 'placed';
+    const orderId = orderData.id || orderData.orderId || `ORD-${Date.now()}`;
+    const payloadWithId = { ...orderData, id: orderId };
+    
+    // Strict payment validation for Online UPI
+    if (orderData.payment === 'Online UPI') {
+      const cleanUtr = orderData.utr ? String(orderData.utr).trim() : '';
+      if (!cleanUtr || !/^\d{12}$/.test(cleanUtr)) {
+        throw new Error('Payment verification failed: Valid 12-digit UPI Transaction Reference (UTR) is required for account 9607102196. Order cannot be placed without verified payment.');
       }
-
-      const actualOrder = (sqliteRes && (sqliteRes.order || sqliteRes)) || { 
-        id: orderId, 
-        status: defaultStatus, 
-        ...payloadWithId, 
-        timestamp: new Date().toISOString(),
-        created_at: new Date().toISOString()
-      };
-
-      // Ensure actualOrder always has the correct ID
-      actualOrder.id = orderId;
-
-      // 2. Sync order to Supabase table
-      try {
-        const supabasePayload = {
-          id: orderId,
-          customerName: orderData.customerName,
-          customername: orderData.customerName,
-          customer_name: orderData.customerName,
-          customerId: orderData.customerId,
-          customerid: orderData.customerId,
-          customer_id: orderData.customerId,
-          type: orderData.type,
-          payment: orderData.payment,
-          total: orderData.total,
-          status: actualOrder.status || defaultStatus,
-          shop_id: stallId,
-          stall_id: stallId,
-          stallId: stallId,
-          items: Array.isArray(orderData.items) ? JSON.stringify(orderData.items) : orderData.items,
-          created_at: actualOrder.timestamp || actualOrder.created_at || new Date().toISOString()
-        };
-        await supabase.from('orders').insert(supabasePayload);
-      } catch (sbErr) {
-        console.error("Supabase order sync failed:", sbErr);
-      }
-
-      // Persist to localStorage immediately
-      const savedOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
-      if (!savedOrders.find(o => String(o.id) === String(orderId))) {
-        savedOrders.unshift(actualOrder);
-        localStorage.setItem('sgu_orders', JSON.stringify(savedOrders));
-      }
-      
-      // Broadcast new order directly to Vendor Dashboard
-      if (stallId) {
-        const channel = supabase.channel(`vendor_sync_${stallId}`);
-        channel.subscribe((status) => {
-          if (status === 'SUBSCRIBED') {
-            channel.send({
-              type: 'broadcast',
-              event: 'order_new',
-              payload: { order: actualOrder }
-            });
-            setTimeout(() => supabase.removeChannel(channel), 1000);
-          }
-        });
-      }
-
-      return { success: true, order: actualOrder };
-    } catch (err) {
-      const stallId = orderData.items && orderData.items.length > 0 ? orderData.items[0].stallId : null;
-      const defaultStatus = orderData.payment === 'Cash' ? 'pending_cash' : 'placed';
-      const orderId = orderData.id || orderData.orderId || `ORD-${Date.now()}`;
-      const fallbackOrder = { id: orderId, status: defaultStatus, ...orderData, stall_id: stallId, timestamp: new Date().toISOString() };
-      
-      if (stallId) {
-        const channel = supabase.channel(`vendor_sync_${stallId}`);
-        channel.subscribe((status) => {
-          if (status === 'SUBSCRIBED') {
-            channel.send({ type: 'broadcast', event: 'order_new', payload: { order: fallbackOrder } });
-            setTimeout(() => supabase.removeChannel(channel), 1000);
-          }
-        });
-      }
-      return { success: true, order: fallbackOrder };
     }
+
+    // 1. Post to local backend API
+    const sqliteRes = await fetchAPI('/orders', {
+      method: 'POST',
+      body: JSON.stringify(payloadWithId)
+    });
+
+    const actualOrder = (sqliteRes && (sqliteRes.order || sqliteRes)) || { 
+      id: orderId, 
+      status: defaultStatus, 
+      ...payloadWithId, 
+      timestamp: new Date().toISOString(),
+      created_at: new Date().toISOString()
+    };
+
+    actualOrder.id = orderId;
+
+    // 2. Sync order to Supabase table
+    try {
+      const supabasePayload = {
+        id: orderId,
+        customerName: orderData.customerName,
+        customername: orderData.customerName,
+        customer_name: orderData.customerName,
+        customerId: orderData.customerId,
+        customerid: orderData.customerId,
+        customer_id: orderData.customerId,
+        type: orderData.type,
+        payment: orderData.payment,
+        total: orderData.total,
+        status: actualOrder.status || defaultStatus,
+        shop_id: stallId,
+        stall_id: stallId,
+        stallId: stallId,
+        items: Array.isArray(orderData.items) ? JSON.stringify(orderData.items) : orderData.items,
+        created_at: actualOrder.timestamp || actualOrder.created_at || new Date().toISOString()
+      };
+      await supabase.from('orders').insert(supabasePayload);
+    } catch (sbErr) {
+      console.error("Supabase order sync failed:", sbErr);
+    }
+
+    // Persist to localStorage immediately
+    const savedOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
+    if (!savedOrders.find(o => String(o.id) === String(orderId))) {
+      savedOrders.unshift(actualOrder);
+      localStorage.setItem('sgu_orders', JSON.stringify(savedOrders));
+    }
+    
+    // Broadcast new order directly to Vendor Dashboard
+    if (stallId) {
+      const channel = supabase.channel(`vendor_sync_${stallId}`);
+      channel.subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          channel.send({
+            type: 'broadcast',
+            event: 'order_new',
+            payload: { order: actualOrder }
+          });
+          setTimeout(() => supabase.removeChannel(channel), 1000);
+        }
+      });
+    }
+
+    return { success: true, order: actualOrder };
   },
 
   async resendReceipt(orderId, customEmail) {
