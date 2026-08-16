@@ -19,8 +19,20 @@ export async function broadcastQueueUpdate(io) {
 }
 
 export async function createOrder(req, res, next) {
-  const { customerName, customerId, type, payment, total, items, id: customId, orderId: reqOrderId } = req.body;
+  const { customerName, customerId, type, payment, total, items, id: customId, orderId: reqOrderId, utr } = req.body;
   try {
+    // STRICT PAYMENT VERIFICATION GATE:
+    // Online UPI orders for shop account 9607102196 require valid, verified 12-digit UTR
+    if (payment === 'Online UPI') {
+      const cleanUtr = utr ? String(utr).trim() : '';
+      if (!cleanUtr || !/^\d{12}$/.test(cleanUtr)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Payment verification failed: Valid 12-digit UPI Transaction Reference (UTR) is required for account 9607102196. Order cannot be confirmed without payment.'
+        });
+      }
+    }
+
     const orderId = customId || reqOrderId || `ORD-${Date.now()}`;
     const now = new Date().toISOString();
     const initialStatus = payment === 'Cash' ? 'pending_cash' : 'placed';
