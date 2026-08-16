@@ -44,7 +44,8 @@ const memStore = {
   menu_items: [],
   orders: [],
   order_items: [],
-  nextId: { users: 1, menu_items: 1, order_items: 1 }
+  payments: [],
+  nextId: { users: 1, menu_items: 1, order_items: 1, payments: 1 }
 };
 
 function convertSql(sql) {
@@ -67,6 +68,11 @@ export function normalizeRow(row) {
     else if (key === 'stallname') camelKey = 'stallName';
     else if (key === 'shopid') camelKey = 'shopId';
     else if (key === 'isveg') camelKey = 'isVeg';
+    else if (key === 'transactionref') camelKey = 'transactionRef';
+    else if (key === 'idempotencykey') camelKey = 'idempotencyKey';
+    else if (key === 'createdat') camelKey = 'createdAt';
+    else if (key === 'verifiedat') camelKey = 'verifiedAt';
+    else if (key === 'errormessage') camelKey = 'errorMessage';
     
     normalized[camelKey] = value;
   }
@@ -322,6 +328,55 @@ function executeMemRun(sql, params) {
     return { id, changes: order ? 1 : 0 };
   }
 
+  if (upper.startsWith('INSERT INTO PAYMENTS')) {
+    const [id, orderId, customerId, amount, currency, provider, status, transactionRef, idempotencyKey, metadata, errorMessage, createdAt, verifiedAt] = params;
+    const newPayment = { 
+      id, 
+      orderId, 
+      customerId, 
+      amount, 
+      currency: currency || 'INR', 
+      provider, 
+      status, 
+      transactionRef: transactionRef || null, 
+      idempotencyKey: idempotencyKey || null, 
+      metadata: metadata || null, 
+      errorMessage: errorMessage || null, 
+      createdAt: createdAt || new Date().toISOString(), 
+      verifiedAt: verifiedAt || null 
+    };
+    const existing = memStore.payments.find(p => p.id === id);
+    if (existing) Object.assign(existing, newPayment);
+    else memStore.payments.push(newPayment);
+    return { id, changes: 1 };
+  }
+
+  if (upper.startsWith('UPDATE PAYMENTS SET STATUS')) {
+    if (upper.includes('TRANSACTIONREF') && upper.includes('VERIFIEDAT')) {
+      const [status, transactionRef, verifiedAt, id] = params;
+      const payment = memStore.payments.find(p => p.id === id);
+      if (payment) {
+        payment.status = status;
+        payment.transactionRef = transactionRef;
+        payment.verifiedAt = verifiedAt;
+      }
+      return { id, changes: payment ? 1 : 0 };
+    } else if (upper.includes('ERRORMESSAGE')) {
+      const [status, errorMessage, id] = params;
+      const payment = memStore.payments.find(p => p.id === id);
+      if (payment) {
+        payment.status = status;
+        payment.errorMessage = errorMessage;
+      }
+      return { id, changes: payment ? 1 : 0 };
+    } else {
+      const [status, id] = params;
+      const payment = memStore.payments.find(p => p.id === id);
+      if (payment) payment.status = status;
+      return { id, changes: payment ? 1 : 0 };
+    }
+  }
+
   return { id: 1, changes: 0 };
 }
 
@@ -420,6 +475,40 @@ function executeMemAll(sql, params) {
   if (upper.includes('FROM ORDER_ITEMS WHERE ORDERID = ?')) {
     const [orderId] = params;
     return memStore.order_items.filter(i => i.orderId === orderId);
+  }
+
+  if (upper.includes('FROM PAYMENTS WHERE ID = ?')) {
+    const [id] = params;
+    const match = memStore.payments.find(p => p.id === id);
+    return match ? [match] : [];
+  }
+
+  if (upper.includes('FROM PAYMENTS WHERE ORDERID = ?')) {
+    const [orderId] = params;
+    const match = memStore.payments.find(p => p.orderId === orderId);
+    return match ? [match] : [];
+  }
+
+  if (upper.includes('FROM PAYMENTS WHERE TRANSACTIONREF = ? AND STATUS = \'SUCCESS\'')) {
+    const [transactionRef] = params;
+    const match = memStore.payments.find(p => p.transactionRef === transactionRef && p.status === 'SUCCESS');
+    return match ? [match] : [];
+  }
+
+  if (upper.includes('FROM PAYMENTS WHERE TRANSACTIONREF = ?')) {
+    const [transactionRef] = params;
+    const match = memStore.payments.find(p => p.transactionRef === transactionRef);
+    return match ? [match] : [];
+  }
+
+  if (upper.includes('FROM PAYMENTS WHERE IDEMPOTENCYKEY = ?')) {
+    const [idempotencyKey] = params;
+    const match = memStore.payments.find(p => p.idempotencyKey === idempotencyKey);
+    return match ? [match] : [];
+  }
+
+  if (upper.includes('FROM PAYMENTS')) {
+    return memStore.payments;
   }
 
   if (upper.includes('FROM ORDERS WHERE STATUS = \'COMPLETED\'')) {
@@ -549,10 +638,32 @@ export async function initDatabase() {
     );
   `);
 
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS payments (
+      id TEXT PRIMARY KEY,
+      orderId TEXT NOT NULL,
+      customerId TEXT NOT NULL,
+      amount REAL NOT NULL,
+      currency TEXT DEFAULT 'INR',
+      provider TEXT NOT NULL,
+      status TEXT NOT NULL,
+      transactionRef TEXT,
+      idempotencyKey TEXT,
+      metadata TEXT,
+      errorMessage TEXT,
+      createdAt TEXT NOT NULL,
+      verifiedAt TEXT,
+      FOREIGN KEY (orderId) REFERENCES orders(id) ON DELETE CASCADE
+    );
+  `);
+
   // Create indices to optimize query performance (Finding 9)
   await db.exec('CREATE INDEX IF NOT EXISTS idx_menu_items_stall_id ON menu_items (stallId);');
   await db.exec('CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON order_items (orderId);');
   await db.exec('CREATE INDEX IF NOT EXISTS idx_order_items_stall_id ON order_items (stallId);');
+  await db.exec('CREATE INDEX IF NOT EXISTS idx_payments_order_id ON payments (orderId);');
+  await db.exec('CREATE INDEX IF NOT EXISTS idx_payments_transaction_ref ON payments (transactionRef);');
+  await db.exec('CREATE INDEX IF NOT EXISTS idx_payments_idempotency_key ON payments (idempotencyKey);');
 
   // Seed Users if empty
   const userCount = await db.get('SELECT COUNT(*) as count FROM users');

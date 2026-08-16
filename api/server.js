@@ -20,6 +20,7 @@ import stallsRoutes from './routes/stalls.routes.js';
 import menuRoutes from './routes/menu.routes.js';
 import ordersRoutes from './routes/orders.routes.js';
 import adminRoutes from './routes/admin.routes.js';
+import paymentsRoutes from './routes/payments.routes.js';
 
 const DEFAULT_ORIGINS = [
   'https://smart-bite-rosy.vercel.app',
@@ -167,6 +168,9 @@ app.use('/api/v1/orders', ordersRoutes);
 
 app.use('/api/admin', adminRoutes);
 app.use('/api/v1/admin', adminRoutes);
+
+app.use('/api/payments', paymentsRoutes);
+app.use('/api/v1/payments', paymentsRoutes);
 
 // Global Error Handling Middleware
 app.use((err, req, res, next) => {
