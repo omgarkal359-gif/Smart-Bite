@@ -235,6 +235,44 @@ export const api = {
     });
   },
 
+  // ── Payments & Verification ─────────────────────────────────
+  async createPaymentIntent(payload) {
+    return await fetchAPI('/payments/create-intent', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  },
+
+  async verifyPayment(payload) {
+    const res = await fetchAPI('/payments/verify', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+
+    const confirmedOrder = res.order;
+    if (confirmedOrder && confirmedOrder.id) {
+      // Persist verified order to student's local history
+      const savedOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
+      if (!savedOrders.find(o => String(o.id) === String(confirmedOrder.id))) {
+        savedOrders.unshift(confirmedOrder);
+        localStorage.setItem('sgu_orders', JSON.stringify(savedOrders));
+      }
+    }
+
+    return res;
+  },
+
+  async cancelPayment(payload) {
+    return await fetchAPI('/payments/cancel', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  },
+
+  async getPaymentStatus(paymentId) {
+    return await fetchAPI(`/payments/${paymentId}/status`);
+  },
+
   // ── Orders ──────────────────────────────────────────────────
   async createOrder(orderData) {
     const stallId = orderData.items && orderData.items.length > 0 ? orderData.items[0].stallId : null;
@@ -266,51 +304,11 @@ export const api = {
 
     actualOrder.id = orderId;
 
-    // 2. Sync order to Supabase table
-    try {
-      const supabasePayload = {
-        id: orderId,
-        customerName: orderData.customerName,
-        customername: orderData.customerName,
-        customer_name: orderData.customerName,
-        customerId: orderData.customerId,
-        customerid: orderData.customerId,
-        customer_id: orderData.customerId,
-        type: orderData.type,
-        payment: orderData.payment,
-        total: orderData.total,
-        status: actualOrder.status || defaultStatus,
-        shop_id: stallId,
-        stall_id: stallId,
-        stallId: stallId,
-        items: Array.isArray(orderData.items) ? JSON.stringify(orderData.items) : orderData.items,
-        created_at: actualOrder.timestamp || actualOrder.created_at || new Date().toISOString()
-      };
-      await supabase.from('orders').insert(supabasePayload);
-    } catch (sbErr) {
-      console.error("Supabase order sync failed:", sbErr);
-    }
-
-    // Persist to localStorage immediately
+    // 2. Persist to localStorage only if order successfully confirmed or cash pending
     const savedOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
     if (!savedOrders.find(o => String(o.id) === String(orderId))) {
       savedOrders.unshift(actualOrder);
       localStorage.setItem('sgu_orders', JSON.stringify(savedOrders));
-    }
-    
-    // Broadcast new order directly to Vendor Dashboard
-    if (stallId) {
-      const channel = supabase.channel(`vendor_sync_${stallId}`);
-      channel.subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          channel.send({
-            type: 'broadcast',
-            event: 'order_new',
-            payload: { order: actualOrder }
-          });
-          setTimeout(() => supabase.removeChannel(channel), 1000);
-        }
-      });
     }
 
     return { success: true, order: actualOrder };

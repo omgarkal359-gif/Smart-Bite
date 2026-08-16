@@ -25,6 +25,7 @@ async function runAll() {
   try {
     await runTestFile('emailService.test.js');
     await runTestFile('controllers.test.js');
+    await runTestFile('paymentIntegrity.test.js');
 
     console.log('==================================================');
     console.log(' ALL BACKEND SUITES COMPLETED WITH 100% PASS RATE');

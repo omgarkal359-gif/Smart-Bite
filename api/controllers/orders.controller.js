@@ -21,21 +21,37 @@ export async function broadcastQueueUpdate(io) {
 export async function createOrder(req, res, next) {
   const { customerName, customerId, type, payment, total, items, id: customId, orderId: reqOrderId, utr } = req.body;
   try {
+    const orderId = customId || reqOrderId || `ORD-${Date.now()}`;
+    const paymentId = `PAY-${Date.now()}-${Math.floor(100000 + Math.random() * 900000)}`;
+    const now = new Date().toISOString();
+    const cleanUtr = utr ? String(utr).trim() : '';
+
     // STRICT PAYMENT VERIFICATION GATE:
     // Online UPI orders for shop account 9607102196 require valid, verified 12-digit UTR
     if (payment === 'Online UPI') {
-      const cleanUtr = utr ? String(utr).trim() : '';
       if (!cleanUtr || !/^\d{12}$/.test(cleanUtr)) {
         return res.status(400).json({
           success: false,
           error: 'Payment verification failed: Valid 12-digit UPI Transaction Reference (UTR) is required for account 9607102196. Order cannot be confirmed without payment.'
         });
       }
+
+      // Replay Attack Guard: Prevent using an already consumed UTR
+      const existingUsage = await db.get(
+        'SELECT * FROM payments WHERE transactionRef = ? AND status = ?',
+        [cleanUtr, 'SUCCESS']
+      );
+
+      if (existingUsage && existingUsage.orderId !== orderId) {
+        return res.status(400).json({
+          success: false,
+          error: `Payment verification failed: Transaction reference (UTR ${cleanUtr}) has already been consumed for order #${existingUsage.orderId}. Re-using payment references is strictly prohibited.`
+        });
+      }
     }
 
-    const orderId = customId || reqOrderId || `ORD-${Date.now()}`;
-    const now = new Date().toISOString();
     const initialStatus = payment === 'Cash' ? 'pending_cash' : 'placed';
+    const initialPaymentStatus = payment === 'Cash' ? 'PENDING' : 'SUCCESS';
 
     await db.transaction(async (tx) => {
       await tx.run(
@@ -49,6 +65,11 @@ export async function createOrder(req, res, next) {
           [orderId, item.id, item.name, item.price, item.quantity, item.stallId, item.stallName]
         );
       }
+
+      await tx.run(
+        'INSERT INTO payments (id, orderId, customerId, amount, currency, provider, status, transactionRef, idempotencyKey, metadata, errorMessage, createdAt, verifiedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [paymentId, orderId, customerId, total, 'INR', payment, initialPaymentStatus, cleanUtr || null, null, JSON.stringify({ shopAccount: '9607102196' }), null, now, initialPaymentStatus === 'SUCCESS' ? now : null]
+      );
     });
 
     const createdOrder = await db.get('SELECT * FROM orders WHERE id = ?', [orderId]);
