@@ -1,5 +1,6 @@
 import React, { lazy, Suspense, useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { Analytics } from '@vercel/analytics/react';
 import { MobileLayout } from './components/layout/MobileLayout';
 import { CartProvider } from './context/CartContext';
 import { supabase } from './supabaseClient';
@@ -224,6 +225,7 @@ function App() {
             <Route path="*" element={<Navigate to="/login" replace />} />
           </Routes>
         </Suspense>
+        <Analytics />
       </BrowserRouter>
     </CartProvider>
   );
