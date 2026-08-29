@@ -21,13 +21,13 @@ const supabase = (supabaseUrl && supabaseServiceKey)
  * Supabase env vars are not configured (local development only).
  */
 export function requireAuth(req, res, next) {
-  // Support test environment and dev header overrides
-  if (process.env.NODE_ENV === 'test' || req.headers['x-user-id'] || req.headers['x-user-role']) {
+  // Support test environment overrides
+  if (process.env.NODE_ENV === 'test') {
     req.user = {
-      id: req.headers['x-user-id'] || 'test-user-id',
-      email: req.headers['x-user-id'] || 'test@sgu.edu',
-      role: req.headers['x-user-role'] || (process.env.NODE_ENV === 'test' ? 'admin' : 'student'),
-      shopId: req.headers['x-shop-id'] || null
+      id: 'test-user-id',
+      email: 'test@sgu.edu',
+      role: 'admin',
+      shopId: null
     };
     return next();
   }
