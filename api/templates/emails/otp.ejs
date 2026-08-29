@@ -1,0 +1,9 @@
+<div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 28px 24px; background: #0B132B; color: #FFFFFF; border-radius: 16px;">
+  <h2 style="color: #E4002B; text-align: center; margin-top: 0;">SGU Smart-Bite Verification</h2>
+  <p style="font-size: 14px; text-align: center; color: #CBD5E1;">Hello<%= typeof userName !== 'undefined' && userName ? ' ' + userName : '' %>,</p>
+  <p style="font-size: 14px; text-align: center; color: #CBD5E1;">Use the One-Time Password (OTP) below to complete your authentication request:</p>
+  <div style="text-align: center; margin: 24px 0; background: #1C2541; padding: 20px; border-radius: 12px; border: 1px dashed #38BDF8;">
+    <span style="font-size: 32px; font-weight: 900; letter-spacing: 8px; color: #38BDF8;"><%= typeof otp !== 'undefined' ? otp : '123456' %></span>
+  </div>
+  <p style="font-size: 12px; color: #94A3B8; text-align: center;">This code will expire in <%= typeof expiryMinutes !== 'undefined' ? expiryMinutes : 10 %> minutes. Do not share this OTP with anyone.</p>
+</div>

@@ -1,0 +1,9 @@
+<div style="font-family: Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 28px 24px; background: #0F172A; color: #FFFFFF; border-radius: 16px; border: 1px solid #334155;">
+  <h2 style="color: #F59E0B; text-align: center; margin-top: 0; font-size: 22px;">⚠️ Admin System Alert</h2>
+  <div style="background: #1E293B; padding: 20px; border-radius: 12px; margin: 20px 0; border-left: 4px solid #F59E0B;">
+    <p style="margin: 0 0 10px 0; font-size: 14px; color: #F8FAFC;"><strong>Subject:</strong> <%= typeof subject !== 'undefined' ? subject : 'System Event' %></p>
+    <p style="margin: 0 0 10px 0; font-size: 13px; color: #94A3B8;"><strong>Timestamp:</strong> <%= new Date().toISOString() %></p>
+    <hr style="border: 0; border-top: 1px solid #334155; margin: 12px 0;">
+    <p style="margin: 0; font-size: 14px; color: #E2E8F0; white-space: pre-wrap;"><%= typeof message !== 'undefined' ? message : '' %></p>
+  </div>
+</div>

@@ -29,7 +29,8 @@ export const orderSchema = z.object({
     stallName: z.string().max(255).optional()
   })).min(1),
   id: z.string().max(255).optional(),
-  orderId: z.string().max(255).optional()
+  orderId: z.string().max(255).optional(),
+  utr: z.string().max(64).optional()
 });
 
 export const statusUpdateSchema = z.object({
