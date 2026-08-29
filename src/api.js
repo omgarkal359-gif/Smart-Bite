@@ -21,7 +21,7 @@ async function fetchAPI(endpoint, options = {}, retries = 2) {
   const method = (options.method || 'GET').toUpperCase();
   const cacheKey = `sb_cache_${endpoint}`;
 
-  let token = '';
+  let token = sessionStorage.getItem('sgu_token') || localStorage.getItem('sgu_token') || '';
   let storedUserId = 'student-local';
   let storedUserRole = 'student';
   try {
