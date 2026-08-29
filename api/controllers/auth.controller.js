@@ -169,3 +169,18 @@ export async function verifyRegistration(req, res, next) {
     next(err);
   }
 }
+
+export async function getMe(req, res, next) {
+  try {
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
+    const user = await db.get('SELECT * FROM users WHERE LOWER(username) = LOWER(?)', [req.user.email]);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    res.json({ success: true, user: sanitizeUser(user) });
+  } catch (err) {
+    next(err);
+  }
+}
