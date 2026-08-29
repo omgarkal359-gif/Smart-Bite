@@ -1,4 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
+import jwt from 'jsonwebtoken';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_for_local_dev_only_998877';
 
 import { config } from '../config.js';
 
@@ -41,6 +44,20 @@ export function requireAuth(req, res, next) {
   }
 
   const token = authHeader.split(' ')[1];
+
+  // Try verifying local JWT first
+  try {
+    const payload = jwt.verify(token, JWT_SECRET);
+    req.user = {
+      id: payload.id,
+      email: payload.email,
+      role: payload.role,
+      shopId: payload.shopId
+    };
+    return next();
+  } catch (err) {
+    // Local verification failed, let's try Supabase next
+  }
 
   if (!supabaseUrl || !supabaseServiceKey || !supabase) {
     // Local dev fallback: decode JWT payload without verification

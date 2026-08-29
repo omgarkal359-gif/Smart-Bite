@@ -8,6 +8,18 @@ function sanitizeUser(user) {
   return sanitized;
 }
 
+import jwt from 'jsonwebtoken';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_for_local_dev_only_998877';
+
+function generateToken(user) {
+  return jwt.sign(
+    { id: user.id, email: user.username, role: user.role, shopId: user.shopId },
+    JWT_SECRET,
+    { expiresIn: '7d' }
+  );
+}
+
 export async function login(req, res, next) {
   const { username, password, role, name } = req.body;
   try {
@@ -20,7 +32,7 @@ export async function login(req, res, next) {
         );
         user = await db.get('SELECT * FROM users WHERE LOWER(username) = LOWER(?) AND role = ?', [username, 'guest']);
       }
-      return res.json({ success: true, user: sanitizeUser(user) });
+      return res.json({ success: true, user: sanitizeUser(user), token: generateToken(user) });
     }
 
     if (role === 'student') {
@@ -38,7 +50,7 @@ export async function login(req, res, next) {
         }
       }
 
-      return res.json({ success: true, user: sanitizeUser(user) });
+      return res.json({ success: true, user: sanitizeUser(user), token: generateToken(user) });
     }
 
     if (role === 'owner') {
@@ -50,7 +62,7 @@ export async function login(req, res, next) {
       if (!isValid) {
         return res.status(401).json({ success: false, message: 'Invalid credentials.' });
       }
-      return res.json({ success: true, user: sanitizeUser(user) });
+      return res.json({ success: true, user: sanitizeUser(user), token: generateToken(user) });
     }
 
     if (!role || role === 'admin') {
@@ -65,7 +77,7 @@ export async function login(req, res, next) {
       if (!isValid) {
         return res.status(401).json({ success: false, message: 'Invalid credentials.' });
       }
-      return res.json({ success: true, user: sanitizeUser(user) });
+      return res.json({ success: true, user: sanitizeUser(user), token: generateToken(user) });
     }
 
     const user = await db.get(
@@ -80,7 +92,7 @@ export async function login(req, res, next) {
     if (!isValidPwd) {
       return res.status(401).json({ success: false, message: 'Invalid credentials.' });
     }
-    res.json({ success: true, user: sanitizeUser(user) });
+    res.json({ success: true, user: sanitizeUser(user), token: generateToken(user) });
   } catch (err) {
     next(err);
   }
