@@ -150,25 +150,32 @@ const getHealthStatus = async (req, res) => {
   }
 };
 
+app.get('/health', getHealthStatus);
 app.get('/api/health', getHealthStatus);
 app.get('/api/v1/health', getHealthStatus);
 
 // Mount routing files (backward compatible & versioned)
+app.use('/auth', authRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/v1/auth', authRoutes);
 
+app.use('/stalls', stallsRoutes);
 app.use('/api/stalls', stallsRoutes);
 app.use('/api/v1/stalls', stallsRoutes);
 
+app.use('/menu', menuRoutes);
 app.use('/api/menu', menuRoutes);
 app.use('/api/v1/menu', menuRoutes);
 
+app.use('/orders', ordersRoutes);
 app.use('/api/orders', ordersRoutes);
 app.use('/api/v1/orders', ordersRoutes);
 
+app.use('/admin', adminRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/v1/admin', adminRoutes);
 
+app.use('/payments', paymentsRoutes);
 app.use('/api/payments', paymentsRoutes);
 app.use('/api/v1/payments', paymentsRoutes);
 
