@@ -1,8 +1,32 @@
 import { createClient } from '@supabase/supabase-js';
+import pkg from 'pg';
+const { Pool } = pkg;
+import sqlite3Pkg from 'sqlite3';
+const sqlite3 = sqlite3Pkg.verbose();
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+const connectionString = process.env.DATABASE_URL || '';
+const pool = connectionString && !connectionString.includes('[YOUR-PASSWORD]') ? new Pool({ connectionString }) : null;
+
+let isPgActive = false;
+let isSqliteActive = false;
+let sqliteDb = null;
+
+const memStore = {
+  users: [],
+  stalls: [],
+  menu_items: [],
+  orders: [],
+  order_items: [],
+  nextId: { users: 1, menu_items: 1, order_items: 1 }
+};
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || 'https://hmdewtmtxgfyunyypcon.supabase.co';
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhtZGV3dG10eGdmeXVueXlwY29uIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0MDQ2NDQsImV4cCI6MjA5NTk4MDY0NH0.sy6oeke8atqEHPnkWKMZPK9ggbJp8J3HF6G-GFsJRGg';
-
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 function convertSql(sql) {

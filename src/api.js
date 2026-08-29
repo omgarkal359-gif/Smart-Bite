@@ -17,14 +17,16 @@ export const socket = {
 async function fetchAPI(endpoint, options = {}) {
   const url = `${API_BASE_URL}${endpoint}`;
 
-  let token = '';
-  try {
-    const { data } = await supabase.auth.getSession();
-    if (data?.session?.access_token) {
-      token = data.session.access_token;
+  let token = sessionStorage.getItem('sgu_token') || localStorage.getItem('sgu_token') || '';
+  if (!token) {
+    try {
+      const { data } = await supabase.auth.getSession();
+      if (data?.session?.access_token) {
+        token = data.session.access_token;
+      }
+    } catch (err) {
+      // Session optional / unauthenticated endpoints
     }
-  } catch (err) {
-    // Session optional / unauthenticated endpoints
   }
 
   const response = await fetch(url, {
@@ -55,6 +57,14 @@ async function fetchAPI(endpoint, options = {}) {
 const STATUS_WEIGHT = { 'placed': 1, 'pending_cash': 1, 'preparing': 2, 'ready': 3, 'completed': 4 };
 
 export const api = {
+  // ── Authentication ───────────────────────────────────────────
+  async login(identifier, password) {
+    return await fetchAPI('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ username: identifier, password })
+    });
+  },
+
   // ── Stalls ─────────────────────────────────────────────────
   async getStalls() {
     const stored = JSON.parse(localStorage.getItem('sgu_stalls') || '[]');

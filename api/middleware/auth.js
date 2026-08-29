@@ -3,12 +3,13 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
+import jwt from 'jsonwebtoken';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_for_local_dev_only_998877';
+
 /**
- * Middleware that verifies the Supabase JWT from the Authorization header.
+ * Middleware that verifies the Supabase JWT or local JWT from the Authorization header.
  * Sets req.user = { id, email, role } on success.
- *
- * Falls back to decoding the JWT payload without verification when
- * Supabase env vars are not configured (local development only).
  */
 export function requireAuth(req, res, next) {
   const authHeader = req.headers.authorization;
@@ -19,19 +20,21 @@ export function requireAuth(req, res, next) {
 
   const token = authHeader.split(' ')[1];
 
+  // Try verifying local JWT first
+  try {
+    const payload = jwt.verify(token, JWT_SECRET);
+    req.user = {
+      id: payload.id,
+      email: payload.email,
+      role: payload.role
+    };
+    return next();
+  } catch (err) {
+    // Local verification failed, let's try Supabase next
+  }
+
   if (!supabaseUrl || !supabaseServiceKey) {
-    // Local dev fallback: decode JWT payload without verification
-    try {
-      const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
-      req.user = {
-        id: payload.sub || payload.id,
-        email: payload.email,
-        role: payload.user_metadata?.role || payload.app_metadata?.role || payload.role || 'student'
-      };
-      return next();
-    } catch (err) {
-      return res.status(401).json({ success: false, message: 'Invalid token.' });
-    }
+    return res.status(401).json({ success: false, message: 'Invalid token.' });
   }
 
   // Verify with Supabase

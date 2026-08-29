@@ -8,6 +8,17 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import jwt from 'jsonwebtoken';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_for_local_dev_only_998877';
+
+function generateToken(user) {
+  return jwt.sign(
+    { id: user.id, email: user.username, role: user.role },
+    JWT_SECRET,
+    { expiresIn: '7d' }
+  );
+}
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -148,7 +159,7 @@ app.post('/api/auth/login', validate(loginSchema), async (req, res) => {
         );
         user = await db.get('SELECT * FROM users WHERE LOWER(username) = LOWER(?) AND role = ?', [username, 'guest']);
       }
-      return res.json({ success: true, user: sanitizeUser(user) });
+      return res.json({ success: true, user: sanitizeUser(user), token: generateToken(user) });
     }
 
     if (role === 'student') {
@@ -167,7 +178,7 @@ app.post('/api/auth/login', validate(loginSchema), async (req, res) => {
         }
       }
 
-      return res.json({ success: true, user: sanitizeUser(user) });
+      return res.json({ success: true, user: sanitizeUser(user), token: generateToken(user) });
     }
 
     if (role === 'owner') {
@@ -180,7 +191,7 @@ app.post('/api/auth/login', validate(loginSchema), async (req, res) => {
       if (!isValid) {
         return res.status(401).json({ success: false, message: 'Invalid credentials.' });
       }
-      return res.json({ success: true, user: sanitizeUser(user) });
+      return res.json({ success: true, user: sanitizeUser(user), token: generateToken(user) });
     }
 
     // Auto-detect role: look up by username regardless of role (covers admin & edge cases)
@@ -196,7 +207,7 @@ app.post('/api/auth/login', validate(loginSchema), async (req, res) => {
       if (!isValid) {
         return res.status(401).json({ success: false, message: 'Invalid credentials.' });
       }
-      return res.json({ success: true, user: sanitizeUser(user) });
+      return res.json({ success: true, user: sanitizeUser(user), token: generateToken(user) });
     }
 
     const user = await db.get(
@@ -211,7 +222,7 @@ app.post('/api/auth/login', validate(loginSchema), async (req, res) => {
     if (!isValidPwd) {
       return res.status(401).json({ success: false, message: 'Invalid credentials.' });
     }
-    res.json({ success: true, user: sanitizeUser(user) });
+    res.json({ success: true, user: sanitizeUser(user), token: generateToken(user) });
   } catch (err) {
     console.error(`[ERROR] POST /api/auth/login:`, err);
     res.status(500).json({ success: false, message: 'An internal error occurred.' });

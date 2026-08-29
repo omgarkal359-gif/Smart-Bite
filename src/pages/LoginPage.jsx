@@ -7,6 +7,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import { setStoredUser, getStoredUser, clearStoredUser } from '../utils/auth';
+import { api } from '../api';
 import sguLogo from '../assets/sgu-logo.jpg';
 import './LoginPage.css';
 
@@ -229,7 +230,36 @@ const LoginPage = () => {
       }
     }
 
-    // 2. Check local registered user accounts
+    // 2. Check local registered user accounts and backend server
+    try {
+      const response = await api.login(idInput, pwd);
+      if (response && response.token && response.user) {
+        // Store JWT token for subsequent API requests
+        sessionStorage.setItem('sgu_token', response.token);
+        if (rememberMe) localStorage.setItem('sgu_token', response.token);
+        
+        const u = response.user;
+        const role = u.role || 'student';
+        const name = u.name || idInput;
+        const shopId = u.shopId || null;
+        
+        saveUserLocally({ id: u.id, username: u.username, name, password: pwd, role, shopId });
+        finish(role, name, u.id, shopId);
+        return;
+      }
+    } catch (err) {
+      // If it's a 401 or 400 (Invalid credentials), show incorrect password
+      if (err.message.includes('401') || err.message.toLowerCase().includes('invalid')) {
+         setErrorMsg('Incorrect password. Please check your credentials and try again.');
+         setIsLoading(false);
+         return;
+      }
+      
+      // For any other error, fallback to checking local storage (in case backend is down)
+      console.warn('Backend login failed, checking local fallback:', err);
+    }
+    
+    // Fallback: Check local registered user accounts
     const allUsers = getSavedUsers();
     const match = allUsers.find(u => 
       (u.id && u.id.toLowerCase() === idInput.toLowerCase()) || 
