@@ -10,9 +10,12 @@ if (!process.env.VERCEL) {
   dotenv.config({ path: join(__dirname, '../.env') });
 }
 
+const nodeEnv = process.env.NODE_ENV;
+const isVercel = process.env.VERCEL;
+
 export const config = {
-  NODE_ENV: process.env.NODE_ENV ? process.env.NODE_ENV : 'development',
-  VERCEL: Boolean(process.env.VERCEL),
+  NODE_ENV: nodeEnv,
+  VERCEL: isVercel,
   
   // Database Configurations
   DATABASE_URL: process.env.DATABASE_URL || '',
