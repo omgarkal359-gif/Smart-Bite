@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import pg from 'pg';
+import os from 'os';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
@@ -548,12 +549,36 @@ export async function initDatabase() {
     try {
       if (!sqliteDb) {
         const sqlite3 = (await import('sqlite3')).default;
-        const dbPath = process.env.VERCEL ? '/tmp/database.sqlite' : join(__dirname, 'database.sqlite');
-        sqliteDb = new sqlite3.Database(dbPath);
+        const dbPath = join(os.tmpdir(), 'smart-bite-database.sqlite');
+        sqliteDb = new sqlite3.Database(dbPath, (err) => {
+          if (err) {
+            console.warn('[DATABASE WARNING] SQLite open failed: ' + err.message + '. Operating with fallback engine.');
+          }
+        });
+        // Consume runtime errors so a broken database can never crash the process
+        sqliteDb.on('error', () => {});
+      }
+      // Explicitly verify the database is usable before activating the engine
+      const opened = await Promise.race([
+        new Promise((resolve) => {
+          sqliteDb.get('SELECT 1', (err) => resolve(!err));
+        }),
+        new Promise((resolve) => setTimeout(() => resolve(false), 3000))
+      ]);
+      if (!opened) {
+        throw new Error('SQLite database could not be opened');
       }
       isSqliteActive = true;
     } catch (e) {
       isSqliteActive = false;
+      try {
+        if (sqliteDb) {
+          sqliteDb.close();
+          sqliteDb = null;
+        }
+      } catch (_closeErr) {
+        sqliteDb = null;
+      }
     }
   }
 
