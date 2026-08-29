@@ -1,6 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
 import pg from 'pg';
-import sqlite3 from 'sqlite3';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
@@ -550,9 +549,10 @@ export async function initDatabase() {
   }
 
   // 2. Try SQLite if PostgreSQL is not active
-  if (!isPgActive && sqlite3) {
+  if (!isPgActive) {
     try {
       if (!sqliteDb) {
+        const sqlite3 = (await import('sqlite3')).default;
         const dbPath = process.env.VERCEL ? '/tmp/database.sqlite' : join(__dirname, 'database.sqlite');
         sqliteDb = new sqlite3.Database(dbPath);
       }
