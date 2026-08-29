@@ -99,7 +99,7 @@ const LoginPage = () => {
 
 
 
-  const finish = (role, name, id, shopId = null) => {
+  const finish = (role, name, id, shopId = null, token = null) => {
     setIsLoading(false);
     setIsSuccess(true);
     const ud = {
@@ -110,6 +110,13 @@ const LoginPage = () => {
       timestamp: new Date().toISOString(),
       rememberMe,
     };
+    if (token) {
+      if (rememberMe) {
+        localStorage.setItem('sgu_token', token);
+      } else {
+        sessionStorage.setItem('sgu_token', token);
+      }
+    }
     setStoredUser(ud, rememberMe);
     setTimeout(() => { setIsSuccess(false); redirectByRole(ud.role, ud.shopId); }, 1400);
   };
@@ -158,7 +165,7 @@ const LoginPage = () => {
           const syncRes = await api.loginGoogle(idInput, data.user.user_metadata?.full_name || idInput.split('@')[0]);
           if (syncRes?.success && syncRes?.user) {
             const user = syncRes.user;
-            finish(user.role, user.name, user.username, user.shopId);
+            finish(user.role, user.name, user.username, user.shopId, syncRes.token);
             return;
           }
         }
@@ -178,7 +185,7 @@ const LoginPage = () => {
       const resData = await api.login(idInput, pwd, assumedRole);
       if (resData?.success && resData?.user) {
         const user = resData.user;
-        finish(user.role, user.name, user.username, user.shopId);
+        finish(user.role, user.name, user.username, user.shopId, resData.token);
       } else {
         setErrorMsg('Invalid username or password.');
         setIsLoading(false);
