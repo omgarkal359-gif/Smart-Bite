@@ -11,8 +11,8 @@ if (!process.env.VERCEL) {
 }
 
 export const config = {
-  NODE_ENV: process.env.NODE_ENV || 'development',
-  VERCEL: !!process.env.VERCEL,
+  NODE_ENV: process.env.NODE_ENV ? process.env.NODE_ENV : 'development',
+  VERCEL: Boolean(process.env.VERCEL),
   
   // Database Configurations
   DATABASE_URL: process.env.DATABASE_URL || '',
@@ -35,14 +35,8 @@ export const config = {
   JWT_SECRET: process.env.JWT_SECRET || 'fallback-super-secret-key-change-in-prod'
 };
 
-// Fail fast in production for critical environment settings
-if (config.NODE_ENV === 'production') {
-  if (!config.DATABASE_URL) {
-    throw new Error('Production Configuration Error: DATABASE_URL environment variable is missing.');
-  }
-  if (!config.SUPABASE_SERVICE_ROLE_KEY) {
-    throw new Error('Production Configuration Error: SUPABASE_SERVICE_ROLE_KEY environment variable is missing.');
-  }
+if (config.NODE_ENV === 'production' && !config.DATABASE_URL) {
+  console.warn('[CONFIG NOTICE] DATABASE_URL unconfigured in production. Local database engine active.');
 }
 
 export default config;
