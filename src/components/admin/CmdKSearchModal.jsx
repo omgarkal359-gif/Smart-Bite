@@ -117,7 +117,7 @@ export const CmdKSearchModal = ({ isOpen, onClose, onNavigateModule, onLogout })
           <div className="cmdk-results">
             {allResults.length === 0 ? (
               <div style={{ padding: '32px 16px', textAlign: 'center', color: '#94A3B8', fontSize: '0.875rem' }}>
-                No results found for "{query}"
+                No results found for &quot;{query}&quot;
               </div>
             ) : (
               allResults.map((item, idx) => {

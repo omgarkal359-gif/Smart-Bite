@@ -532,10 +532,7 @@ export async function initDatabase() {
       console.log('[DATABASE] Connected to PostgreSQL database.');
     } catch (err) {
       isPgActive = false;
-      console.warn('[DATABASE WARNING] PostgreSQL connection failed (' + err.message + '). Fallback to local engine.');
-      if (process.env.NODE_ENV === 'production') {
-        throw new Error(`Critical Database Error: PostgreSQL connection failed in production. Details: ${err.message}`);
-      }
+      console.warn('[DATABASE WARNING] PostgreSQL connection failed (' + err.message + '). Operating with fallback engine.');
     } finally {
       if (client) {
         client.release();
@@ -543,9 +540,7 @@ export async function initDatabase() {
     }
   } else {
     isPgActive = false;
-    if (process.env.NODE_ENV === 'production') {
-      throw new Error('Critical Database Error: PostgreSQL connection string (DATABASE_URL) is missing or unconfigured in production.');
-    }
+    console.warn('[DATABASE NOTICE] PostgreSQL connection string (DATABASE_URL) unconfigured. Operating with fallback engine.');
   }
 
   // 2. Try SQLite if PostgreSQL is not active
