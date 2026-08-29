@@ -13,55 +13,110 @@ export const socket = {
   disconnect: () => {}
 };
 
-// Helper for fetch calls with secure Supabase Authorization bearer token & strict JSON validation
-async function fetchAPI(endpoint, options = {}) {
-  const url = `${API_BASE_URL}${endpoint}`;
+// Local storage memory cache helper for offline resilience
+const memoryCache = new Map();
 
-  let token = sessionStorage.getItem('sgu_token') || localStorage.getItem('sgu_token') || '';
-  if (!token) {
+async function fetchAPI(endpoint, options = {}, retries = 2) {
+  const url = `${API_BASE_URL}${endpoint}`;
+  const method = (options.method || 'GET').toUpperCase();
+  const cacheKey = `sb_cache_${endpoint}`;
+
+  let token = '';
+  let storedUserId = 'student-local';
+  let storedUserRole = 'student';
+  try {
+    const rawUser = localStorage.getItem('user');
+    if (rawUser) {
+      const parsed = JSON.parse(rawUser);
+      storedUserId = parsed.id || parsed.username || storedUserId;
+      storedUserRole = parsed.role || storedUserRole;
+    }
+    const { data } = await supabase.auth.getSession();
+    if (data?.session?.access_token) {
+      token = data.session.access_token;
+    }
+  } catch (_err) {
+    // Session optional
+  }
+
+  for (let attempt = 0; attempt <= retries; attempt++) {
     try {
-      const { data } = await supabase.auth.getSession();
-      if (data?.session?.access_token) {
-        token = data.session.access_token;
+      const response = await fetch(url, {
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': String(storedUserId),
+          'x-user-role': String(storedUserRole),
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+          ...options.headers,
+        },
+        ...options,
+      });
+
+      const contentType = response.headers.get('content-type') || '';
+      const isJson = contentType.includes('application/json');
+
+      if (!response.ok) {
+        const errorData = isJson ? await response.json().catch(() => ({})) : {};
+        const errorMsg = errorData.error || errorData.message || `Server error (${response.status}). Please try again later.`;
+        const err = new Error(errorMsg);
+        err.status = response.status;
+        err.errorData = errorData;
+        throw err;
       }
+
+      if (isJson) {
+        const result = await response.json();
+        if (method === 'GET') {
+          memoryCache.set(cacheKey, result);
+          try { localStorage.setItem(cacheKey, JSON.stringify(result)); } catch (_e) {}
+        }
+        return result;
+      }
+      return null;
     } catch (err) {
-      // Session optional / unauthenticated endpoints
+      if (attempt < retries && method === 'GET') {
+        await new Promise(res => setTimeout(res, 500 * (attempt + 1)));
+        continue;
+      }
+
+      // Offline Cache Fallback for GET requests
+      if (method === 'GET') {
+        if (memoryCache.has(cacheKey)) {
+          return memoryCache.get(cacheKey);
+        }
+        try {
+          const cached = localStorage.getItem(cacheKey);
+          if (cached) return JSON.parse(cached);
+        } catch (_e) {}
+      }
+
+      throw err;
     }
   }
-
-  const response = await fetch(url, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-      ...options.headers,
-    },
-    ...options,
-  });
-
-  const contentType = response.headers.get('content-type') || '';
-  const isJson = contentType.includes('application/json');
-
-  if (!response.ok) {
-    const errorData = isJson ? await response.json().catch(() => ({})) : {};
-    throw new Error(errorData.message || `Server error (${response.status}). Please try again later.`);
-  }
-
-  if (isJson) {
-    return response.json();
-  }
-
-  // If endpoint returns non-JSON (like Vite SPA HTML fallback), throw so component catches and uses fallback data
-  throw new Error(`Endpoint ${endpoint} returned non-JSON response.`);
 }
 
 const STATUS_WEIGHT = { 'placed': 1, 'pending_cash': 1, 'preparing': 2, 'ready': 3, 'completed': 4 };
 
 export const api = {
-  // ── Authentication ───────────────────────────────────────────
-  async login(identifier, password) {
+  // ── Auth ────────────────────────────────────────────────────
+  async login(username, password, role) {
     return await fetchAPI('/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ username: identifier, password })
+      body: JSON.stringify({ username, password, role })
+    });
+  },
+
+  async register(username, name, password, role) {
+    return await fetchAPI('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({ username, name, password, role })
+    });
+  },
+
+  async loginGoogle(email, name) {
+    return await fetchAPI('/auth/login-google', {
+      method: 'POST',
+      body: JSON.stringify({ email, name })
     });
   },
 
@@ -157,157 +212,117 @@ export const api = {
   // ── Menu ────────────────────────────────────────────────────
   async getStallMenu(stallId) {
     try {
-      const { data, error } = await supabase.from('menu_items').select('*').eq('stallId', stallId);
-      if (!error && data && data.length > 0) return data;
-      const res = await supabase.from('menu_items').select('*').eq('stall_id', stallId);
-      if (!res.error && res.data && res.data.length > 0) return res.data;
+      const res = await fetchAPI(`/stalls/${stallId}/menu`);
+      if (Array.isArray(res)) return res;
     } catch (err) {
-      // fallback below
+      console.warn("Fetch menu failed, falling back to local list:", err);
     }
     const fallback = getItemsByStall(stallId);
     return (fallback && fallback.length > 0) ? fallback : ALL_FOOD_ITEMS.slice(0, 15);
   },
 
   async addMenuItem(stallId, itemData) {
-    try {
-      const { data, error } = await supabase.from('menu_items').insert({ stallId, ...itemData }).select();
-      if (!error && data) return data[0];
-      return await fetchAPI(`/stalls/${stallId}/menu`, {
-        method: 'POST',
-        body: JSON.stringify(itemData)
-      });
-    } catch (err) {
-      return { id: Date.now(), ...itemData };
-    }
+    return await fetchAPI(`/stalls/${stallId}/menu`, {
+      method: 'POST',
+      body: JSON.stringify(itemData)
+    });
   },
 
   async updateMenuItem(itemId, itemData) {
-    try {
-      const { data, error } = await supabase.from('menu_items').update(itemData).eq('id', itemId).select();
-      if (!error && data) return data[0];
-      return await fetchAPI(`/menu/${itemId}`, {
-        method: 'PUT',
-        body: JSON.stringify(itemData)
-      });
-    } catch (err) {
-      return { id: itemId, ...itemData };
-    }
+    return await fetchAPI(`/menu/${itemId}`, {
+      method: 'PUT',
+      body: JSON.stringify(itemData)
+    });
   },
 
-  // ── Orders ──────────────────────────────────────────────────
+  // ── Payments & Verification ─────────────────────────────────
+  async createPaymentIntent(payload) {
+    return await fetchAPI('/payments/create-intent', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  },
+
+  async verifyPayment(payload) {
+    const res = await fetchAPI('/payments/verify', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+
+    const confirmedOrder = res.order;
+    if (confirmedOrder && confirmedOrder.id) {
+      // Persist verified order to student's local history
+      const savedOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
+      if (!savedOrders.find(o => String(o.id) === String(confirmedOrder.id))) {
+        savedOrders.unshift(confirmedOrder);
+        localStorage.setItem('sgu_orders', JSON.stringify(savedOrders));
+      }
+    }
+
+    return res;
+  },
+
+  async cancelPayment(payload) {
+    return await fetchAPI('/payments/cancel', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  },
+
+  async getPaymentStatus(paymentId) {
+    return await fetchAPI(`/payments/${paymentId}/status`);
+  },
+
   // ── Orders ──────────────────────────────────────────────────
   async createOrder(orderData) {
     const stallId = orderData.items && orderData.items.length > 0 ? orderData.items[0].stallId : null;
     const defaultStatus = orderData.payment === 'Cash' ? 'pending_cash' : 'placed';
     const orderId = orderData.id || orderData.orderId || `ORD-${Date.now()}`;
-    const now = new Date().toISOString();
-    const actualOrder = {
-      id: orderId,
-      status: defaultStatus,
-      ...orderData,
-      timestamp: now,
-      created_at: now
+    const payloadWithId = { ...orderData, id: orderId };
+    
+    // Strict payment validation for Online UPI
+    if (orderData.payment === 'Online UPI') {
+      const cleanUtr = orderData.utr ? String(orderData.utr).trim() : '';
+      if (!cleanUtr || !/^\d{12}$/.test(cleanUtr)) {
+        throw new Error('Payment verification failed: Valid 12-digit UPI Transaction Reference (UTR) is required for account 9607102196. Order cannot be placed without verified payment.');
+      }
+    }
+
+    // 1. Post to local backend API
+    const sqliteRes = await fetchAPI('/orders', {
+      method: 'POST',
+      body: JSON.stringify(payloadWithId)
+    });
+
+    const actualOrder = (sqliteRes && (sqliteRes.order || sqliteRes)) || { 
+      id: orderId, 
+      status: defaultStatus, 
+      ...payloadWithId, 
+      timestamp: new Date().toISOString(),
+      created_at: new Date().toISOString()
     };
 
-    // 1. Post to local backend API first (if available)
-    try {
-      await fetchAPI('/orders', {
-        method: 'POST',
-        body: JSON.stringify(actualOrder)
-      });
-    } catch (err) {
-      // Local API offline / fallback
-    }
+    actualOrder.id = orderId;
 
-    // 2. Sync order and its items to Supabase tables
-    try {
-      const supabasePayload = {
-        id: orderId,
-        customername: orderData.customerName,
-        customerid: orderData.customerId,
-        type: orderData.type,
-        payment: orderData.payment,
-        status: defaultStatus,
-        total: orderData.total,
-        time: 'Just now',
-        timestamp: now
-      };
-      await supabase.from('orders').insert(supabasePayload);
-
-      if (Array.isArray(orderData.items)) {
-        const itemPayloads = orderData.items.map(item => ({
-          orderid: orderId,
-          itemid: item.id,
-          name: item.name,
-          price: item.price,
-          quantity: item.quantity,
-          stallid: item.stallId || item.stallid,
-          stallname: item.stallName || item.stallname
-        }));
-        await supabase.from('order_items').insert(itemPayloads);
-      }
-    } catch (sbErr) {
-      console.error("Supabase order sync failed:", sbErr);
-    }
-
-    // 3. Persist to localStorage immediately
-    try {
-      const savedOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
-      if (!savedOrders.find(o => String(o.id) === String(orderId))) {
-        savedOrders.unshift(actualOrder);
-        localStorage.setItem('sgu_orders', JSON.stringify(savedOrders));
-      }
-    } catch (e) {}
-
-    // 4. Broadcast new order directly to Vendor Dashboard
-    if (stallId) {
-      try {
-        const channel = supabase.channel(`vendor_sync_${stallId}`);
-        channel.subscribe((status) => {
-          if (status === 'SUBSCRIBED') {
-            channel.send({
-              type: 'broadcast',
-              event: 'order_new',
-              payload: { order: actualOrder }
-            });
-            setTimeout(() => supabase.removeChannel(channel), 1000);
-          }
-        });
-      } catch (e) {}
+    // 2. Persist to localStorage only if order successfully confirmed or cash pending
+    const savedOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
+    if (!savedOrders.find(o => String(o.id) === String(orderId))) {
+      savedOrders.unshift(actualOrder);
+      localStorage.setItem('sgu_orders', JSON.stringify(savedOrders));
     }
 
     return { success: true, order: actualOrder };
   },
 
   async resendReceipt(orderId, customEmail) {
-    try {
-      return await fetchAPI(`/orders/${orderId}/resend`, {
-        method: 'POST',
-        body: customEmail ? JSON.stringify({ customEmail }) : undefined
-      });
-    } catch (err) {
-      return { success: true };
-    }
+    return await fetchAPI(`/orders/${orderId}/resend`, {
+      method: 'POST',
+      body: customEmail ? JSON.stringify({ customEmail }) : undefined
+    });
   },
 
   async getOrderQueue() {
     try {
-      const { data, error } = await supabase.from('orders').select('*').order('timestamp', { ascending: false });
-      if (!error && data) {
-        const enriched = await Promise.all(data.map(async (order) => {
-          const { data: items } = await supabase.from('order_items').select('*').eq('orderid', order.id);
-          const firstItem = items && items.length > 0 ? items[0] : {};
-          return {
-            ...order,
-            customerName: order.customername || 'Guest User',
-            customerId: order.customerid || 'guest',
-            stallId: firstItem.stallid || null,
-            stallName: firstItem.stallname || null,
-            items: items || []
-          };
-        }));
-        return enriched;
-      }
       return await fetchAPI('/orders/queue');
     } catch (err) {
       return [];
@@ -321,15 +336,12 @@ export const api = {
       try {
         const { data, error } = await supabase.from('orders').select('*').eq('id', orderId).single();
         if (!error && data) {
-          const { data: items } = await supabase.from('order_items').select('*').eq('orderid', orderId);
-          const firstItem = items && items.length > 0 ? items[0] : {};
           order = {
             ...data,
-            customerId: data.customerid,
-            customerName: data.customername,
-            stallId: firstItem.stallid,
-            stallName: firstItem.stallname,
-            items: items || []
+            customerId: data.customer_id || data.customerId || data.customerid,
+            customerName: data.customer_name || data.customerName || data.customername,
+            stallId: data.stall_id || data.stallId || data.stallid,
+            stallName: data.stall_name || data.stallName || data.stallname,
           };
         }
       } catch (e) {}
@@ -380,25 +392,23 @@ export const api = {
 
   async getStudentOrders(customerId) {
     const ordersMap = new Map();
-
     // 1. Fetch from Supabase
     try {
-      const { data: d1 } = await supabase.from('orders').select('*').eq('customerid', customerId).order('timestamp', { ascending: false });
-      if (d1) {
-        await Promise.all(d1.map(async (o) => {
-          const { data: items } = await supabase.from('order_items').select('*').eq('orderid', o.id);
-          ordersMap.set(o.id, {
-            ...o,
-            customerName: o.customername,
-            customerId: o.customerid,
-            timestamp: o.timestamp,
-            items: items || []
-          });
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*')
+        .or(`customer_id.eq.${customerId},customerId.eq.${customerId},customerid.eq.${customerId}`);
+      if (!error && Array.isArray(data)) {
+        data.forEach(o => ordersMap.set(o.id, {
+          ...o,
+          customerId: o.customer_id || o.customerId || o.customerid,
+          customerName: o.customer_name || o.customerName || o.customername,
+          stallId: o.stall_id || o.stallId || o.stallid,
+          stallName: o.stall_name || o.stallName || o.stallname,
+          items: typeof o.items === 'string' ? JSON.parse(o.items || '[]') : (o.items || [])
         }));
       }
-    } catch (err) {
-      console.warn("Supabase fetch student orders failed:", err);
-    }
+    } catch (err) {}
 
     // 2. Fetch from REST backend API
     try {
@@ -438,31 +448,23 @@ export const api = {
 
   async getStallOrders(stallId) {
     const ordersMap = new Map();
-
     // 1. Fetch from Supabase
     try {
-      const { data: items, error: itemsErr } = await supabase.from('order_items').select('orderid').eq('stallid', stallId);
-      if (!itemsErr && items && items.length > 0) {
-        const orderIds = [...new Set(items.map(item => item.orderid))];
-        const { data: orders, error: ordersErr } = await supabase.from('orders').select('*').in('id', orderIds).order('timestamp', { ascending: false });
-        if (!ordersErr && orders) {
-          await Promise.all(orders.map(async (order) => {
-            const { data: oItems } = await supabase.from('order_items').select('*').eq('orderid', order.id);
-            const stallItems = oItems ? oItems.filter(oi => oi.stallid === stallId) : [];
-            ordersMap.set(order.id, {
-              ...order,
-              customerName: order.customername || 'Guest User',
-              customerId: order.customerid || 'guest',
-              timestamp: order.timestamp,
-              items: stallItems.map(si => `${si.quantity}x ${si.name}`).join(', '),
-              originalItems: stallItems
-            });
-          }));
-        }
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*')
+        .or(`stall_id.eq.${stallId},stallId.eq.${stallId},shop_id.eq.${stallId}`);
+      if (!error && Array.isArray(data)) {
+        data.forEach(o => ordersMap.set(o.id, {
+          ...o,
+          customerId: o.customer_id || o.customerId || o.customerid,
+          customerName: o.customer_name || o.customerName || o.customername,
+          stallId: o.stall_id || o.stallId || o.stallid,
+          stallName: o.stall_name || o.stallName || o.stallname,
+          items: typeof o.items === 'string' ? JSON.parse(o.items || '[]') : (o.items || [])
+        }));
       }
-    } catch (err) {
-      console.warn("Supabase fetch stall orders failed:", err);
-    }
+    } catch (err) {}
 
     // 2. Fetch from REST backend API
     try {
@@ -544,12 +546,11 @@ export const api = {
     try {
       const { data, error } = await supabase.from('orders').update({ status }).eq('id', orderId).select();
       const orderRow = data && data[0];
-      const customerId = orderRow?.customerid || null;
+      const customerId = orderRow?.customer_id || orderRow?.customerId || null;
 
       broadcastToStudent(orderId, status, customerId);
 
-      const { data: orderItems } = await supabase.from('order_items').select('stallid').eq('orderid', orderId);
-      const stallId = orderItems && orderItems.length > 0 ? orderItems[0].stallid : null;
+      const stallId = orderRow?.stall_id || orderRow?.stallId || null;
       if (stallId) {
         const vendorChannel = supabase.channel(`vendor_sync_${stallId}`);
         vendorChannel.subscribe(s => {
@@ -575,35 +576,39 @@ export const api = {
   // ── Admin ───────────────────────────────────────────────────
   async getAdminMetrics() {
     try {
+      const metrics = await fetchAPI('/admin/metrics').catch(() => null);
+      if (metrics && metrics.orders) {
+        return {
+          metrics: {
+            totalSales: metrics.totalSales || 0,
+            totalOrders: metrics.totalOrders || 0,
+            activeOrders: metrics.orders.filter(o => ['placed', 'preparing', 'pending', 'pending_cash'].includes(o.status)).length,
+            totalVendors: SHOPS.length,
+            healthScore: 99.9
+          },
+          orders: metrics.orders || []
+        };
+      }
+
       const { data, error } = await supabase.from('orders').select('*');
       if (!error && data) {
-        const enriched = await Promise.all(data.map(async (order) => {
-          const { data: items } = await supabase.from('order_items').select('*').eq('orderid', order.id);
-          const firstItem = items && items.length > 0 ? items[0] : {};
-          return {
-            ...order,
-            customerName: order.customername || 'Guest User',
-            customerId: order.customerid || 'guest',
-            stallId: firstItem.stallid || null,
-            stallName: firstItem.stallname || null,
-            items: items || []
-          };
-        }));
-        
-        const totalSales = enriched.reduce((acc, o) => acc + (Number(o.total) || 0), 0);
-        const activeOrders = enriched.filter(o => ['placed', 'preparing', 'pending', 'pending_cash'].includes(o.status)).length;
+        const totalSales = data.reduce((acc, o) => acc + (Number(o.total) || 0), 0);
+        const activeOrders = data.filter(o => ['placed', 'preparing', 'pending', 'pending_cash'].includes(o.status)).length;
         return {
           metrics: {
             totalSales,
-            totalOrders: enriched.length,
+            totalOrders: data.length,
             activeOrders,
             totalVendors: SHOPS.length,
             healthScore: 99.9
           },
-          orders: enriched
+          orders: data
         };
       }
-      return fetchAPI('/admin/metrics');
+      return {
+        metrics: { totalSales: 0, totalOrders: 0, activeOrders: 0, totalVendors: SHOPS.length, healthScore: 99.9 },
+        orders: []
+      };
     } catch (err) {
       return {
         metrics: { totalSales: 0, totalOrders: 0, activeOrders: 0, totalVendors: SHOPS.length, healthScore: 99.9 },
@@ -614,9 +619,7 @@ export const api = {
 
   async getAdminUsers() {
     try {
-      const { data, error } = await supabase.from('profiles').select('*');
-      if (!error && data) return data;
-      return fetchAPI('/admin/users');
+      return await fetchAPI('/admin/users');
     } catch (err) {
       return [];
     }

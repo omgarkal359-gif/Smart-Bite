@@ -1,0 +1,19 @@
+<div style="font-family: Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 32px 24px; background: #0B132B; color: #FFFFFF; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.3);">
+  <h2 style="color: #E4002B; text-align: center; margin-top: 0; font-size: 26px;">Welcome to SGU Smart-Bite! 🍔</h2>
+  <p style="font-size: 15px; color: #E2E8F0; line-height: 1.6;">Hello <%= typeof userName !== 'undefined' && userName ? userName : 'Student' %>,</p>
+  <p style="font-size: 14px; color: #CBD5E1; line-height: 1.6;">
+    Welcome to Sanjay Ghodawat University's premier digital food court ordering system. Skip lines, order ahead, and track your food status live from anywhere on campus!
+  </p>
+  <div style="background-color: #1C2541; padding: 20px; border-radius: 12px; margin: 24px 0; border-left: 4px solid #E4002B;">
+    <h3 style="margin: 0 0 8px 0; font-size: 15px; color: #38BDF8;">Quick Tips to Get Started:</h3>
+    <ul style="margin: 0; padding-left: 20px; color: #94A3B8; font-size: 13px; line-height: 1.7;">
+      <li>Browse real-time stall menus and live status.</li>
+      <li>Pay instantly via UPI or choose Cash at pickup.</li>
+      <li>Get digital receipts sent straight to your email.</li>
+    </ul>
+  </div>
+  <div style="text-align: center; margin: 28px 0;">
+    <a href="<%= typeof loginLink !== 'undefined' ? loginLink : 'https://smart-bite-rosy.vercel.app/login' %>" style="background: #E4002B; color: #FFFFFF; padding: 14px 32px; border-radius: 12px; text-decoration: none; font-weight: bold; font-size: 15px; display: inline-block;">Explore Menu & Order Now</a>
+  </div>
+  <p style="font-size: 12px; color: #64748B; text-align: center; margin-bottom: 0;">Have questions? Contact <%= typeof supportEmail !== 'undefined' ? supportEmail : 'smartbite.sgu@gmail.com' %></p>
+</div>

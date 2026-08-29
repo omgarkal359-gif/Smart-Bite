@@ -1,16 +1,38 @@
 import { createClient } from '@supabase/supabase-js';
-import pkg from 'pg';
-const { Pool } = pkg;
-import sqlite3Pkg from 'sqlite3';
-const sqlite3 = sqlite3Pkg.verbose();
-import { join, dirname } from 'path';
+import pg from 'pg';
+import sqlite3 from 'sqlite3';
 import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+import { config } from './config.js';
+
+const { Pool } = pg;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const connectionString = process.env.DATABASE_URL || '';
-const pool = connectionString && !connectionString.includes('[YOUR-PASSWORD]') ? new Pool({ connectionString }) : null;
+const supabaseUrl = config.SUPABASE_URL;
+const supabaseKey = config.SUPABASE_SERVICE_ROLE_KEY || config.SUPABASE_ANON_KEY;
+
+let supabase = null;
+if (supabaseUrl && supabaseKey && supabaseUrl.startsWith('http')) {
+  try {
+    supabase = createClient(supabaseUrl, supabaseKey);
+  } catch (_err) {
+    // Ignored in offline / test environments
+  }
+}
+
+// Connection configuration & variables
+const connectionString = config.DATABASE_URL || process.env.DATABASE_URL || '';
+let pool = null;
+if (connectionString && !connectionString.includes('[YOUR-PASSWORD]')) {
+  pool = new Pool({
+    connectionString,
+    idleTimeoutMillis: 5000, // Close idle connections after 5 seconds
+    max: 10 // Maximum pool size
+  });
+}
 
 let isPgActive = false;
 let isSqliteActive = false;
@@ -22,16 +44,39 @@ const memStore = {
   menu_items: [],
   orders: [],
   order_items: [],
-  nextId: { users: 1, menu_items: 1, order_items: 1 }
+  payments: [],
+  nextId: { users: 1, menu_items: 1, order_items: 1, payments: 1 }
 };
-
-const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || 'https://hmdewtmtxgfyunyypcon.supabase.co';
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhtZGV3dG10eGdmeXVueXlwY29uIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0MDQ2NDQsImV4cCI6MjA5NTk4MDY0NH0.sy6oeke8atqEHPnkWKMZPK9ggbJp8J3HF6G-GFsJRGg';
-const supabase = createClient(supabaseUrl, supabaseKey);
 
 function convertSql(sql) {
   let index = 1;
   return sql.replace(/\?/g, () => `$${index++}`);
+}
+
+export function normalizeRow(row) {
+  if (!row || typeof row !== 'object' || Array.isArray(row)) return row;
+  const normalized = {};
+  for (const [key, value] of Object.entries(row)) {
+    let camelKey = key;
+    if (key === 'busymode') camelKey = 'busyMode';
+    else if (key === 'waittime') camelKey = 'waitTime';
+    else if (key === 'customername') camelKey = 'customerName';
+    else if (key === 'customerid') camelKey = 'customerId';
+    else if (key === 'orderid') camelKey = 'orderId';
+    else if (key === 'itemid') camelKey = 'itemId';
+    else if (key === 'stallid') camelKey = 'stallId';
+    else if (key === 'stallname') camelKey = 'stallName';
+    else if (key === 'shopid') camelKey = 'shopId';
+    else if (key === 'isveg') camelKey = 'isVeg';
+    else if (key === 'transactionref') camelKey = 'transactionRef';
+    else if (key === 'idempotencykey') camelKey = 'idempotencyKey';
+    else if (key === 'createdat') camelKey = 'createdAt';
+    else if (key === 'verifiedat') camelKey = 'verifiedAt';
+    else if (key === 'errormessage') camelKey = 'errorMessage';
+    
+    normalized[camelKey] = value;
+  }
+  return normalized;
 }
 
 export const db = {
@@ -57,38 +102,42 @@ export const db = {
   },
 
   async all(sql, params = []) {
+    let rows = [];
     if (isPgActive) {
       const pgSql = convertSql(sql);
       const res = await pool.query(pgSql, params);
-      return res.rows;
+      rows = res.rows || [];
     } else if (isSqliteActive && sqliteDb) {
-      return new Promise((resolve, reject) => {
-        sqliteDb.all(sql, params, (err, rows) => {
+      rows = await new Promise((resolve, reject) => {
+        sqliteDb.all(sql, params, (err, r) => {
           if (err) reject(err);
-          else resolve(rows || []);
+          else resolve(r || []);
         });
       });
     } else {
-      return executeMemAll(sql, params);
+      rows = executeMemAll(sql, params);
     }
+    return rows.map(normalizeRow);
   },
 
   async get(sql, params = []) {
+    let row = null;
     if (isPgActive) {
       const pgSql = convertSql(sql);
       const res = await pool.query(pgSql, params);
-      return res.rows[0] || null;
+      row = res.rows[0] || null;
     } else if (isSqliteActive && sqliteDb) {
-      return new Promise((resolve, reject) => {
-        sqliteDb.get(sql, params, (err, row) => {
+      row = await new Promise((resolve, reject) => {
+        sqliteDb.get(sql, params, (err, r) => {
           if (err) reject(err);
-          else resolve(row || null);
+          else resolve(r || null);
         });
       });
     } else {
       const rows = executeMemAll(sql, params);
-      return rows[0] || null;
+      row = rows[0] || null;
     }
+    return row ? normalizeRow(row) : null;
   },
 
   async exec(sql) {
@@ -104,6 +153,80 @@ export const db = {
       });
     }
     // For pure JS memory store, schema initialization is dynamic
+  },
+
+  async transaction(callback) {
+    if (isPgActive && pool) {
+      const client = await pool.connect();
+      try {
+        await client.query('BEGIN');
+        const tx = {
+          async run(sql, params = []) {
+            let pgSql = convertSql(sql);
+            if (pgSql.trim().toUpperCase().startsWith('INSERT ') && !pgSql.trim().toUpperCase().includes('RETURNING')) {
+              pgSql = `${pgSql} RETURNING id`;
+            }
+            const res = await client.query(pgSql, params);
+            return { id: res.rows[0]?.id || null, changes: res.rowCount };
+          },
+          async all(sql, params = []) {
+            const pgSql = convertSql(sql);
+            const res = await client.query(pgSql, params);
+            return res.rows.map(normalizeRow);
+          },
+          async get(sql, params = []) {
+            const pgSql = convertSql(sql);
+            const res = await client.query(pgSql, params);
+            return res.rows[0] ? normalizeRow(res.rows[0]) : null;
+          },
+          async exec(sql) {
+            const pgSql = convertSql(sql);
+            await client.query(pgSql);
+          }
+        };
+        const result = await callback(tx);
+        await client.query('COMMIT');
+        return result;
+      } catch (err) {
+        await client.query('ROLLBACK');
+        throw err;
+      } finally {
+        client.release();
+      }
+    } else if (isSqliteActive && sqliteDb) {
+      return new Promise((resolve, reject) => {
+        sqliteDb.serialize(async () => {
+          try {
+            await new Promise((res, rej) => {
+              sqliteDb.run('BEGIN TRANSACTION', (err) => {
+                if (err) rej(err);
+                else res();
+              });
+            });
+            const result = await callback(db);
+            await new Promise((res, rej) => {
+              sqliteDb.run('COMMIT', (err) => {
+                if (err) rej(err);
+                else res();
+              });
+            });
+            resolve(result);
+          } catch (err) {
+            sqliteDb.run('ROLLBACK', () => {});
+            reject(err);
+          }
+        });
+      });
+    } else {
+      const backup = JSON.parse(JSON.stringify(memStore));
+      try {
+        const result = await callback(db);
+        return result;
+      } catch (err) {
+        Object.assign(memStore, backup);
+        throw err;
+      }
+    }
   }
 };
 
@@ -203,6 +326,55 @@ function executeMemRun(sql, params) {
     const order = memStore.orders.find(o => o.id === id);
     if (order) order.status = status;
     return { id, changes: order ? 1 : 0 };
+  }
+
+  if (upper.startsWith('INSERT INTO PAYMENTS')) {
+    const [id, orderId, customerId, amount, currency, provider, status, transactionRef, idempotencyKey, metadata, errorMessage, createdAt, verifiedAt] = params;
+    const newPayment = { 
+      id, 
+      orderId, 
+      customerId, 
+      amount, 
+      currency: currency || 'INR', 
+      provider, 
+      status, 
+      transactionRef: transactionRef || null, 
+      idempotencyKey: idempotencyKey || null, 
+      metadata: metadata || null, 
+      errorMessage: errorMessage || null, 
+      createdAt: createdAt || new Date().toISOString(), 
+      verifiedAt: verifiedAt || null 
+    };
+    const existing = memStore.payments.find(p => p.id === id);
+    if (existing) Object.assign(existing, newPayment);
+    else memStore.payments.push(newPayment);
+    return { id, changes: 1 };
+  }
+
+  if (upper.startsWith('UPDATE PAYMENTS SET STATUS')) {
+    if (upper.includes('TRANSACTIONREF') && upper.includes('VERIFIEDAT')) {
+      const [status, transactionRef, verifiedAt, id] = params;
+      const payment = memStore.payments.find(p => p.id === id);
+      if (payment) {
+        payment.status = status;
+        payment.transactionRef = transactionRef;
+        payment.verifiedAt = verifiedAt;
+      }
+      return { id, changes: payment ? 1 : 0 };
+    } else if (upper.includes('ERRORMESSAGE')) {
+      const [status, errorMessage, id] = params;
+      const payment = memStore.payments.find(p => p.id === id);
+      if (payment) {
+        payment.status = status;
+        payment.errorMessage = errorMessage;
+      }
+      return { id, changes: payment ? 1 : 0 };
+    } else {
+      const [status, id] = params;
+      const payment = memStore.payments.find(p => p.id === id);
+      if (payment) payment.status = status;
+      return { id, changes: payment ? 1 : 0 };
+    }
   }
 
   return { id: 1, changes: 0 };
@@ -305,6 +477,40 @@ function executeMemAll(sql, params) {
     return memStore.order_items.filter(i => i.orderId === orderId);
   }
 
+  if (upper.includes('FROM PAYMENTS WHERE ID = ?')) {
+    const [id] = params;
+    const match = memStore.payments.find(p => p.id === id);
+    return match ? [match] : [];
+  }
+
+  if (upper.includes('FROM PAYMENTS WHERE ORDERID = ?')) {
+    const [orderId] = params;
+    const match = memStore.payments.find(p => p.orderId === orderId);
+    return match ? [match] : [];
+  }
+
+  if (upper.includes('FROM PAYMENTS WHERE TRANSACTIONREF = ? AND STATUS = \'SUCCESS\'')) {
+    const [transactionRef] = params;
+    const match = memStore.payments.find(p => p.transactionRef === transactionRef && p.status === 'SUCCESS');
+    return match ? [match] : [];
+  }
+
+  if (upper.includes('FROM PAYMENTS WHERE TRANSACTIONREF = ?')) {
+    const [transactionRef] = params;
+    const match = memStore.payments.find(p => p.transactionRef === transactionRef);
+    return match ? [match] : [];
+  }
+
+  if (upper.includes('FROM PAYMENTS WHERE IDEMPOTENCYKEY = ?')) {
+    const [idempotencyKey] = params;
+    const match = memStore.payments.find(p => p.idempotencyKey === idempotencyKey);
+    return match ? [match] : [];
+  }
+
+  if (upper.includes('FROM PAYMENTS')) {
+    return memStore.payments;
+  }
+
   if (upper.includes('FROM ORDERS WHERE STATUS = \'COMPLETED\'')) {
     return memStore.orders.filter(o => o.status === 'completed');
   }
@@ -318,19 +524,29 @@ function executeMemAll(sql, params) {
 
 export async function initDatabase() {
   // 1. Test PostgreSQL connection
-  if (connectionString && !connectionString.includes('[YOUR-PASSWORD]')) {
+  if (connectionString && !connectionString.includes('[YOUR-PASSWORD]') && pool) {
+    let client;
     try {
-      const client = await pool.connect();
+      client = await pool.connect();
       await client.query('SELECT 1');
-      client.release();
       isPgActive = true;
       console.log('[DATABASE] Connected to PostgreSQL database.');
     } catch (err) {
       isPgActive = false;
       console.warn('[DATABASE WARNING] PostgreSQL connection failed (' + err.message + '). Fallback to local engine.');
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error(`Critical Database Error: PostgreSQL connection failed in production. Details: ${err.message}`);
+      }
+    } finally {
+      if (client) {
+        client.release();
+      }
     }
   } else {
     isPgActive = false;
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('Critical Database Error: PostgreSQL connection string (DATABASE_URL) is missing or unconfigured in production.');
+    }
   }
 
   // 2. Try SQLite if PostgreSQL is not active
@@ -384,7 +600,8 @@ export async function initDatabase() {
       category TEXT,
       stock INTEGER,
       img TEXT,
-      available INTEGER DEFAULT 1
+      available INTEGER DEFAULT 1,
+      FOREIGN KEY (stallId) REFERENCES stalls(id) ON DELETE CASCADE
     );
   `);
 
@@ -415,9 +632,38 @@ export async function initDatabase() {
       price REAL,
       quantity INTEGER,
       stallId TEXT,
-      stallName TEXT
+      stallName TEXT,
+      FOREIGN KEY (orderId) REFERENCES orders(id) ON DELETE CASCADE,
+      FOREIGN KEY (stallId) REFERENCES stalls(id) ON DELETE SET NULL
     );
   `);
+
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS payments (
+      id TEXT PRIMARY KEY,
+      orderId TEXT NOT NULL,
+      customerId TEXT NOT NULL,
+      amount REAL NOT NULL,
+      currency TEXT DEFAULT 'INR',
+      provider TEXT NOT NULL,
+      status TEXT NOT NULL,
+      transactionRef TEXT,
+      idempotencyKey TEXT,
+      metadata TEXT,
+      errorMessage TEXT,
+      createdAt TEXT NOT NULL,
+      verifiedAt TEXT,
+      FOREIGN KEY (orderId) REFERENCES orders(id) ON DELETE CASCADE
+    );
+  `);
+
+  // Create indices to optimize query performance (Finding 9)
+  await db.exec('CREATE INDEX IF NOT EXISTS idx_menu_items_stall_id ON menu_items (stallId);');
+  await db.exec('CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON order_items (orderId);');
+  await db.exec('CREATE INDEX IF NOT EXISTS idx_order_items_stall_id ON order_items (stallId);');
+  await db.exec('CREATE INDEX IF NOT EXISTS idx_payments_order_id ON payments (orderId);');
+  await db.exec('CREATE INDEX IF NOT EXISTS idx_payments_transaction_ref ON payments (transactionRef);');
+  await db.exec('CREATE INDEX IF NOT EXISTS idx_payments_idempotency_key ON payments (idempotencyKey);');
 
   // Seed Users if empty
   const userCount = await db.get('SELECT COUNT(*) as count FROM users');
@@ -642,5 +888,35 @@ export async function initDatabase() {
         [item.stallId, item.name, item.price, item.isVeg, item.category, item.stock, 1, img]
       );
     }
+  }
+}
+
+export async function ping() {
+  if (isPgActive && pool) {
+    const res = await pool.query('SELECT 1');
+    return res.rowCount > 0;
+  } else if (isSqliteActive && sqliteDb) {
+    return new Promise((resolve) => {
+      sqliteDb.get('SELECT 1', (err) => {
+        resolve(!err);
+      });
+    });
+  }
+  return true; // fallback memory engine is always active
+}
+
+export async function close() {
+  if (pool) {
+    await pool.end();
+    console.log('[DATABASE] PostgreSQL connection pool closed.');
+  }
+  if (sqliteDb) {
+    await new Promise((resolve, reject) => {
+      sqliteDb.close((err) => {
+        if (err) reject(err);
+        else resolve();
+      });
+    });
+    console.log('[DATABASE] SQLite database connection closed.');
   }
 }

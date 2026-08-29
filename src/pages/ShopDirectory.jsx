@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GlassCard } from '../components/ui/GlassCard';
-import { Clock, Wifi, WifiOff, Search, Flame, Star } from 'lucide-react';
+import { Clock, Search, Flame, Star } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { SHOPS, searchFoodItems } from '../data/foodCourtDB';
 import { api, socket } from '../api';

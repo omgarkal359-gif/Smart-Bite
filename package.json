@@ -16,6 +16,7 @@
     "@supabase/supabase-js": "^2.111.0",
     "@tabler/icons-react": "^3.45.0",
     "canvas-confetti": "^1.9.4",
+    "ejs": "^3.1.10",
     "framer-motion": "^12.38.0",
     "lucide-react": "^0.344.0",
     "nodemailer": "^8.0.11",
