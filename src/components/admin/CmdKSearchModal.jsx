@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Search, ShoppingBag, Store, Users, Settings, ShieldAlert, ArrowRight, X, Command, LogOut } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '../../api';
@@ -7,7 +7,6 @@ import { SHOPS } from '../../data/foodCourtDB';
 export const CmdKSearchModal = ({ isOpen, onClose, onNavigateModule, onLogout }) => {
   const [query, setQuery] = useState('');
   const [orders, setOrders] = useState([]);
-  const [users, setUsers] = useState([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef(null);
 
@@ -117,7 +116,7 @@ export const CmdKSearchModal = ({ isOpen, onClose, onNavigateModule, onLogout })
           <div className="cmdk-results">
             {allResults.length === 0 ? (
               <div style={{ padding: '32px 16px', textAlign: 'center', color: '#94A3B8', fontSize: '0.875rem' }}>
-                No results found for "{query}"
+                No results found for &quot;{query}&quot;
               </div>
             ) : (
               allResults.map((item, idx) => {

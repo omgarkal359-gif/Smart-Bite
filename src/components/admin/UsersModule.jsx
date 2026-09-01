@@ -1,15 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Users, ShieldAlert, UserCheck, UserX, Search, 
-  RefreshCw, CheckCircle, Shield 
-} from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { ShieldAlert, UserX, Search, RefreshCw } from 'lucide-react';
 import { api } from '../../api';
 
 export const UsersModule = () => {
   const [users, setUsers] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState('ALL');
-  const [isLoading, setIsLoading] = useState(true);
   const [blacklistPrn, setBlacklistPrn] = useState('');
 
   useEffect(() => {
@@ -17,7 +13,6 @@ export const UsersModule = () => {
   }, []);
 
   async function loadUsers() {
-    setIsLoading(true);
     try {
       const data = await api.getAdminUsers();
       setUsers(data || []);
@@ -32,8 +27,6 @@ export const UsersModule = () => {
         { id: 5, username: 'tea-coffee', name: 'Tea & Coffee Owner', role: 'owner', shopId: 'tea-coffee' },
         { id: 6, username: 'rohit-vadewale', name: 'Rohit Vadewale Owner', role: 'owner', shopId: 'rohit-vadewale' },
       ]);
-    } finally {
-      setIsLoading(false);
     }
   }
 

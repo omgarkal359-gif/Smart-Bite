@@ -1,8 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  ShieldAlert, RefreshCw, Download, Search, Filter, 
-  Info, AlertTriangle, AlertCircle, ShieldCheck, Terminal 
-} from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { RefreshCw, Download, Search, Terminal } from 'lucide-react';
 
 export const SystemLogsModule = () => {
   const [logs, setLogs] = useState([]);
@@ -120,7 +117,7 @@ export const SystemLogsModule = () => {
           <div className="flex flex-col gap-2">
             {filteredLogs.length === 0 ? (
               <div style={{ color: '#64748B', padding: 20, textAlign: 'center' }}>
-                No log entries matching filter "{logFilter}".
+                No log entries matching filter &quot;{logFilter}&quot;.
               </div>
             ) : (
               filteredLogs.map(log => {
