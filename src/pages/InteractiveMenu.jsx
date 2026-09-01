@@ -1,7 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { Leaf, Flame, Pizza, Coffee, Sandwich, WifiOff, Utensils } from 'lucide-react';
-import { CheckoutDrawer } from '../components/ui/CheckoutDrawer';
+import { useState, useEffect, useMemo } from 'react';
+import { useParams, useSearchParams } from 'react-router-dom';
+import { Flame, Pizza, Coffee, Sandwich, WifiOff, Utensils } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCart } from '../context/CartContext';
 import { api, socket } from '../api';
@@ -47,7 +46,7 @@ const InteractiveMenu = () => {
   const highlightId = searchParams.get('highlight');
   const targetCategory = searchParams.get('category');
 
-  const { cart, addToCart, removeFromCart, clearCart, totalItems, isCheckoutOpen, setIsCheckoutOpen } = useCart();
+  const { cart, addToCart, removeFromCart, clearCart, totalItems, setIsCheckoutOpen } = useCart();
 
   // Initial state derived synchronously from foodCourtDB
   const initialItems = useMemo(() => {
@@ -64,7 +63,7 @@ const InteractiveMenu = () => {
   const [inventory, setInventory] = useState(initialItems);
   const [stallInfo, setStallInfo] = useState(initialStall);
   const [imgErrors, setImgErrors] = useState({});
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading] = useState(false);
 
   // Sync inventory if shopId changes
   useEffect(() => {
@@ -175,7 +174,7 @@ const InteractiveMenu = () => {
     } else if (!activeCategory || !CATEGORIES.includes(activeCategory)) {
       setActiveCategory(CATEGORIES[0] || 'All Items');
     }
-  }, [CATEGORIES, targetCategory]);
+  }, [CATEGORIES, targetCategory, activeCategory]);
 
   // Highlight scroll
   useEffect(() => {

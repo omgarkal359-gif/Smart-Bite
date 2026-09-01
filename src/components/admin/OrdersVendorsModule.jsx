@@ -1,8 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  ShoppingBag, Store, Search, Filter, RefreshCw, 
-  CheckCircle, AlertTriangle, Clock, Banknote, Smartphone, ShieldAlert, Utensils
-} from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { ShoppingBag, Store, Search, RefreshCw } from 'lucide-react';
 import { api } from '../../api';
 import { supabase } from '../../supabaseClient';
 import { SHOPS } from '../../data/foodCourtDB';
@@ -14,7 +11,6 @@ export const OrdersVendorsModule = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStall, setSelectedStall] = useState('ALL');
   const [selectedStatus, setSelectedStatus] = useState('ALL');
-  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     loadData();
@@ -35,7 +31,6 @@ export const OrdersVendorsModule = () => {
   }, []);
 
   async function loadData() {
-    setIsLoading(true);
     try {
       const [orderQueue, stallList] = await Promise.all([
         api.getOrderQueue(),
@@ -45,8 +40,6 @@ export const OrdersVendorsModule = () => {
       if (stallList && stallList.length) setStalls(stallList);
     } catch (err) {
       console.error('Failed to load admin orders & stalls:', err);
-    } finally {
-      setIsLoading(false);
     }
   }
 

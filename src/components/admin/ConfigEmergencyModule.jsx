@@ -1,15 +1,12 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { 
-  Settings, AlertTriangle, Power, ShieldAlert, 
-  Trash2, Radio, Server, CheckCircle2, Lock, Unlock, Database, Cpu, RefreshCw 
+  AlertTriangle, Power, Trash2, Radio, Server, CheckCircle2, Lock, Database, Cpu, RefreshCw
 } from 'lucide-react';
 import { clearStoredUser } from '../../utils/auth';
 
 export const ConfigEmergencyModule = () => {
   const [isMaintenanceMode, setIsMaintenanceMode] = useState(false);
   const [isPauseOrders, setIsPauseOrders] = useState(false);
-  const [isCashPaymentEnabled, setIsCashPaymentEnabled] = useState(true);
-  const [isRealtimeEnabled, setIsRealtimeEnabled] = useState(true);
 
   const handleGlobalWipe = () => {
     const confirm = window.confirm("CRITICAL WARNING: This will flush all active queues globally across all stalls. Continue?");
