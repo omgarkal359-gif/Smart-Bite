@@ -212,3 +212,14 @@ export async function verifyRegistration(req, res, next) {
     next(err);
   }
 }
+
+export async function getMe(req, res, next) {
+  try {
+    if (!req.user) return res.status(401).json({ success: false, message: 'Authentication required.' });
+    const user = await db.get('SELECT * FROM users WHERE LOWER(username) = LOWER(?)', [req.user.email || req.user.id]);
+    res.json({ success: true, user: sanitizeUser(user || req.user) });
+  } catch (err) {
+    next(err);
+  }
+}
+

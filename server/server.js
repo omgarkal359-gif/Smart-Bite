@@ -131,16 +131,16 @@ io.on('connection', (socket) => {
 // Bootstrap SMTP transporter in background
 initSmtp().catch(() => {});
 
-// Rate limiting
-const authLimiter = rateLimit({
+import { createDistributedRateLimiter } from './middleware/rateLimiter.js';
+
+// Rate limiting (Distributed Redis / Memory Store)
+const authLimiter = createDistributedRateLimiter({
   windowMs: 15 * 60 * 1000,
   max: 10,
-  message: { success: false, message: 'Too many attempts. Please try again in 15 minutes.' },
-  standardHeaders: true,
-  legacyHeaders: false
+  message: { success: false, message: 'Too many attempts. Please try again in 15 minutes.' }
 });
 
-const generalLimiter = rateLimit({
+const generalLimiter = createDistributedRateLimiter({
   windowMs: 60 * 1000,
   max: 100,
   message: { success: false, message: 'Rate limit exceeded.' }
@@ -148,6 +148,7 @@ const generalLimiter = rateLimit({
 
 app.use('/api/auth/', authLimiter);
 app.use('/api/', generalLimiter);
+
 
 // Serverless DB initializer middleware
 let dbInitialized = false;

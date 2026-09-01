@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trash2, Plus, Minus, ArrowRight, ShoppingBag, CreditCard, ChevronLeft, Loader2, Check, ExternalLink, Clock } from 'lucide-react';
-import { api, formatRelativeTime } from '../api';
+import { Trash2, Plus, Minus, ArrowRight, ShoppingBag, ChevronLeft, Loader2, Check, ExternalLink } from 'lucide-react';
+import { api } from '../api';
 import { getFoodItemImage } from '../utils/imageHelper';
 import { getStoredUser } from '../utils/auth';
 import './pages.css';
@@ -13,14 +13,11 @@ const CartPage = () => {
   const { cart, addToCart, removeFromCart, totalPrice, totalItems, clearCart } = useCart();
   const navigate = useNavigate();
   const [isCheckingOut, setIsCheckingOut] = useState(false);
-  const [diningMode, setDiningMode] = useState('dine_in');
-  const paymentMode = 'upi';
   const [showQRModal, setShowQRModal] = useState(false);
   const [upiPaymentState, setUpiPaymentState] = useState('idle'); // 'idle' | 'awaiting' | 'verifying' | 'success'
   const [recentOrders, setRecentOrders] = useState([]);
   const [currentPaymentId, setCurrentPaymentId] = useState(null);
-  const [currentOrderId, setCurrentOrderId] = useState(null);
-  const [currentCreatedOrder, setCurrentCreatedOrder] = useState(null);
+
 
   const cartItems = Object.values(cart);
 

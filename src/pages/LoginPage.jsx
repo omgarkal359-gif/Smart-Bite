@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   IconMail, IconLock, IconUser, IconEye, IconEyeOff,
   IconLoader2, IconCircleCheck, IconArrowRight,
-  IconBrandGoogle, IconShieldCheck, IconBuildingStore
+  IconBuildingStore
 } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
@@ -10,8 +10,8 @@ import { setStoredUser, getStoredUser, clearStoredUser } from '../utils/auth';
 import { GoogleIcon } from '../components/icons/GoogleIcon';
 import { api } from '../api';
 import sguLogo from '../assets/sgu-logo.jpg';
-import { GoogleMarkIcon } from '../components/icons';
 import './LoginPage.css';
+
 
 /* ── Reusable: labelled input block (label above, error below, no placeholder-as-label) ── */
 const Field = ({
@@ -91,15 +91,13 @@ const LoginPage = () => {
     clear();
   };
 
-  const redirectByRole = (role, shopId) => {
+  const redirectByRole = useCallback((role, shopId) => {
     if (role === 'student' || role === 'guest') navigate('/student');
     else if (role === 'owner') navigate(`/vendor/${shopId}`);
     else if (role === 'admin') navigate('/admin');
-  };
+  }, [navigate]);
 
-
-
-  const finish = (role, name, id, shopId = null, token = null) => {
+  const finish = useCallback((role, name, id, shopId = null, token = null) => {
     setIsLoading(false);
     setIsSuccess(true);
     const ud = {
@@ -119,7 +117,7 @@ const LoginPage = () => {
     }
     setStoredUser(ud, rememberMe);
     setTimeout(() => { setIsSuccess(false); redirectByRole(ud.role, ud.shopId); }, 1400);
-  };
+  }, [rememberMe, redirectByRole]);
 
   /* ── Supabase OAuth listener ── */
   useEffect(() => {
@@ -130,7 +128,7 @@ const LoginPage = () => {
         const name = meta.full_name || meta.name || session.user.email?.split('@')[0] || 'Student';
         const id = session.user.email || session.user.phone || session.user.id;
         const shopId = meta.shopId || null;
-        finish(role, name, id, shopId);
+        finish(role, name, id, shopId, session.access_token);
       }
     });
     const saved = getStoredUser();
@@ -143,7 +141,8 @@ const LoginPage = () => {
       }
     }
     return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, [navigate, finish, redirectByRole]);
+
 
   /* ── Login ── */
   const handleLogin = async (e) => {
