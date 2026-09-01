@@ -318,6 +318,17 @@ export const api = {
     }
   },
 
+  async getPaymentStatus(paymentId) {
+    return await fetchAPI(`/payments/${paymentId}/status`);
+  },
+
+  async simulatePayment(paymentId, action) {
+    return await fetchAPI('/payments/simulate', {
+      method: 'POST',
+      body: JSON.stringify({ paymentId, action })
+    });
+  },
+
   async resendReceipt(orderId, customEmail) {
     return await fetchAPI(`/orders/${orderId}/resend`, {
       method: 'POST',

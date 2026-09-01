@@ -120,7 +120,7 @@ export const SystemLogsModule = () => {
           <div className="flex flex-col gap-2">
             {filteredLogs.length === 0 ? (
               <div style={{ color: '#64748B', padding: 20, textAlign: 'center' }}>
-                No log entries matching filter "{logFilter}".
+                No log entries matching filter &quot;{logFilter}&quot;.
               </div>
             ) : (
               filteredLogs.map(log => {

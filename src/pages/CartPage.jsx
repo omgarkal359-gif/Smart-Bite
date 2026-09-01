@@ -18,6 +18,9 @@ const CartPage = () => {
   const [showQRModal, setShowQRModal] = useState(false);
   const [upiPaymentState, setUpiPaymentState] = useState('idle'); // 'idle' | 'awaiting' | 'verifying' | 'success'
   const [recentOrders, setRecentOrders] = useState([]);
+  const [currentPaymentId, setCurrentPaymentId] = useState(null);
+  const [currentOrderId, setCurrentOrderId] = useState(null);
+  const [currentCreatedOrder, setCurrentCreatedOrder] = useState(null);
 
   const cartItems = Object.values(cart);
 
@@ -50,11 +53,64 @@ const CartPage = () => {
     return () => {
       if (window.verifyTimer) clearTimeout(window.verifyTimer);
       if (window.successTimer) clearTimeout(window.successTimer);
+      if (window.pollInterval) clearInterval(window.pollInterval);
     };
   }, []);
 
-  const executeFinalCheckout = () => {
+  const startPaymentPolling = (paymentId, orderId, actualOrder) => {
+    if (window.pollInterval) clearInterval(window.pollInterval);
+    let attempts = 0;
+    const maxAttempts = 40; // 60 seconds timeout (40 * 1.5s)
+
+    window.pollInterval = setInterval(() => {
+      attempts++;
+      if (attempts >= maxAttempts) {
+        clearInterval(window.pollInterval);
+        setIsCheckingOut(false);
+        setShowQRModal(false);
+        setUpiPaymentState('idle');
+        alert('Payment verification timed out. Please check your bank transaction status.');
+        return;
+      }
+
+      api.getPaymentStatus(paymentId)
+        .then((res) => {
+          if (res.paymentStatus === 'success') {
+            clearInterval(window.pollInterval);
+            setUpiPaymentState('success');
+            
+            // Clear cart, update local storage, navigate to order tracking page
+            const existingOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
+            const completedOrder = { ...actualOrder, status: 'placed', paymentStatus: 'success' };
+            localStorage.setItem('sgu_orders', JSON.stringify([completedOrder, ...existingOrders.filter(o => o.id !== orderId)]));
+            
+            setTimeout(() => {
+              setIsCheckingOut(false);
+              setShowQRModal(false);
+              setUpiPaymentState('idle');
+              clearCart();
+              navigate(`/student/order/${orderId}`);
+            }, 2000);
+          } else if (res.paymentStatus === 'failed' || res.paymentStatus === 'cancelled') {
+            clearInterval(window.pollInterval);
+            setIsCheckingOut(false);
+            setShowQRModal(false);
+            setUpiPaymentState('idle');
+            alert(`Payment was unsuccessful (${res.paymentStatus}). Order has been cancelled.`);
+          }
+        })
+        .catch((err) => {
+          console.error('Polling status error:', err);
+        });
+    }, 1500);
+  };
+
+  const handleCheckout = () => {
     setIsCheckingOut(true);
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
+    const orderId = `ORD-${Date.now()}`;
+    const idempotencyKey = `IDEM-${orderId}-${Math.floor(Math.random() * 1000000)}`;
+
     const userData = getStoredUser() || {};
     const orderPayload = {
       customerName: userData.name || 'Guest User',
@@ -62,6 +118,8 @@ const CartPage = () => {
       type: diningMode === 'dine_in' ? 'Dine-In' : 'Takeaway',
       payment: 'Online UPI',
       total: totalPrice,
+      id: orderId,
+      idempotencyKey,
       items: cartItems.map(item => ({
         id: item.id,
         name: item.name,
@@ -74,14 +132,48 @@ const CartPage = () => {
 
     api.createOrder(orderPayload)
       .then((response) => {
-        setIsCheckingOut(false);
-        setShowQRModal(false);
-        setUpiPaymentState('idle');
         const actualOrder = response.order || response;
-        const existingOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
-        localStorage.setItem('sgu_orders', JSON.stringify([actualOrder, ...existingOrders]));
-        clearCart();
-        navigate(`/student/order/${actualOrder.id}`);
+        const paymentId = response.paymentId || actualOrder.paymentId;
+        
+        setCurrentPaymentId(paymentId);
+        setCurrentOrderId(orderId);
+        setCurrentCreatedOrder(actualOrder);
+
+        // Open payment modal
+        setShowQRModal(true);
+        setUpiPaymentState('awaiting');
+
+        // Start backend polling for payment status
+        startPaymentPolling(paymentId, orderId, actualOrder);
+
+        const firstItem = cartItems[0] || {};
+        const shopVpa = firstItem.stallId ? `${firstItem.stallId.replace('-', '')}@bank` : 'sgu_foodcourt@bank';
+        const shopName = firstItem.stallName || 'SGU Food Court';
+        const upiLink = `upi://pay?pa=${shopVpa}&pn=${encodeURIComponent(shopName)}&am=${totalPrice}&cu=INR&tr=${paymentId}`;
+
+        if (isMobile) {
+          // Open UPI payment link
+          window.location.href = upiLink;
+        }
+
+        // Simulate scans and mock provider callback in dev/test environment
+        const verifyTimer = setTimeout(() => {
+          setUpiPaymentState('verifying');
+          
+          const successTimer = setTimeout(() => {
+            api.simulatePayment(paymentId, 'success')
+              .then(() => {
+                console.log('[SIMULATION] Payment success webhook simulated.');
+              })
+              .catch(err => {
+                console.error('[SIMULATION ERROR] Payment simulation failed:', err);
+              });
+          }, 2000);
+          
+          window.successTimer = successTimer;
+        }, 4500);
+        
+        window.verifyTimer = verifyTimer;
       })
       .catch((err) => {
         console.error('Checkout failed:', err);
@@ -92,52 +184,26 @@ const CartPage = () => {
       });
   };
 
-  const handleCheckout = () => {
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
-    
-    // If laptop user, open the QR payment scanner modal
-    if (!isMobile) {
-      setShowQRModal(true);
-      setUpiPaymentState('awaiting');
-      
-      // Simulate real-time UPI scan and payment completion
-      const verifyTimer = setTimeout(() => {
-        setUpiPaymentState('verifying');
-        
-        const successTimer = setTimeout(() => {
-          setUpiPaymentState('success');
-          // Automatically proceed with order creation
-          executeFinalCheckout();
-        }, 2000);
-        
-        window.successTimer = successTimer;
-      }, 4500);
-      
-      window.verifyTimer = verifyTimer;
-      return;
-    }
-
-    setIsCheckingOut(true);
-    
-    const firstItem = cartItems[0] || {};
-    const shopVpa = firstItem.stallId ? `${firstItem.stallId.replace('-', '')}@bank` : 'sgu_foodcourt@bank';
-    const shopName = firstItem.stallName || 'SGU Food Court';
-    const upiLink = `upi://pay?pa=${shopVpa}&pn=${encodeURIComponent(shopName)}&am=${totalPrice}&cu=INR`;
-
-    if (isMobile) {
-      // Mobile flow: Redirect directly to mobile payment apps (GPay, PhonePe, Paytm, etc.)
-      window.location.href = upiLink;
-    }
-
-    executeFinalCheckout();
-  };
-
   const handleCancelPayment = () => {
     if (window.verifyTimer) clearTimeout(window.verifyTimer);
     if (window.successTimer) clearTimeout(window.successTimer);
-    
-    // As per request: still place the order if payment is cancelled
-    executeFinalCheckout();
+    if (window.pollInterval) clearInterval(window.pollInterval);
+
+    if (currentPaymentId) {
+      api.simulatePayment(currentPaymentId, 'cancel')
+        .then(() => {
+          console.log('[SIMULATION] Payment cancellation simulated.');
+        })
+        .catch(err => console.error(err));
+    }
+
+    setIsCheckingOut(false);
+    setShowQRModal(false);
+    setUpiPaymentState('idle');
+    setCurrentPaymentId(null);
+    setCurrentOrderId(null);
+    setCurrentCreatedOrder(null);
+    alert('Payment cancelled. The order has not been placed.');
   };
 
   if (cartItems.length === 0) {
@@ -373,10 +439,19 @@ const CartPage = () => {
             >
               {upiPaymentState === 'awaiting' && (
                 <>
+                  {(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768) ? (
+                    <a 
+                      href={`upi://pay?pa=${(cartItems[0]?.stallId || 'general').replace('-', '')}@bank&pn=${encodeURIComponent(cartItems[0]?.stallName || 'SGU Food Court')}&am=${totalPrice}&cu=INR&tr=${currentPaymentId || ''}`} 
+                      className="checkout-btn-v21 mb-6 flex items-center justify-center gap-2 font-bold"
+                      style={{ width: '100%', textDecoration: 'none', padding: '14px 0', borderRadius: '12px', fontSize: '0.95rem', display: 'flex' }}
+                    >
+                      Open UPI Payment App
+                    </a>
+                  ) : null}
                   <div className="bg-white p-4 rounded-3xl shadow-lg border border-solid border-slate-100 mb-4" style={{ display: 'inline-block', position: 'relative' }}>
                     <img 
                       src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
-                        `upi://pay?pa=${(cartItems[0]?.stallId || 'general').replace('-', '')}@bank&pn=${encodeURIComponent(cartItems[0]?.stallName || 'SGU Food Court')}&am=${totalPrice}&cu=INR`
+                        `upi://pay?pa=${(cartItems[0]?.stallId || 'general').replace('-', '')}@bank&pn=${encodeURIComponent(cartItems[0]?.stallName || 'SGU Food Court')}&am=${totalPrice}&cu=INR&tr=${currentPaymentId || ''}`
                       )}`} 
                       alt="Payment QR" 
                       style={{ width: 180, height: 180, display: 'block' }}
