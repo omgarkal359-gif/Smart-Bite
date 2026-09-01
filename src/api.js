@@ -114,9 +114,9 @@ export const api = {
   },
 
   async loginGoogle(email, name) {
-    return await fetchAPI('/auth/login-google', {
+    return await fetchAPI('/auth/google', {
       method: 'POST',
-      body: JSON.stringify({ email, name })
+      body: JSON.stringify({ email, name }),
     });
   },
 

@@ -113,7 +113,12 @@ export async function loginGoogle(req, res, next) {
       user = await db.get('SELECT * FROM users WHERE LOWER(username) = ?', [cleanId]);
     }
 
-    res.json({ success: true, user: sanitizeUser(user) });
+    const token = jwt.sign(
+      { id: user.id, email: user.username, role: user.role, shopId: user.shopId },
+      JWT_SECRET,
+      { expiresIn: '30d' }
+    );
+    res.json({ success: true, user: sanitizeUser(user), token });
   } catch (err) {
     next(err);
   }
@@ -134,7 +139,12 @@ export async function register(req, res, next) {
       [username.trim(), name.trim(), hashedPwd, userRole, null]
     );
     const user = await db.get('SELECT * FROM users WHERE LOWER(username) = LOWER(?)', [username]);
-    res.json({ success: true, user: sanitizeUser(user) });
+    const token = jwt.sign(
+      { id: user.id, email: user.username, role: user.role, shopId: user.shopId },
+      JWT_SECRET,
+      { expiresIn: '30d' }
+    );
+    res.json({ success: true, user: sanitizeUser(user), token });
   } catch (err) {
     next(err);
   }
