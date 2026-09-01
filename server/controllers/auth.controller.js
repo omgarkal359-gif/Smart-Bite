@@ -33,29 +33,30 @@ export async function login(req, res, next) {
       return res.status(400).json({ success: false, message: 'Username is required.' });
     }
 
+    const cleanUsername = username.trim();
+
     if (role === 'guest') {
-      let user = await db.get('SELECT * FROM users WHERE LOWER(username) = LOWER(?) AND role = ?', [username, 'guest']);
+      let user = await db.get('SELECT * FROM users WHERE LOWER(username) = LOWER(?) AND role = ?', [cleanUsername, 'guest']);
       if (!user) {
         await db.run(
           'INSERT INTO users (username, name, password, role, shopId) VALUES (?, ?, ?, ?, ?)',
-          [username.trim().toLowerCase(), (name || `Guest ${username}`).trim(), '', 'guest', null]
+          [cleanUsername.toLowerCase(), (name || `Guest ${cleanUsername}`).trim(), '', 'guest', null]
         );
-        user = await db.get('SELECT * FROM users WHERE LOWER(username) = LOWER(?) AND role = ?', [username, 'guest']);
+        user = await db.get('SELECT * FROM users WHERE LOWER(username) = LOWER(?) AND role = ?', [cleanUsername, 'guest']);
       }
       const token = issueToken(user);
       return res.json({ success: true, user: sanitizeUser(user), token });
     }
 
-    if (role === 'student') {
-      const cleanUsername = username.trim().toLowerCase();
-      const user = await db.get('SELECT * FROM users WHERE LOWER(username) = ?', [cleanUsername]);
-      
-      if (!user) {
-        return res.status(401).json({ success: false, message: 'Invalid credentials.' });
-      }
+    // Auto-detect user in database by username or shopId
+    let user = await db.get(
+      'SELECT * FROM users WHERE LOWER(username) = LOWER(?) OR (LOWER(shopId) = LOWER(?) AND role = ?)',
+      [cleanUsername, cleanUsername, 'owner']
+    );
 
+    if (user) {
       if (!password || password.trim() === '') {
-        return res.status(400).json({ success: false, message: 'Password is required for student login.' });
+        return res.status(400).json({ success: false, message: 'Password is required.' });
       }
 
       const isValid = await verifyPassword(password.trim(), user.password);
@@ -67,64 +68,14 @@ export async function login(req, res, next) {
       return res.json({ success: true, user: sanitizeUser(user), token });
     }
 
-    if (role === 'owner') {
-      let user = await db.get('SELECT * FROM users WHERE username = ? AND role = ?', [username, 'owner']);
-      if (!user) {
-        return res.status(401).json({ success: false, message: 'Invalid credentials. Owner accounts must be created by an administrator.' });
-      }
-      if (!password || password.trim() === '') {
-        return res.status(400).json({ success: false, message: 'Password is required.' });
-      }
-      const isValid = await verifyPassword(password, user.password);
-      if (!isValid) {
-        return res.status(401).json({ success: false, message: 'Invalid credentials.' });
-      }
-      const token = issueToken(user);
-      return res.json({ success: true, user: sanitizeUser(user), token });
-    }
-
-    if (!role || role === 'admin') {
-      const user = await db.get(
-        'SELECT * FROM users WHERE LOWER(username) = LOWER(?)',
-        [username]
-      );
-      if (!user) {
-        return res.status(401).json({ success: false, message: 'Invalid credentials.' });
-      }
-      if (!password || password.trim() === '') {
-        return res.status(400).json({ success: false, message: 'Password is required.' });
-      }
-      const isValid = await verifyPassword(password, user.password);
-      if (!isValid) {
-        return res.status(401).json({ success: false, message: 'Invalid credentials.' });
-      }
-      const token = issueToken(user);
-      return res.json({ success: true, user: sanitizeUser(user), token });
-    }
-
-    const user = await db.get(
-      'SELECT * FROM users WHERE LOWER(username) = LOWER(?) AND role = ?',
-      [username, role]
-    );
-
-    if (!user) {
-      return res.status(401).json({ success: false, message: 'Invalid credentials.' });
-    }
-    if (!password || password.trim() === '') {
-      return res.status(400).json({ success: false, message: 'Password is required.' });
-    }
-    const isValidPwd = await verifyPassword(password, user.password);
-    if (!isValidPwd) {
-      return res.status(401).json({ success: false, message: 'Invalid credentials.' });
-    }
-    const token = issueToken(user);
-    res.json({ success: true, user: sanitizeUser(user), token });
+    return res.status(401).json({ success: false, message: 'Invalid credentials.' });
   } catch (err) {
     next(err);
   }
 }
 
 export async function loginGoogle(req, res, next) {
+
   const { email, name, idToken } = req.body;
   const authHeader = req.headers.authorization;
   const token = (authHeader && authHeader.startsWith('Bearer ')) ? authHeader.split(' ')[1] : idToken;
