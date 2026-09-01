@@ -283,6 +283,19 @@ app.get('/api/dev/email-preview/:template', requireAuth, requireRole('admin'), a
   }
 });
 
+// Global Error Handling Middleware
+app.use((err, req, res, next) => {
+  logger.error('[UNHANDLED EXPRESS ERROR]', err);
+  const statusCode = err.status || err.statusCode || 500;
+  const errorMessage = err.message || 'Server error. Please try again later.';
+  res.status(statusCode).json({
+    success: false,
+    message: errorMessage,
+    error: errorMessage
+  });
+});
+
+
 
 // Graceful Shutdown Sequence
 async function shutdown(signal) {

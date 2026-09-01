@@ -1,5 +1,6 @@
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import { config } from '../config.js';
+
 
 
 const SALT_ROUNDS = config.BCRYPT_SALT_ROUNDS;
