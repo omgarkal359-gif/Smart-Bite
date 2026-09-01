@@ -333,12 +333,36 @@ export const api = {
   },
 
   async getOrderQueue() {
+    let orders = [];
     try {
-      return await fetchAPI('/orders/queue');
-    } catch (err) {
-      return [];
+      const queue = await fetchAPI('/orders/queue');
+      if (Array.isArray(queue) && queue.length > 0) {
+        orders = queue;
+      }
+    } catch (err) {}
+
+    if (orders.length === 0) {
+      try {
+        const { data, error } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
+        if (!error && data && data.length > 0) {
+          orders = data.map(o => ({
+            ...o,
+            customerName: o.customer_name || o.customerName || 'Student',
+            customerId: o.customer_id || o.customerId || 'student@sgu.edu',
+            paymentStatus: o.payment_status || o.paymentStatus || 'success'
+          }));
+        }
+      } catch (e) {}
     }
+
+    if (orders.length === 0) {
+      const savedOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
+      orders = savedOrders;
+    }
+
+    return orders;
   },
+
 
   async getOrder(orderId) {
     try {

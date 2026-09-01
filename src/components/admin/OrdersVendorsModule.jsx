@@ -19,19 +19,47 @@ export const OrdersVendorsModule = () => {
   useEffect(() => {
     loadData();
 
-    // Supabase Realtime subscription for live order updates
+    // 1. Supabase Realtime Postgres Changes Subscription
     const channel = supabase
       .channel('admin-orders-module')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
         if (payload.eventType === 'INSERT') {
-          setOrders(prev => [payload.new, ...prev]);
+          const newOrd = {
+            ...payload.new,
+            customerName: payload.new.customer_name || payload.new.customerName || 'Student',
+            customerId: payload.new.customer_id || payload.new.customerId || 'student@sgu.edu',
+            paymentStatus: payload.new.payment_status || payload.new.paymentStatus || 'success'
+          };
+          setOrders(prev => [newOrd, ...prev.filter(o => o.id !== newOrd.id)]);
         } else if (payload.eventType === 'UPDATE') {
           setOrders(prev => prev.map(o => o.id === payload.new.id ? { ...o, ...payload.new } : o));
         }
       })
+      .on('broadcast', { event: 'new_order' }, (payload) => {
+        if (payload.payload && payload.payload.id) {
+          setOrders(prev => [payload.payload, ...prev.filter(o => o.id !== payload.payload.id)]);
+        }
+      })
+      .on('broadcast', { event: 'order_updated' }, (payload) => {
+        if (payload.payload && payload.payload.id) {
+          setOrders(prev => prev.map(o => o.id === payload.payload.id ? { ...o, ...payload.payload } : o));
+        }
+      })
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    // 2. Auto-polling loop (every 5 seconds) for instant sync across serverless cold starts
+    const pollInterval = setInterval(() => {
+      api.getOrderQueue().then(queue => {
+        if (queue && queue.length > 0) {
+          setOrders(queue);
+        }
+      }).catch(() => {});
+    }, 5000);
+
+    return () => {
+      supabase.removeChannel(channel);
+      clearInterval(pollInterval);
+    };
   }, []);
 
   async function loadData() {
@@ -49,6 +77,7 @@ export const OrdersVendorsModule = () => {
       setIsLoading(false);
     }
   }
+
 
   // Handle Order Status Override
   async function handleOverrideStatus(orderId, newStatus) {
