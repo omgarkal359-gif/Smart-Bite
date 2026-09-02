@@ -32,8 +32,8 @@ async function syncUserToSupabaseAuth(username, name, password, role) {
     const userEmail = (username && username.includes('@')) ? username.toLowerCase() : `${(username || 'user').toLowerCase()}@sgu.edu`;
     const displayName = name || userEmail.split('@')[0];
 
-    const { data: listData } = await supabase.auth.admin.listUsers();
-    const existingUser = listData?.users?.find(u => u.email?.toLowerCase() === userEmail.toLowerCase());
+    const listRes = await supabase.auth.admin.listUsers().catch(() => ({ data: null }));
+    const existingUser = listRes?.data?.users?.find(u => u.email?.toLowerCase() === userEmail.toLowerCase());
 
     if (!existingUser) {
       await supabase.auth.admin.createUser({
@@ -41,11 +41,11 @@ async function syncUserToSupabaseAuth(username, name, password, role) {
         password: password || 'DefaultPass123!',
         email_confirm: true,
         user_metadata: { full_name: displayName, display_name: displayName, role: role || 'student' }
-      });
+      }).catch(e => console.warn('Supabase createUser notice:', e.message));
     } else {
       await supabase.auth.admin.updateUserById(existingUser.id, {
         user_metadata: { ...existingUser.user_metadata, full_name: displayName, display_name: displayName, role: role || 'student' }
-      });
+      }).catch(e => console.warn('Supabase updateUser notice:', e.message));
     }
   } catch (err) {
     console.warn('Supabase Auth user sync notice:', err.message);
