@@ -158,3 +158,15 @@ FROM public.users;
 
 GRANT SELECT ON public.profiles TO authenticated, anon;
 
+-- -----------------------------------------------------------------------------
+-- SECURITY DEFINER RPC PROTECTION
+-- -----------------------------------------------------------------------------
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'rls_auto_enable') THEN
+    REVOKE EXECUTE ON FUNCTION public.rls_auto_enable() FROM PUBLIC, anon, authenticated;
+    GRANT EXECUTE ON FUNCTION public.rls_auto_enable() TO service_role;
+  END IF;
+END $$;
+
+
