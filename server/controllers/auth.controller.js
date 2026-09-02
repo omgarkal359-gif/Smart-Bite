@@ -26,6 +26,32 @@ function issueToken(user) {
   return jwt.sign(payload, config.JWT_SECRET, { expiresIn: '7d' });
 }
 
+async function syncUserToSupabaseAuth(username, name, password, role) {
+  if (!supabase) return;
+  try {
+    const userEmail = (username && username.includes('@')) ? username.toLowerCase() : `${(username || 'user').toLowerCase()}@sgu.edu`;
+    const displayName = name || userEmail.split('@')[0];
+
+    const { data: listData } = await supabase.auth.admin.listUsers();
+    const existingUser = listData?.users?.find(u => u.email?.toLowerCase() === userEmail.toLowerCase());
+
+    if (!existingUser) {
+      await supabase.auth.admin.createUser({
+        email: userEmail,
+        password: password || 'DefaultPass123!',
+        email_confirm: true,
+        user_metadata: { full_name: displayName, display_name: displayName, role: role || 'student' }
+      });
+    } else {
+      await supabase.auth.admin.updateUserById(existingUser.id, {
+        user_metadata: { ...existingUser.user_metadata, full_name: displayName, display_name: displayName, role: role || 'student' }
+      });
+    }
+  } catch (err) {
+    console.warn('Supabase Auth user sync notice:', err.message);
+  }
+}
+
 export async function login(req, res, next) {
   const { username, password, role, name } = req.body;
   try {
@@ -44,6 +70,7 @@ export async function login(req, res, next) {
         );
         user = await db.get('SELECT * FROM users WHERE LOWER(username) = LOWER(?) AND role = ?', [cleanUsername, 'guest']);
       }
+      syncUserToSupabaseAuth(cleanUsername, user.name, null, 'guest');
       const token = issueToken(user);
       return res.json({ success: true, user: sanitizeUser(user), token });
     }
@@ -64,6 +91,7 @@ export async function login(req, res, next) {
         return res.status(401).json({ success: false, message: 'Invalid credentials.' });
       }
 
+      syncUserToSupabaseAuth(user.username, user.name, password.trim(), user.role);
       const token = issueToken(user);
       return res.json({ success: true, user: sanitizeUser(user), token });
     }
@@ -75,7 +103,6 @@ export async function login(req, res, next) {
 }
 
 export async function loginGoogle(req, res, next) {
-
   const { email, name, idToken } = req.body;
   const authHeader = req.headers.authorization;
   const token = (authHeader && authHeader.startsWith('Bearer ')) ? authHeader.split(' ')[1] : idToken;
@@ -105,6 +132,7 @@ export async function loginGoogle(req, res, next) {
       user = await db.get('SELECT * FROM users WHERE LOWER(username) = ?', [cleanId]);
     }
 
+    syncUserToSupabaseAuth(cleanId, displayName, null, 'student');
     const appToken = issueToken(user);
     res.json({ success: true, user: sanitizeUser(user), token: appToken });
   } catch (err) {
@@ -128,11 +156,13 @@ export async function register(req, res, next) {
       [username.trim(), name.trim(), hashedPwd, userRole, null]
     );
     const user = await db.get('SELECT * FROM users WHERE LOWER(username) = LOWER(?)', [username]);
+    syncUserToSupabaseAuth(username.trim(), name.trim(), password.trim(), userRole);
     res.json({ success: true, user: sanitizeUser(user) });
   } catch (err) {
     next(err);
   }
 }
+
 
 export async function verifyRegistration(req, res, next) {
   const { identifier } = req.body;
