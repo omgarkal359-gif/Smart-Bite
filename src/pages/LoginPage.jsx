@@ -247,13 +247,13 @@ const LoginPage = () => {
       const resData = await api.register(emailOrId, nm, pwd, 'student');
       if (resData?.success && resData?.user) {
         const user = resData.user;
-        finish(user.role, user.name, user.username, user.shopId);
+        finish(user.role, user.name, user.username, user.shopId, resData.token);
       } else {
-        setErrorMsg('Registration failed.');
+        setErrorMsg(resData?.message || 'Registration failed. Please check your details.');
         setIsLoading(false);
       }
     } catch (err) {
-      setErrorMsg(err.message || 'Registration failed. Username may already be taken.');
+      setErrorMsg(err.message || 'Registration failed. Email or Mobile may already be registered.');
       setIsLoading(false);
     }
   };

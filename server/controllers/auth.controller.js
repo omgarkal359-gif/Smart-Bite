@@ -156,8 +156,9 @@ export async function register(req, res, next) {
       [username.trim(), name.trim(), hashedPwd, userRole, null]
     );
     const user = await db.get('SELECT * FROM users WHERE LOWER(username) = LOWER(?)', [username]);
+    const token = issueToken(user);
     syncUserToSupabaseAuth(username.trim(), name.trim(), password.trim(), userRole);
-    res.json({ success: true, user: sanitizeUser(user) });
+    res.json({ success: true, user: sanitizeUser(user), token });
   } catch (err) {
     next(err);
   }
