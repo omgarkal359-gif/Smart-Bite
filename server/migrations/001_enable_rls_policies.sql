@@ -142,3 +142,19 @@ CREATE POLICY "Admin and Service Role access for payment events"
   ON payment_events FOR ALL
   TO authenticated
   USING ((auth.jwt() ->> 'role') = 'admin');
+
+-- -----------------------------------------------------------------------------
+-- SENSITIVE COLUMNS PROTECTION (EXCLUDE PASSWORD FROM DATA API)
+-- -----------------------------------------------------------------------------
+CREATE OR REPLACE VIEW public.profiles
+WITH (security_invoker = true) AS
+SELECT 
+  id,
+  username,
+  name,
+  role,
+  shopId
+FROM public.users;
+
+GRANT SELECT ON public.profiles TO authenticated, anon;
+
