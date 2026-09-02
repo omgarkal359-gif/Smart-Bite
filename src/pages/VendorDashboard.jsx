@@ -501,14 +501,17 @@ const VendorDashboard = () => {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             className="elite-ctrl-btn exit" 
-            onClick={() => {
-              localStorage.removeItem('sgu_user');
-              localStorage.removeItem('sgu_token');
+            onClick={async () => {
+              clearStoredUser();
+              try {
+                await supabase.auth.signOut();
+              } catch (_e) {}
               navigate('/login', { replace: true });
             }}
           >
-            <LogOut size={16} /> <span>EXIT</span>
+            <LogOut size={16} /> <span>LOGOUT</span>
           </motion.button>
+
         </div>
       </header>
 
