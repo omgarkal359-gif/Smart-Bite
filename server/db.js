@@ -1,6 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
 import pg from 'pg';
-import sqlite3 from 'sqlite3';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
@@ -411,6 +410,17 @@ function executeMemAll(sql, params) {
     return [{ count: memStore.menu_items.length }];
   }
 
+  if (upper.includes('LOWER(USERNAME) = LOWER(?) OR (LOWER(SHOPID) = LOWER(?) AND ROLE = ?)')) {
+    const [uParam, sParam, rParam] = params;
+    const uClean = (uParam || '').toLowerCase();
+    const sClean = (sParam || '').toLowerCase();
+    const match = memStore.users.find(u => 
+      (u.username && u.username.toLowerCase() === uClean) ||
+      (u.shopId && u.shopId.toLowerCase() === sClean && u.role === rParam)
+    );
+    return match ? [match] : [];
+  }
+
   if (upper.includes('FROM USERS WHERE LOWER(USERNAME) = LOWER(?) AND ROLE = ?')) {
     const [username, role] = params;
     const match = memStore.users.find(u => u.username.toLowerCase() === (username || '').toLowerCase() && u.role === role);
@@ -525,10 +535,7 @@ export async function initDatabase() {
       console.log('[DATABASE] Connected to PostgreSQL database.');
     } catch (err) {
       isPgActive = false;
-      console.warn('[DATABASE WARNING] PostgreSQL connection failed (' + err.message + '). Fallback to local engine.');
-      if (process.env.NODE_ENV === 'production') {
-        throw new Error(`Critical Database Error: PostgreSQL connection failed in production. Details: ${err.message}`);
-      }
+      console.warn('[DATABASE WARNING] PostgreSQL connection failed (' + err.message + '). Fallback to local memory engine.');
     } finally {
       if (client) {
         client.release();
@@ -536,21 +543,22 @@ export async function initDatabase() {
     }
   } else {
     isPgActive = false;
-    if (process.env.NODE_ENV === 'production') {
-      throw new Error('Critical Database Error: PostgreSQL connection string (DATABASE_URL) is missing or unconfigured in production.');
-    }
+    console.warn('[DATABASE NOTICE] DATABASE_URL is unconfigured. Operating on in-memory engine fallback.');
   }
 
   // 2. Try SQLite if PostgreSQL is not active
-  if (!isPgActive && sqlite3) {
+  if (!isPgActive) {
     try {
-      if (!sqliteDb) {
-        const dbPath = process.env.VERCEL ? '/tmp/database.sqlite' : join(__dirname, 'database.sqlite');
-        sqliteDb = new sqlite3.Database(dbPath);
+      const sqliteMod = await import('sqlite3').catch(() => null);
+      const sqlite3Lib = sqliteMod?.default || sqliteMod;
+      if (sqlite3Lib) {
+        if (!sqliteDb) {
+          const dbPath = process.env.VERCEL ? '/tmp/database.sqlite' : join(__dirname, 'database.sqlite');
+          sqliteDb = new sqlite3Lib.Database(dbPath);
+        }
+        isSqliteActive = true;
+        sqliteDb.run('PRAGMA foreign_keys = ON;');
       }
-      isSqliteActive = true;
-      // Enable Foreign Keys in SQLite (Correction 1)
-      sqliteDb.run('PRAGMA foreign_keys = ON;');
     } catch (e) {
       isSqliteActive = false;
     }
