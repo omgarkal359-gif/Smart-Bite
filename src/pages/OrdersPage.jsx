@@ -23,9 +23,15 @@ const OrdersPage = () => {
         localStorage.setItem('sgu_orders', JSON.stringify(liveOrders));
       } catch (err) {
         console.error('Failed to fetch student orders:', err);
-        // Fallback to localStorage
+        // Fallback to localStorage strictly filtered by customerId
         const savedOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
-        setOrders(savedOrders);
+        const cleanId = (customerId || '').toString().trim().toLowerCase();
+        const userOrders = Array.isArray(savedOrders) ? savedOrders.filter(o => {
+          const oCustId = (o.customerId || o.customer_id || o.customerid || '').toString().trim().toLowerCase();
+          const oCustName = (o.customerName || o.customer_name || '').toString().trim().toLowerCase();
+          return cleanId && (oCustId === cleanId || oCustName === cleanId);
+        }) : [];
+        setOrders(userOrders);
       }
     }
 

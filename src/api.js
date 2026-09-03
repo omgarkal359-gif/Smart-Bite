@@ -464,13 +464,18 @@ export const api = {
       console.warn("REST API fetch student orders failed:", err);
     }
 
-    // 3. Merge with localStorage
+    // 3. Merge with localStorage ONLY for matching customerId
     try {
       const localOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
-      if (Array.isArray(localOrders)) {
+      const cleanCustId = customerId ? customerId.toString().trim().toLowerCase() : '';
+      if (Array.isArray(localOrders) && cleanCustId) {
         localOrders.forEach(o => {
           if (o && o.id && !ordersMap.has(o.id)) {
-            ordersMap.set(o.id, o);
+            const oCustId = (o.customerId || o.customer_id || o.customerid || '').toString().trim().toLowerCase();
+            const oCustName = (o.customerName || o.customer_name || '').toString().trim().toLowerCase();
+            if (oCustId === cleanCustId || oCustName === cleanCustId || (oCustId && oCustId.includes(cleanCustId))) {
+              ordersMap.set(o.id, o);
+            }
           }
         });
       }

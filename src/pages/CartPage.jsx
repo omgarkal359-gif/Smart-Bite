@@ -29,19 +29,30 @@ const CartPage = () => {
       .then(orders => {
         const localOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
         const merged = [...(orders || [])];
-        localOrders.forEach(localOrder => {
-          const orderObj = localOrder.order || localOrder;
-          if (orderObj && orderObj.id && !merged.find(o => o.id === orderObj.id)) {
-            merged.push(orderObj);
-          }
-        });
-        // Sort by id descending as a proxy for date since id includes timestamp
-        merged.sort((a, b) => String(b.id).localeCompare(String(a.id)));
+        if (Array.isArray(localOrders)) {
+          localOrders.forEach(localOrder => {
+            const orderObj = localOrder.order || localOrder;
+            if (orderObj && orderObj.id && !merged.find(o => o.id === orderObj.id)) {
+              const oCustId = (orderObj.customerId || orderObj.customer_id || orderObj.customerid || '').toString().trim().toLowerCase();
+              const oCustName = (orderObj.customerName || orderObj.customer_name || '').toString().trim().toLowerCase();
+              if (customerId && (oCustId === customerId || oCustName === customerId)) {
+                merged.push(orderObj);
+              }
+            }
+          });
+        }
+        merged.sort((a, b) => new Date(b.created_at || b.timestamp || 0) - new Date(a.created_at || a.timestamp || 0));
         setRecentOrders(merged);
       })
       .catch(err => {
         console.error('Failed to load orders for cart page:', err);
-        setRecentOrders(JSON.parse(localStorage.getItem('sgu_orders') || '[]'));
+        const localOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
+        const userOrders = Array.isArray(localOrders) ? localOrders.filter(o => {
+          const oCustId = (o.customerId || o.customer_id || o.customerid || '').toString().trim().toLowerCase();
+          const oCustName = (o.customerName || o.customer_name || '').toString().trim().toLowerCase();
+          return customerId && (oCustId === customerId || oCustName === customerId);
+        }) : [];
+        setRecentOrders(userOrders);
       });
   }, []);
 
