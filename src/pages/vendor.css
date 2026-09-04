@@ -21,12 +21,12 @@
 }
 
 .kds-header {
-  background: var(--primary-navy);
+  background: #0F172A; /* Slate 900 */
   padding: 12px 32px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 4px solid var(--accent-amber);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   z-index: 100;
   transition: background 0.5s ease, filter 0.5s ease;
 }
@@ -173,12 +173,12 @@
 
 /* Premium Control Buttons */
 .vendor-sidebar {
-  background: var(--primary-navy);
+  background: #1E293B; /* Slate 800 */
   width: 120px;
   height: 100vh;
-  box-shadow: 4px 0 15px rgba(220, 38, 38, 0.2);
+  box-shadow: 4px 0 15px rgba(0, 0, 0, 0.15);
   z-index: 200;
-  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
   transition: background 0.5s ease, filter 0.5s ease;
 }
 
@@ -198,9 +198,9 @@
   padding: 12px 0;
   background: transparent;
   border: none;
-  color: rgba(255, 255, 255, 0.8);
+  color: #94A3B8; /* Slate 400 */
   font-family: 'Inter', sans-serif;
-  font-weight: 700;
+  font-weight: 600;
   font-size: 0.85rem;
   letter-spacing: 0.02em;
   transition: all 0.3s ease;
@@ -209,17 +209,18 @@
 }
 
 .sidebar-btn:hover {
-  background: rgba(255, 255, 255, 0.15);
-  color: var(--white);
+  background: rgba(255, 255, 255, 0.05);
+  color: #F8FAFC; /* Slate 50 */
 }
 
 .sidebar-btn span {
   opacity: 1;
 }
 
-.sidebar-btn.busy { color: #FECACA; } /* Light red/pink for busy */
+.sidebar-btn.busy { color: #F87171; } /* Red for busy */
 .sidebar-btn.active { color: #4ADE80; } /* Green for normal */
-.sidebar-btn.exit { color: #FEE2E2; } /* Light red for exit */
+.sidebar-btn.exit { color: #94A3B8; } /* Slate for exit */
+.sidebar-btn.exit:hover { color: #F87171; } /* Red on hover */
 
 /* Floating Labels */
 .floating-label-group {
