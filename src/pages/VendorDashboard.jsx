@@ -415,7 +415,7 @@ const VendorDashboard = () => {
     <div className={`vendor-kds-container page-transition ${isPowerSaver ? 'power-saver' : ''}`} style={{ flexDirection: 'row', height: '100vh', overflow: 'hidden' }}>
       
       {/* SIDEBAR */}
-      <aside className="vendor-sidebar flex flex-col items-center py-6 gap-6">
+      <aside className={`vendor-sidebar flex flex-col items-center py-6 gap-6 ${shopStatus === 'CLOSED' ? 'closed' : ''}`}>
         <motion.button 
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
