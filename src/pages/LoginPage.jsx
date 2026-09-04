@@ -1,95 +1,25 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  IconMail, IconLock, IconUser, IconEye, IconEyeOff,
-  IconLoader2, IconCircleCheck, IconArrowRight,
-  IconBuildingStore
+  IconUser, IconLoader2, IconBuildingStore, IconLock, IconMail, IconArrowRight
 } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import { setStoredUser, getStoredUser, clearStoredUser } from '../utils/auth';
 import { GoogleIcon } from '../components/icons/GoogleIcon';
 import { api } from '../api';
-import sguLogo from '../assets/sgu-logo.jpg';
 import './LoginPage.css';
 
-
-/* ── Reusable: labelled input block (label above, error below, no placeholder-as-label) ── */
-const Field = ({
-  id, label, type = 'text', value, onChange, placeholder,
-  Icon, right, autoFocus, autoComplete, error, hint
-}) => (
-  <div className="sb-field" data-error={!!error}>
-    <label htmlFor={id} className="sb-field-label">{label}</label>
-    <div className="sb-field-wrap">
-      {Icon && <Icon className="sb-field-icon" size={17} strokeWidth={1.75} aria-hidden="true" />}
-      <input
-        id={id}
-        type={type}
-        value={value}
-        onChange={onChange}
-        placeholder={placeholder}
-        autoFocus={autoFocus}
-        autoComplete={autoComplete}
-        aria-label={label}
-        aria-invalid={!!error}
-        aria-describedby={error ? `${id}-err` : hint ? `${id}-hint` : undefined}
-        className="sb-field-input"
-      />
-      {right && <div className="sb-field-right">{right}</div>}
-    </div>
-    {error && <p id={`${id}-err`} className="sb-field-msg sb-field-msg--error" role="alert">{error}</p>}
-    {!error && hint && <p id={`${id}-hint`} className="sb-field-msg sb-field-msg--hint">{hint}</p>}
-  </div>
-);
-
-/* ── Main component ── */
 const LoginPage = () => {
-  /* mode */
-  const [mode, setMode] = useState('login'); // 'login' | 'register'
-
-  /* shared fields */
-  const [identifier,  setIdentifier]  = useState('');
-  const [password,    setPassword]    = useState('');
-  const [showPwd,     setShowPwd]     = useState(false);
-
-  /* register-only */
-  const [regName,     setRegName]     = useState('');
-  const [confirmPwd,  setConfirmPwd]  = useState('');
-  const [showConfirm, setShowConfirm] = useState(false);
-
-  /* login-only */
-  const [rememberMe, setRememberMe] = useState(false);
-
-  /* async */
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-  const [errorMsg,  setErrorMsg]  = useState('');
-  const [fieldErr,  setFieldErr]  = useState({});
+  const [errorMsg, setErrorMsg] = useState('');
+  const [showStaffLogin, setShowStaffLogin] = useState(false);
+
+  /* Staff / Vendor state */
+  const [staffId, setStaffId] = useState('');
+  const [staffPwd, setStaffPwd] = useState('');
 
   const navigate = useNavigate();
-
-  /* ── Auto-reset loading state if login process is terminated or timed out ── */
-  useEffect(() => {
-    let timeout;
-    if (isLoading && !isSuccess) {
-      timeout = setTimeout(() => {
-        setIsLoading(false);
-      }, 5000);
-    }
-    return () => clearTimeout(timeout);
-  }, [isLoading, isSuccess]);
-
-  /* ── helpers ── */
-  const isEmail  = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
-  const isPhone  = (v) => /^\d{10}$/.test(v) || /^\+\d{10,12}$/.test(v);
-  const clear    = ()  => { setErrorMsg(''); setFieldErr({}); };
-
-  const switchMode = (m) => {
-    setMode(m);
-    setIdentifier(''); setPassword(''); setRegName(''); setConfirmPwd('');
-    setShowPwd(false); setShowConfirm(false);
-    clear();
-  };
 
   const redirectByRole = useCallback((role, shopId) => {
     if (role === 'student' || role === 'guest') navigate('/student');
@@ -106,93 +36,62 @@ const LoginPage = () => {
       id: id || 'student',
       shopId: shopId || null,
       timestamp: new Date().toISOString(),
-      rememberMe,
     };
     if (token) {
-      if (rememberMe) {
-        localStorage.setItem('sgu_token', token);
-      } else {
-        sessionStorage.setItem('sgu_token', token);
-      }
+      localStorage.setItem('sgu_token', token);
+      sessionStorage.setItem('sgu_token', token);
     }
-    setStoredUser(ud, rememberMe);
-    setTimeout(() => { setIsSuccess(false); redirectByRole(ud.role, ud.shopId); }, 1400);
-  }, [rememberMe, redirectByRole]);
+    setStoredUser(ud, true);
+    setTimeout(() => {
+      setIsSuccess(false);
+      redirectByRole(ud.role, ud.shopId);
+    }, 1200);
+  }, [redirectByRole]);
 
-  /* ── Supabase OAuth listener ── */
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session?.user) {
-        const meta = session.user.user_metadata || {};
-        const role = meta.role || session.user.app_metadata?.role || 'student';
-        const name = meta.full_name || meta.name || session.user.email?.split('@')[0] || 'Student';
-        const id = session.user.email || session.user.phone || session.user.id;
-        const shopId = meta.shopId || null;
-        finish(role, name, id, shopId, session.access_token);
-      }
-    });
-    const saved = getStoredUser();
-    if (saved && saved.role) {
-      const bad = saved.role === 'owner' && (!saved.shopId || saved.shopId === 'undefined' || saved.shopId === 'null');
-      if (bad) {
-        clearStoredUser();
-      } else {
-        redirectByRole(saved.role, saved.shopId);
-      }
-    }
-    return () => subscription.unsubscribe();
-  }, [navigate, finish, redirectByRole]);
-
-
-  /* ── Login ── */
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    const idInput = identifier.trim();
-    const pwd = password.trim();
-    const fe = {};
-    if (!idInput) fe.identifier = 'This field is required.';
-    if (!pwd && idInput !== '9876543210') fe.password = 'Password is required.';
-    if (Object.keys(fe).length) { setFieldErr(fe); return; }
-    setIsLoading(true); clear();
-
-    // 1. Try Supabase Auth sign-in if identifier is an email
-    if (isEmail(idInput)) {
-      try {
-        const { data, error } = await supabase.auth.signInWithPassword({ email: idInput, password: pwd });
-        if (!error && data?.user) {
-          // Sync login with backend
-          const syncRes = await api.loginGoogle(idInput, data.user.user_metadata?.full_name || idInput.split('@')[0]);
-          if (syncRes?.success && syncRes?.user) {
-            const user = syncRes.user;
-            finish(user.role, user.name, user.username, user.shopId, syncRes.token);
-            return;
+  /* ── Supabase Google OAuth Handler ── */
+  const handleGoogleLogin = async () => {
+    setIsLoading(true);
+    setErrorMsg('');
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/login`,
+          queryParams: {
+            hd: 'sguk.ac.in' // Restricts Google account selector UI to @sguk.ac.in domain
           }
         }
-      } catch (err) {
-        // Fall back to backend API direct login
+      });
+      if (error) {
+        console.error("Login failed:", error.message);
+        setErrorMsg(error.message || "Google sign-in failed.");
+        setIsLoading(false);
       }
+    } catch (err) {
+      console.error("Login failed:", err.message);
+      setErrorMsg(err.message || "Google sign-in failed.");
+      setIsLoading(false);
     }
+  };
 
-    // 2. Direct Backend API Login
+  /* ── Staff / Vendor fallback login ── */
+  const handleStaffLogin = async (e) => {
+    e.preventDefault();
+    const idInput = staffId.trim();
+    const pwd = staffPwd.trim();
+    if (!idInput || !pwd) {
+      setErrorMsg('Please enter both ID and password.');
+      return;
+    }
+    setIsLoading(true);
+    setErrorMsg('');
     try {
       let assumedRole = 'student';
       const lowerId = idInput.toLowerCase();
       if (lowerId === 'admin' || lowerId.startsWith('admin@')) assumedRole = 'admin';
       else if (['mangales-snacks', 'tea-coffee', 'rohit-vadewale', 'oodles-of-noodles', 'narayana', 'cool-cravings'].includes(lowerId)) assumedRole = 'owner';
-      else if (lowerId === '9876543210') assumedRole = 'guest';
 
-      const resData = await api.login(idInput, pwd, assumedRole).catch((err) => {
-        // Fallback check in locally registered accounts registry
-        const savedReg = JSON.parse(localStorage.getItem('sgu_registered_users') || '{}');
-        const localAccount = savedReg[lowerId];
-        if (localAccount && (localAccount.password === pwd || !pwd)) {
-          return {
-            success: true,
-            user: { role: localAccount.role || 'student', name: localAccount.name, username: idInput, shopId: null },
-            token: 'mock-registered-user-token'
-          };
-        }
-
+      const resData = await api.login(idInput, pwd, assumedRole).catch(() => {
         const shopList = ['mangales-snacks', 'tea-coffee', 'rohit-vadewale', 'oodles-of-noodles', 'narayana', 'cool-cravings'];
         if (shopList.includes(lowerId) && (pwd === '000000000' || pwd === '00000000' || pwd === 'admin123')) {
           return {
@@ -208,361 +107,160 @@ const LoginPage = () => {
             token: 'mock-admin-token'
           };
         }
-        throw err;
+        throw new Error('Invalid credentials.');
       });
 
       if (resData?.success && resData?.user) {
-        const user = resData.user;
-        finish(user.role, user.name, user.username, user.shopId, resData.token);
+        finish(resData.user.role, resData.user.name, resData.user.username, resData.user.shopId, resData.token);
       } else {
-        setErrorMsg(resData?.message || 'Invalid username or password.');
+        setErrorMsg(resData?.message || 'Invalid credentials.');
         setIsLoading(false);
       }
     } catch (err) {
-      setErrorMsg(err.message || 'Login failed. Please check your credentials.');
+      setErrorMsg(err.message || 'Staff login failed.');
       setIsLoading(false);
     }
-
   };
 
-  /* ── Register ── */
-  const handleRegister = async (e) => {
-    e.preventDefault();
-    const emailOrId = identifier.trim();
-    const nm = regName.trim();
-    const pwd = password.trim();
-    const fe = {};
-    if (!nm) fe.regName = 'Name is required.';
-    if (!emailOrId) fe.identifier = 'Email or User ID is required.';
-    if (!pwd) fe.password = 'Password is required.';
-    else if (pwd.length < 6) fe.password = 'Minimum 6 characters.';
-    if (pwd !== confirmPwd.trim()) fe.confirmPwd = 'Passwords do not match.';
-    if (Object.keys(fe).length) { setFieldErr(fe); return; }
-    setIsLoading(true); clear();
+  /* ── OAuth Session listener ── */
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        const userEmail = (session.user.email || '').toLowerCase().trim();
+        const meta = session.user.user_metadata || {};
+        const role = meta.role || session.user.app_metadata?.role || 'student';
 
-    // Save account to persistent local registry so sign-in always works
-    const savedReg = JSON.parse(localStorage.getItem('sgu_registered_users') || '{}');
-    savedReg[emailOrId.toLowerCase()] = { name: nm || emailOrId.split('@')[0], password: pwd, role: 'student' };
-    localStorage.setItem('sgu_registered_users', JSON.stringify(savedReg));
+        // Enforce @sguk.ac.in domain verification for student Google logins
+        if (role === 'student' && userEmail && !userEmail.endsWith('@sguk.ac.in') && !userEmail.endsWith('@sgu.edu')) {
+          setErrorMsg("Access Restricted: Only @sguk.ac.in email addresses are allowed.");
+          await supabase.auth.signOut();
+          clearStoredUser();
+          setIsLoading(false);
+          return;
+        }
 
-    // 1. Try Supabase Auth Sign Up if it's a valid email format
-    if (isEmail(emailOrId)) {
-      try {
-        await supabase.auth.signUp({
-          email: emailOrId,
-          password: pwd,
-          options: { data: { full_name: nm, role: 'student' } }
-        });
-      } catch (err) {
-        // Let backend register
+        const name = meta.full_name || meta.name || userEmail.split('@')[0] || 'Student';
+        const id = userEmail || session.user.phone || session.user.id;
+        const shopId = meta.shopId || null;
+
+        try {
+          await api.loginGoogle(id, name).catch(() => null);
+        } catch (_e) {}
+
+        finish(role, name, id, shopId, session.access_token);
       }
-    }
+    });
 
-    // 2. Direct Backend API Registration with resilient registration completion
-    try {
-      const resData = await api.register(emailOrId, nm, pwd, 'student').catch((err) => {
-        return {
-          success: true,
-          user: { role: 'student', name: nm || emailOrId.split('@')[0], username: emailOrId, shopId: null },
-          token: 'mock-registered-user-token'
-        };
-      });
-
-      if (resData?.success && resData?.user) {
-        const user = resData.user;
-        finish(user.role, user.name, user.username, user.shopId, resData.token);
+    const saved = getStoredUser();
+    if (saved && saved.role) {
+      const bad = saved.role === 'owner' && (!saved.shopId || saved.shopId === 'undefined' || saved.shopId === 'null');
+      if (bad) {
+        clearStoredUser();
       } else {
-        finish('student', nm || emailOrId.split('@')[0], emailOrId, null, 'mock-registered-user-token');
+        redirectByRole(saved.role, saved.shopId);
       }
-    } catch (err) {
-      finish('student', nm || emailOrId.split('@')[0], emailOrId, null, 'mock-registered-user-token');
     }
-  };
+    return () => subscription.unsubscribe();
+  }, [finish, redirectByRole]);
 
-  /* ── Google OAuth ── */
-  const withGoogle = async (isSignUpMode = false) => {
-    setIsLoading(true); clear();
-    if (isSignUpMode || mode === 'register') {
-      localStorage.setItem('sgu_is_signup', 'true');
-    } else {
-      localStorage.removeItem('sgu_is_signup');
-    }
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: window.location.origin + '/login',
-          queryParams: {
-            prompt: 'select_account',
-            access_type: 'offline'
-          }
-        },
-      });
-      if (error) throw error;
-    } catch (err) { setErrorMsg(err.message || 'Google sign-in failed.'); setIsLoading(false); }
-  };
-
-  /* ── Identifier hint (login only) ── */
-  const hint = (() => {
-    const id = identifier.trim();
-    if (!id) return null;
-    if (isEmail(id)) return 'Enter your password below to sign in.';
-    if (isPhone(id)) return 'Enter your password below to sign in.';
-    if (id.toLowerCase().includes('admin')) return 'Admin account. Enter your password below.';
-    return 'Shop owner account. Enter your password below.';
-  })();
-
-  /* ── Primary button label ── */
-  const loginLabel = 'Sign In';
-
-  /* ── Shared: Google button ── */
-  const GoogleBtn = ({ label, isSignUp }) => (
-    <button
-      type="button"
-      onClick={() => {
-        setIsLoading(true);
-        withGoogle(isSignUp);
-        setTimeout(() => setIsLoading(false), 4000);
-      }}
-      disabled={isSuccess}
-      className="sb-btn-google"
-      aria-label={label}
-    >
-      <GoogleIcon />
-      <span>{label}</span>
-    </button>
-  );
-
-  /* ── Shared: spinner / check inside primary button ── */
-  const BtnInner = ({ label }) => (
-    <>
-      {isLoading && <IconLoader2 size={19} strokeWidth={2} className="sb-spin" aria-hidden="true" />}
-      {isSuccess && <IconCircleCheck size={19} strokeWidth={2} aria-hidden="true" />}
-      {!isLoading && !isSuccess && <><span>{label}</span><IconArrowRight size={17} strokeWidth={2} aria-hidden="true" /></>}
-    </>
-  );
-
-  /* ══════════════════════ RENDER ══════════════════════ */
   return (
     <main className="sb-root">
-      {/* Background: subtle geometric accent, not a blob gradient */}
       <div className="sb-bg-accent" aria-hidden="true" />
 
-      <div className="sb-card" role="region" aria-label="Smart Bite authentication">
-        {/* ── Brand mark ── */}
-            <div className="sb-brand" aria-label="Smart Bite">
-              <div className="sb-logo-ring" aria-hidden="true">
-                <img src={sguLogo} alt="SGU Logo" className="sb-sgu-logo-img" />
+      <div className="sb-card sb-card--centered" role="region" aria-label="SmartBite authentication">
+        {/* Top Icon */}
+        <div className="sb-profile-avatar-wrap">
+          <div className="sb-profile-avatar-circle">
+            <IconUser size={34} strokeWidth={1.8} className="sb-profile-avatar-icon" />
+          </div>
+        </div>
+
+        {/* Title */}
+        <h1 className="sb-heading sb-heading--center">Sign in to Register</h1>
+
+        {/* Subtext */}
+        <p className="sb-subtext">
+          Sign in with your college roll-number email (e.g. <span className="sb-highlight-email">252921001@sguk.ac.in</span>) to access campus food court services.
+        </p>
+
+        {/* Error message banner if any */}
+        {errorMsg && (
+          <div className="sb-error-banner" role="alert" aria-live="assertive">
+            {errorMsg}
+          </div>
+        )}
+
+        {/* Primary Button */}
+        <button
+          type="button"
+          onClick={handleGoogleLogin}
+          disabled={isLoading || isSuccess}
+          className="sb-btn-google-primary"
+          aria-label="Continue with Google"
+        >
+          {isLoading ? (
+            <IconLoader2 size={20} className="sb-spin" />
+          ) : (
+            <GoogleIcon size={22} />
+          )}
+          <span>{isLoading ? 'Connecting...' : 'Continue with Google'}</span>
+        </button>
+
+        {/* Footnote */}
+        <p className="sb-footnote">
+          Only @sguk.ac.in email addresses allowed
+        </p>
+
+        {/* Collapsible Staff / Vendor Access */}
+        <div className="sb-staff-section">
+          <button
+            type="button"
+            className="sb-staff-toggle-btn"
+            onClick={() => setShowStaffLogin(prev => !prev)}
+          >
+            <IconBuildingStore size={15} />
+            <span>{showStaffLogin ? 'Hide Staff Login' : 'Staff / Vendor / Admin Login'}</span>
+          </button>
+
+          {showStaffLogin && (
+            <form onSubmit={handleStaffLogin} className="sb-staff-form">
+              <div className="sb-field">
+                <label className="sb-field-label" htmlFor="staff-id">Shop ID or Admin Username</label>
+                <div className="sb-field-wrap">
+                  <IconMail className="sb-field-icon" size={17} />
+                  <input
+                    id="staff-id"
+                    type="text"
+                    value={staffId}
+                    onChange={(e) => setStaffId(e.target.value)}
+                    placeholder="e.g. mangales-snacks or admin"
+                    className="sb-field-input"
+                  />
+                </div>
               </div>
-              {mode === 'register' && (
-                <h1 className="sb-heading">Create account</h1>
-              )}
-              <p className="sb-body">
-                {mode === 'login' ? 'Sign in to continue to Smart Bite' : 'Join Smart Bite today'}
-              </p>
-            </div>
 
-            {/* ── Mode tabs ── */}
-            <div className="sb-tabs" role="tablist" aria-label="Authentication mode">
-              {[['login', 'Sign In'], ['register', 'Sign Up']].map(([m, lbl]) => (
-                <button
-                  key={m}
-                  role="tab"
-                  type="button"
-                  aria-selected={mode === m}
-                  aria-controls={`${m}-panel`}
-                  className={`sb-tab${mode === m ? ' sb-tab--active' : ''}`}
-                  onClick={() => switchMode(m)}
-                >
-                  {lbl}
-                </button>
-              ))}
-            </div>
-
-            {/* ══ SIGN IN ══ */}
-            {mode === 'login' && (
-              <form id="login-panel" role="tabpanel" onSubmit={handleLogin} noValidate>
-                <Field
-                  id="login-id"
-                  label="Email, mobile, or Shop ID"
-                  Icon={IconMail}
-                  value={identifier}
-                  onChange={(e) => { setIdentifier(e.target.value); clear(); }}
-                  placeholder="you@example.com"
-                  autoFocus
-                  autoComplete="username"
-                  error={fieldErr.identifier}
-                  hint={!fieldErr.identifier ? hint : null}
-                />
-
-                <Field
-                  id="login-pwd"
-                  label="Password"
-                  type={showPwd ? 'text' : 'password'}
-                  Icon={IconLock}
-                  value={password}
-                  onChange={(e) => { setPassword(e.target.value); clear(); }}
-                  placeholder="Your password"
-                  autoComplete="current-password"
-                  error={fieldErr.password}
-                  right={
-                    <button
-                      type="button"
-                      className="sb-eye-btn"
-                      onClick={() => setShowPwd(v => !v)}
-                      aria-label={showPwd ? 'Hide password' : 'Show password'}
-                    >
-                      {showPwd
-                        ? <IconEyeOff size={17} strokeWidth={1.75} />
-                        : <IconEye size={17} strokeWidth={1.75} />
-                      }
-                    </button>
-                  }
-                />
-
-                <div className="sb-options-row">
-                  <label className="sb-remember" htmlFor="remember">
-                    <input
-                      id="remember"
-                      type="checkbox"
-                      checked={rememberMe}
-                      onChange={(e) => setRememberMe(e.target.checked)}
-                      className="sb-checkbox"
-                    />
-                    Remember me
-                  </label>
-                  <button
-                    type="button"
-                    className="sb-text-link"
-                    onClick={() => navigate('/forgot-password')}
-                  >
-                    Forgot password?
-                  </button>
+              <div className="sb-field">
+                <label className="sb-field-label" htmlFor="staff-pwd">Password</label>
+                <div className="sb-field-wrap">
+                  <IconLock className="sb-field-icon" size={17} />
+                  <input
+                    id="staff-pwd"
+                    type="password"
+                    value={staffPwd}
+                    onChange={(e) => setStaffPwd(e.target.value)}
+                    placeholder="Enter password"
+                    className="sb-field-input"
+                  />
                 </div>
+              </div>
 
-                {errorMsg && (
-                  <p className="sb-error-banner" role="alert" aria-live="assertive">{errorMsg}</p>
-                )}
-
-                <button
-                  type="submit"
-                  onClick={() => { if (isLoading) setIsLoading(false); }}
-                  disabled={!identifier.trim() || isSuccess}
-                  className={`sb-btn-primary${isSuccess ? ' sb-btn-primary--success' : ''}`}
-                  aria-label={loginLabel}
-                >
-                  <BtnInner label={loginLabel} />
-                </button>
-
-                <div className="sb-divider" aria-hidden="true"><span>or</span></div>
-
-                <GoogleBtn label="Continue with Google" isSignUp={false} />
-
-                <p className="sb-switch">
-                  No account?{' '}
-                  <button type="button" className="sb-text-link sb-text-link--inline" onClick={() => switchMode('register')}>
-                    Sign up
-                  </button>
-                </p>
-              </form>
-            )}
-
-            {/* ══ SIGN UP ══ */}
-            {mode === 'register' && (
-              <form id="register-panel" role="tabpanel" onSubmit={handleRegister} noValidate>
-                <Field
-                  id="reg-name"
-                  label="Full name"
-                  Icon={IconUser}
-                  value={regName}
-                  onChange={(e) => { setRegName(e.target.value); clear(); }}
-                  placeholder="Your full name"
-                  autoFocus
-                  autoComplete="name"
-                  error={fieldErr.regName}
-                />
-
-                <Field
-                  id="reg-id"
-                  label="Email or mobile"
-                  Icon={IconMail}
-                  value={identifier}
-                  onChange={(e) => { setIdentifier(e.target.value); clear(); }}
-                  placeholder="you@example.com"
-                  autoComplete="username"
-                  error={fieldErr.identifier}
-                />
-
-                <Field
-                  id="reg-pwd"
-                  label="Password"
-                  type={showPwd ? 'text' : 'password'}
-                  Icon={IconLock}
-                  value={password}
-                  onChange={(e) => { setPassword(e.target.value); clear(); }}
-                  placeholder="At least 6 characters"
-                  autoComplete="new-password"
-                  error={fieldErr.password}
-                  right={
-                    <button type="button" className="sb-eye-btn"
-                      onClick={() => setShowPwd(v => !v)}
-                      aria-label={showPwd ? 'Hide password' : 'Show password'}>
-                      {showPwd ? <IconEyeOff size={17} strokeWidth={1.75} /> : <IconEye size={17} strokeWidth={1.75} />}
-                    </button>
-                  }
-                />
-
-                <Field
-                  id="reg-confirm"
-                  label="Confirm password"
-                  type={showConfirm ? 'text' : 'password'}
-                  Icon={IconLock}
-                  value={confirmPwd}
-                  onChange={(e) => { setConfirmPwd(e.target.value); clear(); }}
-                  placeholder="Repeat your password"
-                  autoComplete="new-password"
-                  error={fieldErr.confirmPwd}
-                  right={
-                    <button type="button" className="sb-eye-btn"
-                      onClick={() => setShowConfirm(v => !v)}
-                      aria-label={showConfirm ? 'Hide password' : 'Show password'}>
-                      {showConfirm ? <IconEyeOff size={17} strokeWidth={1.75} /> : <IconEye size={17} strokeWidth={1.75} />}
-                    </button>
-                  }
-                />
-
-                {errorMsg && (
-                  <p className="sb-error-banner" role="alert" aria-live="assertive">{errorMsg}</p>
-                )}
-
-                <button
-                  type="submit"
-                  onClick={() => { if (isLoading) setIsLoading(false); }}
-                  disabled={!regName.trim() || !identifier.trim() || !password.trim() || !confirmPwd.trim() || isSuccess}
-                  className={`sb-btn-primary${isSuccess ? ' sb-btn-primary--success' : ''}`}
-                  aria-label="Create account"
-                >
-                  <BtnInner label="Create account" />
-                </button>
-
-                <div className="sb-divider" aria-hidden="true"><span>or</span></div>
-
-                <GoogleBtn label="Sign up with Google" isSignUp={true} />
-
-                <p className="sb-switch">
-                  Have an account?{' '}
-                  <button type="button" className="sb-text-link sb-text-link--inline" onClick={() => switchMode('login')}>
-                    Sign in
-                  </button>
-                </p>
-
-                {/* Owner note -- amber callout, not a decorative element */}
-                <div className="sb-notice" role="note">
-                  <IconBuildingStore size={15} strokeWidth={1.75} aria-hidden="true" />
-                  <span>Shop owners: contact admin to receive your Shop ID and password.</span>
-                </div>
-              </form>
-            )}
+              <button type="submit" disabled={isLoading} className="sb-btn-primary sb-btn-staff">
+                <span>Sign in as Staff</span>
+                <IconArrowRight size={17} />
+              </button>
+            </form>
+          )}
+        </div>
       </div>
     </main>
   );
