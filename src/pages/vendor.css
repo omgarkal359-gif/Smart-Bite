@@ -173,12 +173,12 @@
 
 /* Premium Control Buttons */
 .vendor-sidebar {
-  background: var(--white);
+  background: var(--primary-navy);
   width: 120px;
   height: 100vh;
-  box-shadow: 4px 0 15px rgba(0,0,0,0.05);
+  box-shadow: 4px 0 15px rgba(220, 38, 38, 0.2);
   z-index: 200;
-  border-right: 1px solid rgba(226, 232, 240, 0.8);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .sidebar-btn {
@@ -191,7 +191,7 @@
   padding: 16px 0;
   background: transparent;
   border: none;
-  color: var(--text-muted);
+  color: rgba(255, 255, 255, 0.8);
   font-family: 'Inter', sans-serif;
   font-weight: 700;
   font-size: 0.85rem;
@@ -202,17 +202,17 @@
 }
 
 .sidebar-btn:hover {
-  background: rgba(241, 245, 249, 0.8);
-  color: var(--primary-navy);
+  background: rgba(255, 255, 255, 0.15);
+  color: var(--white);
 }
 
 .sidebar-btn span {
   opacity: 1;
 }
 
-.sidebar-btn.busy { color: var(--primary-navy); } 
-.sidebar-btn.active { color: var(--success-green); } 
-.sidebar-btn.exit { color: var(--primary-navy); }
+.sidebar-btn.busy { color: #FECACA; } /* Light red/pink for busy */
+.sidebar-btn.active { color: #4ADE80; } /* Green for normal */
+.sidebar-btn.exit { color: #FEE2E2; } /* Light red for exit */
 
 /* Floating Labels */
 .floating-label-group {
