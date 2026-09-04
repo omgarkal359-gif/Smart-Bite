@@ -486,11 +486,11 @@ const VendorDashboard = () => {
         <header className={`kds-header shadow-lg ${shopStatus === 'CLOSED' ? 'closed' : ''}`}>
           <div className="kds-header-left flex items-center gap-8 w-full justify-between">
             <div className="flex flex-col">
-              <h1 className="heading-2 text-white text-3xl" style={{ margin: 0 }}>{currentShop?.name || 'Vendor Dashboard'}</h1>
+              <h1 className="heading-2 text-3xl" style={{ margin: 0, color: '#FFFFFF' }}>{currentShop?.name || 'Vendor Dashboard'}</h1>
               <div className="heartbeat-monitor mt-1" style={{ padding: '4px 12px' }}>
                 <Activity size={14} color={heartbeat ? '#22C55E' : '#94A3B8'} className={heartbeat ? 'pulse' : ''} />
-                <span className="text-white opacity-80 text-[10px] uppercase font-black tracking-widest">Live Operations</span>
-                {user && <span className="text-white opacity-60 text-[10px] font-semibold ml-2">· {user.name}</span>}
+                <span className="opacity-80 text-[10px] uppercase font-black tracking-widest" style={{ color: '#F8FAFC' }}>Live Operations</span>
+                {user && <span className="opacity-60 text-[10px] font-semibold ml-2" style={{ color: '#E2E8F0' }}>· {user.name}</span>}
               </div>
             </div>
 
