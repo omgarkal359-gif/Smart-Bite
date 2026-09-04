@@ -569,7 +569,7 @@ const VendorDashboard = () => {
 
         {/* Kitchen Queue */}
         <div className="flex flex-col mt-4 flex-1 min-h-0" style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
-          <h3 className="heading-3 text-white flex items-center gap-2 m-0 mb-4" style={{ fontSize: '1.25rem', fontFamily: 'var(--font-heading)', textTransform: 'uppercase', letterSpacing: '1px' }}>
+          <h3 className="heading-3 text-slate-700 flex items-center gap-2 m-0 mb-4" style={{ fontSize: '1.25rem', fontFamily: 'var(--font-heading)', textTransform: 'uppercase', letterSpacing: '1px' }}>
             <Utensils size={20} className="text-red-500" />
             Kitchen Queue ({activeTickets.length})
           </h3>
