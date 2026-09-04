@@ -58,7 +58,9 @@ const LoginPage = () => {
         options: {
           redirectTo: `${window.location.origin}/login`,
           queryParams: {
-            hd: 'sguk.ac.in' // Restricts Google account selector UI to @sguk.ac.in domain
+            prompt: 'select_account',
+            access_type: 'offline',
+            hd: 'sguk.ac.in' // Forces account selector UI and restricts domain
           }
         }
       });
