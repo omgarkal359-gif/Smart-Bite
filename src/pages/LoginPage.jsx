@@ -52,6 +52,17 @@ const LoginPage = () => {
   const handleGoogleLogin = async () => {
     setIsLoading(true);
     setErrorMsg('');
+    localStorage.setItem('sgu_google_oauth_started', 'true');
+
+    // Safety timeout: reset loading if window didn't unload within 6s
+    const timeoutId = setTimeout(() => {
+      if (localStorage.getItem('sgu_google_oauth_started') === 'true') {
+        localStorage.removeItem('sgu_google_oauth_started');
+        setIsLoading(false);
+        setErrorMsg('Login failed or was cancelled. Please try again.');
+      }
+    }, 6000);
+
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -65,13 +76,17 @@ const LoginPage = () => {
         }
       });
       if (error) {
+        clearTimeout(timeoutId);
+        localStorage.removeItem('sgu_google_oauth_started');
         console.error("Login failed:", error.message);
-        setErrorMsg(error.message || "Google sign-in failed.");
+        setErrorMsg(error.message || "Login failed. Please try again.");
         setIsLoading(false);
       }
     } catch (err) {
+      clearTimeout(timeoutId);
+      localStorage.removeItem('sgu_google_oauth_started');
       console.error("Login failed:", err.message);
-      setErrorMsg(err.message || "Google sign-in failed.");
+      setErrorMsg(err.message || "Login failed. Please try again.");
       setIsLoading(false);
     }
   };
@@ -126,8 +141,38 @@ const LoginPage = () => {
 
   /* ── OAuth Session listener ── */
   useEffect(() => {
+    // 1. Check URL for OAuth errors or cancellation
+    const urlParams = new URLSearchParams(window.location.search);
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const oauthError = urlParams.get('error') || hashParams.get('error') || urlParams.get('error_description');
+
+    if (oauthError) {
+      setIsLoading(false);
+      setErrorMsg('Login failed. Please try again.');
+      localStorage.removeItem('sgu_google_oauth_started');
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
+    // 2. Window focus listener to detect when user exits / closes Google account picker
+    const handleWindowFocus = () => {
+      const oauthStarted = localStorage.getItem('sgu_google_oauth_started');
+      if (oauthStarted === 'true') {
+        setTimeout(async () => {
+          const { data } = await supabase.auth.getSession();
+          if (!data?.session) {
+            localStorage.removeItem('sgu_google_oauth_started');
+            setIsLoading(false);
+            setErrorMsg('Login failed. Please try again.');
+          }
+        }, 800);
+      }
+    };
+
+    window.addEventListener('focus', handleWindowFocus);
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session?.user) {
+        localStorage.removeItem('sgu_google_oauth_started');
         const userEmail = (session.user.email || '').toLowerCase().trim();
         const meta = session.user.user_metadata || {};
         const role = meta.role || session.user.app_metadata?.role || 'student';
@@ -162,7 +207,10 @@ const LoginPage = () => {
         redirectByRole(saved.role, saved.shopId);
       }
     }
-    return () => subscription.unsubscribe();
+    return () => {
+      window.removeEventListener('focus', handleWindowFocus);
+      subscription.unsubscribe();
+    };
   }, [finish, redirectByRole]);
 
   return (
