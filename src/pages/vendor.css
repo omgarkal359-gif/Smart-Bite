@@ -172,38 +172,47 @@
 }
 
 /* Premium Control Buttons */
-.elite-ctrl-btn {
+.vendor-sidebar {
+  background: #25262B; /* Dark gray like the image */
+  width: 120px;
+  height: 100vh;
+  box-shadow: 4px 0 15px rgba(0,0,0,0.2);
+  z-index: 200;
+  border-right: 1px solid rgba(255,255,255,0.05);
+}
+
+.sidebar-btn {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 10px;
-  padding: 12px 24px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 14px;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 16px 0;
+  background: transparent;
+  border: none;
   color: white;
-  font-family: 'Oswald', sans-serif;
-  font-weight: 700;
-  font-size: 0.8rem;
-  letter-spacing: 0.05em;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 0.85rem;
+  letter-spacing: 0.02em;
   transition: all 0.3s ease;
   cursor: pointer;
+  position: relative;
 }
 
-.elite-ctrl-btn:hover {
-  background: rgba(255, 255, 255, 0.15);
-  border-color: rgba(255, 255, 255, 0.3);
-  transform: translateY(-2px);
+.sidebar-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
 }
 
-.elite-ctrl-btn span {
-  opacity: 0.8;
+.sidebar-btn span {
+  opacity: 0.9;
 }
 
-.elite-ctrl-btn.busy { background: #DC2626; border-color: #EF4444; }
-.elite-ctrl-btn.active { background: #22C55E; border-color: #4ADE80; }
-.elite-ctrl-btn.management { background: var(--white); border-color: rgba(220, 38, 38, 0.2); color: var(--primary-navy); }
-.elite-ctrl-btn.management:hover { background: var(--white); border-color: rgba(220, 38, 38, 0.5); }
-.elite-ctrl-btn.exit { background: #F1F5F9; border-color: #E2E8F0; color: #DC2626; }
+/* User wants the theme words but with pill backgrounds? Wait, they said "don't repalace the second image theme words". Image 1 has transparent backgrounds. Let's make them transparent but color them according to the theme if selected, or maybe just simple white. */
+.sidebar-btn.busy { color: #F87171; } /* Reddish for busy */
+.sidebar-btn.active { color: #4ADE80; } /* Greenish for normal */
+.sidebar-btn.exit { color: #F87171; }
 
 /* Floating Labels */
 .floating-label-group {
