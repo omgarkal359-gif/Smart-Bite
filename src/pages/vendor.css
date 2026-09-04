@@ -173,12 +173,12 @@
 
 /* Premium Control Buttons */
 .vendor-sidebar {
-  background: #25262B; /* Dark gray like the image */
+  background: var(--white);
   width: 120px;
   height: 100vh;
-  box-shadow: 4px 0 15px rgba(0,0,0,0.2);
+  box-shadow: 4px 0 15px rgba(0,0,0,0.05);
   z-index: 200;
-  border-right: 1px solid rgba(255,255,255,0.05);
+  border-right: 1px solid rgba(226, 232, 240, 0.8);
 }
 
 .sidebar-btn {
@@ -191,9 +191,9 @@
   padding: 16px 0;
   background: transparent;
   border: none;
-  color: white;
+  color: var(--text-muted);
   font-family: 'Inter', sans-serif;
-  font-weight: 600;
+  font-weight: 700;
   font-size: 0.85rem;
   letter-spacing: 0.02em;
   transition: all 0.3s ease;
@@ -202,17 +202,17 @@
 }
 
 .sidebar-btn:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(241, 245, 249, 0.8);
+  color: var(--primary-navy);
 }
 
 .sidebar-btn span {
-  opacity: 0.9;
+  opacity: 1;
 }
 
-/* User wants the theme words but with pill backgrounds? Wait, they said "don't repalace the second image theme words". Image 1 has transparent backgrounds. Let's make them transparent but color them according to the theme if selected, or maybe just simple white. */
-.sidebar-btn.busy { color: #F87171; } /* Reddish for busy */
-.sidebar-btn.active { color: #4ADE80; } /* Greenish for normal */
-.sidebar-btn.exit { color: #F87171; }
+.sidebar-btn.busy { color: var(--primary-navy); } 
+.sidebar-btn.active { color: var(--success-green); } 
+.sidebar-btn.exit { color: var(--primary-navy); }
 
 /* Floating Labels */
 .floating-label-group {
