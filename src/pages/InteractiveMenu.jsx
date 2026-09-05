@@ -80,7 +80,7 @@ const InteractiveMenu = () => {
   const CATEGORIES = useMemo(() => {
     const cats = inventory.map(item => item.category).filter(Boolean);
     const unique = [...new Set(cats)];
-    return unique.length > 0 ? unique : ['All Items'];
+    return ['All', ...unique];
   }, [inventory]);
 
   // Determine active category
@@ -88,8 +88,7 @@ const InteractiveMenu = () => {
     const decodedTarget = targetCategory ? decodeURIComponent(targetCategory) : null;
     const initialCats = initialItems.map(i => i.category).filter(Boolean);
     const unique = [...new Set(initialCats)];
-    if (decodedTarget && unique.includes(decodedTarget)) return decodedTarget;
-    return unique[0] || 'All Items';
+    return decodedTarget && unique.includes(decodedTarget) ? decodedTarget : 'All';
   });
 
   // Load latest data asynchronously from API/Supabase
@@ -240,7 +239,7 @@ const InteractiveMenu = () => {
   };
 
   const filteredInventory = useMemo(() => {
-    if (!activeCategory || activeCategory === 'All Items') return displayInventory;
+    if (!activeCategory || activeCategory === 'All') return displayInventory;
     const matched = displayInventory.filter(item => item.category === activeCategory);
     return matched.length > 0 ? matched : displayInventory;
   }, [displayInventory, activeCategory]);
