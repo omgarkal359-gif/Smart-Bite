@@ -70,8 +70,7 @@ const LoginPage = () => {
           redirectTo: `${window.location.origin}/login`,
           queryParams: {
             prompt: 'select_account',
-            access_type: 'offline',
-            hd: 'sguk.ac.in' // Forces account selector UI and restricts domain
+            access_type: 'offline' // Shows all logged-in Google accounts on device
           }
         }
       });
