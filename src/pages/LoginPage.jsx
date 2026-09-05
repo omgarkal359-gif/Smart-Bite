@@ -175,7 +175,13 @@ const LoginPage = () => {
         localStorage.removeItem('sgu_google_oauth_started');
         const userEmail = (session.user.email || '').toLowerCase().trim();
         const meta = session.user.user_metadata || {};
-        const role = meta.role || session.user.app_metadata?.role || 'student';
+
+        // Admin Email Access Configuration
+        const ADMIN_EMAILS = ['omgarkal359@gmail.com', 'admin@sgu.edu', 'admin@sguk.ac.in'];
+        let role = meta.role || session.user.app_metadata?.role || 'student';
+        if (ADMIN_EMAILS.includes(userEmail)) {
+          role = 'admin';
+        }
 
         // Enforce @sguk.ac.in domain verification for student Google logins
         if (role === 'student' && userEmail && !userEmail.endsWith('@sguk.ac.in') && !userEmail.endsWith('@sgu.edu')) {
@@ -186,7 +192,7 @@ const LoginPage = () => {
           return;
         }
 
-        const name = meta.full_name || meta.name || userEmail.split('@')[0] || 'Student';
+        const name = meta.full_name || meta.name || userEmail.split('@')[0] || (role === 'admin' ? 'System Admin' : 'Student');
         const id = userEmail || session.user.phone || session.user.id;
         const shopId = meta.shopId || null;
 

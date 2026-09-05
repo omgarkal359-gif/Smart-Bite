@@ -122,17 +122,23 @@ export async function loginGoogle(req, res, next) {
       return res.status(400).json({ success: false, message: 'Authentication token or email is required.' });
     }
 
+    const ADMIN_EMAILS = ['omgarkal359@gmail.com', 'admin@sgu.edu', 'admin@sguk.ac.in'];
+    const assignedRole = ADMIN_EMAILS.includes(cleanId) ? 'admin' : 'student';
+
     let user = await db.get('SELECT * FROM users WHERE LOWER(username) = ?', [cleanId]);
     
     if (!user) {
       await db.run(
         'INSERT INTO users (username, name, password, role, shopId) VALUES (?, ?, ?, ?, ?)',
-        [cleanId, displayName, '', 'student', null]
+        [cleanId, displayName, '', assignedRole, null]
       );
       user = await db.get('SELECT * FROM users WHERE LOWER(username) = ?', [cleanId]);
+    } else if (ADMIN_EMAILS.includes(cleanId) && user.role !== 'admin') {
+      await db.run('UPDATE users SET role = ? WHERE LOWER(username) = ?', ['admin', cleanId]);
+      user.role = 'admin';
     }
 
-    syncUserToSupabaseAuth(cleanId, displayName, null, 'student');
+    syncUserToSupabaseAuth(cleanId, displayName, null, user.role);
     const appToken = issueToken(user);
     res.json({ success: true, user: sanitizeUser(user), token: appToken });
   } catch (err) {
