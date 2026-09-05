@@ -176,15 +176,21 @@ const LoginPage = () => {
         const meta = session.user.user_metadata || {};
 
         // Admin Email Access Configuration
-        const ADMIN_EMAILS = ['omgarkal359@gmail.com', 'admin@sgu.edu', 'admin@sguk.ac.in'];
+        const ADMIN_EMAILS = ['omgarkal359@gmail.com', 'omgarkal357@gmail.com', 'admin@sgu.edu', 'admin@sguk.ac.in', 'admin@sgu.ac.in'];
         let role = meta.role || session.user.app_metadata?.role || 'student';
         if (ADMIN_EMAILS.includes(userEmail)) {
           role = 'admin';
         }
 
-        // Enforce @sguk.ac.in domain verification for student Google logins
-        if (role === 'student' && userEmail && !userEmail.endsWith('@sguk.ac.in') && !userEmail.endsWith('@sgu.edu')) {
-          setErrorMsg("Access Restricted: Only @sguk.ac.in email addresses are allowed.");
+        // Domain & Email Access Guard (@sguk.ac.in, @sgu.ac.in, or authorized ADMIN_EMAILS)
+        const isAllowedDomain = (email) => {
+          if (!email) return false;
+          if (ADMIN_EMAILS.includes(email)) return true;
+          return email.endsWith('@sguk.ac.in') || email.endsWith('@sgu.ac.in') || email.endsWith('@sgu.edu');
+        };
+
+        if (!isAllowedDomain(userEmail)) {
+          setErrorMsg("Access Restricted: Only @sguk.ac.in / @sgu.ac.in college emails and authorized admin accounts are allowed.");
           await supabase.auth.signOut();
           clearStoredUser();
           setIsLoading(false);

@@ -122,7 +122,7 @@ export async function loginGoogle(req, res, next) {
       return res.status(400).json({ success: false, message: 'Authentication token or email is required.' });
     }
 
-    const ADMIN_EMAILS = ['omgarkal359@gmail.com', 'admin@sgu.edu', 'admin@sguk.ac.in'];
+    const ADMIN_EMAILS = ['omgarkal359@gmail.com', 'omgarkal357@gmail.com', 'admin@sgu.edu', 'admin@sguk.ac.in', 'admin@sgu.ac.in'];
     const assignedRole = ADMIN_EMAILS.includes(cleanId) ? 'admin' : 'student';
 
     let user = await db.get('SELECT * FROM users WHERE LOWER(username) = ?', [cleanId]);
