@@ -12,18 +12,26 @@ import './pages.css';
 import './menu_v21.css';
 
 const CAT_ICONS = {
-  'Pizzas': <Pizza size={16} />,
-  'Burgers': <Sandwich size={16} />,
-  'Beverages': <Coffee size={16} />,
-  "Tea's": <Coffee size={16} />,
-  'Coffee': <Coffee size={16} />,
-  'Cold Beverages': <Coffee size={16} />,
-  'Wadapav': <Flame size={16} />,
-  'Misal': <Flame size={16} />,
-  "Dosa's": <Flame size={16} />,
-  "Idli's": <Utensils size={16} />,
-  'Noodles': <Utensils size={16} />,
-  'Shakes': <Coffee size={16} />
+  'All Menu': <span className="text-lg leading-none">📋</span>,
+  'Pizzas': <span className="text-lg leading-none">🍕</span>,
+  'Burgers': <span className="text-lg leading-none">🍔</span>,
+  'Beverages': <span className="text-lg leading-none">🥤</span>,
+  "Tea's": <span className="text-lg leading-none">☕</span>,
+  'Coffee': <span className="text-lg leading-none">☕</span>,
+  'Cold Beverages': <span className="text-lg leading-none">🧊</span>,
+  'Wadapav': <span className="text-lg leading-none">🍔</span>,
+  'Misal': <span className="text-lg leading-none">🍲</span>,
+  "Dosa's": <span className="text-lg leading-none">🥞</span>,
+  "Idli's": <span className="text-lg leading-none">🍚</span>,
+  'Noodles': <span className="text-lg leading-none">🍜</span>,
+  'Shakes': <span className="text-lg leading-none">🥤</span>,
+  'Thalipeeth': <span className="text-lg leading-none">🫓</span>,
+  'Medu Vada': <span className="text-lg leading-none">🍩</span>,
+  'Appe (7 pcs)': <span className="text-lg leading-none">🧆</span>,
+  "Paratha's": <span className="text-lg leading-none">🫓</span>,
+  "Pasta's": <span className="text-lg leading-none">🍝</span>,
+  'Rice': <span className="text-lg leading-none">🍚</span>,
+  'Veg Wraps': <span className="text-lg leading-none">🌯</span>
 };
 
 const getFallbackIcon = (category) => {
@@ -257,7 +265,7 @@ const InteractiveMenu = () => {
               className={`category-pill-v21 tap-effect ${activeCategory === cat ? 'active' : ''}`}
               onClick={() => setActiveCategory(cat)}
             >
-              {CAT_ICONS[cat] || <Flame size={16} />}
+              {CAT_ICONS[cat] || <span className="text-lg leading-none">🥘</span>}
               <span>{cat}</span>
             </button>
           ))}
