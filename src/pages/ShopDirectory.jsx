@@ -73,6 +73,31 @@ const ShopDirectory = () => {
   const [stalls, setStalls] = useState(MOCK_SHOPS);
   const [slides] = useState(MOST_ORDERED_SLIDES);
   const carouselRef = useRef(null);
+  const [placeholder, setPlaceholder] = useState("What are you craving today?");
+
+  // Dynamic Placeholder based on Time of Day (Mood/Weather proxy)
+  useEffect(() => {
+    const getDynamicPlaceholders = () => {
+      const hour = new Date().getHours();
+      if (hour >= 5 && hour < 11) {
+        return ["Craving a hot coffee? ☕", "How about a fresh Dosa? 🥞", "Time for some crispy Vada! 🍩", "Start your day with Idli! 🍚"];
+      } else if (hour >= 11 && hour < 16) {
+        return ["Spicy Misal for lunch? 🍲", "Craving a heavy Thalipeeth? 🫓", "Grab a quick Wadapav! 🍔", "Lunchtime! Rice or Wraps? 🌯"];
+      } else if (hour >= 16 && hour < 19) {
+        return ["Evening snacks? Wadapav time! 🍔", "Need a cold Mojito? 🍹", "Craving some fast food? 🍟", "Tea and something crispy? ☕"];
+      } else {
+        return ["Late night craving for Pizza? 🍕", "Dinner time! Pasta or Noodles? 🍝", "How about a thick shake? 🥤", "Craving something sweet? 🍰"];
+      }
+    };
+    const phrases = getDynamicPlaceholders();
+    setPlaceholder(phrases[0]);
+    let i = 0;
+    const interval = setInterval(() => {
+      i = (i + 1) % phrases.length;
+      setPlaceholder(phrases[i]);
+    }, 3500);
+    return () => clearInterval(interval);
+  }, []);
 
   // Auto-scrolling Hero Slideshow
   useEffect(() => {
@@ -174,7 +199,7 @@ const ShopDirectory = () => {
             </div>
             <input 
               type="text" 
-              placeholder="What are you craving today?" 
+              placeholder={placeholder} 
               style={{ 
                 width: '100%', 
                 padding: '14px 16px 14px 48px', 
