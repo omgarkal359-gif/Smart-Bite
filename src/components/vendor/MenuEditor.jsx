@@ -22,6 +22,10 @@ export const MenuEditor = ({ shopId }) => {
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = React.useRef(null);
   const [editingItem, setEditingItem] = useState(null);
+  const [originalItem, setOriginalItem] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [toastMessage, setToastMessage] = useState(null);
   const editFileInputRef = React.useRef(null);
 
   useEffect(() => {
@@ -42,6 +46,84 @@ export const MenuEditor = ({ shopId }) => {
     if (list.length === 0) return ['Main', 'Sides', 'Beverages', 'Desserts'];
     return list;
   }, [items]);
+
+  const isDirty = useMemo(() => {
+    if (!editingItem || !originalItem) return false;
+    return (
+      editingItem.name !== originalItem.name ||
+      String(editingItem.price) !== String(originalItem.price) ||
+      editingItem.category !== originalItem.category ||
+      (editingItem.img || '') !== (originalItem.img || '')
+    );
+  }, [editingItem, originalItem]);
+
+  const handleOpenEdit = (item) => {
+    const itemCopy = {
+      ...item,
+      name: item.name || '',
+      price: item.price !== undefined && item.price !== null ? String(item.price) : '',
+      category: item.category || 'Main',
+      img: item.img || '',
+    };
+    setEditingItem(itemCopy);
+    setOriginalItem(itemCopy);
+    setFieldErrors({});
+  };
+
+  const handleCloseModal = () => {
+    if (isDirty) {
+      const confirmClose = window.confirm('You have unsaved changes. Are you sure you want to discard them?');
+      if (!confirmClose) return;
+    }
+    setEditingItem(null);
+    setOriginalItem(null);
+    setFieldErrors({});
+  };
+
+  const validateEdit = () => {
+    const errors = {};
+    if (!editingItem.name || !editingItem.name.trim()) {
+      errors.name = 'Item name is required';
+    }
+    const numPrice = parseFloat(editingItem.price);
+    if (editingItem.price === '' || isNaN(numPrice) || numPrice <= 0) {
+      errors.price = 'Please enter a valid price (greater than ₹0)';
+    }
+    if (!editingItem.category) {
+      errors.category = 'Category is required';
+    }
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleSaveEdit = async (e) => {
+    if (e) e.preventDefault();
+    if (!validateEdit() || !isDirty || isSaving) return;
+    setIsSaving(true);
+    try {
+      const isOut = editingItem.stock === 0 || editingItem.inStock === false || editingItem.isOutOfStock === true;
+      const payload = {
+        name: editingItem.name.trim(),
+        price: parseFloat(editingItem.price),
+        category: editingItem.category,
+        img: editingItem.img || '',
+        stock: isOut ? 0 : 20,
+      };
+      await api.updateMenuItem(editingItem.id, payload);
+      setItems(items.map(i => i.id === editingItem.id ? { ...i, ...payload, inStock: !isOut, isOutOfStock: isOut } : i));
+      setToastMessage({ type: 'success', text: `"${payload.name}" updated successfully!` });
+      setTimeout(() => setToastMessage(null), 3500);
+      setEditingItem(null);
+      setOriginalItem(null);
+      setFieldErrors({});
+    } catch (err) {
+      console.error('Failed to update item:', err);
+      setToastMessage({ type: 'error', text: 'Failed to update item: ' + (err.message || 'Unknown error') });
+      setTimeout(() => setToastMessage(null), 4000);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const handleUpdate = async (id, field, value) => {
     // Optimistic local state update
@@ -92,6 +174,8 @@ export const MenuEditor = ({ shopId }) => {
       setItems([createdItem, ...items]);
       setNewItem({ name: '', price: '', category: 'Main', img: '' });
       setIsAdding(false);
+      setToastMessage({ type: 'success', text: `"${createdItem.name || 'Item'}" added successfully!` });
+      setTimeout(() => setToastMessage(null), 3500);
     } catch (err) {
       alert('Failed to add item: ' + err.message);
     }
@@ -113,13 +197,25 @@ export const MenuEditor = ({ shopId }) => {
   const handleEditFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        setFieldErrors(prev => ({ ...prev, img: 'File size exceeds 5MB limit' }));
+        return;
+      }
       setIsUploading(true);
       const reader = new FileReader();
       reader.onloadend = () => {
-        setEditingItem({ ...editingItem, img: reader.result });
+        setEditingItem(prev => ({ ...prev, img: reader.result }));
         setIsUploading(false);
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveImage = (e) => {
+    e.stopPropagation();
+    setEditingItem(prev => ({ ...prev, img: '' }));
+    if (editFileInputRef.current) {
+      editFileInputRef.current.value = '';
     }
   };
 
@@ -288,7 +384,7 @@ export const MenuEditor = ({ shopId }) => {
                             <span>OUT OF STOCK</span>
                           </div>
                         )}
-                        <div className="image-overlay" onClick={() => setEditingItem({ ...item, inStock: !isItemOutOfStock })} style={{ cursor: 'pointer' }}>
+                        <div className="image-overlay" onClick={() => handleOpenEdit(item)} style={{ cursor: 'pointer' }}>
                           <Edit2 size={24} />
                         </div>
                       </div>
@@ -324,7 +420,7 @@ export const MenuEditor = ({ shopId }) => {
                         <button 
                           type="button"
                           className="edit-action-btn"
-                          onClick={() => setEditingItem({ ...item, inStock: !isItemOutOfStock })}
+                          onClick={() => handleOpenEdit(item)}
                           title="Edit Item Details"
                         >
                           <Edit2 size={18} />
@@ -339,8 +435,11 @@ export const MenuEditor = ({ shopId }) => {
                               try {
                                 await api.updateMenuItem(item.id, { available: false });
                                 setItems(items.filter(i => i.id !== item.id));
-                              } catch (err) {
-                                alert('Failed to delete item: ' + err.message);
+                                setToastMessage({ type: 'success', text: `"${item.name}" deleted successfully` });
+                                setTimeout(() => setToastMessage(null), 3500);
+                              } catch(err) {
+                                setToastMessage({ type: 'error', text: 'Failed to delete item: ' + err.message });
+                                setTimeout(() => setToastMessage(null), 4000);
                               }
                             }
                           }}
@@ -357,159 +456,265 @@ export const MenuEditor = ({ shopId }) => {
         })}
       </div>
 
+      {/* Floating Toast Notification */}
+      <AnimatePresence>
+        {toastMessage && (
+          <motion.div
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            className={`fixed bottom-6 right-6 z-[3000] flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl border text-sm font-medium ${
+              toastMessage.type === 'error'
+                ? 'bg-rose-950 text-rose-100 border-rose-800'
+                : 'bg-slate-900 text-white border-slate-800'
+            }`}
+          >
+            {toastMessage.type === 'error' ? (
+              <AlertCircle size={18} className="text-rose-400 shrink-0" />
+            ) : (
+              <CheckCircle2 size={18} className="text-emerald-400 shrink-0" />
+            )}
+            <span>{toastMessage.text}</span>
+            <button
+              onClick={() => setToastMessage(null)}
+              className="ml-2 text-slate-400 hover:text-white bg-transparent border-none cursor-pointer p-1 flex items-center"
+            >
+              <X size={14} />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Modern Redesigned Edit Menu Item Modal */}
       <AnimatePresence>
         {editingItem && (
-          <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 sm:p-6 overflow-y-auto">
             <motion.div 
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              initial={{ opacity: 0, scale: 0.96, y: 12 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-white rounded-[2rem] shadow-2xl max-w-lg w-full flex flex-col overflow-hidden"
-              style={{ maxHeight: '90vh' }}
+              exit={{ opacity: 0, scale: 0.96, y: 12 }}
+              transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+              className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-slate-100 flex flex-col overflow-hidden my-auto"
             >
-              {/* Refined Header (Banner) */}
-              <div 
-                className="flex justify-between items-center shrink-0"
-                style={{ 
-                  background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)', 
-                  padding: '24px 32px', 
-                  borderBottom: '1px solid #e2e8f0'
-                }}
-              >
-                <h2 className="text-2xl font-bold text-slate-800 m-0 tracking-tight" style={{ margin: 0 }}>Edit Menu Item</h2>
-                <button onClick={() => setEditingItem(null)} className="p-2 hover:bg-slate-200 rounded-full transition-colors border-none bg-transparent cursor-pointer flex items-center justify-center text-slate-500 hover:text-slate-800">
-                  <X size={22} strokeWidth={2.5} />
+              {/* Header */}
+              <div className="px-6 py-5 border-b border-slate-100 flex items-start justify-between bg-white shrink-0">
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900 tracking-tight m-0">
+                    Edit Menu Item
+                  </h3>
+                  <p className="text-xs text-slate-500 font-normal m-0 mt-0.5">
+                    Update the details of your menu item
+                  </p>
+                </div>
+                <button 
+                  type="button"
+                  onClick={handleCloseModal} 
+                  aria-label="Close modal"
+                  className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors border-none bg-transparent cursor-pointer"
+                >
+                  <X size={18} strokeWidth={2} />
                 </button>
               </div>
               
-              {/* Body */}
-              <div 
-                className="flex flex-col flex-1 overflow-y-auto min-h-0 bg-white"
-                style={{ padding: '28px 32px', gap: '20px' }}
-              >
-                {/* Form Fields */}
-                <div className="flex flex-col gap-5">
-                  {/* Item Name */}
-                  <div className="flex flex-col gap-2">
-                    <label className="text-xs font-bold uppercase tracking-wider text-slate-600">
-                      Item Name
-                    </label>
-                    <div className="relative">
+              {/* Body (Scrollable Form) */}
+              <form onSubmit={handleSaveEdit} className="flex flex-col flex-1 overflow-hidden m-0">
+                <div className="px-6 py-5 flex flex-col gap-5 overflow-y-auto max-h-[calc(85vh-140px)]">
+                  
+                  {/* Section: Basic Information */}
+                  <div className="flex flex-col gap-4">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                      Basic Information
+                    </span>
+
+                    {/* Item Name */}
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs font-medium text-slate-700">
+                        Item Name
+                      </label>
                       <input
                         type="text"
-                        className="w-full h-12 px-5 rounded-xl border border-slate-300 font-semibold text-slate-900 bg-white hover:border-slate-400 focus:bg-white focus:outline-none focus:border-red-500 focus:ring-4 focus:ring-red-500/10 transition-all text-[15px] placeholder:text-slate-400 shadow-sm"
+                        className={`w-full h-11 px-3.5 rounded-xl border ${
+                          fieldErrors.name 
+                            ? 'border-rose-400 ring-4 ring-rose-500/10' 
+                            : 'border-slate-200 focus:border-red-500 focus:ring-4 focus:ring-red-500/10'
+                        } bg-white text-sm text-slate-900 placeholder:text-slate-400 outline-none transition-all shadow-xs`}
                         value={editingItem.name}
-                        onChange={(e) => setEditingItem({ ...editingItem, name: e.target.value })}
+                        onChange={(e) => {
+                          setEditingItem({ ...editingItem, name: e.target.value });
+                          if (fieldErrors.name) setFieldErrors(prev => ({ ...prev, name: null }));
+                        }}
                         placeholder="e.g. Single Idli"
                       />
+                      {fieldErrors.name && (
+                        <p className="text-xs text-rose-500 mt-0.5 flex items-center gap-1 font-medium m-0">
+                          <AlertCircle size={13} /> {fieldErrors.name}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Price & Category */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {/* Price */}
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-xs font-medium text-slate-700">
+                          Price
+                        </label>
+                        <div className="relative flex items-center">
+                          <span className="absolute left-3.5 text-sm font-semibold text-slate-400 select-none pointer-events-none">
+                            ₹
+                          </span>
+                          <input
+                            type="number"
+                            step="any"
+                            className={`w-full h-11 pl-8 pr-3.5 rounded-xl border ${
+                              fieldErrors.price 
+                                ? 'border-rose-400 ring-4 ring-rose-500/10' 
+                                : 'border-slate-200 focus:border-red-500 focus:ring-4 focus:ring-red-500/10'
+                            } bg-white text-sm text-slate-900 placeholder:text-slate-400 outline-none transition-all shadow-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
+                            value={editingItem.price}
+                            onChange={(e) => {
+                              setEditingItem({ ...editingItem, price: e.target.value });
+                              if (fieldErrors.price) setFieldErrors(prev => ({ ...prev, price: null }));
+                            }}
+                            placeholder="e.g. 20"
+                          />
+                        </div>
+                        {fieldErrors.price && (
+                          <p className="text-xs text-rose-500 mt-0.5 flex items-center gap-1 font-medium m-0">
+                            <AlertCircle size={13} /> {fieldErrors.price}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Category */}
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-xs font-medium text-slate-700">
+                          Category
+                        </label>
+                        <div className="relative flex items-center">
+                          <select
+                            className="w-full h-11 pl-3.5 pr-10 rounded-xl border border-slate-200 focus:border-red-500 focus:ring-4 focus:ring-red-500/10 bg-white text-sm text-slate-900 outline-none transition-all appearance-none cursor-pointer shadow-xs"
+                            value={editingItem.category}
+                            onChange={(e) => setEditingItem({ ...editingItem, category: e.target.value })}
+                          >
+                            {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                          </select>
+                          <ChevronDown size={16} className="absolute right-3.5 text-slate-400 pointer-events-none" />
+                        </div>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Price & Category */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="flex flex-col gap-2">
-                      <label className="text-xs font-bold uppercase tracking-wider text-slate-600">
-                        Price
-                      </label>
-                      <div className="relative flex items-center">
-                        <span className="absolute left-4 font-bold text-slate-400 text-sm select-none pointer-events-none">
-                          ₹
-                        </span>
-                        <input
-                          type="number"
-                          className="w-full h-12 pl-9 pr-5 rounded-xl border border-slate-300 font-semibold text-slate-900 bg-white hover:border-slate-400 focus:bg-white focus:outline-none focus:border-red-500 focus:ring-4 focus:ring-red-500/10 transition-all text-[15px] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none shadow-sm"
-                          value={editingItem.price}
-                          onChange={(e) => setEditingItem({ ...editingItem, price: e.target.value })}
-                          placeholder="20"
+                  {/* Subtle Divider */}
+                  <div className="h-px bg-slate-100" />
+
+                  {/* Section: Menu Image */}
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                        Menu Image
+                      </span>
+                      <span className="text-[11px] text-slate-400 font-normal">
+                        PNG, JPG up to 5MB
+                      </span>
+                    </div>
+
+                    {editingItem.img ? (
+                      <div className="relative w-full h-44 rounded-xl overflow-hidden border border-slate-200 bg-slate-50 group">
+                        <img 
+                          src={editingItem.img} 
+                          alt={editingItem.name || 'Preview'} 
+                          className="w-full h-full object-cover" 
                         />
+                        <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2.5 p-4">
+                          <button
+                            type="button"
+                            onClick={() => editFileInputRef.current?.click()}
+                            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-white/95 hover:bg-white text-slate-800 text-xs font-semibold shadow-sm transition-all cursor-pointer border-none"
+                          >
+                            <Camera size={14} /> Change Photo
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleRemoveImage}
+                            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-semibold shadow-sm transition-all cursor-pointer border border-rose-200/60"
+                          >
+                            <Trash2 size={14} /> Remove
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex flex-col gap-2">
-                      <label className="text-xs font-bold uppercase tracking-wider text-slate-600">
-                        Category
-                      </label>
-                      <div className="relative flex items-center">
-                        <select
-                          className="w-full h-12 pl-5 pr-10 rounded-xl border border-slate-300 font-semibold text-slate-900 bg-white hover:border-slate-400 focus:bg-white focus:outline-none focus:border-red-500 focus:ring-4 focus:ring-red-500/10 transition-all text-[15px] appearance-none cursor-pointer shadow-sm"
-                          value={editingItem.category}
-                          onChange={(e) => setEditingItem({ ...editingItem, category: e.target.value })}
-                        >
-                          {categories.map(c => <option key={c} value={c}>{c}</option>)}
-                        </select>
-                        <ChevronDown size={18} className="absolute right-4 text-slate-400 pointer-events-none" />
+                    ) : (
+                      <div 
+                        onClick={() => editFileInputRef.current?.click()}
+                        className={`w-full h-40 rounded-xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all ${
+                          isUploading 
+                            ? 'border-slate-300 bg-slate-50' 
+                            : 'border-slate-200 hover:border-slate-300 bg-slate-50/50 hover:bg-slate-50'
+                        }`}
+                      >
+                        {isUploading ? (
+                          <div className="flex flex-col items-center gap-2">
+                            <Loader2 size={24} className="text-red-500 animate-spin" />
+                            <span className="text-xs font-medium text-slate-500">Uploading photo...</span>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col items-center gap-2 text-center p-4">
+                            <div className="w-10 h-10 rounded-full bg-white shadow-xs border border-slate-100 flex items-center justify-center text-slate-400">
+                              <Upload size={18} />
+                            </div>
+                            <div>
+                              <p className="text-xs font-semibold text-slate-700 m-0">Click to upload photo</p>
+                              <p className="text-[11px] text-slate-400 m-0 mt-0.5">Recommended 1:1 or 16:9 ratio</p>
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    </div>
+                    )}
+
+                    {fieldErrors.img && (
+                      <p className="text-xs text-rose-500 mt-0.5 flex items-center gap-1 font-medium m-0">
+                        <AlertCircle size={13} /> {fieldErrors.img}
+                      </p>
+                    )}
+
+                    <input 
+                      type="file"
+                      ref={editFileInputRef}
+                      onChange={handleEditFileChange}
+                      accept="image/*"
+                      style={{ display: 'none' }}
+                    />
                   </div>
                 </div>
 
-                {/* Spaced out Image Section */}
-                <div className="flex flex-col gap-2 pt-1 border-t border-slate-100">
-                  <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Item Photo</label>
-                  <div 
-                    className={`relative w-full h-40 rounded-2xl overflow-hidden border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all ${isUploading ? 'border-slate-300 bg-slate-50' : 'border-slate-300 bg-slate-50 hover:bg-slate-100 hover:border-slate-400'}`}
-                    style={{ minHeight: '160px' }}
-                    onClick={() => editFileInputRef.current.click()}
+                {/* Sticky Footer Actions */}
+                <div className="px-6 py-4 bg-slate-50/80 backdrop-blur-sm border-t border-slate-100 flex flex-col-reverse sm:flex-row items-center justify-end gap-2.5 shrink-0">
+                  <button
+                    type="button"
+                    onClick={handleCloseModal}
+                    className="w-full sm:w-auto px-4 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:text-slate-800 hover:bg-slate-200/60 border border-slate-200 bg-white transition-colors cursor-pointer"
                   >
-                    {editingItem.img ? (
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={!isDirty || isSaving || isUploading}
+                    className="w-full sm:w-auto px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-xs transition-all flex items-center justify-center gap-2 border-none cursor-pointer"
+                  >
+                    {isSaving ? (
                       <>
-                        <img src={editingItem.img} className="absolute inset-0 w-full h-full object-cover" alt="Item preview" />
-                        <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
-                          <p className="text-white font-medium flex items-center gap-2"><Camera size={18} /> Change Photo</p>
-                        </div>
+                        <Loader2 size={16} className="animate-spin" />
+                        <span>Saving...</span>
                       </>
-                    ) : isUploading ? (
-                      <Loader2 size={32} className="text-red-500 animate-spin" />
                     ) : (
                       <>
-                        <div className="w-10 h-10 bg-white rounded-full shadow-sm flex items-center justify-center text-slate-500 mb-2">
-                          <Camera size={20} />
-                        </div>
-                        <p className="text-sm font-semibold text-slate-700" style={{ margin: 0 }}>Upload new photo</p>
-                        <p className="text-xs text-slate-400 mt-1" style={{ margin: '2px 0 0 0' }}>Click to browse files</p>
+                        <Check size={16} strokeWidth={2.5} />
+                        <span>Save Changes</span>
                       </>
                     )}
-                  </div>
-                  <input 
-                    type="file"
-                    ref={editFileInputRef}
-                    onChange={handleEditFileChange}
-                    accept="image/*"
-                    style={{ display: 'none' }}
-                  />
+                  </button>
                 </div>
-                
-                {/* Save Button */}
-                <button 
-                  className="w-full mt-2 text-white font-black uppercase shadow-lg hover:shadow-xl transition-all border-none cursor-pointer flex items-center justify-center gap-2 shrink-0 tracking-wider"
-                  style={{ 
-                    padding: '16px', 
-                    borderRadius: '14px', 
-                    background: '#DC2626',
-                    marginTop: '8px'
-                  }}
-                  onClick={async () => {
-                    try {
-                      const isOut = editingItem.stock === 0 || editingItem.inStock === false;
-                      const payload = {
-                        name: editingItem.name,
-                        price: parseFloat(editingItem.price),
-                        category: editingItem.category,
-                        img: editingItem.img,
-                        stock: isOut ? 0 : 20,
-                      };
-                      await api.updateMenuItem(editingItem.id, payload);
-                      setItems(items.map(i => i.id === editingItem.id ? {...i, ...payload, inStock: !isOut, isOutOfStock: isOut} : i));
-                      setEditingItem(null);
-                    } catch(err) {
-                      alert('Failed to update item: ' + err.message);
-                    }
-                  }}
-                  disabled={isUploading}
-                >
-                  <Check size={20} strokeWidth={3} />
-                  Save Changes
-                </button>
-              </div>
+              </form>
             </motion.div>
           </div>
         )}
