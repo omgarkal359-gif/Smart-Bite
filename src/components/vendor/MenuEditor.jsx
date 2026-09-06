@@ -497,12 +497,12 @@ export const MenuEditor = ({ shopId }) => {
               className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-slate-100 flex flex-col max-h-[88vh] overflow-hidden"
             >
               {/* Header */}
-              <div className="px-6 py-4.5 border-b border-slate-100 flex items-start justify-between bg-white shrink-0">
+              <div className="px-7 py-5 border-b border-slate-100 flex items-start justify-between bg-white shrink-0">
                 <div>
                   <h3 className="text-lg font-bold text-slate-900 tracking-tight m-0">
                     Edit Menu Item
                   </h3>
-                  <p className="text-xs text-slate-500 font-normal m-0 mt-0.5">
+                  <p className="text-xs text-slate-500 font-normal m-0 mt-1">
                     Update the details of your menu item
                   </p>
                 </div>
@@ -518,22 +518,22 @@ export const MenuEditor = ({ shopId }) => {
               
               {/* Body (Scrollable Form) */}
               <form onSubmit={handleSaveEdit} className="flex flex-col flex-1 overflow-hidden m-0">
-                <div className="px-6 py-5 flex flex-col gap-5 overflow-y-auto flex-1 min-h-0">
+                <div className="px-7 py-6 flex flex-col gap-6 overflow-y-auto flex-1 min-h-0">
                   
                   {/* Section: Basic Information */}
-                  <div className="flex flex-col gap-3.5">
+                  <div className="flex flex-col gap-4">
                     <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
                       Basic Information
                     </span>
 
                     {/* Item Name */}
-                    <div className="flex flex-col gap-1.5">
+                    <div className="flex flex-col gap-2">
                       <label className="text-xs font-semibold text-slate-700">
                         Item Name
                       </label>
                       <input
                         type="text"
-                        className={`w-full h-11 px-3.5 rounded-xl border ${
+                        className={`w-full h-12 px-4 rounded-xl border ${
                           fieldErrors.name 
                             ? 'border-rose-400 ring-4 ring-rose-500/10' 
                             : 'border-slate-200 focus:border-red-500 focus:ring-4 focus:ring-red-500/10'
@@ -546,31 +546,31 @@ export const MenuEditor = ({ shopId }) => {
                         placeholder="e.g. Single Idli"
                       />
                       {fieldErrors.name && (
-                        <p className="text-xs text-rose-500 mt-0.5 flex items-center gap-1 font-medium m-0">
+                        <p className="text-xs text-rose-500 mt-1 flex items-center gap-1 font-medium m-0">
                           <AlertCircle size={13} /> {fieldErrors.name}
                         </p>
                       )}
                     </div>
 
                     {/* Price & Category */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {/* Price with Segmented Badge */}
-                      <div className="flex flex-col gap-1.5">
+                      <div className="flex flex-col gap-2">
                         <label className="text-xs font-semibold text-slate-700">
                           Price
                         </label>
-                        <div className={`flex items-center h-11 rounded-xl border ${
+                        <div className={`flex items-center h-12 rounded-xl border ${
                           fieldErrors.price 
                             ? 'border-rose-400 ring-4 ring-rose-500/10' 
                             : 'border-slate-200 focus-within:border-red-500 focus-within:ring-4 focus-within:ring-red-500/10'
                         } bg-white overflow-hidden transition-all shadow-xs`}>
-                          <div className="flex items-center justify-center px-3.5 bg-slate-50 border-r border-slate-200 text-slate-500 text-sm font-semibold h-full select-none shrink-0">
+                          <div className="flex items-center justify-center px-4 bg-slate-50 border-r border-slate-200 text-slate-500 text-sm font-semibold h-full select-none shrink-0">
                             ₹
                           </div>
                           <input
                             type="number"
                             step="any"
-                            className="w-full h-full px-3.5 bg-transparent border-none outline-none text-sm text-slate-900 font-medium placeholder:text-slate-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            className="w-full h-full px-4 bg-transparent border-none outline-none text-sm text-slate-900 font-medium placeholder:text-slate-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                             value={editingItem.price}
                             onChange={(e) => {
                               setEditingItem({ ...editingItem, price: e.target.value });
@@ -580,36 +580,36 @@ export const MenuEditor = ({ shopId }) => {
                           />
                         </div>
                         {fieldErrors.price && (
-                          <p className="text-xs text-rose-500 mt-0.5 flex items-center gap-1 font-medium m-0">
+                          <p className="text-xs text-rose-500 mt-1 flex items-center gap-1 font-medium m-0">
                             <AlertCircle size={13} /> {fieldErrors.price}
                           </p>
                         )}
                       </div>
 
                       {/* Category */}
-                      <div className="flex flex-col gap-1.5">
+                      <div className="flex flex-col gap-2">
                         <label className="text-xs font-semibold text-slate-700">
                           Category
                         </label>
-                        <div className="relative flex items-center h-11">
+                        <div className="relative flex items-center h-12">
                           <select
-                            className="w-full h-full pl-3.5 pr-10 rounded-xl border border-slate-200 focus:border-red-500 focus:ring-4 focus:ring-red-500/10 bg-white text-sm text-slate-900 font-medium outline-none transition-all appearance-none cursor-pointer shadow-xs"
+                            className="w-full h-full pl-4 pr-10 rounded-xl border border-slate-200 focus:border-red-500 focus:ring-4 focus:ring-red-500/10 bg-white text-sm text-slate-900 font-medium outline-none transition-all appearance-none cursor-pointer shadow-xs"
                             value={editingItem.category}
                             onChange={(e) => setEditingItem({ ...editingItem, category: e.target.value })}
                           >
                             {categories.map(c => <option key={c} value={c}>{c}</option>)}
                           </select>
-                          <ChevronDown size={16} className="absolute right-3.5 text-slate-400 pointer-events-none" />
+                          <ChevronDown size={16} className="absolute right-4 text-slate-400 pointer-events-none" />
                         </div>
                       </div>
                     </div>
                   </div>
 
                   {/* Subtle Divider */}
-                  <div className="h-px bg-slate-100" />
+                  <div className="h-px bg-slate-100 my-1" />
 
                   {/* Section: Menu Image */}
-                  <div className="flex flex-col gap-3">
+                  <div className="flex flex-col gap-3.5">
                     <div className="flex items-center justify-between">
                       <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
                         Menu Image
@@ -620,7 +620,7 @@ export const MenuEditor = ({ shopId }) => {
                     </div>
 
                     {editingItem.img ? (
-                      <div className="relative w-full h-36 sm:h-40 rounded-xl overflow-hidden border border-slate-200 bg-slate-900/5 group shadow-xs">
+                      <div className="relative w-full h-40 sm:h-44 rounded-xl overflow-hidden border border-slate-200 bg-slate-900/5 group shadow-xs">
                         <img 
                           src={editingItem.img} 
                           alt={editingItem.name || 'Preview'} 
@@ -646,7 +646,7 @@ export const MenuEditor = ({ shopId }) => {
                     ) : (
                       <div 
                         onClick={() => editFileInputRef.current?.click()}
-                        className={`w-full h-32 rounded-xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all ${
+                        className={`w-full h-36 rounded-xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all ${
                           isUploading 
                             ? 'border-slate-300 bg-slate-50' 
                             : 'border-slate-200 hover:border-slate-300 bg-slate-50/50 hover:bg-slate-50'
@@ -658,8 +658,8 @@ export const MenuEditor = ({ shopId }) => {
                             <span className="text-xs font-medium text-slate-500">Uploading photo...</span>
                           </div>
                         ) : (
-                          <div className="flex flex-col items-center gap-1.5 text-center p-4">
-                            <div className="w-9 h-9 rounded-full bg-white shadow-xs border border-slate-100 flex items-center justify-center text-slate-400">
+                          <div className="flex flex-col items-center gap-2 text-center p-4">
+                            <div className="w-10 h-10 rounded-full bg-white shadow-xs border border-slate-100 flex items-center justify-center text-slate-400">
                               <Upload size={16} />
                             </div>
                             <div>
@@ -672,7 +672,7 @@ export const MenuEditor = ({ shopId }) => {
                     )}
 
                     {fieldErrors.img && (
-                      <p className="text-xs text-rose-500 mt-0.5 flex items-center gap-1 font-medium m-0">
+                      <p className="text-xs text-rose-500 mt-1 flex items-center gap-1 font-medium m-0">
                         <AlertCircle size={13} /> {fieldErrors.img}
                       </p>
                     )}
@@ -688,18 +688,18 @@ export const MenuEditor = ({ shopId }) => {
                 </div>
 
                 {/* Sticky Footer Actions */}
-                <div className="px-6 py-3.5 bg-slate-50/90 backdrop-blur-sm border-t border-slate-100 flex items-center justify-end gap-3 shrink-0">
+                <div className="px-7 py-4.5 bg-slate-50/90 backdrop-blur-sm border-t border-slate-100 flex items-center justify-end gap-3 shrink-0">
                   <button
                     type="button"
                     onClick={handleCloseModal}
-                    className="px-4 py-2 rounded-xl text-sm font-semibold text-slate-600 hover:text-slate-800 hover:bg-slate-200/60 border border-slate-200 bg-white transition-colors cursor-pointer shadow-xs"
+                    className="px-4.5 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:text-slate-800 hover:bg-slate-200/60 border border-slate-200 bg-white transition-colors cursor-pointer shadow-xs"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={!isDirty || isSaving || isUploading}
-                    className="px-5 py-2 rounded-xl text-sm font-semibold text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-all flex items-center justify-center gap-2 border-none cursor-pointer"
+                    className="px-5.5 py-2.5 rounded-xl text-sm font-semibold text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-all flex items-center justify-center gap-2 border-none cursor-pointer"
                   >
                     {isSaving ? (
                       <>
