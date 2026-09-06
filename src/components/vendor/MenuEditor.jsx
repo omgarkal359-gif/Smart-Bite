@@ -280,7 +280,7 @@ export const MenuEditor = ({ shopId }) => {
                         </div>
                       </div>
 
-                      <div className="menu-item-actions flex items-center gap-2">
+                      <div className="menu-item-actions">
                         {/* Out of Stock Toggle Button */}
                         <button 
                           type="button"
