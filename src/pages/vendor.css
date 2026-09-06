@@ -172,14 +172,34 @@
 }
 
 /* Premium Control Buttons */
+.vendor-sidebar-wrapper {
+  width: 80px;
+  flex-shrink: 0;
+  position: relative;
+  height: 100vh;
+  z-index: 200;
+  background: var(--bg-operations);
+}
+
 .vendor-sidebar {
+  position: absolute;
+  top: 0;
+  left: 0;
   background: #1E293B; /* Slate 800 */
-  width: 120px;
+  width: 80px;
   height: 100vh;
   box-shadow: 4px 0 15px rgba(0, 0, 0, 0.15);
-  z-index: 200;
   border-right: 1px solid rgba(255, 255, 255, 0.05);
-  transition: background 0.5s ease, filter 0.5s ease;
+  transition: width 350ms cubic-bezier(0.4, 0, 0.2, 1), background 0.5s ease, filter 0.5s ease;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+@media (hover: hover) and (min-width: 768px) {
+  .vendor-sidebar:hover {
+    width: 240px;
+  }
 }
 
 .vendor-sidebar.closed {
@@ -190,13 +210,12 @@
 
 .sidebar-btn {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  justify-content: center;
-  gap: 4px;
+  justify-content: flex-start;
   width: calc(100% - 24px);
   margin: 0 12px;
-  padding: 12px 0;
+  padding: 12px 14px;
   background: transparent;
   border: none;
   border-radius: 12px;
@@ -204,10 +223,12 @@
   font-family: 'Inter', sans-serif;
   font-weight: 600;
   font-size: 0.85rem;
-  letter-spacing: 0.02em;
-  transition: all 0.3s ease;
+  letter-spacing: 0.05em;
+  transition: all 0.25s ease;
   cursor: pointer;
   position: relative;
+  overflow: hidden;
+  white-space: nowrap;
 }
 
 .sidebar-btn:hover {
@@ -215,8 +236,31 @@
   color: #F8FAFC; /* Slate 50 */
 }
 
+/* Subtle active highlight */
+.sidebar-btn.is-active {
+  background: rgba(255, 255, 255, 0.12);
+  color: #FFFFFF;
+}
+
+.sidebar-btn svg {
+  flex-shrink: 0;
+  margin-right: 16px;
+  transition: transform 0.2s ease;
+}
+
+/* Text label animation */
 .sidebar-btn span {
-  opacity: 1;
+  opacity: 0;
+  transform: translateX(-10px);
+  transition: opacity 200ms ease, transform 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+}
+
+@media (hover: hover) and (min-width: 768px) {
+  .vendor-sidebar:hover .sidebar-btn span {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 .sidebar-btn.busy { color: #F87171; } /* Red for busy */

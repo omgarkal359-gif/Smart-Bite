@@ -414,50 +414,99 @@ const VendorDashboard = () => {
   return (
     <div className={`vendor-kds-container page-transition ${isPowerSaver ? 'power-saver' : ''}`} style={{ flexDirection: 'row', height: '100vh', overflow: 'hidden' }}>
       
-      {/* SIDEBAR */}
-      <aside className={`vendor-sidebar flex flex-col items-center py-4 gap-2 ${shopStatus === 'CLOSED' ? 'closed' : ''}`}>
-        <motion.button 
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          className={`sidebar-btn ${isBusyMode ? 'busy' : 'active'}`} 
-          onClick={handleToggleBusy}
-        >
-          <Clock size={24} /> <span>{isBusyMode ? 'BUSY' : 'NORMAL'}</span>
-        </motion.button>
-
-        <motion.button 
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          className="sidebar-btn" 
-          onClick={() => { setActiveSidebarTab('menu'); setIsSidebarOpen(true); }}
-        >
-          <Settings size={24} /> <span>MENU</span>
-        </motion.button>
-
-        <motion.button 
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          className="sidebar-btn" 
-          onClick={() => { setActiveSidebarTab('history'); setIsSidebarOpen(true); }}
-        >
-          <History size={24} /> <span>HISTORY</span>
-        </motion.button>
-
-        <div className="mt-auto"></div>
-
-        <motion.button 
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          className="sidebar-btn exit" 
-          onClick={() => {
-            localStorage.removeItem('sgu_user');
-            localStorage.removeItem('sgu_token');
-            navigate('/login', { replace: true });
-          }}
-        >
-          <LogOut size={24} /> <span>LOGOUT</span>
-        </motion.button>
-      </aside>
+        {/* SIDEBAR */}
+        <div className="vendor-sidebar-wrapper lg:block hidden">
+          <aside className={`vendor-sidebar py-4 gap-2 ${shopStatus === 'CLOSED' ? 'closed' : ''}`}>
+            <motion.button 
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className={`sidebar-btn ${isBusyMode ? 'busy' : 'active'}`} 
+              onClick={handleToggleBusy}
+            >
+              <Clock size={24} /> <span>{isBusyMode ? 'BUSY' : 'NORMAL'}</span>
+            </motion.button>
+    
+            <motion.button 
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className={`sidebar-btn ${activeSidebarTab === 'menu' && isSidebarOpen ? 'is-active' : ''}`} 
+              onClick={() => { setActiveSidebarTab('menu'); setIsSidebarOpen(true); }}
+            >
+              <Settings size={24} /> <span>MENU</span>
+            </motion.button>
+    
+            <motion.button 
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className={`sidebar-btn ${activeSidebarTab === 'history' && isSidebarOpen ? 'is-active' : ''}`} 
+              onClick={() => { setActiveSidebarTab('history'); setIsSidebarOpen(true); }}
+            >
+              <History size={24} /> <span>HISTORY</span>
+            </motion.button>
+    
+            <div className="mt-auto"></div>
+    
+            <motion.button 
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="sidebar-btn exit" 
+              onClick={() => {
+                localStorage.removeItem('sgu_user');
+                localStorage.removeItem('sgu_token');
+                navigate('/login', { replace: true });
+              }}
+            >
+              <LogOut size={24} /> <span>LOGOUT</span>
+            </motion.button>
+          </aside>
+        </div>
+        
+        {/* MOBILE SIDEBAR PLACEHOLDER - For smaller screens where hover expansion is disabled, we just show it normally */}
+        <div className="lg:hidden">
+          <aside className={`vendor-sidebar py-4 gap-2 ${shopStatus === 'CLOSED' ? 'closed' : ''}`} style={{ position: 'relative' }}>
+            <motion.button 
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className={`sidebar-btn ${isBusyMode ? 'busy' : 'active'}`} 
+              onClick={handleToggleBusy}
+            >
+              <Clock size={24} /> <span>{isBusyMode ? 'BUSY' : 'NORMAL'}</span>
+            </motion.button>
+    
+            <motion.button 
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className={`sidebar-btn ${activeSidebarTab === 'menu' && isSidebarOpen ? 'is-active' : ''}`} 
+              onClick={() => { setActiveSidebarTab('menu'); setIsSidebarOpen(true); }}
+            >
+              <Settings size={24} /> <span>MENU</span>
+            </motion.button>
+    
+            <motion.button 
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className={`sidebar-btn ${activeSidebarTab === 'history' && isSidebarOpen ? 'is-active' : ''}`} 
+              onClick={() => { setActiveSidebarTab('history'); setIsSidebarOpen(true); }}
+            >
+              <History size={24} /> <span>HISTORY</span>
+            </motion.button>
+    
+            <div className="mt-auto"></div>
+    
+            <motion.button 
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="sidebar-btn exit" 
+              onClick={() => {
+                localStorage.removeItem('sgu_user');
+                localStorage.removeItem('sgu_token');
+                navigate('/login', { replace: true });
+              }}
+            >
+              <LogOut size={24} /> <span>LOGOUT</span>
+            </motion.button>
+          </aside>
+        </div>
 
       <div className="flex-1 flex flex-col h-full overflow-hidden">
         {/* Confetti Effect */}
