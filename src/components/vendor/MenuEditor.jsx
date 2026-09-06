@@ -365,7 +365,7 @@ export const MenuEditor = ({ shopId }) => {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               className="bg-white rounded-[2rem] shadow-2xl max-w-lg w-full flex flex-col overflow-hidden"
-              style={{ height: '85vh', minHeight: '500px', maxHeight: '800px' }}
+              style={{ maxHeight: '90vh' }}
             >
               {/* Refined Header (Banner) */}
               <div 
@@ -442,110 +442,8 @@ export const MenuEditor = ({ shopId }) => {
                   </div>
                 </div>
 
-                {/* Stock Status Selector in Modal */}
-                {(() => {
-                  const isItemInStock = editingItem.stock !== 0 && editingItem.inStock !== false;
-                  return (
-                    <div className="flex flex-col gap-2.5 pt-3 border-t border-slate-100">
-                      <div className="flex justify-between items-center">
-                        <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Stock Availability</label>
-                        <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border transition-all ${
-                          isItemInStock 
-                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200/80 shadow-sm shadow-emerald-500/5' 
-                            : 'bg-rose-50 text-rose-700 border-rose-200/80 shadow-sm shadow-rose-500/5'
-                        }`}>
-                          <span className={`w-2 h-2 rounded-full ${isItemInStock ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
-                          <span>{isItemInStock ? 'Live on Menu' : 'Temporarily Unavailable'}</span>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3">
-                        {/* In Stock Option */}
-                        <button
-                          type="button"
-                          className={`group relative flex items-center justify-between p-3.5 rounded-xl transition-all cursor-pointer text-left border ${
-                            isItemInStock 
-                              ? 'bg-emerald-50/80 border-emerald-500 ring-2 ring-emerald-500/20 shadow-sm' 
-                              : 'bg-slate-50/60 border-slate-200 hover:bg-slate-100/70 hover:border-slate-300'
-                          }`}
-                          onClick={() => setEditingItem({ ...editingItem, stock: 20, inStock: true })}
-                        >
-                          <div className="flex items-center gap-3 min-w-0">
-                            <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
-                              isItemInStock 
-                                ? 'bg-emerald-500 text-white shadow-sm' 
-                                : 'bg-slate-200 text-slate-400 group-hover:text-slate-500'
-                            }`}>
-                              <CheckCircle2 size={18} strokeWidth={2.5} />
-                            </div>
-                            <div className="flex flex-col min-w-0">
-                              <span className={`text-sm font-bold leading-tight ${
-                                isItemInStock ? 'text-emerald-950' : 'text-slate-700'
-                              }`}>
-                                In Stock
-                              </span>
-                              <span className={`text-[11px] font-medium leading-tight mt-0.5 ${
-                                isItemInStock ? 'text-emerald-700' : 'text-slate-400'
-                              }`}>
-                                Available to order
-                              </span>
-                            </div>
-                          </div>
-                          <div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 transition-all ${
-                            isItemInStock 
-                              ? 'border-emerald-500 bg-emerald-500 text-white' 
-                              : 'border-slate-300 bg-transparent'
-                          }`}>
-                            {isItemInStock && <Check size={10} strokeWidth={3.5} />}
-                          </div>
-                        </button>
-
-                        {/* Out of Stock Option */}
-                        <button
-                          type="button"
-                          className={`group relative flex items-center justify-between p-3.5 rounded-xl transition-all cursor-pointer text-left border ${
-                            !isItemInStock 
-                              ? 'bg-rose-50/80 border-rose-500 ring-2 ring-rose-500/20 shadow-sm' 
-                              : 'bg-slate-50/60 border-slate-200 hover:bg-slate-100/70 hover:border-slate-300'
-                          }`}
-                          onClick={() => setEditingItem({ ...editingItem, stock: 0, inStock: false })}
-                        >
-                          <div className="flex items-center gap-3 min-w-0">
-                            <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
-                              !isItemInStock 
-                                ? 'bg-rose-500 text-white shadow-sm' 
-                                : 'bg-slate-200 text-slate-400 group-hover:text-slate-500'
-                            }`}>
-                              <AlertCircle size={18} strokeWidth={2.5} />
-                            </div>
-                            <div className="flex flex-col min-w-0">
-                              <span className={`text-sm font-bold leading-tight ${
-                                !isItemInStock ? 'text-rose-950' : 'text-slate-700'
-                              }`}>
-                                Out of Stock
-                              </span>
-                              <span className={`text-[11px] font-medium leading-tight mt-0.5 ${
-                                !isItemInStock ? 'text-rose-700' : 'text-slate-400'
-                              }`}>
-                                Disabled on menu
-                              </span>
-                            </div>
-                          </div>
-                          <div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 transition-all ${
-                            !isItemInStock 
-                              ? 'border-rose-500 bg-rose-500 text-white' 
-                              : 'border-slate-300 bg-transparent'
-                          }`}>
-                            {!isItemInStock && <Check size={10} strokeWidth={3.5} />}
-                          </div>
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })()}
-
                 {/* Spaced out Image Section */}
-                <div className="flex flex-col gap-2 pt-3 border-t border-slate-100">
+                <div className="flex flex-col gap-2 pt-1 border-t border-slate-100">
                   <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Item Photo</label>
                   <div 
                     className={`relative w-full h-40 rounded-2xl overflow-hidden border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all ${isUploading ? 'border-slate-300 bg-slate-50' : 'border-slate-300 bg-slate-50 hover:bg-slate-100 hover:border-slate-400'}`}
