@@ -106,18 +106,21 @@ export const MenuEditor = ({ shopId }) => {
         <motion.button 
           whileHover={{ scale: 1.04 }}
           whileTap={{ scale: 0.96 }}
-          className="flex items-center justify-center gap-3 px-6 sm:px-8 py-3 sm:py-4 rounded-full font-black text-sm sm:text-base lg:text-lg uppercase tracking-wider transition-all shrink-0 whitespace-nowrap"
+          className="flex items-center justify-center gap-3 px-8 py-3.5 rounded-full font-black text-base uppercase transition-all shrink-0"
           onClick={() => setIsAdding(!isAdding)}
           style={{ 
             backgroundColor: isAdding ? '#1e293b' : '#dc2626', 
             color: '#ffffff',
             border: 'none', 
             cursor: 'pointer',
-            boxShadow: isAdding ? 'none' : '0 6px 16px rgba(220, 38, 38, 0.3)'
+            width: 'max-content',
+            minWidth: 'max-content',
+            letterSpacing: '1px',
+            boxShadow: isAdding ? 'none' : '0 8px 20px rgba(220, 38, 38, 0.35)'
           }}
         >
           {isAdding ? <X size={22} strokeWidth={3} /> : <Plus size={22} strokeWidth={3} />}
-          <span style={{ lineHeight: 1 }}>{isAdding ? 'CANCEL' : 'ADD NEW ITEM'}</span>
+          <span style={{ lineHeight: 1, paddingRight: '2px' }}>{isAdding ? 'CANCEL' : 'ADD NEW ITEM'}</span>
         </motion.button>
       </div>
 
