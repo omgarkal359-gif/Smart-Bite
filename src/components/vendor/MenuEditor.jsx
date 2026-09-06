@@ -267,16 +267,14 @@ export const MenuEditor = ({ shopId }) => {
                       
                       <div className="menu-item-details">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <h4 className="item-name" style={{ margin: 0, fontSize: '1.25rem', fontWeight: 'bold' }}>{item.name}</h4>
+                          <h4 className="item-name">{item.name}</h4>
                           {isItemOutOfStock && (
                             <span className="out-of-stock-pill-inline">Out of Stock</span>
                           )}
                         </div>
                         <div className="item-meta">
                           <span className="category-tag">{item.category}</span>
-                          <div className="price-tag" style={{ fontWeight: 'bold', fontSize: '1.25rem', color: '#0f172a' }}>
-                            ₹ {item.price}
-                          </div>
+                          <span className="price-tag">₹{item.price}</span>
                         </div>
                       </div>
 

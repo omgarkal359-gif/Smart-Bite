@@ -490,8 +490,9 @@ select.floating-input {
 .item-meta {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 12px;
   margin-top: 4px;
+  flex-wrap: nowrap;
 }
 
 .category-tag {
@@ -500,9 +501,22 @@ select.floating-input {
   color: var(--primary-navy);
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  background: rgba(26, 82, 118, 0.08);
+  background: rgba(220, 38, 38, 0.08);
   padding: 4px 10px;
   border-radius: 8px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.price-tag {
+  font-weight: 800 !important;
+  font-size: 1.25rem !important;
+  color: #0F172A !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+  display: inline-flex !important;
+  align-items: baseline !important;
+  line-height: 1 !important;
 }
 
 .price-edit {
