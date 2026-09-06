@@ -524,11 +524,11 @@ export const MenuEditor = ({ shopId }) => {
                   </label>
                   <input
                     type="text"
-                    className={`w-full h-[48px] px-4 rounded-[14px] border ${
+                    className={`w-full h-[48px] px-4 rounded-[16px] border ${
                       fieldErrors.name 
                         ? 'border-rose-400 ring-4 ring-rose-500/10' 
-                        : 'border-[#f87171] ring-2 ring-red-100 focus:border-red-500 focus:ring-2 focus:ring-red-200'
-                    } bg-white text-[15px] text-slate-800 font-medium placeholder:text-slate-400 outline-none transition-all shadow-xs`}
+                        : 'border-[#f87171] shadow-[0_0_14px_rgba(248,113,113,0.35)] ring-2 ring-red-100/70 focus:border-red-500 focus:shadow-[0_0_18px_rgba(239,68,68,0.45)]'
+                    } bg-white text-[15px] text-slate-800 font-medium placeholder:text-slate-400 outline-none transition-all`}
                     value={editingItem.name}
                     onChange={(e) => {
                       setEditingItem({ ...editingItem, name: e.target.value });
@@ -673,11 +673,11 @@ export const MenuEditor = ({ shopId }) => {
                   />
                 </div>
 
-                {/* SAVE CHANGES Button */}
+                {/* SAVE CHANGES Button with Exact Red Background, White Text & Ambient Red Glow */}
                 <button
                   type="submit"
                   disabled={isSaving || isUploading}
-                  className="w-full mt-1.5 h-[50px] rounded-[16px] text-[15px] font-bold tracking-wide uppercase text-white bg-[#dc2626] hover:bg-[#b91c1c] active:bg-[#991b1b] active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_4px_14px_0_rgba(220,38,38,0.35)] transition-all flex items-center justify-center gap-2 border-none cursor-pointer"
+                  className="w-full mt-1.5 h-[52px] rounded-[18px] text-[15px] font-bold tracking-wide uppercase text-white bg-[#dc2626] hover:bg-[#b91c1c] active:bg-[#991b1b] active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_4px_20px_rgba(220,38,38,0.4)] hover:shadow-[0_6px_25px_rgba(220,38,38,0.5)] transition-all flex items-center justify-center gap-2 border-none cursor-pointer"
                 >
                   {isSaving ? (
                     <>
@@ -686,7 +686,7 @@ export const MenuEditor = ({ shopId }) => {
                     </>
                   ) : (
                     <>
-                      <Check size={18} strokeWidth={3} className="text-white" />
+                      <Check size={19} strokeWidth={3} className="text-white" />
                       <span>SAVE CHANGES</span>
                     </>
                   )}
