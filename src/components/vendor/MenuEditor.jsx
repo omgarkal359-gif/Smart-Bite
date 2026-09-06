@@ -58,12 +58,13 @@ export const MenuEditor = ({ shopId }) => {
   }, [editingItem, originalItem]);
 
   const handleOpenEdit = (item) => {
+    const itemImg = item.img || getFoodItemImage(item) || '';
     const itemCopy = {
       ...item,
       name: item.name || '',
       price: item.price !== undefined && item.price !== null ? String(item.price) : '',
       category: item.category || 'Main',
-      img: item.img || '',
+      img: itemImg,
     };
     setEditingItem(itemCopy);
     setOriginalItem(itemCopy);
