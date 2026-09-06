@@ -213,7 +213,7 @@
   background: transparent;
   border: none;
   border-radius: 0;
-  color: #94A3B8; /* Slate 400 */
+  color: #FFFFFF;
   font-family: 'Inter', sans-serif;
   font-weight: 600;
   font-size: 0.85rem;
@@ -259,10 +259,10 @@
 .sidebar-btn.busy { color: #F87171; } /* Red for busy */
 .sidebar-btn.active { color: #4ADE80; } /* Green for normal */
 .sidebar-btn.exit { 
-  color: #94A3B8; 
+  color: rgba(255, 255, 255, 0.8); 
   margin-top: auto !important;
-} /* Slate for exit */
-.sidebar-btn.exit:hover { color: #F87171; } /* Red on hover */
+} /* exit */
+.sidebar-btn.exit:hover { color: #FFFFFF; } /* White on hover */
 
 /* Floating Labels */
 .floating-label-group {
