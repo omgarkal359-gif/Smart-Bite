@@ -485,241 +485,210 @@ export const MenuEditor = ({ shopId }) => {
         )}
       </AnimatePresence>
 
-      {/* Modern Redesigned Edit Menu Item Modal */}
+      {/* Modern Pixel-Perfect Edit Menu Item Modal matching screenshot */}
       <AnimatePresence>
         {editingItem && (
-          <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 sm:p-6 overflow-hidden">
+          <div 
+            className="fixed inset-0 z-[2000] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto"
+            onClick={(e) => { if (e.target === e.currentTarget) handleCloseModal(); }}
+          >
             <motion.div 
-              initial={{ opacity: 0, scale: 0.96, y: 12 }}
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.96, y: 12 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
               transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-              className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-slate-100 flex flex-col max-h-[88vh] overflow-hidden"
+              className="relative w-full max-w-[460px] bg-white rounded-[24px] shadow-2xl border border-slate-100 overflow-hidden my-auto"
             >
               {/* Header */}
-              <div className="px-7 py-5 border-b border-slate-100 flex items-start justify-between bg-white shrink-0">
-                <div>
-                  <h3 className="text-lg font-bold text-slate-900 tracking-tight m-0">
-                    Edit Menu Item
-                  </h3>
-                  <p className="text-xs text-slate-500 font-normal m-0 mt-1">
-                    Update the details of your menu item
-                  </p>
-                </div>
+              <div className="px-6 py-4.5 border-b border-slate-100/90 flex items-center justify-between bg-white">
+                <h3 className="text-xl font-bold text-slate-800 tracking-tight m-0">
+                  Edit Menu Item
+                </h3>
                 <button 
                   type="button"
                   onClick={handleCloseModal} 
                   aria-label="Close modal"
                   className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors border-none bg-transparent cursor-pointer"
                 >
-                  <X size={18} strokeWidth={2} />
+                  <X size={20} strokeWidth={2.5} />
                 </button>
               </div>
               
-              {/* Body (Scrollable Form) */}
-              <form onSubmit={handleSaveEdit} className="flex flex-col flex-1 overflow-hidden m-0">
-                <div className="px-7 py-6 flex flex-col gap-6 overflow-y-auto flex-1 min-h-0">
-                  
-                  {/* Section: Basic Information */}
-                  <div className="flex flex-col gap-4">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                      Basic Information
-                    </span>
+              {/* Body Form */}
+              <form onSubmit={handleSaveEdit} className="p-6 flex flex-col gap-4.5 m-0">
+                
+                {/* ITEM NAME */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[12px] font-bold uppercase tracking-wider text-slate-600">
+                    ITEM NAME
+                  </label>
+                  <input
+                    type="text"
+                    className={`w-full h-12 px-4 rounded-2xl border ${
+                      fieldErrors.name 
+                        ? 'border-rose-400 ring-4 ring-rose-500/10' 
+                        : 'border-red-400 ring-2 ring-red-400/20 focus:border-red-500 focus:ring-4 focus:ring-red-500/20'
+                    } bg-white text-[15px] text-slate-800 font-semibold placeholder:text-slate-400 outline-none transition-all shadow-xs`}
+                    value={editingItem.name}
+                    onChange={(e) => {
+                      setEditingItem({ ...editingItem, name: e.target.value });
+                      if (fieldErrors.name) setFieldErrors(prev => ({ ...prev, name: null }));
+                    }}
+                    placeholder="e.g. Single Idli"
+                  />
+                  {fieldErrors.name && (
+                    <p className="text-xs text-rose-500 mt-1 flex items-center gap-1 font-medium m-0">
+                      <AlertCircle size={13} /> {fieldErrors.name}
+                    </p>
+                  )}
+                </div>
 
-                    {/* Item Name */}
-                    <div className="flex flex-col gap-2">
-                      <label className="text-xs font-semibold text-slate-700">
-                        Item Name
-                      </label>
+                {/* PRICE & CATEGORY */}
+                <div className="grid grid-cols-2 gap-3.5">
+                  {/* PRICE */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[12px] font-bold uppercase tracking-wider text-slate-600">
+                      PRICE
+                    </label>
+                    <div className="relative flex items-center h-12">
                       <input
-                        type="text"
-                        className={`w-full h-12 px-4 rounded-xl border ${
-                          fieldErrors.name 
-                            ? 'border-rose-400 ring-4 ring-rose-500/10' 
-                            : 'border-slate-200 focus:border-red-500 focus:ring-4 focus:ring-red-500/10'
-                        } bg-white text-sm text-slate-900 font-medium placeholder:text-slate-400 outline-none transition-all shadow-xs`}
-                        value={editingItem.name}
-                        onChange={(e) => {
-                          setEditingItem({ ...editingItem, name: e.target.value });
-                          if (fieldErrors.name) setFieldErrors(prev => ({ ...prev, name: null }));
-                        }}
-                        placeholder="e.g. Single Idli"
-                      />
-                      {fieldErrors.name && (
-                        <p className="text-xs text-rose-500 mt-1 flex items-center gap-1 font-medium m-0">
-                          <AlertCircle size={13} /> {fieldErrors.name}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Price & Category */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {/* Price with Segmented Badge */}
-                      <div className="flex flex-col gap-2">
-                        <label className="text-xs font-semibold text-slate-700">
-                          Price
-                        </label>
-                        <div className={`flex items-center h-12 rounded-xl border ${
+                        type="number"
+                        step="any"
+                        className={`w-full h-full pl-4 pr-7 rounded-2xl border ${
                           fieldErrors.price 
                             ? 'border-rose-400 ring-4 ring-rose-500/10' 
-                            : 'border-slate-200 focus-within:border-red-500 focus-within:ring-4 focus-within:ring-red-500/10'
-                        } bg-white overflow-hidden transition-all shadow-xs`}>
-                          <div className="flex items-center justify-center px-4 bg-slate-50 border-r border-slate-200 text-slate-500 text-sm font-semibold h-full select-none shrink-0">
-                            ₹
-                          </div>
-                          <input
-                            type="number"
-                            step="any"
-                            className="w-full h-full px-4 bg-transparent border-none outline-none text-sm text-slate-900 font-medium placeholder:text-slate-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                            value={editingItem.price}
-                            onChange={(e) => {
-                              setEditingItem({ ...editingItem, price: e.target.value });
-                              if (fieldErrors.price) setFieldErrors(prev => ({ ...prev, price: null }));
-                            }}
-                            placeholder="20"
-                          />
-                        </div>
-                        {fieldErrors.price && (
-                          <p className="text-xs text-rose-500 mt-1 flex items-center gap-1 font-medium m-0">
-                            <AlertCircle size={13} /> {fieldErrors.price}
-                          </p>
-                        )}
-                      </div>
-
-                      {/* Category */}
-                      <div className="flex flex-col gap-2">
-                        <label className="text-xs font-semibold text-slate-700">
-                          Category
-                        </label>
-                        <div className="relative flex items-center h-12">
-                          <select
-                            className="w-full h-full pl-4 pr-10 rounded-xl border border-slate-200 focus:border-red-500 focus:ring-4 focus:ring-red-500/10 bg-white text-sm text-slate-900 font-medium outline-none transition-all appearance-none cursor-pointer shadow-xs"
-                            value={editingItem.category}
-                            onChange={(e) => setEditingItem({ ...editingItem, category: e.target.value })}
-                          >
-                            {categories.map(c => <option key={c} value={c}>{c}</option>)}
-                          </select>
-                          <ChevronDown size={16} className="absolute right-4 text-slate-400 pointer-events-none" />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Subtle Divider */}
-                  <div className="h-px bg-slate-100 my-1" />
-
-                  {/* Section: Menu Image */}
-                  <div className="flex flex-col gap-3.5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                        Menu Image
-                      </span>
-                      <span className="text-[11px] text-slate-400 font-normal">
-                        PNG, JPG up to 5MB
+                            : 'border-slate-300 focus:border-red-500 focus:ring-2 focus:ring-red-500/20'
+                        } bg-white text-[15px] text-slate-800 font-semibold placeholder:text-slate-400 outline-none transition-all shadow-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
+                        value={editingItem.price}
+                        onChange={(e) => {
+                          setEditingItem({ ...editingItem, price: e.target.value });
+                          if (fieldErrors.price) setFieldErrors(prev => ({ ...prev, price: null }));
+                        }}
+                        placeholder="20"
+                      />
+                      <span className="absolute right-3.5 text-slate-400 font-bold text-sm pointer-events-none select-none">
+                        ₹
                       </span>
                     </div>
-
-                    {editingItem.img ? (
-                      <div className="relative w-full rounded-xl overflow-hidden border border-slate-200 bg-slate-900 shadow-xs">
-                        <div className="relative w-full h-36 sm:h-40">
-                          <img 
-                            src={editingItem.img} 
-                            alt={editingItem.name || 'Preview'} 
-                            className="w-full h-full object-cover" 
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-transparent flex items-end p-3.5">
-                            <div className="flex items-center gap-2.5 flex-wrap">
-                              <button
-                                type="button"
-                                onClick={() => editFileInputRef.current?.click()}
-                                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-white text-slate-900 text-xs font-bold shadow-md hover:bg-slate-100 transition-all cursor-pointer border-none"
-                              >
-                                <Camera size={14} className="text-slate-700" />
-                                <span>Change Photo</span>
-                              </button>
-                              <button
-                                type="button"
-                                onClick={handleRemoveImage}
-                                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-rose-600 text-white text-xs font-bold shadow-md hover:bg-rose-700 transition-all cursor-pointer border-none"
-                              >
-                                <Trash2 size={14} />
-                                <span>Remove</span>
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <div 
-                        onClick={() => editFileInputRef.current?.click()}
-                        className={`w-full h-36 rounded-xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all ${
-                          isUploading 
-                            ? 'border-slate-300 bg-slate-50' 
-                            : 'border-slate-200 hover:border-slate-300 bg-slate-50/50 hover:bg-slate-50'
-                        }`}
-                      >
-                        {isUploading ? (
-                          <div className="flex flex-col items-center gap-2">
-                            <Loader2 size={22} className="text-red-500 animate-spin" />
-                            <span className="text-xs font-medium text-slate-500">Uploading photo...</span>
-                          </div>
-                        ) : (
-                          <div className="flex flex-col items-center gap-2 text-center p-4">
-                            <div className="w-10 h-10 rounded-full bg-white shadow-xs border border-slate-100 flex items-center justify-center text-slate-400">
-                              <Upload size={16} />
-                            </div>
-                            <div>
-                              <p className="text-xs font-semibold text-slate-700 m-0">Click to upload photo</p>
-                              <p className="text-[11px] text-slate-400 m-0 mt-0.5">Recommended 1:1 or 16:9 ratio</p>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {fieldErrors.img && (
+                    {fieldErrors.price && (
                       <p className="text-xs text-rose-500 mt-1 flex items-center gap-1 font-medium m-0">
-                        <AlertCircle size={13} /> {fieldErrors.img}
+                        <AlertCircle size={13} /> {fieldErrors.price}
                       </p>
                     )}
+                  </div>
 
-                    <input 
-                      type="file"
-                      ref={editFileInputRef}
-                      onChange={handleEditFileChange}
-                      accept="image/*"
-                      style={{ display: 'none' }}
-                    />
+                  {/* CATEGORY */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[12px] font-bold uppercase tracking-wider text-slate-600">
+                      CATEGORY
+                    </label>
+                    <div className="relative flex items-center h-12">
+                      <select
+                        className="w-full h-full pl-4 pr-10 rounded-2xl border border-slate-300 focus:border-red-500 focus:ring-2 focus:ring-red-500/20 bg-white text-[15px] text-slate-800 font-semibold outline-none transition-all appearance-none cursor-pointer shadow-xs"
+                        value={editingItem.category}
+                        onChange={(e) => setEditingItem({ ...editingItem, category: e.target.value })}
+                      >
+                        {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                      </select>
+                      <ChevronDown size={18} className="absolute right-3.5 text-slate-400 pointer-events-none" />
+                    </div>
                   </div>
                 </div>
 
-                {/* Sticky Footer Actions - Always 100% Visible */}
-                <div className="px-7 py-4 bg-slate-50/90 backdrop-blur-sm border-t border-slate-100 flex items-center justify-end gap-3 shrink-0">
-                  <button
-                    type="button"
-                    onClick={handleCloseModal}
-                    className="px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:text-slate-800 hover:bg-slate-200/60 border border-slate-200 bg-white transition-colors cursor-pointer shadow-xs"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isSaving || isUploading}
-                    className="px-6 py-2.5 rounded-xl text-sm font-bold text-white bg-red-600 hover:bg-red-700 active:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 border-none cursor-pointer tracking-wide"
-                  >
-                    {isSaving ? (
-                      <>
-                        <Loader2 size={17} className="animate-spin" />
-                        <span>Saving...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Check size={17} strokeWidth={2.5} />
-                        <span>Save Changes</span>
-                      </>
-                    )}
-                  </button>
+                {/* ITEM PHOTO */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[12px] font-bold uppercase tracking-wider text-slate-600">
+                    ITEM PHOTO
+                  </label>
+
+                  {editingItem.img ? (
+                    <div 
+                      onClick={() => editFileInputRef.current?.click()}
+                      className="group relative w-full h-36 rounded-2xl overflow-hidden border border-dashed border-slate-300 bg-slate-900 shadow-xs cursor-pointer"
+                      title="Click to change photo"
+                    >
+                      <img 
+                        src={editingItem.img} 
+                        alt={editingItem.name || 'Preview'} 
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" 
+                      />
+                      <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/95 text-slate-900 text-xs font-bold shadow-md">
+                          <Camera size={14} /> Change Photo
+                        </span>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRemoveImage();
+                          }}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-600 text-white text-xs font-bold shadow-md hover:bg-rose-700 transition-colors border-none cursor-pointer"
+                        >
+                          <Trash2 size={14} /> Remove
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div 
+                      onClick={() => editFileInputRef.current?.click()}
+                      className={`w-full h-36 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all ${
+                        isUploading 
+                          ? 'border-slate-300 bg-slate-50' 
+                          : 'border-slate-300 hover:border-red-400 bg-slate-50/50 hover:bg-red-50/20'
+                      }`}
+                    >
+                      {isUploading ? (
+                        <div className="flex flex-col items-center gap-2">
+                          <Loader2 size={22} className="text-red-500 animate-spin" />
+                          <span className="text-xs font-medium text-slate-500">Uploading photo...</span>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center gap-2 text-center p-4">
+                          <div className="w-10 h-10 rounded-full bg-white shadow-xs border border-slate-200 flex items-center justify-center text-slate-400">
+                            <Upload size={16} />
+                          </div>
+                          <div>
+                            <p className="text-xs font-semibold text-slate-700 m-0">Click to upload photo</p>
+                            <p className="text-[11px] text-slate-400 m-0 mt-0.5">Recommended 1:1 or 16:9 ratio</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {fieldErrors.img && (
+                    <p className="text-xs text-rose-500 mt-1 flex items-center gap-1 font-medium m-0">
+                      <AlertCircle size={13} /> {fieldErrors.img}
+                    </p>
+                  )}
+
+                  <input 
+                    type="file"
+                    ref={editFileInputRef}
+                    onChange={handleEditFileChange}
+                    accept="image/*"
+                    style={{ display: 'none' }}
+                  />
                 </div>
+
+                {/* Prominent Red SAVE CHANGES Button Below Image */}
+                <button
+                  type="submit"
+                  disabled={isSaving || isUploading}
+                  className="w-full mt-1 h-13 py-3.5 rounded-2xl text-[15px] font-extrabold tracking-wider uppercase text-white bg-[#dc2626] hover:bg-[#b91c1c] active:bg-[#991b1b] disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 border-none cursor-pointer"
+                >
+                  {isSaving ? (
+                    <>
+                      <Loader2 size={19} className="animate-spin" />
+                      <span>SAVING...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Check size={20} strokeWidth={3} />
+                      <span>SAVE CHANGES</span>
+                    </>
+                  )}
+                </button>
               </form>
             </motion.div>
           </div>
