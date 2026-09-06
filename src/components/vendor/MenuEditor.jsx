@@ -616,19 +616,28 @@ export const MenuEditor = ({ shopId }) => {
                         alt={editingItem.name || 'Preview'} 
                         className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 rounded-[16px]" 
                       />
-                      <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2.5">
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/95 text-slate-900 text-xs font-bold shadow-md">
-                          <Camera size={14} /> Change Photo
-                        </span>
+                      <div className="absolute inset-0 bg-slate-950/40 backdrop-blur-[1.5px] opacity-0 group-hover:opacity-100 transition-all duration-200 flex items-center justify-center gap-3">
                         <button
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleRemoveImage();
+                            editFileInputRef.current?.click();
                           }}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-600 text-white text-xs font-bold shadow-md hover:bg-rose-700 transition-colors border-none cursor-pointer"
+                          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/95 hover:bg-white text-slate-800 text-xs font-bold shadow-lg border border-white/60 hover:scale-105 active:scale-95 transition-all cursor-pointer"
                         >
-                          <Trash2 size={14} /> Remove
+                          <Camera size={14} className="text-slate-700" />
+                          <span>Change Photo</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRemoveImage(e);
+                          }}
+                          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-rose-600/95 hover:bg-rose-600 text-white text-xs font-bold shadow-lg border border-rose-400/40 hover:scale-105 active:scale-95 transition-all cursor-pointer"
+                        >
+                          <Trash2 size={14} className="text-white" />
+                          <span>Remove</span>
                         </button>
                       </div>
                     </div>
