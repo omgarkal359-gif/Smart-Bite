@@ -33,27 +33,6 @@ export const MobileLayout = () => {
         </nav>
 
         <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          {totalItems > 0 && (
-            <button 
-              className="global-checkout-btn tap-effect"
-              onClick={() => setIsCheckoutOpen(true)}
-              style={{
-                background: '#E4002B',
-                color: 'white',
-                border: 'none',
-                padding: '8px 16px',
-                borderRadius: '20px',
-                fontFamily: 'var(--font-heading, sans-serif)',
-                textTransform: 'uppercase',
-                fontSize: '0.82rem',
-                fontWeight: '800',
-                letterSpacing: '0.5px',
-                boxShadow: '0 4px 12px rgba(228, 0, 43, 0.25)'
-              }}
-            >
-              Checkout
-            </button>
-          )}
           <button className="global-cart-btn tap-effect" onClick={() => {
           if (totalItems === 0) {
             navigate('/student/cart');
