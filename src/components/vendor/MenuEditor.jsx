@@ -620,27 +620,33 @@ export const MenuEditor = ({ shopId }) => {
                     </div>
 
                     {editingItem.img ? (
-                      <div className="relative w-full h-40 sm:h-44 rounded-xl overflow-hidden border border-slate-200 bg-slate-900/5 group shadow-xs">
-                        <img 
-                          src={editingItem.img} 
-                          alt={editingItem.name || 'Preview'} 
-                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" 
-                        />
-                        <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2.5 p-4 backdrop-blur-[2px]">
-                          <button
-                            type="button"
-                            onClick={() => editFileInputRef.current?.click()}
-                            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-white/95 hover:bg-white text-slate-800 text-xs font-semibold shadow-md transition-all cursor-pointer border-none"
-                          >
-                            <Camera size={14} /> Change Photo
-                          </button>
-                          <button
-                            type="button"
-                            onClick={handleRemoveImage}
-                            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-semibold shadow-md transition-all cursor-pointer border border-rose-200/60"
-                          >
-                            <Trash2 size={14} /> Remove
-                          </button>
+                      <div className="relative w-full rounded-xl overflow-hidden border border-slate-200 bg-slate-900 shadow-xs">
+                        <div className="relative w-full h-40 sm:h-44">
+                          <img 
+                            src={editingItem.img} 
+                            alt={editingItem.name || 'Preview'} 
+                            className="w-full h-full object-cover" 
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-transparent flex items-end p-3.5">
+                            <div className="flex items-center gap-2.5 flex-wrap">
+                              <button
+                                type="button"
+                                onClick={() => editFileInputRef.current?.click()}
+                                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-white text-slate-900 text-xs font-bold shadow-md hover:bg-slate-100 transition-all cursor-pointer border-none"
+                              >
+                                <Camera size={14} className="text-slate-700" />
+                                <span>Change Photo</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={handleRemoveImage}
+                                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-rose-600 text-white text-xs font-bold shadow-md hover:bg-rose-700 transition-all cursor-pointer border-none"
+                              >
+                                <Trash2 size={14} />
+                                <span>Remove</span>
+                              </button>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     ) : (
