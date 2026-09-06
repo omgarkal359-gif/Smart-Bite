@@ -276,13 +276,13 @@ export const MenuEditor = ({ shopId }) => {
                   <label className="text-xs font-bold uppercase tracking-wider text-slate-600">
                     Price
                   </label>
-                  <div className="relative flex items-center">
-                    <span className="absolute left-4 font-bold text-slate-400 text-sm select-none pointer-events-none">
+                  <div className="flex items-center h-12 rounded-xl border border-slate-300 bg-white hover:border-slate-400 focus-within:border-red-500 focus-within:ring-4 focus-within:ring-red-500/10 overflow-hidden transition-all shadow-sm">
+                    <div className="flex items-center justify-center px-4 bg-slate-50 border-r border-slate-200 text-slate-500 text-sm font-semibold h-full select-none shrink-0">
                       ₹
-                    </span>
+                    </div>
                     <input 
                       type="number"
-                      className="w-full h-12 pl-9 pr-5 rounded-xl border border-slate-300 font-semibold text-slate-900 bg-white hover:border-slate-400 focus:bg-white focus:outline-none focus:border-red-500 focus:ring-4 focus:ring-red-500/10 transition-all text-[15px] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none shadow-sm"
+                      className="w-full h-full px-4 bg-transparent border-none outline-none font-semibold text-slate-900 text-[15px] placeholder:text-slate-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                       placeholder="20"
                       value={newItem.price}
                       onChange={(e) => setNewItem({...newItem, price: e.target.value})}
@@ -488,16 +488,16 @@ export const MenuEditor = ({ shopId }) => {
       {/* Modern Redesigned Edit Menu Item Modal */}
       <AnimatePresence>
         {editingItem && (
-          <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 sm:p-6 overflow-y-auto">
+          <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 sm:p-6 overflow-hidden">
             <motion.div 
               initial={{ opacity: 0, scale: 0.96, y: 12 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.96, y: 12 }}
               transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-              className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-slate-100 flex flex-col overflow-hidden my-auto"
+              className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-slate-100 flex flex-col max-h-[88vh] overflow-hidden"
             >
               {/* Header */}
-              <div className="px-6 py-5 border-b border-slate-100 flex items-start justify-between bg-white shrink-0">
+              <div className="px-6 py-4.5 border-b border-slate-100 flex items-start justify-between bg-white shrink-0">
                 <div>
                   <h3 className="text-lg font-bold text-slate-900 tracking-tight m-0">
                     Edit Menu Item
@@ -518,17 +518,17 @@ export const MenuEditor = ({ shopId }) => {
               
               {/* Body (Scrollable Form) */}
               <form onSubmit={handleSaveEdit} className="flex flex-col flex-1 overflow-hidden m-0">
-                <div className="px-6 py-5 flex flex-col gap-5 overflow-y-auto max-h-[calc(85vh-140px)]">
+                <div className="px-6 py-5 flex flex-col gap-5 overflow-y-auto flex-1 min-h-0">
                   
                   {/* Section: Basic Information */}
-                  <div className="flex flex-col gap-4">
+                  <div className="flex flex-col gap-3.5">
                     <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
                       Basic Information
                     </span>
 
                     {/* Item Name */}
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-xs font-medium text-slate-700">
+                      <label className="text-xs font-semibold text-slate-700">
                         Item Name
                       </label>
                       <input
@@ -537,7 +537,7 @@ export const MenuEditor = ({ shopId }) => {
                           fieldErrors.name 
                             ? 'border-rose-400 ring-4 ring-rose-500/10' 
                             : 'border-slate-200 focus:border-red-500 focus:ring-4 focus:ring-red-500/10'
-                        } bg-white text-sm text-slate-900 placeholder:text-slate-400 outline-none transition-all shadow-xs`}
+                        } bg-white text-sm text-slate-900 font-medium placeholder:text-slate-400 outline-none transition-all shadow-xs`}
                         value={editingItem.name}
                         onChange={(e) => {
                           setEditingItem({ ...editingItem, name: e.target.value });
@@ -553,30 +553,30 @@ export const MenuEditor = ({ shopId }) => {
                     </div>
 
                     {/* Price & Category */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {/* Price */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                      {/* Price with Segmented Badge */}
                       <div className="flex flex-col gap-1.5">
-                        <label className="text-xs font-medium text-slate-700">
+                        <label className="text-xs font-semibold text-slate-700">
                           Price
                         </label>
-                        <div className="relative flex items-center">
-                          <span className="absolute left-3.5 text-sm font-semibold text-slate-400 select-none pointer-events-none">
+                        <div className={`flex items-center h-11 rounded-xl border ${
+                          fieldErrors.price 
+                            ? 'border-rose-400 ring-4 ring-rose-500/10' 
+                            : 'border-slate-200 focus-within:border-red-500 focus-within:ring-4 focus-within:ring-red-500/10'
+                        } bg-white overflow-hidden transition-all shadow-xs`}>
+                          <div className="flex items-center justify-center px-3.5 bg-slate-50 border-r border-slate-200 text-slate-500 text-sm font-semibold h-full select-none shrink-0">
                             ₹
-                          </span>
+                          </div>
                           <input
                             type="number"
                             step="any"
-                            className={`w-full h-11 pl-8 pr-3.5 rounded-xl border ${
-                              fieldErrors.price 
-                                ? 'border-rose-400 ring-4 ring-rose-500/10' 
-                                : 'border-slate-200 focus:border-red-500 focus:ring-4 focus:ring-red-500/10'
-                            } bg-white text-sm text-slate-900 placeholder:text-slate-400 outline-none transition-all shadow-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
+                            className="w-full h-full px-3.5 bg-transparent border-none outline-none text-sm text-slate-900 font-medium placeholder:text-slate-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                             value={editingItem.price}
                             onChange={(e) => {
                               setEditingItem({ ...editingItem, price: e.target.value });
                               if (fieldErrors.price) setFieldErrors(prev => ({ ...prev, price: null }));
                             }}
-                            placeholder="e.g. 20"
+                            placeholder="20"
                           />
                         </div>
                         {fieldErrors.price && (
@@ -588,12 +588,12 @@ export const MenuEditor = ({ shopId }) => {
 
                       {/* Category */}
                       <div className="flex flex-col gap-1.5">
-                        <label className="text-xs font-medium text-slate-700">
+                        <label className="text-xs font-semibold text-slate-700">
                           Category
                         </label>
-                        <div className="relative flex items-center">
+                        <div className="relative flex items-center h-11">
                           <select
-                            className="w-full h-11 pl-3.5 pr-10 rounded-xl border border-slate-200 focus:border-red-500 focus:ring-4 focus:ring-red-500/10 bg-white text-sm text-slate-900 outline-none transition-all appearance-none cursor-pointer shadow-xs"
+                            className="w-full h-full pl-3.5 pr-10 rounded-xl border border-slate-200 focus:border-red-500 focus:ring-4 focus:ring-red-500/10 bg-white text-sm text-slate-900 font-medium outline-none transition-all appearance-none cursor-pointer shadow-xs"
                             value={editingItem.category}
                             onChange={(e) => setEditingItem({ ...editingItem, category: e.target.value })}
                           >
@@ -620,24 +620,24 @@ export const MenuEditor = ({ shopId }) => {
                     </div>
 
                     {editingItem.img ? (
-                      <div className="relative w-full h-44 rounded-xl overflow-hidden border border-slate-200 bg-slate-50 group">
+                      <div className="relative w-full h-36 sm:h-40 rounded-xl overflow-hidden border border-slate-200 bg-slate-900/5 group shadow-xs">
                         <img 
                           src={editingItem.img} 
                           alt={editingItem.name || 'Preview'} 
-                          className="w-full h-full object-cover" 
+                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" 
                         />
-                        <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2.5 p-4">
+                        <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2.5 p-4 backdrop-blur-[2px]">
                           <button
                             type="button"
                             onClick={() => editFileInputRef.current?.click()}
-                            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-white/95 hover:bg-white text-slate-800 text-xs font-semibold shadow-sm transition-all cursor-pointer border-none"
+                            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-white/95 hover:bg-white text-slate-800 text-xs font-semibold shadow-md transition-all cursor-pointer border-none"
                           >
                             <Camera size={14} /> Change Photo
                           </button>
                           <button
                             type="button"
                             onClick={handleRemoveImage}
-                            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-semibold shadow-sm transition-all cursor-pointer border border-rose-200/60"
+                            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-semibold shadow-md transition-all cursor-pointer border border-rose-200/60"
                           >
                             <Trash2 size={14} /> Remove
                           </button>
@@ -646,7 +646,7 @@ export const MenuEditor = ({ shopId }) => {
                     ) : (
                       <div 
                         onClick={() => editFileInputRef.current?.click()}
-                        className={`w-full h-40 rounded-xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all ${
+                        className={`w-full h-32 rounded-xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all ${
                           isUploading 
                             ? 'border-slate-300 bg-slate-50' 
                             : 'border-slate-200 hover:border-slate-300 bg-slate-50/50 hover:bg-slate-50'
@@ -654,13 +654,13 @@ export const MenuEditor = ({ shopId }) => {
                       >
                         {isUploading ? (
                           <div className="flex flex-col items-center gap-2">
-                            <Loader2 size={24} className="text-red-500 animate-spin" />
+                            <Loader2 size={22} className="text-red-500 animate-spin" />
                             <span className="text-xs font-medium text-slate-500">Uploading photo...</span>
                           </div>
                         ) : (
-                          <div className="flex flex-col items-center gap-2 text-center p-4">
-                            <div className="w-10 h-10 rounded-full bg-white shadow-xs border border-slate-100 flex items-center justify-center text-slate-400">
-                              <Upload size={18} />
+                          <div className="flex flex-col items-center gap-1.5 text-center p-4">
+                            <div className="w-9 h-9 rounded-full bg-white shadow-xs border border-slate-100 flex items-center justify-center text-slate-400">
+                              <Upload size={16} />
                             </div>
                             <div>
                               <p className="text-xs font-semibold text-slate-700 m-0">Click to upload photo</p>
@@ -688,18 +688,18 @@ export const MenuEditor = ({ shopId }) => {
                 </div>
 
                 {/* Sticky Footer Actions */}
-                <div className="px-6 py-4 bg-slate-50/80 backdrop-blur-sm border-t border-slate-100 flex flex-col-reverse sm:flex-row items-center justify-end gap-2.5 shrink-0">
+                <div className="px-6 py-3.5 bg-slate-50/90 backdrop-blur-sm border-t border-slate-100 flex items-center justify-end gap-3 shrink-0">
                   <button
                     type="button"
                     onClick={handleCloseModal}
-                    className="w-full sm:w-auto px-4 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:text-slate-800 hover:bg-slate-200/60 border border-slate-200 bg-white transition-colors cursor-pointer"
+                    className="px-4 py-2 rounded-xl text-sm font-semibold text-slate-600 hover:text-slate-800 hover:bg-slate-200/60 border border-slate-200 bg-white transition-colors cursor-pointer shadow-xs"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={!isDirty || isSaving || isUploading}
-                    className="w-full sm:w-auto px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-xs transition-all flex items-center justify-center gap-2 border-none cursor-pointer"
+                    className="px-5 py-2 rounded-xl text-sm font-semibold text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-all flex items-center justify-center gap-2 border-none cursor-pointer"
                   >
                     {isSaving ? (
                       <>
