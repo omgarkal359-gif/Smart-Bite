@@ -101,12 +101,12 @@ export const MenuEditor = ({ shopId }) => {
 
   return (
     <div className="menu-editor-container">
-      <div className="flex justify-between items-center mb-10 mt-6">
-        <h2 className="text-4xl font-black uppercase" style={{ color: '#0f172a', fontFamily: 'Oswald, sans-serif', margin: 0, letterSpacing: '0.05em' }}>CATALOG EDITOR</h2>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-10 mt-6">
+        <h2 className="text-3xl sm:text-4xl font-black uppercase" style={{ color: '#0f172a', fontFamily: 'Oswald, sans-serif', margin: 0, letterSpacing: '0.05em' }}>CATALOG EDITOR</h2>
         <motion.button 
           whileHover={{ scale: 1.04 }}
           whileTap={{ scale: 0.96 }}
-          className="flex items-center justify-center gap-3 px-8 py-4 rounded-full font-black text-base lg:text-lg uppercase tracking-wider transition-all"
+          className="flex items-center justify-center gap-3 px-6 sm:px-8 py-3 sm:py-4 rounded-full font-black text-sm sm:text-base lg:text-lg uppercase tracking-wider transition-all shrink-0 whitespace-nowrap"
           onClick={() => setIsAdding(!isAdding)}
           style={{ 
             backgroundColor: isAdding ? '#1e293b' : '#dc2626', 
