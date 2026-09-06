@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, X, Upload, Check, Edit2, Trash2, Camera, Loader2 } from 'lucide-react';
+import { Plus, X, Upload, Check, Edit2, Trash2, Camera, Loader2, CheckCircle2, AlertCircle, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '../../api';
 import { getFoodItemImage } from '../../utils/imageHelper';
@@ -366,7 +366,7 @@ export const MenuEditor = ({ shopId }) => {
                     <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Item Name</label>
                     <input
                       type="text"
-                      className="w-full px-4 py-3 rounded-xl border border-slate-300 font-semibold text-slate-900 focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100 transition-all text-base"
+                      className="w-full px-4 py-3 rounded-xl border border-slate-300 font-semibold text-slate-900 bg-slate-50/50 focus:bg-white focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100 transition-all text-sm"
                       value={editingItem.name}
                       onChange={(e) => setEditingItem({ ...editingItem, name: e.target.value })}
                       placeholder="e.g. Single Idli"
@@ -379,7 +379,7 @@ export const MenuEditor = ({ shopId }) => {
                       <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Price (₹)</label>
                       <input
                         type="number"
-                        className="w-full px-4 py-3 rounded-xl border border-slate-300 font-semibold text-slate-900 focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100 transition-all text-base"
+                        className="w-full px-4 py-3 rounded-xl border border-slate-300 font-semibold text-slate-900 bg-slate-50/50 focus:bg-white focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100 transition-all text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         value={editingItem.price}
                         onChange={(e) => setEditingItem({ ...editingItem, price: e.target.value })}
                         placeholder="20"
@@ -387,44 +387,90 @@ export const MenuEditor = ({ shopId }) => {
                     </div>
                     <div className="flex flex-col gap-1.5">
                       <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Category</label>
-                      <select
-                        className="w-full px-4 py-3 rounded-xl border border-slate-300 font-semibold text-slate-900 bg-white focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100 transition-all text-base"
-                        value={editingItem.category}
-                        onChange={(e) => setEditingItem({ ...editingItem, category: e.target.value })}
-                      >
-                        {categories.map(c => <option key={c} value={c}>{c}</option>)}
-                      </select>
+                      <div className="relative">
+                        <select
+                          className="w-full px-4 py-3 pr-10 rounded-xl border border-slate-300 font-semibold text-slate-900 bg-slate-50/50 focus:bg-white focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100 transition-all text-sm appearance-none cursor-pointer"
+                          value={editingItem.category}
+                          onChange={(e) => setEditingItem({ ...editingItem, category: e.target.value })}
+                        >
+                          {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                        </select>
+                        <ChevronDown size={18} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                      </div>
                     </div>
                   </div>
                 </div>
 
                 {/* Stock Status Selector in Modal */}
-                <div className="flex flex-col gap-2 pt-3 border-t border-slate-100">
-                  <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Stock Availability</label>
-                  <div className="grid grid-cols-2 gap-2 p-1.5 bg-slate-100 rounded-2xl border border-slate-200">
+                <div className="flex flex-col gap-2.5 pt-3 border-t border-slate-100">
+                  <div className="flex justify-between items-center">
+                    <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Stock Availability</label>
+                    <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
+                      editingItem.stock !== 0 && editingItem.inStock !== false 
+                        ? 'bg-emerald-100 text-emerald-800' 
+                        : 'bg-rose-100 text-rose-800'
+                    }`}>
+                      {editingItem.stock !== 0 && editingItem.inStock !== false ? 'Live on Menu' : 'Temporarily Unavailable'}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    {/* In Stock Option */}
                     <button
                       type="button"
-                      className={`py-3 px-4 rounded-xl font-bold flex items-center justify-center gap-2.5 transition-all text-sm cursor-pointer border ${
+                      className={`p-3 rounded-2xl font-bold flex items-center gap-3 transition-all cursor-pointer text-left border ${
                         editingItem.stock !== 0 && editingItem.inStock !== false
-                          ? 'bg-white text-emerald-700 border-emerald-300 shadow-sm'
-                          : 'bg-transparent text-slate-500 border-transparent hover:text-slate-800'
+                          ? 'bg-emerald-50/70 border-emerald-500 shadow-sm'
+                          : 'bg-slate-50 border-slate-200 hover:bg-slate-100 hover:border-slate-300'
                       }`}
                       onClick={() => setEditingItem({ ...editingItem, stock: 20, inStock: true })}
                     >
-                      <span className={`w-2.5 h-2.5 rounded-full ${editingItem.stock !== 0 && editingItem.inStock !== false ? 'bg-emerald-500 ring-4 ring-emerald-100' : 'bg-slate-300'}`} />
-                      In Stock
+                      <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+                        editingItem.stock !== 0 && editingItem.inStock !== false
+                          ? 'bg-emerald-500 text-white shadow-sm'
+                          : 'bg-slate-200 text-slate-400'
+                      }`}>
+                        <CheckCircle2 size={18} strokeWidth={2.5} />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className={`text-sm font-extrabold leading-tight ${
+                          editingItem.stock !== 0 && editingItem.inStock !== false ? 'text-emerald-900' : 'text-slate-600'
+                        }`}>
+                          In Stock
+                        </span>
+                        <span className="text-[11px] font-medium text-slate-400 leading-tight mt-0.5">
+                          Available to order
+                        </span>
+                      </div>
                     </button>
+
+                    {/* Out of Stock Option */}
                     <button
                       type="button"
-                      className={`py-3 px-4 rounded-xl font-bold flex items-center justify-center gap-2.5 transition-all text-sm cursor-pointer border ${
+                      className={`p-3 rounded-2xl font-bold flex items-center gap-3 transition-all cursor-pointer text-left border ${
                         editingItem.stock === 0 || editingItem.inStock === false
-                          ? 'bg-white text-rose-700 border-rose-300 shadow-sm'
-                          : 'bg-transparent text-slate-500 border-transparent hover:text-slate-800'
+                          ? 'bg-rose-50/70 border-rose-500 shadow-sm'
+                          : 'bg-slate-50 border-slate-200 hover:bg-slate-100 hover:border-slate-300'
                       }`}
                       onClick={() => setEditingItem({ ...editingItem, stock: 0, inStock: false })}
                     >
-                      <span className={`w-2.5 h-2.5 rounded-full ${editingItem.stock === 0 || editingItem.inStock === false ? 'bg-rose-500 ring-4 ring-rose-100' : 'bg-slate-300'}`} />
-                      Out of Stock
+                      <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+                        editingItem.stock === 0 || editingItem.inStock === false
+                          ? 'bg-rose-500 text-white shadow-sm'
+                          : 'bg-slate-200 text-slate-400'
+                      }`}>
+                        <AlertCircle size={18} strokeWidth={2.5} />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className={`text-sm font-extrabold leading-tight ${
+                          editingItem.stock === 0 || editingItem.inStock === false ? 'text-rose-900' : 'text-slate-600'
+                        }`}>
+                          Out of Stock
+                        </span>
+                        <span className="text-[11px] font-medium text-slate-400 leading-tight mt-0.5">
+                          Disabled on menu
+                        </span>
+                      </div>
                     </button>
                   </div>
                 </div>
