@@ -671,20 +671,20 @@ export const MenuEditor = ({ shopId }) => {
                   />
                 </div>
 
-                {/* Prominent Red SAVE CHANGES Button Below Image */}
+                {/* Exact Red SAVE CHANGES Button Below Image */}
                 <button
                   type="submit"
                   disabled={isSaving || isUploading}
-                  className="w-full mt-1 h-13 py-3.5 rounded-2xl text-[15px] font-extrabold tracking-wider uppercase text-white bg-[#dc2626] hover:bg-[#b91c1c] active:bg-[#991b1b] disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 border-none cursor-pointer"
+                  className="w-full mt-2 h-12 sm:h-13 rounded-[18px] text-[15px] font-bold tracking-wide uppercase text-white bg-[#dc2626] hover:bg-[#b91c1c] active:bg-[#991b1b] active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 border-none cursor-pointer"
                 >
                   {isSaving ? (
                     <>
-                      <Loader2 size={19} className="animate-spin" />
+                      <Loader2 size={18} className="animate-spin text-white" />
                       <span>SAVING...</span>
                     </>
                   ) : (
                     <>
-                      <Check size={20} strokeWidth={3} />
+                      <Check size={19} strokeWidth={3} className="text-white" />
                       <span>SAVE CHANGES</span>
                     </>
                   )}
