@@ -174,7 +174,8 @@
 /* Premium Control Buttons */
 /* Premium Control Buttons */
 .vendor-sidebar {
-  position: relative;
+  position: sticky;
+  top: 0;
   background: #1E293B; /* Slate 800 */
   width: 80px;
   flex-shrink: 0;
@@ -206,12 +207,12 @@
   align-items: center;
   justify-content: flex-start;
   gap: 12px;
-  width: calc(100% - 24px);
-  margin: 0 12px;
-  padding: 12px 14px;
+  width: 100%;
+  margin: 0;
+  padding: 12px 28px;
   background: transparent;
   border: none;
-  border-radius: 12px;
+  border-radius: 0;
   color: #94A3B8; /* Slate 400 */
   font-family: 'Inter', sans-serif;
   font-weight: 600;
