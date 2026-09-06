@@ -256,8 +256,8 @@
   }
 }
 
-.sidebar-btn.busy { color: #F87171; } /* Red for busy */
-.sidebar-btn.active { color: #4ADE80; } /* Green for normal */
+.sidebar-btn.busy { color: #F87171; border: 2px solid #F87171; border-radius: 12px; } /* Red for busy */
+.sidebar-btn.active { color: #4ADE80; border: 2px solid #FFFFFF; border-radius: 12px; } /* Green for normal */
 .sidebar-btn.exit { 
   color: rgba(255, 255, 255, 0.8); 
   margin-top: auto !important;
