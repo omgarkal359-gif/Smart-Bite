@@ -11,6 +11,7 @@ import { supabase } from '../supabaseClient';
 import { getStoredUser, clearStoredUser } from '../utils/auth';
 import './pages.css';
 import './vendor.css';
+import sguLogo from '../assets/sgu-logo.jpg';
 
 const MOCK_TICKETS = [];
 
@@ -416,6 +417,11 @@ const VendorDashboard = () => {
       
       {/* SIDEBAR */}
       <aside className={`vendor-sidebar py-4 gap-2 ${shopStatus === 'CLOSED' ? 'closed' : ''}`}>
+        {/* Sidebar Logo */}
+        <div className="sidebar-logo">
+          <img src={sguLogo} alt="Logo" />
+        </div>
+
         <motion.button 
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
