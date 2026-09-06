@@ -160,33 +160,61 @@ export const MenuEditor = ({ shopId }) => {
           >
             <h3 className="heading-2 form-title">New Item Details</h3>
             
-            <div className="form-grid">
-              <FloatingInput 
-                label="Item Name (e.g. Triple Cheese)"
-                value={newItem.name}
-                onChange={(e) => setNewItem({...newItem, name: e.target.value})}
-              />
-              <FloatingInput 
-                label="Price (₹)"
-                type="number"
-                value={newItem.price}
-                onChange={(e) => setNewItem({...newItem, price: e.target.value})}
-              />
-            </div>
+            <div className="flex flex-col gap-4 mb-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                  Item Name
+                </label>
+                <input 
+                  type="text"
+                  className="w-full h-12 px-4 rounded-xl border border-slate-200 font-semibold text-slate-900 bg-slate-50/60 focus:bg-white focus:outline-none focus:border-red-500 focus:ring-4 focus:ring-red-500/10 transition-all text-sm placeholder:text-slate-400 shadow-sm"
+                  placeholder="e.g. Triple Cheese Sandwich"
+                  value={newItem.name}
+                  onChange={(e) => setNewItem({...newItem, name: e.target.value})}
+                  required
+                />
+              </div>
 
-            <div className="floating-label-group">
-              <select 
-                className="floating-input appearance-none"
-                value={newItem.category}
-                onChange={(e) => setNewItem({...newItem, category: e.target.value})}
-              >
-                {categories.map(c => <option key={c} value={c}>{c}</option>)}
-                <option value="Main">Main</option>
-                <option value="Sides">Sides</option>
-                <option value="Beverages">Beverages</option>
-                <option value="Desserts">Desserts</option>
-              </select>
-              <label className="floating-label">Category</label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                    Price
+                  </label>
+                  <div className="relative flex items-center">
+                    <span className="absolute left-3.5 font-bold text-slate-400 text-sm select-none pointer-events-none">
+                      ₹
+                    </span>
+                    <input 
+                      type="number"
+                      className="w-full h-12 pl-8 pr-4 rounded-xl border border-slate-200 font-semibold text-slate-900 bg-slate-50/60 focus:bg-white focus:outline-none focus:border-red-500 focus:ring-4 focus:ring-red-500/10 transition-all text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none shadow-sm"
+                      placeholder="20"
+                      value={newItem.price}
+                      onChange={(e) => setNewItem({...newItem, price: e.target.value})}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                    Category
+                  </label>
+                  <div className="relative flex items-center">
+                    <select 
+                      className="w-full h-12 px-4 pr-10 rounded-xl border border-slate-200 font-semibold text-slate-900 bg-slate-50/60 focus:bg-white focus:outline-none focus:border-red-500 focus:ring-4 focus:ring-red-500/10 transition-all text-sm appearance-none cursor-pointer shadow-sm"
+                      value={newItem.category}
+                      onChange={(e) => setNewItem({...newItem, category: e.target.value})}
+                    >
+                      {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                      <option value="Main">Main</option>
+                      <option value="Sides">Sides</option>
+                      <option value="Beverages">Beverages</option>
+                      <option value="Desserts">Desserts</option>
+                    </select>
+                    <ChevronDown size={18} className="absolute right-3.5 text-slate-400 pointer-events-none" />
+                  </div>
+                </div>
+              </div>
             </div>
 
             <input 
@@ -363,39 +391,52 @@ export const MenuEditor = ({ shopId }) => {
                 <div className="flex flex-col gap-4">
                   {/* Item Name */}
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Item Name</label>
-                    <input
-                      type="text"
-                      className="w-full px-4 py-3 rounded-xl border border-slate-300 font-semibold text-slate-900 bg-slate-50/50 focus:bg-white focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100 transition-all text-sm"
-                      value={editingItem.name}
-                      onChange={(e) => setEditingItem({ ...editingItem, name: e.target.value })}
-                      placeholder="e.g. Single Idli"
-                    />
+                    <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                      Item Name
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        className="w-full h-12 px-4 rounded-xl border border-slate-200 font-semibold text-slate-900 bg-slate-50/60 focus:bg-white focus:outline-none focus:border-red-500 focus:ring-4 focus:ring-red-500/10 transition-all text-sm placeholder:text-slate-400 shadow-sm"
+                        value={editingItem.name}
+                        onChange={(e) => setEditingItem({ ...editingItem, name: e.target.value })}
+                        placeholder="e.g. Single Idli"
+                      />
+                    </div>
                   </div>
 
                   {/* Price & Category */}
                   <div className="grid grid-cols-2 gap-4">
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Price (₹)</label>
-                      <input
-                        type="number"
-                        className="w-full px-4 py-3 rounded-xl border border-slate-300 font-semibold text-slate-900 bg-slate-50/50 focus:bg-white focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100 transition-all text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                        value={editingItem.price}
-                        onChange={(e) => setEditingItem({ ...editingItem, price: e.target.value })}
-                        placeholder="20"
-                      />
+                      <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                        Price
+                      </label>
+                      <div className="relative flex items-center">
+                        <span className="absolute left-3.5 font-bold text-slate-400 text-sm select-none pointer-events-none">
+                          ₹
+                        </span>
+                        <input
+                          type="number"
+                          className="w-full h-12 pl-8 pr-4 rounded-xl border border-slate-200 font-semibold text-slate-900 bg-slate-50/60 focus:bg-white focus:outline-none focus:border-red-500 focus:ring-4 focus:ring-red-500/10 transition-all text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none shadow-sm"
+                          value={editingItem.price}
+                          onChange={(e) => setEditingItem({ ...editingItem, price: e.target.value })}
+                          placeholder="20"
+                        />
+                      </div>
                     </div>
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Category</label>
-                      <div className="relative">
+                      <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                        Category
+                      </label>
+                      <div className="relative flex items-center">
                         <select
-                          className="w-full px-4 py-3 pr-10 rounded-xl border border-slate-300 font-semibold text-slate-900 bg-slate-50/50 focus:bg-white focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100 transition-all text-sm appearance-none cursor-pointer"
+                          className="w-full h-12 px-4 pr-10 rounded-xl border border-slate-200 font-semibold text-slate-900 bg-slate-50/60 focus:bg-white focus:outline-none focus:border-red-500 focus:ring-4 focus:ring-red-500/10 transition-all text-sm appearance-none cursor-pointer shadow-sm"
                           value={editingItem.category}
                           onChange={(e) => setEditingItem({ ...editingItem, category: e.target.value })}
                         >
                           {categories.map(c => <option key={c} value={c}>{c}</option>)}
                         </select>
-                        <ChevronDown size={18} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                        <ChevronDown size={18} className="absolute right-3.5 text-slate-400 pointer-events-none" />
                       </div>
                     </div>
                   </div>
