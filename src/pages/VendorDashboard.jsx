@@ -443,8 +443,6 @@ const VendorDashboard = () => {
           <History size={24} /> <span>HISTORY</span>
         </motion.button>
 
-        <div className="mt-auto"></div>
-
         <motion.button 
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}

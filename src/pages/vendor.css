@@ -258,7 +258,10 @@
 
 .sidebar-btn.busy { color: #F87171; } /* Red for busy */
 .sidebar-btn.active { color: #4ADE80; } /* Green for normal */
-.sidebar-btn.exit { color: #94A3B8; } /* Slate for exit */
+.sidebar-btn.exit { 
+  color: #94A3B8; 
+  margin-top: auto !important;
+} /* Slate for exit */
 .sidebar-btn.exit:hover { color: #F87171; } /* Red on hover */
 
 /* Floating Labels */
