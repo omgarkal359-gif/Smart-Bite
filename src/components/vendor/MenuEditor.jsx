@@ -357,78 +357,84 @@ export const MenuEditor = ({ shopId }) => {
               {/* Body */}
               <div 
                 className="flex flex-col flex-1 overflow-y-auto min-h-0 bg-white"
-                style={{ padding: '32px', gap: '24px' }}
+                style={{ padding: '28px 32px', gap: '20px' }}
               >
-                
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', flex: 1 }}>
-                  <FloatingInput 
-                    label="Item Name"
-                    value={editingItem.name}
-                    onChange={(e) => setEditingItem({...editingItem, name: e.target.value})}
-                  />
-                  
-                  <div style={{ display: 'flex', gap: '20px' }}>
-                    <div style={{ flex: 1 }}>
-                      <FloatingInput 
-                        label="Price (₹)"
+                {/* Form Fields */}
+                <div className="flex flex-col gap-4">
+                  {/* Item Name */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Item Name</label>
+                    <input
+                      type="text"
+                      className="w-full px-4 py-3 rounded-xl border border-slate-300 font-semibold text-slate-900 focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100 transition-all text-base"
+                      value={editingItem.name}
+                      onChange={(e) => setEditingItem({ ...editingItem, name: e.target.value })}
+                      placeholder="e.g. Single Idli"
+                    />
+                  </div>
+
+                  {/* Price & Category */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Price (₹)</label>
+                      <input
                         type="number"
+                        className="w-full px-4 py-3 rounded-xl border border-slate-300 font-semibold text-slate-900 focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100 transition-all text-base"
                         value={editingItem.price}
-                        onChange={(e) => setEditingItem({...editingItem, price: e.target.value})}
+                        onChange={(e) => setEditingItem({ ...editingItem, price: e.target.value })}
+                        placeholder="20"
                       />
                     </div>
-                    <div style={{ flex: 1 }}>
-                      <div className="floating-label-group" style={{ margin: 0, height: '100%' }}>
-                        <select 
-                          className="floating-input bg-white"
-                          style={{ height: '100%' }}
-                          value={editingItem.category}
-                          onChange={(e) => setEditingItem({...editingItem, category: e.target.value})}
-                        >
-                          {categories.map(c => <option key={c} value={c}>{c}</option>)}
-                        </select>
-                        <label className="floating-label">Category</label>
-                      </div>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Category</label>
+                      <select
+                        className="w-full px-4 py-3 rounded-xl border border-slate-300 font-semibold text-slate-900 bg-white focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100 transition-all text-base"
+                        value={editingItem.category}
+                        onChange={(e) => setEditingItem({ ...editingItem, category: e.target.value })}
+                      >
+                        {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                      </select>
                     </div>
                   </div>
                 </div>
 
                 {/* Stock Status Selector in Modal */}
-                <div style={{ marginTop: '8px', paddingTop: '16px', borderTop: '1px solid #e2e8f0' }}>
-                  <h4 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3" style={{ margin: '0 0 12px 0' }}>Stock Availability</h4>
-                  <div className="flex gap-3">
+                <div className="flex flex-col gap-2 pt-3 border-t border-slate-100">
+                  <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Stock Availability</label>
+                  <div className="grid grid-cols-2 gap-2 p-1.5 bg-slate-100 rounded-2xl border border-slate-200">
                     <button
                       type="button"
-                      className={`flex-1 py-3 px-4 rounded-xl font-bold flex items-center justify-center gap-2 border transition-all cursor-pointer ${
+                      className={`py-3 px-4 rounded-xl font-bold flex items-center justify-center gap-2.5 transition-all text-sm cursor-pointer border ${
                         editingItem.stock !== 0 && editingItem.inStock !== false
-                          ? 'bg-emerald-50 border-emerald-500 text-emerald-700 shadow-sm'
-                          : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100'
+                          ? 'bg-white text-emerald-700 border-emerald-300 shadow-sm'
+                          : 'bg-transparent text-slate-500 border-transparent hover:text-slate-800'
                       }`}
                       onClick={() => setEditingItem({ ...editingItem, stock: 20, inStock: true })}
                     >
-                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                      <span className={`w-2.5 h-2.5 rounded-full ${editingItem.stock !== 0 && editingItem.inStock !== false ? 'bg-emerald-500 ring-4 ring-emerald-100' : 'bg-slate-300'}`} />
                       In Stock
                     </button>
                     <button
                       type="button"
-                      className={`flex-1 py-3 px-4 rounded-xl font-bold flex items-center justify-center gap-2 border transition-all cursor-pointer ${
+                      className={`py-3 px-4 rounded-xl font-bold flex items-center justify-center gap-2.5 transition-all text-sm cursor-pointer border ${
                         editingItem.stock === 0 || editingItem.inStock === false
-                          ? 'bg-rose-50 border-rose-500 text-rose-700 shadow-sm'
-                          : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100'
+                          ? 'bg-white text-rose-700 border-rose-300 shadow-sm'
+                          : 'bg-transparent text-slate-500 border-transparent hover:text-slate-800'
                       }`}
                       onClick={() => setEditingItem({ ...editingItem, stock: 0, inStock: false })}
                     >
-                      <span className="w-2.5 h-2.5 rounded-full bg-rose-500" />
+                      <span className={`w-2.5 h-2.5 rounded-full ${editingItem.stock === 0 || editingItem.inStock === false ? 'bg-rose-500 ring-4 ring-rose-100' : 'bg-slate-300'}`} />
                       Out of Stock
                     </button>
                   </div>
                 </div>
 
                 {/* Spaced out Image Section */}
-                <div style={{ marginTop: '8px', paddingTop: '16px', borderTop: '1px solid #e2e8f0' }}>
-                  <h4 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4" style={{ marginBottom: '16px', marginTop: 0 }}>Item Photo</h4>
+                <div className="flex flex-col gap-2 pt-3 border-t border-slate-100">
+                  <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Item Photo</label>
                   <div 
-                    className={`relative w-full h-48 rounded-2xl overflow-hidden border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all ${isUploading ? 'border-slate-300 bg-slate-50' : 'border-indigo-200 bg-indigo-50 hover:bg-indigo-100 hover:border-indigo-300'}`}
-                    style={{ minHeight: '192px' }}
+                    className={`relative w-full h-40 rounded-2xl overflow-hidden border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all ${isUploading ? 'border-slate-300 bg-slate-50' : 'border-slate-300 bg-slate-50 hover:bg-slate-100 hover:border-slate-400'}`}
+                    style={{ minHeight: '160px' }}
                     onClick={() => editFileInputRef.current.click()}
                   >
                     {editingItem.img ? (
@@ -439,14 +445,14 @@ export const MenuEditor = ({ shopId }) => {
                         </div>
                       </>
                     ) : isUploading ? (
-                      <Loader2 size={32} className="text-indigo-500 animate-spin" />
+                      <Loader2 size={32} className="text-red-500 animate-spin" />
                     ) : (
                       <>
-                        <div className="w-12 h-12 bg-white rounded-full shadow-sm flex items-center justify-center text-indigo-500 mb-3">
-                          <Camera size={24} />
+                        <div className="w-10 h-10 bg-white rounded-full shadow-sm flex items-center justify-center text-slate-500 mb-2">
+                          <Camera size={20} />
                         </div>
-                        <p className="text-sm font-medium text-indigo-900" style={{ margin: 0 }}>Upload new photo</p>
-                        <p className="text-xs text-indigo-500 mt-1" style={{ margin: '4px 0 0 0' }}>Click to browse files</p>
+                        <p className="text-sm font-semibold text-slate-700" style={{ margin: 0 }}>Upload new photo</p>
+                        <p className="text-xs text-slate-400 mt-1" style={{ margin: '2px 0 0 0' }}>Click to browse files</p>
                       </>
                     )}
                   </div>
@@ -461,12 +467,12 @@ export const MenuEditor = ({ shopId }) => {
                 
                 {/* Save Button */}
                 <button 
-                  className="w-full mt-2 text-white font-bold shadow-md hover:shadow-lg transition-all border-none cursor-pointer flex items-center justify-center gap-2 shrink-0"
+                  className="w-full mt-2 text-white font-black uppercase shadow-lg hover:shadow-xl transition-all border-none cursor-pointer flex items-center justify-center gap-2 shrink-0 tracking-wider"
                   style={{ 
                     padding: '16px', 
-                    borderRadius: '12px', 
-                    background: 'linear-gradient(135deg, #4f46e5 0%, #4338ca 100%)',
-                    marginTop: '16px'
+                    borderRadius: '14px', 
+                    background: '#DC2626',
+                    marginTop: '8px'
                   }}
                   onClick={async () => {
                     try {
@@ -487,7 +493,7 @@ export const MenuEditor = ({ shopId }) => {
                   }}
                   disabled={isUploading}
                 >
-                  <Check size={20} />
+                  <Check size={20} strokeWidth={3} />
                   Save Changes
                 </button>
               </div>
