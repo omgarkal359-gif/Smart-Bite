@@ -341,12 +341,13 @@ export const MenuEditor = ({ shopId }) => {
             </div>
 
             <motion.button 
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.99 }}
               type="submit" 
-              className="btn-publish-menu"
+              className="w-full mt-4 h-[52px] rounded-[18px] text-[15px] font-bold tracking-wide uppercase text-white bg-[#dc2626] hover:bg-[#b91c1c] active:bg-[#991b1b] shadow-[0_4px_20px_rgba(220,38,38,0.4)] hover:shadow-[0_6px_25px_rgba(220,38,38,0.5)] transition-all flex items-center justify-center gap-2 border-none cursor-pointer"
             >
-              Publish to Menu
+              <Check size={19} strokeWidth={3} className="text-white" />
+              <span>SAVE CHANGES</span>
             </motion.button>
           </motion.form>
         )}
