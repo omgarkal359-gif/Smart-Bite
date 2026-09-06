@@ -621,7 +621,7 @@ export const MenuEditor = ({ shopId }) => {
 
                     {editingItem.img ? (
                       <div className="relative w-full rounded-xl overflow-hidden border border-slate-200 bg-slate-900 shadow-xs">
-                        <div className="relative w-full h-40 sm:h-44">
+                        <div className="relative w-full h-36 sm:h-40">
                           <img 
                             src={editingItem.img} 
                             alt={editingItem.name || 'Preview'} 
@@ -690,36 +690,34 @@ export const MenuEditor = ({ shopId }) => {
                       accept="image/*"
                       style={{ display: 'none' }}
                     />
-
-                    {/* Primary Red Save Button Below the Image */}
-                    <button
-                      type="submit"
-                      disabled={isSaving || isUploading}
-                      className="w-full mt-2 h-12 rounded-xl text-sm font-bold text-white bg-red-600 hover:bg-red-700 active:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2.5 border-none cursor-pointer tracking-wide"
-                    >
-                      {isSaving ? (
-                        <>
-                          <Loader2 size={18} className="animate-spin" />
-                          <span>Saving Changes...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Check size={18} strokeWidth={2.5} />
-                          <span>Save Changes</span>
-                        </>
-                      )}
-                    </button>
                   </div>
                 </div>
 
-                {/* Sticky Footer Actions */}
+                {/* Sticky Footer Actions - Always 100% Visible */}
                 <div className="px-7 py-4 bg-slate-50/90 backdrop-blur-sm border-t border-slate-100 flex items-center justify-end gap-3 shrink-0">
                   <button
                     type="button"
                     onClick={handleCloseModal}
-                    className="w-full sm:w-auto px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:text-slate-800 hover:bg-slate-200/60 border border-slate-200 bg-white transition-colors cursor-pointer shadow-xs"
+                    className="px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:text-slate-800 hover:bg-slate-200/60 border border-slate-200 bg-white transition-colors cursor-pointer shadow-xs"
                   >
                     Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSaving || isUploading}
+                    className="px-6 py-2.5 rounded-xl text-sm font-bold text-white bg-red-600 hover:bg-red-700 active:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 border-none cursor-pointer tracking-wide"
+                  >
+                    {isSaving ? (
+                      <>
+                        <Loader2 size={17} className="animate-spin" />
+                        <span>Saving...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Check size={17} strokeWidth={2.5} />
+                        <span>Save Changes</span>
+                      </>
+                    )}
                   </button>
                 </div>
               </form>
