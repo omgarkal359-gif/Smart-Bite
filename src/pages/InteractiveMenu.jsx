@@ -239,7 +239,8 @@ const InteractiveMenu = () => {
   }, [isOnline, totalItems, clearCart]);
 
   const handleAddToCartClick = (item) => {
-    if (item.stock > 0 && isOnline) {
+    const isOutOfStock = (item.stock === 0 || item.isOutOfStock === true || item.inStock === false || item.available === 0);
+    if (!isOutOfStock && isOnline) {
       addToCart(item);
     }
   };
@@ -303,8 +304,10 @@ const InteractiveMenu = () => {
           ) : (
             filteredInventory.map((item, index) => {
               const isImgError = imgErrors[item.id];
+              const isOutOfStock = (item.stock === 0 || item.isOutOfStock === true || item.inStock === false || item.available === 0);
+
               return (
-                <motion.div
+                <motion.div 
                   key={item.id || index}
                   id={`dish-${item.id}`}
                   layout
@@ -313,47 +316,59 @@ const InteractiveMenu = () => {
                   exit={{ opacity: 0, scale: 0.9 }}
                   transition={{ type: "spring", stiffness: 100, damping: 15, delay: index * 0.05 }}
                   whileHover={{ y: -5 }}
-                  className={`food-card-v21 shadow-sm ${item.stock === 0 ? 'out-of-stock' : ''}`}
+                  className={`food-card-v21 shadow-sm ${isOutOfStock ? 'out-of-stock' : ''}`}
                 >
                   <div className="food-img-wrapper-v21">
-                    {!isImgError ? (
-                      <img 
-                        src={getFoodItemImage(item)} 
-                        alt={item.name} 
-                        className="food-hd-img" 
-                        onError={() => {
-                          setImgErrors(prev => ({ ...prev, [item.id]: true }));
-                        }}
-                      />
-                    ) : (
-                      <div style={{ width: '100%', height: '100%', color: '#CBD5E1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        {getFallbackIcon(item.category)}
-                      </div>
-                    )}
+                      {!isImgError ? (
+                        <img 
+                          src={getFoodItemImage(item)} 
+                          alt={item.name} 
+                          className="food-hd-img" 
+                          onError={() => {
+                            setImgErrors(prev => ({ ...prev, [item.id]: true }));
+                          }}
+                        />
+                      ) : (
+                        <div style={{ width: '100%', height: '100%', color: '#CBD5E1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          {getFallbackIcon(item.category)}
+                        </div>
+                      )}
 
-                    {/* Floating KFC Red Add/Qty Selector */}
-                    {cart[item.id] ? (
-                      <div className="qty-controls-v21 shadow-md">
-                        <motion.button whileTap={{ scale: 0.9 }} className="qty-btn" onClick={() => handleRemoveFromCartClick(item)}>
-                          -
+                      {isOutOfStock && (
+                        <div className="out-of-stock-badge-v21">
+                          OUT OF STOCK
+                        </div>
+                      )}
+
+                      {/* Floating KFC Red Add/Qty Selector */}
+                      {cart[item.id] && !isOutOfStock ? (
+                        <div className="qty-controls-v21 shadow-md">
+                          <motion.button whileTap={{ scale: 0.9 }} className="qty-btn" onClick={() => handleRemoveFromCartClick(item)}>
+                            -
+                          </motion.button>
+                          <span className="qty-value">{cart[item.id].quantity}</span>
+                          <motion.button whileTap={{ scale: 0.9 }} className="qty-btn" onClick={() => handleAddToCartClick(item)} disabled={isOutOfStock || !isOnline}>
+                            +
+                          </motion.button>
+                        </div>
+                      ) : (
+                        <motion.button
+                          whileTap={{ scale: 0.8 }}
+                          className="kfc-add-btn"
+                          onClick={() => handleAddToCartClick(item)}
+                          disabled={isOutOfStock || !isOnline}
+                          style={
+                            !isOnline 
+                              ? { background: '#94A3B8', cursor: 'not-allowed', fontSize: '0.75rem', width: 'auto', padding: '0 8px' } 
+                              : isOutOfStock 
+                              ? { background: '#64748B', cursor: 'not-allowed', fontSize: '0.65rem', width: 'auto', padding: '0 6px', fontWeight: '800' }
+                              : {}
+                          }
+                        >
+                          {!isOnline ? 'Closed' : isOutOfStock ? 'Sold Out' : '+'}
                         </motion.button>
-                        <span className="qty-value">{cart[item.id].quantity}</span>
-                        <motion.button whileTap={{ scale: 0.9 }} className="qty-btn" onClick={() => handleAddToCartClick(item)} disabled={item.stock === 0 || !isOnline}>
-                          +
-                        </motion.button>
-                      </div>
-                    ) : (
-                      <motion.button
-                        whileTap={{ scale: 0.8 }}
-                        className="kfc-add-btn"
-                        onClick={() => handleAddToCartClick(item)}
-                        disabled={item.stock === 0 || !isOnline}
-                        style={!isOnline ? { background: '#94A3B8', cursor: 'not-allowed', fontSize: '0.75rem', width: 'auto', padding: '0 8px' } : {}}
-                      >
-                        {isOnline ? '+' : 'Closed'}
-                      </motion.button>
-                    )}
-                  </div>
+                      )}
+                    </div>
 
                   <div className="food-info-v21">
                     <h3>{item.name}</h3>

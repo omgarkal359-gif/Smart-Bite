@@ -53,6 +53,30 @@ export const MenuEditor = ({ shopId }) => {
     }
   };
 
+  const handleToggleStock = async (item) => {
+    const isCurrentlyOut = (item.stock === 0 || item.isOutOfStock === true || item.inStock === false);
+    const newStock = isCurrentlyOut ? 20 : 0;
+    const newInStock = isCurrentlyOut;
+
+    // Optimistically update local state
+    setItems(prevItems => 
+      prevItems.map(i => 
+        i.id === item.id 
+          ? { ...i, stock: newStock, inStock: newInStock, isOutOfStock: !newInStock } 
+          : i
+      )
+    );
+
+    try {
+      await api.updateMenuItem(item.id, { 
+        stock: newStock,
+        available: 1
+      });
+    } catch (err) {
+      console.error('Failed to update item stock status:', err);
+    }
+  };
+
   const handleAddItem = async (e) => {
     e.preventDefault();
     if (!newItem.name || !newItem.price) return;
@@ -217,49 +241,90 @@ export const MenuEditor = ({ shopId }) => {
               </div>
               
               <div className="items-grid">
-                {catItems.map((item, index) => (
-                  <motion.div 
-                    layout
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.05 }}
-                    key={item.id} 
-                    className="menu-item-card elite-card group"
-                  >
-                    <div className="menu-item-image">
-                      <img src={getFoodItemImage(item)} alt={item.name} />
-                      <div className="image-overlay" onClick={() => setEditingItem({...item})} style={{ cursor: 'pointer' }}>
-                        <Edit2 size={24} />
-                      </div>
-                    </div>
-                    
-                    <div className="menu-item-details">
-                      <h4 className="item-name" style={{ margin: '0 0 8px 0', fontSize: '1.25rem', fontWeight: 'bold' }}>{item.name}</h4>
-                      <div className="item-meta">
-                        <span className="category-tag">{item.category}</span>
-                        <div className="price-tag" style={{ fontWeight: 'bold', fontSize: '1.25rem', color: '#0f172a' }}>
-                          ₹ {item.price}
+                {catItems.map((item, index) => {
+                  const isItemOutOfStock = (item.stock === 0 || item.isOutOfStock === true || item.inStock === false);
+
+                  return (
+                    <motion.div 
+                      layout
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                      key={item.id} 
+                      className={`menu-item-card elite-card group ${isItemOutOfStock ? 'is-out-of-stock' : ''}`}
+                    >
+                      <div className="menu-item-image">
+                        <img src={getFoodItemImage(item)} alt={item.name} />
+                        {isItemOutOfStock && (
+                          <div className="stock-badge-overlay">
+                            <span>OUT OF STOCK</span>
+                          </div>
+                        )}
+                        <div className="image-overlay" onClick={() => setEditingItem({ ...item, inStock: !isItemOutOfStock })} style={{ cursor: 'pointer' }}>
+                          <Edit2 size={24} />
                         </div>
                       </div>
-                    </div>
+                      
+                      <div className="menu-item-details">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h4 className="item-name" style={{ margin: 0, fontSize: '1.25rem', fontWeight: 'bold' }}>{item.name}</h4>
+                          {isItemOutOfStock && (
+                            <span className="out-of-stock-pill-inline">Out of Stock</span>
+                          )}
+                        </div>
+                        <div className="item-meta">
+                          <span className="category-tag">{item.category}</span>
+                          <div className="price-tag" style={{ fontWeight: 'bold', fontSize: '1.25rem', color: '#0f172a' }}>
+                            ₹ {item.price}
+                          </div>
+                        </div>
+                      </div>
 
-                    <div className="menu-item-actions">
-                      <button 
-                        className="delete-btn"
-                        onClick={async () => {
-                          try {
-                            await api.updateMenuItem(item.id, { available: false });
-                            setItems(items.filter(i => i.id !== item.id));
-                          } catch (err) {
-                            alert('Failed to delete item: ' + err.message);
-                          }
-                        }}
-                      >
-                        <Trash2 size={20} />
-                      </button>
-                    </div>
-                  </motion.div>
-                ))}
+                      <div className="menu-item-actions flex items-center gap-2">
+                        {/* Out of Stock Toggle Button */}
+                        <button 
+                          type="button"
+                          className={`stock-toggle-pill ${isItemOutOfStock ? 'out-of-stock' : 'in-stock'}`}
+                          onClick={() => handleToggleStock(item)}
+                          title={isItemOutOfStock ? "Item is OUT OF STOCK. Click to mark IN STOCK" : "Item is IN STOCK. Click to mark OUT OF STOCK"}
+                        >
+                          <span className="stock-dot" />
+                          <span className="stock-text">{isItemOutOfStock ? 'OUT OF STOCK' : 'IN STOCK'}</span>
+                          <span className="stock-switch">
+                            <span className="stock-switch-thumb" />
+                          </span>
+                        </button>
+
+                        <button 
+                          type="button"
+                          className="edit-action-btn"
+                          onClick={() => setEditingItem({ ...item, inStock: !isItemOutOfStock })}
+                          title="Edit Item Details"
+                        >
+                          <Edit2 size={18} />
+                        </button>
+
+                        <button 
+                          type="button"
+                          className="delete-btn"
+                          title="Delete Item"
+                          onClick={async () => {
+                            if (window.confirm(`Are you sure you want to remove "${item.name}" from the menu?`)) {
+                              try {
+                                await api.updateMenuItem(item.id, { available: false });
+                                setItems(items.filter(i => i.id !== item.id));
+                              } catch (err) {
+                                alert('Failed to delete item: ' + err.message);
+                              }
+                            }
+                          }}
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
+                    </motion.div>
+                  );
+                })}
               </div>
             </div>
           );
@@ -329,8 +394,39 @@ export const MenuEditor = ({ shopId }) => {
                   </div>
                 </div>
 
+                {/* Stock Status Selector in Modal */}
+                <div style={{ marginTop: '8px', paddingTop: '16px', borderTop: '1px solid #e2e8f0' }}>
+                  <h4 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3" style={{ margin: '0 0 12px 0' }}>Stock Availability</h4>
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      className={`flex-1 py-3 px-4 rounded-xl font-bold flex items-center justify-center gap-2 border transition-all cursor-pointer ${
+                        editingItem.stock !== 0 && editingItem.inStock !== false
+                          ? 'bg-emerald-50 border-emerald-500 text-emerald-700 shadow-sm'
+                          : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100'
+                      }`}
+                      onClick={() => setEditingItem({ ...editingItem, stock: 20, inStock: true })}
+                    >
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                      In Stock
+                    </button>
+                    <button
+                      type="button"
+                      className={`flex-1 py-3 px-4 rounded-xl font-bold flex items-center justify-center gap-2 border transition-all cursor-pointer ${
+                        editingItem.stock === 0 || editingItem.inStock === false
+                          ? 'bg-rose-50 border-rose-500 text-rose-700 shadow-sm'
+                          : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100'
+                      }`}
+                      onClick={() => setEditingItem({ ...editingItem, stock: 0, inStock: false })}
+                    >
+                      <span className="w-2.5 h-2.5 rounded-full bg-rose-500" />
+                      Out of Stock
+                    </button>
+                  </div>
+                </div>
+
                 {/* Spaced out Image Section */}
-                <div style={{ marginTop: '16px', paddingTop: '24px', borderTop: '1px solid #e2e8f0' }}>
+                <div style={{ marginTop: '8px', paddingTop: '16px', borderTop: '1px solid #e2e8f0' }}>
                   <h4 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4" style={{ marginBottom: '16px', marginTop: 0 }}>Item Photo</h4>
                   <div 
                     className={`relative w-full h-48 rounded-2xl overflow-hidden border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all ${isUploading ? 'border-slate-300 bg-slate-50' : 'border-indigo-200 bg-indigo-50 hover:bg-indigo-100 hover:border-indigo-300'}`}
@@ -376,14 +472,16 @@ export const MenuEditor = ({ shopId }) => {
                   }}
                   onClick={async () => {
                     try {
+                      const isOut = editingItem.stock === 0 || editingItem.inStock === false;
                       const payload = {
                         name: editingItem.name,
                         price: parseFloat(editingItem.price),
                         category: editingItem.category,
-                        img: editingItem.img
+                        img: editingItem.img,
+                        stock: isOut ? 0 : 20,
                       };
                       await api.updateMenuItem(editingItem.id, payload);
-                      setItems(items.map(i => i.id === editingItem.id ? {...i, ...payload} : i));
+                      setItems(items.map(i => i.id === editingItem.id ? {...i, ...payload, inStock: !isOut, isOutOfStock: isOut} : i));
                       setEditingItem(null);
                     } catch(err) {
                       alert('Failed to update item: ' + err.message);
