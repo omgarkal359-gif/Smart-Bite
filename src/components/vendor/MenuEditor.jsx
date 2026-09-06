@@ -628,7 +628,7 @@ export const MenuEditor = ({ shopId }) => {
                             className="w-full h-full object-cover" 
                           />
                           <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-transparent flex items-end p-3.5">
-                            <div className="flex items-center gap-2.5 flex-wrap w-full">
+                            <div className="flex items-center gap-2.5 flex-wrap">
                               <button
                                 type="button"
                                 onClick={() => editFileInputRef.current?.click()}
@@ -644,14 +644,6 @@ export const MenuEditor = ({ shopId }) => {
                               >
                                 <Trash2 size={14} />
                                 <span>Remove</span>
-                              </button>
-                              <button
-                                type="submit"
-                                disabled={isSaving || isUploading}
-                                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-600 text-white text-xs font-bold shadow-md hover:bg-emerald-700 transition-all cursor-pointer border-none ml-auto"
-                              >
-                                {isSaving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} strokeWidth={3} />}
-                                <span>Save</span>
                               </button>
                             </div>
                           </div>
@@ -698,34 +690,36 @@ export const MenuEditor = ({ shopId }) => {
                       accept="image/*"
                       style={{ display: 'none' }}
                     />
+
+                    {/* Primary Red Save Button Below the Image */}
+                    <button
+                      type="submit"
+                      disabled={isSaving || isUploading}
+                      className="w-full mt-2 h-12 rounded-xl text-sm font-bold text-white bg-red-600 hover:bg-red-700 active:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2.5 border-none cursor-pointer tracking-wide"
+                    >
+                      {isSaving ? (
+                        <>
+                          <Loader2 size={18} className="animate-spin" />
+                          <span>Saving Changes...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Check size={18} strokeWidth={2.5} />
+                          <span>Save Changes</span>
+                        </>
+                      )}
+                    </button>
                   </div>
                 </div>
 
                 {/* Sticky Footer Actions */}
-                <div className="px-7 py-4.5 bg-slate-50/90 backdrop-blur-sm border-t border-slate-100 flex items-center justify-end gap-3 shrink-0">
+                <div className="px-7 py-4 bg-slate-50/90 backdrop-blur-sm border-t border-slate-100 flex items-center justify-end gap-3 shrink-0">
                   <button
                     type="button"
                     onClick={handleCloseModal}
-                    className="px-4.5 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:text-slate-800 hover:bg-slate-200/60 border border-slate-200 bg-white transition-colors cursor-pointer shadow-xs"
+                    className="w-full sm:w-auto px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:text-slate-800 hover:bg-slate-200/60 border border-slate-200 bg-white transition-colors cursor-pointer shadow-xs"
                   >
                     Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isSaving || isUploading}
-                    className="px-5.5 py-2.5 rounded-xl text-sm font-semibold text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-all flex items-center justify-center gap-2 border-none cursor-pointer"
-                  >
-                    {isSaving ? (
-                      <>
-                        <Loader2 size={16} className="animate-spin" />
-                        <span>Saving...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Check size={16} strokeWidth={2.5} />
-                        <span>Save Changes</span>
-                      </>
-                    )}
                   </button>
                 </div>
               </form>
