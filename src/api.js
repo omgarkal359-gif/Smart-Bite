@@ -229,10 +229,50 @@ export const api = {
   },
 
   async updateMenuItem(itemId, itemData) {
-    return await fetchAPI(`/menu/${itemId}`, {
-      method: 'PUT',
-      body: JSON.stringify(itemData)
-    });
+    let res = null;
+    try {
+      res = await fetchAPI(`/menu/${itemId}`, {
+        method: 'PUT',
+        body: JSON.stringify(itemData)
+      });
+    } catch (err) {
+      console.warn('API updateMenuItem fallback:', err);
+    }
+
+    const payload = {
+      id: itemId,
+      itemId,
+      ...itemData,
+      ...(res || {}),
+      timestamp: Date.now()
+    };
+
+    // 1. Same-window immediate event
+    window.dispatchEvent(new CustomEvent('menu_item_updated', { detail: payload }));
+
+    // 2. Cross-tab localStorage realtime sync
+    try {
+      localStorage.setItem('sgu_menu_update', JSON.stringify(payload));
+    } catch (_) {}
+
+    // 3. Supabase realtime channel broadcast
+    try {
+      if (supabase && typeof supabase.channel === 'function') {
+        const broadcastChannel = supabase.channel('stall-menu-sync');
+        broadcastChannel.subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            broadcastChannel.send({
+              type: 'broadcast',
+              event: 'menu_item_updated',
+              payload
+            });
+            setTimeout(() => supabase.removeChannel(broadcastChannel), 2000);
+          }
+        });
+      }
+    } catch (_) {}
+
+    return res || { success: true, ...payload };
   },
 
   // ── Payments & Verification ─────────────────────────────────

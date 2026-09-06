@@ -131,9 +131,28 @@ const InteractiveMenu = () => {
     // Socket realtime listener (legacy local-server mode)
     socket.emit('join', `stall-menu-${shopId}`);
     const handleMenuItemUpdate = (updatedItem) => {
-      if (isMounted) {
-        setInventory(prev => prev.map(i => i.id === updatedItem.id ? updatedItem : i));
-      }
+      if (!isMounted || !updatedItem) return;
+      const targetId = updatedItem.id || updatedItem.itemId;
+      setInventory(prev => prev.map(i => {
+        if (String(i.id) === String(targetId) || String(i.name).toLowerCase() === String(updatedItem.name).toLowerCase()) {
+          const newStock = updatedItem.stock !== undefined ? updatedItem.stock : i.stock;
+          const isOut = newStock === 0 || updatedItem.isOutOfStock === true || updatedItem.inStock === false;
+          
+          // Auto-remove from cart if item just went out of stock
+          if (isOut && cart[i.id]) {
+            removeFromCart(i.id);
+          }
+
+          return {
+            ...i,
+            ...updatedItem,
+            stock: newStock,
+            inStock: !isOut,
+            isOutOfStock: isOut
+          };
+        }
+        return i;
+      }));
     };
 
     const handleStallStatusUpdate = (updatedStall) => {
@@ -145,13 +164,34 @@ const InteractiveMenu = () => {
     socket.on('menu_item_update', handleMenuItemUpdate);
     socket.on('stall_status_update', handleStallStatusUpdate);
 
-    // --- Supabase Realtime: listen for stall status changes ---
-    // Broadcast channel: vendor pushes 'stall_closed' event when toggling
+    // --- Local & Cross-Tab Realtime listeners ---
+    const handleLocalMenuEvent = (e) => handleMenuItemUpdate(e.detail);
+    const handleStorageEvent = (e) => {
+      if (e.key === 'sgu_menu_update' && e.newValue) {
+        try {
+          handleMenuItemUpdate(JSON.parse(e.newValue));
+        } catch (_) {}
+      }
+    };
+
+    window.addEventListener('menu_item_updated', handleLocalMenuEvent);
+    window.addEventListener('storage', handleStorageEvent);
+
+    // --- Supabase Realtime: listen for stall status and menu updates ---
     const stallBroadcastChannel = supabase
       .channel(`stall-status-${shopId}`)
       .on('broadcast', { event: 'stall_status_changed' }, (payload) => {
         if (isMounted && payload?.payload) {
           setStallInfo(prev => ({ ...prev, ...payload.payload }));
+        }
+      })
+      .subscribe();
+
+    const menuBroadcastChannel = supabase
+      .channel('stall-menu-sync')
+      .on('broadcast', { event: 'menu_item_updated' }, (payload) => {
+        if (isMounted && payload?.payload) {
+          handleMenuItemUpdate(payload.payload);
         }
       })
       .subscribe();
@@ -173,10 +213,13 @@ const InteractiveMenu = () => {
       isMounted = false;
       socket.off('menu_item_update', handleMenuItemUpdate);
       socket.off('stall_status_update', handleStallStatusUpdate);
+      window.removeEventListener('menu_item_updated', handleLocalMenuEvent);
+      window.removeEventListener('storage', handleStorageEvent);
       supabase.removeChannel(stallBroadcastChannel);
+      supabase.removeChannel(menuBroadcastChannel);
       clearInterval(pollInterval);
     };
-  }, [shopId]);
+  }, [shopId, cart, removeFromCart]);
 
   // Keep active category synced
   useEffect(() => {

@@ -21,7 +21,10 @@ export async function updateMenuItem(req, res, next) {
     const updated = await db.get('SELECT * FROM menu_items WHERE id = ?', [itemId]);
     const io = req.app.get('io');
     if (io) {
-      io.to(`stall-menu-${item.stallId}`).emit('menu_item_update', updated);
+      if (item.stallId) {
+        io.to(`stall-menu-${item.stallId}`).emit('menu_item_update', updated);
+      }
+      io.emit('menu_item_update', updated);
     }
     res.json(updated);
   } catch (err) {
