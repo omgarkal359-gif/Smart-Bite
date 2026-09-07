@@ -70,7 +70,7 @@ io.use((socket, next) => {
     return next();
   }
   try {
-    const decoded = jwt.verify(token, config.JWT_SECRET);
+    const decoded = jwt.verify(token, config.JWT_SECRET, { algorithms: ['HS256'] });
     socket.user = {
       id: decoded.sub || decoded.id,
       email: decoded.email,
