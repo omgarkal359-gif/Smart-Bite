@@ -21,6 +21,7 @@ import menuRoutes from './routes/menu.routes.js';
 import ordersRoutes from './routes/orders.routes.js';
 import adminRoutes from './routes/admin.routes.js';
 import paymentsRoutes from './routes/payments.routes.js';
+import onboardingRoutes from './routes/onboarding.routes.js';
 
 const DEFAULT_ORIGINS = [
   'https://smart-bite-rosy.vercel.app',
@@ -235,6 +236,9 @@ app.use('/api/v1/payments', paymentsRoutes);
 
 app.use('/api/admin', adminRoutes);
 app.use('/api/v1/admin', adminRoutes);
+
+app.use('/api/onboarding', onboardingRoutes);
+app.use('/api/v1/onboarding', onboardingRoutes);
 
 // Developer Email Template Preview Route (Admin only, disabled in Production)
 app.get('/api/dev/email-preview/:template', requireAuth, requireRole('admin'), async (req, res) => {

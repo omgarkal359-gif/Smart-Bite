@@ -32,7 +32,7 @@ function getPool() {
     pool = new Pool({
       connectionString,
       idleTimeoutMillis: 5000, // Close idle connections after 5 seconds
-      max: process.env.VERCEL ? 2 : 10, // Max pool size tuned for serverless
+      max: process.env.VERCEL ? 1 : 10, // Serverless: 1 conn/lambda, rely on Supabase pgBouncer pooler (:6543)
       ssl: isSupabase ? { rejectUnauthorized: false } : false
     });
   }

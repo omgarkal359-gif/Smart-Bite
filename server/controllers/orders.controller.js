@@ -329,11 +329,14 @@ export async function getStudentOrders(req, res, next) {
   const limit = parseInt(req.query.limit, 10) || 50;
   const offset = parseInt(req.query.offset, 10) || 0;
 
-  if ((reqUserRole === 'student' || reqUserRole === 'guest') && reqUserId && reqUserId !== targetId) {
-    console.warn(`[SECURITY ALERT] Unauthorized student order access attempt! User '${reqUserId}' attempted to access orders of student '${targetId}'`);
-    return res.status(403).json({ 
-      success: false, 
-      message: 'Access Denied: Security Policy Violation. You are only authorized to view your own order history.' 
+  // Only the student themselves or an admin may read a customer's full order history.
+  // Owners/vendors use /stall/:stallId (scoped to their stall) and must not enumerate
+  // arbitrary students' cross-stall history here. Fails closed when identity is missing.
+  if (reqUserRole !== 'admin' && reqUserId !== targetId) {
+    console.warn(`[SECURITY ALERT] Unauthorized order-history access attempt! User '${reqUserId}' (role '${reqUserRole}') attempted to access orders of '${targetId}'`);
+    return res.status(403).json({
+      success: false,
+      message: 'Access Denied: Security Policy Violation. You are only authorized to view your own order history.'
     });
   }
 
@@ -419,13 +422,17 @@ export async function getOrderById(req, res, next) {
     }
 
     if (reqUserRole === 'owner') {
-      const belongsToStall = items.some(item => item.stallId === reqShopId);
+      const belongsToStall = items.some(item => (item.stallId || item.stallid) === reqShopId);
       if (!belongsToStall) {
         return res.status(403).json({
           success: false,
           message: 'Access Denied: You are only authorized to view orders containing items from your stall.'
         });
       }
+      // Stall isolation: a vendor sees ONLY their own line items, never other stalls'
+      // items, names, prices, or stall IDs on a shared multi-stall order.
+      order.items = items.filter(item => (item.stallId || item.stallid) === reqShopId);
+      return res.json(order);
     }
 
     order.items = items;
@@ -474,7 +481,10 @@ export async function updateOrderStatus(req, res, next) {
     } catch (_e) {}
 
     const updated = await db.get('SELECT * FROM orders WHERE id = ?', [id]);
-    updated.items = orderItems;
+    // Stall isolation: vendor response carries only their own line items; admins see all.
+    updated.items = reqUserRole === 'owner'
+      ? orderItems.filter(item => (item.stallId || item.stallid) === reqShopId)
+      : orderItems;
 
     const io = req.app.get('io');
     if (io) {

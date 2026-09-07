@@ -10,7 +10,7 @@ import './pages.css';
 import './cart.css';
 
 const CartPage = () => {
-  const { cart, addToCart, removeFromCart, totalPrice, totalItems, clearCart } = useCart();
+  const { cart, addToCart, removeFromCart, totalPrice, totalItems, clearCart, showToast } = useCart();
   const navigate = useNavigate();
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
@@ -86,6 +86,7 @@ const CartPage = () => {
           if (res.paymentStatus === 'success') {
             clearInterval(window.pollInterval);
             setUpiPaymentState('success');
+            showToast('🎉 Order placed successfully! Live tracking ticket generated.', 'success');
             
             // Clear cart, update local storage, navigate to order tracking page
             const existingOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');

@@ -1,6 +1,7 @@
 export const ADMIN_EMAILS = [
   'omgarkal359@gmail.com',
   'omgarkal357@gmail.com',
+  'admin@smartbite.in',
   'admin@sgu.edu',
   'admin@sguk.ac.in',
   'admin@sgu.ac.in'

@@ -62,13 +62,13 @@ export const AdminShell = ({ activeModule, setActiveModule, user, children }) =>
 
   const navItems = [
     { id: 'overview', label: 'Overview', icon: LayoutDashboard, badge: null },
-    { id: 'orders', label: 'Orders & Shops', icon: ShoppingBag, badge: 'LIVE' },
+    { id: 'orders', label: 'Orders & Shops', icon: ShoppingBag, badge: null },
     { id: 'vendors', label: 'Vendors', icon: Store, badge: null },
-    { id: 'roles', label: 'Roles & Permissions', icon: Lock, badge: 'RBAC' },
-    { id: 'security-logs', label: 'Security Logs', icon: ShieldAlert, badge: 'AUDIT' },
+    { id: 'roles', label: 'Roles & Permissions', icon: Lock, badge: null },
+    { id: 'security-logs', label: 'Security Logs', icon: ShieldAlert, badge: null },
     { id: 'data-recovery', label: 'Data Recovery', icon: RefreshCw, badge: null },
     { id: 'backups', label: 'Database Backups', icon: Database, badge: null },
-    { id: 'system-health', label: 'System Health', icon: Cpu, badge: 'BENTO' },
+    { id: 'system-health', label: 'System Health', icon: Cpu, badge: null },
     { id: 'users', label: 'User Directory', icon: Users, badge: null },
     { id: 'config', label: 'Platform Config', icon: Settings, badge: null },
   ];
@@ -197,7 +197,7 @@ export const AdminShell = ({ activeModule, setActiveModule, user, children }) =>
                   <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#0F172A', lineHeight: 1.1, textTransform: 'none' }}>
                     {user?.username || 'Administrator'}
                   </span>
-                  <span style={{ fontSize: '0.65rem', fontWeight: 800, color: '#FF3B5C', textTransform: 'uppercase', fontFamily: "'Oswald', sans-serif" }}>
+                  <span style={{ fontSize: '0.65rem', fontWeight: 800, color: '#FF3B00', textTransform: 'uppercase', fontFamily: "'Outfit', sans-serif" }}>
                     SUPER ADMIN
                   </span>
                 </div>

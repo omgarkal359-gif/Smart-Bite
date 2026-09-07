@@ -3,6 +3,7 @@ import { Plus, X, Upload, Check, Edit2, Trash2, Camera, Loader2 } from 'lucide-r
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '../../api';
 import { getFoodItemImage } from '../../utils/imageHelper';
+import { useCart } from '../../context/CartContext';
 
 const FloatingInput = ({ label, ...props }) => (
   <div className="floating-label-group">
@@ -16,6 +17,7 @@ const FloatingInput = ({ label, ...props }) => (
 );
 
 export const MenuEditor = ({ shopId }) => {
+  const { showToast } = useCart();
   const [items, setItems] = useState([]);
   const [isAdding, setIsAdding] = useState(false);
   const [newItem, setNewItem] = useState({ name: '', price: '', category: 'Main', img: '' });
@@ -68,8 +70,9 @@ export const MenuEditor = ({ shopId }) => {
       setItems([createdItem, ...items]);
       setNewItem({ name: '', price: '', category: 'Main', img: '' });
       setIsAdding(false);
+      showToast(`Added "${newItem.name}" to menu! 🍲`, 'success');
     } catch (err) {
-      alert('Failed to add item: ' + err.message);
+      showToast('Failed to add item: ' + err.message, 'error');
     }
   };
 
@@ -247,8 +250,9 @@ export const MenuEditor = ({ shopId }) => {
                           try {
                             await api.updateMenuItem(item.id, { available: false });
                             setItems(items.filter(i => i.id !== item.id));
+                            showToast(`Item "${item.name}" deleted 🗑️`, 'info');
                           } catch (err) {
-                            alert('Failed to delete item: ' + err.message);
+                            showToast('Failed to delete item: ' + err.message, 'error');
                           }
                         }}
                       >
@@ -382,8 +386,9 @@ export const MenuEditor = ({ shopId }) => {
                       await api.updateMenuItem(editingItem.id, payload);
                       setItems(items.map(i => i.id === editingItem.id ? {...i, ...payload} : i));
                       setEditingItem(null);
+                      showToast(`Menu item "${editingItem.name}" updated! ✏️`, 'success');
                     } catch(err) {
-                      alert('Failed to update item: ' + err.message);
+                      showToast('Failed to update item: ' + err.message, 'error');
                     }
                   }}
                   disabled={isUploading}

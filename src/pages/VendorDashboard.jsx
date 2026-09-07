@@ -8,6 +8,7 @@ import { MenuEditor } from '../components/vendor/MenuEditor';
 import { SHOPS } from '../data/foodCourtDB';
 import { api, socket, formatRelativeTime } from '../api';
 import { supabase } from '../supabaseClient';
+import { useCart } from '../context/CartContext';
 import { getStoredUser, clearStoredUser } from '../utils/auth';
 import './pages.css';
 import './vendor.css';
@@ -365,39 +366,44 @@ const VendorDashboard = () => {
         await api.updateStallStatus(targetShopId, payload);
         socket.emit('stall_status_update', payload);
       }
+      showToast(`Stall is now ${newStatus === 'OPEN' ? 'ONLINE 🟢' : 'OFFLINE 🔴'}`, newStatus === 'OPEN' ? 'success' : 'info');
       if (newStatus === 'OPEN') {
         setShowConfetti(true);
         setTimeout(() => setShowConfetti(false), 3000);
       }
     } catch (err) {
       setShopStatus(prevStatus);
-      alert('Failed to update shop status: ' + err.message);
+      showToast('Failed to update shop status: ' + err.message, 'error');
     }
   };
 
-  const handleToggleBusy = async () => {
+  const handleToggleBusyMode = async () => {
     const nextBusy = !isBusyMode;
-    const nextWait = nextBusy ? 15 : 0;
-    
-    // Optimistic UI Update
+    const nextWait = nextBusy ? 25 : 10;
     setIsBusyMode(nextBusy);
-    
+    setWaitTime(nextWait);
+
     try {
       if (targetShopId) {
         await api.updateStallStatus(targetShopId, { busyMode: nextBusy, waitTime: nextWait });
         socket.emit('stall_status_update', { id: targetShopId, busyMode: nextBusy, waitTime: nextWait });
       }
+      showToast(`Busy Mode ${nextBusy ? 'ACTIVATED (25 min wait)' : 'DEACTIVATED'} 🔥`, 'info');
     } catch (err) {
       // Revert on failure
       setIsBusyMode(!nextBusy);
-      alert('Failed to toggle busy mode: ' + err.message);
+      showToast('Failed to toggle busy mode: ' + err.message, 'error');
     }
   };
 
   const handleUpdateStatus = async (id, newStatus) => {
+    const vendorUser = getStoredUser();
+    const vendorEmail = vendorUser?.username || vendorUser?.email || 'vendor@sgu.edu';
     try {
-      await api.updateOrderStatus(id, newStatus);
+      await api.updateOrderStatus(id, newStatus, vendorEmail);
       
+      showToast(`Order #${id} updated to ${newStatus.toUpperCase()} ⚡`, 'success');
+
       if (newStatus === 'completed' || newStatus === 'ready' || newStatus === 'cancelled') {
         setTickets(prev => prev.filter(t => String(t.id) !== String(id)));
         const ticket = tickets.find(t => String(t.id) === String(id));
@@ -413,7 +419,7 @@ const VendorDashboard = () => {
         setTickets(prev => prev.map(t => String(t.id) === String(id) ? { ...t, status: newStatus } : t));
       }
     } catch (err) {
-      alert('Failed to update order status: ' + err.message);
+      showToast('Failed to update order status: ' + err.message, 'error');
     }
   };
 

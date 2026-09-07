@@ -65,7 +65,7 @@ export const SecurityLogsModule = () => {
 
   const filteredLogs = logs.filter(l => {
     const q = searchQuery.toLowerCase().trim();
-    const matchQuery = !q || l.message.toLowerCase().includes(q) || (l.category && l.category.toLowerCase().includes(q));
+    const matchQuery = !q || l.message.toLowerCase().includes(q) || (l.category && l.category.toLowerCase().includes(q)) || (l.userEmail && l.userEmail.toLowerCase().includes(q));
     const matchLevel = logFilter === 'ALL' || l.level === logFilter;
     return matchQuery && matchLevel;
   });
@@ -154,17 +154,18 @@ export const SecurityLogsModule = () => {
           <table className="admin-table">
             <thead>
               <tr>
-                <th style={{ width: '120px' }}>Timestamp</th>
-                <th style={{ width: '100px' }}>Level</th>
-                <th style={{ width: '110px' }}>Category</th>
+                <th style={{ width: '110px' }}>Timestamp</th>
+                <th style={{ width: '90px' }}>Level</th>
+                <th style={{ width: '100px' }}>Category</th>
+                <th style={{ width: '190px' }}>User Email</th>
                 <th>Event Message</th>
-                <th style={{ textAlign: 'right', width: '80px' }}>Details</th>
+                <th style={{ textAlign: 'right', width: '70px' }}>Details</th>
               </tr>
             </thead>
             <tbody>
               {filteredLogs.length === 0 ? (
                 <tr>
-                  <td colSpan={5} style={{ textAlign: 'center', padding: 40, color: '#94A3B8' }}>
+                  <td colSpan={6} style={{ textAlign: 'center', padding: 40, color: '#94A3B8' }}>
                     No audit log events matching filter &quot;{logFilter}&quot;.
                   </td>
                 </tr>
@@ -183,6 +184,9 @@ export const SecurityLogsModule = () => {
                       </td>
                       <td style={{ fontSize: '0.8rem', fontWeight: 700, color: '#1A5276' }}>
                         {log.category || 'System'}
+                      </td>
+                      <td style={{ fontSize: '0.82rem', fontWeight: 700, color: '#0F172A', fontFamily: 'monospace' }}>
+                        {log.userEmail || 'system@sgu.edu'}
                       </td>
                       <td style={{ fontSize: '0.85rem', color: '#0F172A', fontWeight: 500 }}>
                         {log.message}

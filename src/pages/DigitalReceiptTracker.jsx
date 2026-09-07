@@ -21,6 +21,7 @@ const DigitalReceiptTracker = () => {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(0);
   const [order, setOrder] = useState(null);
+  const [vendor, setVendor] = useState(null);
   const [toastMsg, setToastMsg] = useState('');
   const [emailInput, setEmailInput] = useState('');
   const [isAccessDenied, setIsAccessDenied] = useState(false);
@@ -44,7 +45,13 @@ const DigitalReceiptTracker = () => {
 
         setOrder(foundOrder);
         setIsAccessDenied(false);
-        
+
+        // Fetch vendor (name + FSSAI) for the receipt.
+        const stallId = foundOrder.stallId || foundOrder.items?.[0]?.stallId;
+        if (stallId) {
+          api.getVendorByStall(stallId).then(v => { if (v) setVendor(v); }).catch(() => {});
+        }
+
         if (foundOrder && foundOrder.status) {
           applyNewStatus(foundOrder.status);
         }
@@ -177,7 +184,8 @@ const DigitalReceiptTracker = () => {
   const handleDownloadPDF = () => {
     if (!order) return;
     
-    const shopName = order.items?.[0]?.stallName || 'SGU Food Court';
+    const shopName = vendor?.name || order.items?.[0]?.stallName || 'SGU Food Court';
+    const fssai = vendor?.fssai || '—';
     const dateTimeString = order.timestamp ? new Date(order.timestamp).toLocaleString() : new Date().toLocaleString();
     
     let itemsHtmlRows = '';
@@ -466,16 +474,24 @@ const DigitalReceiptTracker = () => {
       
       <div class="info-grid">
         <div class="info-item">
+          <span>Vendor</span>
+          <span>${shopName}</span>
+        </div>
+        <div class="info-item">
+          <span>FSSAI Lic. No.</span>
+          <span>${fssai}</span>
+        </div>
+        <div class="info-item">
           <span>Date & Time</span>
           <span>${dateTimeString}</span>
         </div>
         <div class="info-item">
           <span>Customer</span>
-          <span>${order.customerName}</span>
+          <span>${order.customerName || '—'}</span>
         </div>
         <div class="info-item">
           <span>Payment Mode</span>
-          <span>${order.payment}</span>
+          <span>${order.payment || '—'}</span>
         </div>
         <div class="info-item">
           <span>Order Status</span>
@@ -629,44 +645,8 @@ const DigitalReceiptTracker = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ type: "spring", stiffness: 100, damping: 15 }}
         >
-          <GlassCard className="receipt-card-v21 shadow-md">
-            
-            {/* Dynamic Digital Receipt Sent! Premium Notification Banner */}
-            {order && (
-              <div style={{
-                background: 'rgba(26, 82, 118, 0.08)',
-                border: '1px solid rgba(26, 82, 118, 0.15)',
-                borderRadius: '16px',
-                padding: '12px 16px',
-                marginBottom: '24px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                textAlign: 'left',
-                width: '100%'
-              }}>
-                <div style={{
-                  width: '36px', height: '36px', borderRadius: '50%',
-                  background: 'var(--primary-navy)', color: 'white',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  flexShrink: 0
-                }}>
-                  {order.customerId?.includes('@') ? <Mail size={18} /> : <BellRing size={18} />}
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                  <span style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--primary-navy)' }}>
-                    Digital Receipt Sent!
-                  </span>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>
-                    {order.customerId?.includes('@') 
-                      ? `Emailed to: ${order.customerId}` 
-                      : `Sent via SMS to: ${order.customerId}`}
-                  </span>
-                </div>
-              </div>
-            )}
-
-            {order?.status === 'cancelled' ? (
+          {order?.status === 'cancelled' ? (
+            <GlassCard className="receipt-card-v21 shadow-md">
               <div style={{ padding: '40px 20px', textAlign: 'center' }}>
                 <div style={{ display: 'inline-flex', background: '#FEE2E2', padding: '24px', borderRadius: '50%', marginBottom: '24px', boxShadow: '0 10px 25px rgba(239, 68, 68, 0.2)' }}>
                   <XCircle size={64} color="#EF4444" strokeWidth={2.5} />
@@ -675,24 +655,27 @@ const DigitalReceiptTracker = () => {
                 <p style={{ color: '#64748B', fontSize: '0.95rem', fontWeight: 600, marginBottom: '24px' }}>
                   This order has been permanently cancelled by the vendor.
                 </p>
-                {order && (
-                  <div className="order-summary-v21" style={{ opacity: 0.8 }}>
-                    <p className="font-bold text-sm mb-2" style={{ textDecoration: 'line-through' }}>{itemsText}</p>
-                    <p className="font-black text-lg" style={{ color: '#94A3B8' }}>Total: ₹{order.total}</p>
-                  </div>
-                )}
+                <div className="order-summary-v21" style={{ opacity: 0.8 }}>
+                  <p className="font-bold text-sm mb-2" style={{ textDecoration: 'line-through' }}>{itemsText}</p>
+                  <p className="font-black text-lg" style={{ color: '#94A3B8' }}>Total: ₹{order.total}</p>
+                </div>
               </div>
-            ) : (
-              <>
+            </GlassCard>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20, alignItems: 'start' }}>
+
+              {/* ── LEFT: QR + payment + items ── */}
+              <GlassCard className="receipt-card-v21 shadow-md">
                 <div className="qr-section-v21">
                   <div className="qr-wrapper-v21">
                     <QrCode size={120} color="var(--primary-navy)" />
                   </div>
                   <p className="heading-2 mt-4">#{orderId}</p>
-                  {order && (
-                    <p className="shop-name-tracker">
-                      {order.items?.[0]?.stallName || 'SGU Food Court'}
-                    </p>
+                  <p className="shop-name-tracker">
+                    {vendor?.name || order?.items?.[0]?.stallName || 'SGU Food Court'}
+                  </p>
+                  {vendor?.fssai && (
+                    <p className="text-muted" style={{ fontSize: '0.72rem', marginTop: 2 }}>FSSAI Lic. {vendor.fssai}</p>
                   )}
                   <p className="text-muted mt-1">Show code at the counter</p>
                 </div>
@@ -704,12 +687,37 @@ const DigitalReceiptTracker = () => {
                   </div>
                 )}
 
+                {order && (
+                  <div style={{ marginTop: 16, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, textAlign: 'left', background: '#FFF5F5', border: '1px solid rgba(228,0,43,0.08)', borderRadius: 14, padding: 14 }}>
+                    <div>
+                      <div style={{ color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase', fontSize: '0.66rem' }}>Payment ID</div>
+                      <div style={{ fontWeight: 700, wordBreak: 'break-all', fontSize: '0.8rem' }}>{order.id}</div>
+                    </div>
+                    <div>
+                      <div style={{ color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase', fontSize: '0.66rem' }}>Method</div>
+                      <div style={{ fontWeight: 700, fontSize: '0.8rem' }}>{order.payment || '—'}</div>
+                    </div>
+                    <div>
+                      <div style={{ color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase', fontSize: '0.66rem' }}>Payment</div>
+                      <div style={{ fontWeight: 800, fontSize: '0.8rem', color: order.paymentStatus === 'paid' ? '#059669' : '#b45309' }}>{(order.paymentStatus || 'pending').toUpperCase()}</div>
+                    </div>
+                    <div>
+                      <div style={{ color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase', fontSize: '0.66rem' }}>Date &amp; Time</div>
+                      <div style={{ fontWeight: 700, fontSize: '0.78rem' }}>{order.timestamp ? new Date(order.timestamp).toLocaleString() : '—'}</div>
+                    </div>
+                  </div>
+                )}
+              </GlassCard>
+
+              {/* ── RIGHT: order status + actions ── */}
+              <GlassCard className="receipt-card-v21 shadow-md">
+                <h3 style={{ fontFamily: 'var(--font-heading)', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 18px', color: 'var(--text-dark)' }}>Order Status</h3>
+
                 <div className="timeline-v21">
                   {STATUS_STEPS.map((step, index) => {
                     const Icon = step.icon;
                     const isActive = index <= currentStep;
                     const isCurrent = index === currentStep;
-
                     return (
                       <div key={step.id} className={`timeline-step-v21 ${isActive ? 'active' : ''}`}>
                         <div className={`step-icon-v21 ${isCurrent && index === 2 ? 'pulse-ready' : ''}`}>
@@ -724,77 +732,40 @@ const DigitalReceiptTracker = () => {
                     );
                   })}
                 </div>
-              </>
-            )}
 
-            {order && order.status !== 'cancelled' && (
-              <>
-                <motion.div 
-                  className="ready-actions-v21 mt-6"
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                >
-                  <button 
-                    className="btn-pdf-v21" 
-                    onClick={() => {
-                      const itemsList = order.items || [];
-                      const firstItem = itemsList[0] || {};
-                      const stallId = firstItem.stallId || firstItem.stallid || '';
-                      if (stallId) {
-                        navigate(`/student/shop/${stallId}`);
-                      } else {
-                        navigate('/student');
-                      }
-                    }} 
-                    style={{ cursor: 'pointer', background: 'linear-gradient(135deg, #1A5276, #2471A3)', boxShadow: '0 4px 14px rgba(26,82,118,0.3)' }}
-                  >
-                    <ShoppingBag size={20} /> Order More
-                  </button>
-                  <button className="btn-pdf-v21" onClick={handleDownloadPDF} style={{ cursor: 'pointer' }}>
-                    <Download size={20} /> Download Invoice
-                  </button>
-                  <button className="btn-email-v21" onClick={handleResend} style={{ cursor: 'pointer' }}>
-                    {order.customerId?.includes('@') ? (
-                      <>
-                        <Mail size={20} /> Resend to Email
-                      </>
-                    ) : (
-                      <>
-                        <BellRing size={20} /> Resend via SMS
-                      </>
-                    )}
-                  </button>
-                </motion.div>
+                {order && (
+                  <>
+                    <motion.div className="ready-actions-v21 mt-6" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}>
+                      <button
+                        className="btn-pdf-v21"
+                        onClick={() => {
+                          const stallId = order.items?.[0]?.stallId || order.stallId || '';
+                          navigate(stallId ? `/student/shop/${stallId}` : '/student');
+                        }}
+                        style={{ cursor: 'pointer', background: 'linear-gradient(135deg, #1A5276, #2471A3)', boxShadow: '0 4px 14px rgba(26,82,118,0.3)' }}
+                      >
+                        <ShoppingBag size={20} /> Order More
+                      </button>
+                      <button className="btn-pdf-v21" onClick={handleDownloadPDF} style={{ cursor: 'pointer' }}>
+                        <Download size={20} /> Download Receipt
+                      </button>
+                      <button className="btn-email-v21" onClick={handleResend} style={{ cursor: 'pointer' }}>
+                        <Mail size={20} /> Resend Receipt
+                      </button>
+                    </motion.div>
 
-                {/* Custom Email Dispatch Form */}
-                <motion.div
-                  initial={{ opacity: 0, y: 15 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 }}
-                  className="email-receipt-section"
-                >
-                  <h4 className="email-receipt-title">
-                    Send Receipt to Email
-                  </h4>
-                  <div className="email-input-wrapper">
-                    <input 
-                      type="email" 
-                      placeholder="Enter your email address" 
-                      value={emailInput}
-                      onChange={(e) => setEmailInput(e.target.value)}
-                      className="email-input-field"
-                    />
-                    <button 
-                      onClick={handleSendCustomEmail}
-                      className="btn-send-email tap-effect"
-                    >
-                      <Mail size={16} /> Send
-                    </button>
-                  </div>
-                </motion.div>
-              </>
-            )}
-          </GlassCard>
+                    <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="email-receipt-section">
+                      <h4 className="email-receipt-title">Send Receipt to Email</h4>
+                      <div className="email-input-wrapper">
+                        <input type="email" placeholder="Enter your email address" value={emailInput} onChange={(e) => setEmailInput(e.target.value)} className="email-input-field" />
+                        <button onClick={handleSendCustomEmail} className="btn-send-email tap-effect"><Mail size={16} /> Send</button>
+                      </div>
+                    </motion.div>
+                  </>
+                )}
+              </GlassCard>
+            </div>
+          )}
         </motion.div>
       </main>
     </div>

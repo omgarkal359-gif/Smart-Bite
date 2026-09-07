@@ -126,8 +126,9 @@ export const OrdersVendorsModule = () => {
     try {
       await api.updateOrderStatus(orderId, newStatus);
       setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
+      showToast(`Order #${orderId} set to ${newStatus.toUpperCase()}`, 'success');
     } catch (err) {
-      alert('Failed to override status: ' + err.message);
+      showToast('Failed to override status: ' + err.message, 'error');
     }
   }
 
@@ -152,6 +153,7 @@ export const OrdersVendorsModule = () => {
     }
 
     setOrders([]);
+    showToast('All orders cleared.', 'info');
   }
 
   // Handle Stall Toggle Online/Offline
@@ -163,10 +165,11 @@ export const OrdersVendorsModule = () => {
     
     try {
       await api.updateStallStatus(stallId, { online: newStatus });
+      showToast(`Stall ${newStatus ? 'online' : 'offline'}`, 'success');
     } catch (err) {
       // Revert on failure
       setStalls(prev => prev.map(s => s.id === stallId ? { ...s, online: currentOnline ? 1 : 0 } : s));
-      alert('Failed to update stall: ' + err.message);
+      showToast('Failed to update stall: ' + err.message, 'error');
     }
   }
 

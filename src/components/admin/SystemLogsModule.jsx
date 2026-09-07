@@ -87,7 +87,7 @@ export const SystemLogsModule = () => {
 
   const filteredLogs = logs.filter(l => {
     const q = searchQuery.toLowerCase().trim();
-    const matchQuery = !q || (l.message && l.message.toLowerCase().includes(q)) || (l.category && l.category.toLowerCase().includes(q));
+    const matchQuery = !q || (l.message && l.message.toLowerCase().includes(q)) || (l.category && l.category.toLowerCase().includes(q)) || (l.userEmail && l.userEmail.toLowerCase().includes(q));
     const matchLevel = logFilter === 'ALL' || l.level === logFilter;
     return matchQuery && matchLevel;
   });
@@ -179,7 +179,7 @@ export const SystemLogsModule = () => {
             <Search size={16} color="#94A3B8" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }} />
             <input 
               type="text" 
-              placeholder="Search log messages, IP addresses, events..."
+              placeholder="Search log messages, user email, events..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               style={{
@@ -249,10 +249,11 @@ export const SystemLogsModule = () => {
               filteredLogs.map(log => {
                 const color = log.level === 'SECURITY' ? '#F43F5E' : log.level === 'WARN' ? '#F59E0B' : log.level === 'ERROR' ? '#EF4444' : '#38BDF8';
                 return (
-                  <div key={log.id} style={{ display: 'flex', gap: 12, lineHeight: 1.4, wordBreak: 'break-all', alignItems: 'flex-start' }}>
+                  <div key={log.id} style={{ display: 'flex', gap: 10, lineHeight: 1.4, wordBreak: 'break-all', alignItems: 'flex-start' }}>
                     <span style={{ color: '#64748B', flexShrink: 0, fontSize: '0.8rem' }}>[{log.timestamp}]</span>
                     <span style={{ color: color, fontWeight: 700, flexShrink: 0, width: 85 }}>[{log.level}]</span>
-                    <span style={{ color: '#A5F3FC', flexShrink: 0, width: 90 }}>[{log.category}]</span>
+                    <span style={{ color: '#A5F3FC', flexShrink: 0, width: 80 }}>[{log.category}]</span>
+                    <span style={{ color: '#FCD34D', flexShrink: 0, fontWeight: 700, fontSize: '0.78rem' }}>&lt;{log.userEmail || 'system@sgu.edu'}&gt;</span>
                     <span style={{ color: '#F8FAFC' }}>{log.message}</span>
                   </div>
                 );

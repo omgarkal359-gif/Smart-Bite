@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { AdminShell } from '../components/admin/AdminShell';
 import { OverviewModule } from '../components/admin/OverviewModule';
 import { OrdersVendorsModule } from '../components/admin/OrdersVendorsModule';
-import { VendorsModule } from '../components/admin/VendorsModule';
+import { OnboardingModule } from '../components/admin/OnboardingModule';
 import { RolesModule } from '../components/admin/RolesModule';
 import { SecurityLogsModule } from '../components/admin/SecurityLogsModule';
 import { DataRecoveryModule } from '../components/admin/DataRecoveryModule';
@@ -65,7 +65,7 @@ const AdminControlCenter = () => {
     <AdminShell activeModule={activeModule} setActiveModule={setActiveModule} user={user}>
       {activeModule === 'overview' && <OverviewModule onNavigateModule={setActiveModule} />}
       {activeModule === 'orders' && <OrdersVendorsModule />}
-      {activeModule === 'vendors' && <VendorsModule />}
+      {activeModule === 'vendors' && <OnboardingModule />}
       {activeModule === 'roles' && <RolesModule />}
       {activeModule === 'security-logs' && <SecurityLogsModule />}
       {activeModule === 'data-recovery' && <DataRecoveryModule />}

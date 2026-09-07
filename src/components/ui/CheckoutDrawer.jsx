@@ -10,7 +10,7 @@ import './checkout.css';
 
 export const CheckoutDrawer = ({ isOpen, onClose, cart, inventory, onComplete }) => {
   const navigate = useNavigate();
-  const { addToCart, removeFromCart, clearCart } = useCart();
+  const { addToCart, removeFromCart, clearCart, showToast } = useCart();
   const [step, setStep] = useState(1);
   const [diningMode, setDiningMode] = useState('dine_in'); // dine_in | takeaway
   const [paymentMode, setPaymentMode] = useState('upi'); // upi | cash
@@ -104,6 +104,7 @@ export const CheckoutDrawer = ({ isOpen, onClose, cart, inventory, onComplete })
             setPlacedOrderId(orderId);
             setStep(4); // Success step
             triggerConfetti();
+            showToast('🎉 Order placed successfully! Live tracking ticket generated.', 'success');
 
             const existingOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
             const completedOrder = { ...actualOrder, status: 'placed', paymentStatus: 'success' };

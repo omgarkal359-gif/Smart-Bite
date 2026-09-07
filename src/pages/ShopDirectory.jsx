@@ -313,6 +313,111 @@ const ShopDirectory = () => {
               </div>
             )}
 
+            {/* Today's Canteen Specials Section */}
+            <div style={{ marginBottom: '28px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
+                <Flame size={18} color="#FF3B00" />
+                <h2 className="heading-2 section-title-home" style={{ fontSize: '1.15rem', fontWeight: 900, color: '#0F172A', textTransform: 'uppercase', letterSpacing: '-0.02em', margin: 0 }}>
+                  Today's Canteen Specials
+                </h2>
+              </div>
+
+              <div className="specials-student-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '14px' }}>
+                {/* Special 1 */}
+                <div 
+                  onClick={() => navigate('/student/shop/mangales-snacks?highlight=paneer-wrap')}
+                  style={{ 
+                    background: 'linear-gradient(135deg, #0F121C 0%, #1A2035 100%)', 
+                    borderRadius: '20px', 
+                    padding: '16px', 
+                    color: '#FFFFFF',
+                    cursor: 'pointer',
+                    border: '1px solid rgba(255, 59, 0, 0.2)',
+                    boxShadow: '0 8px 20px rgba(0,0,0,0.12)',
+                    transition: 'all 0.25s ease'
+                  }}
+                  className="tap-effect"
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                    <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(255, 59, 0, 0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FF5722' }}>
+                      <Flame size={20} />
+                    </div>
+                    <span style={{ color: '#F59E0B', fontWeight: 700, fontSize: '0.75rem', background: 'rgba(245, 158, 11, 0.15)', padding: '3px 8px', borderRadius: '999px' }}>
+                      ⭐ 4.9 Top Rated
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#FFFFFF', marginBottom: '2px' }}>Crispy Paneer Wrap</div>
+                  <div style={{ fontSize: '0.75rem', color: '#94A3B8', marginBottom: '10px' }}>Central Canteen • Counter 1</div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px dashed rgba(255,255,255,0.1)', paddingTop: '8px' }}>
+                    <span style={{ fontSize: '0.75rem', color: '#FF8A65', fontWeight: 600 }}>Daily Fresh</span>
+                    <span style={{ fontSize: '1rem', fontWeight: 900, color: '#34D399' }}>₹120</span>
+                  </div>
+                </div>
+
+                {/* Special 2 */}
+                <div 
+                  onClick={() => navigate('/student/shop/rohit-vadewale?highlight=burger')}
+                  style={{ 
+                    background: 'linear-gradient(135deg, #0F121C 0%, #1A2035 100%)', 
+                    borderRadius: '20px', 
+                    padding: '16px', 
+                    color: '#FFFFFF',
+                    cursor: 'pointer',
+                    border: '1px solid rgba(245, 158, 11, 0.2)',
+                    boxShadow: '0 8px 20px rgba(0,0,0,0.12)',
+                    transition: 'all 0.25s ease'
+                  }}
+                  className="tap-effect"
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                    <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(245, 158, 11, 0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#F59E0B' }}>
+                      <Star size={20} />
+                    </div>
+                    <span style={{ color: '#FF5722', fontWeight: 700, fontSize: '0.75rem', background: 'rgba(255, 59, 0, 0.15)', padding: '3px 8px', borderRadius: '999px' }}>
+                      🔥 Hot Seller
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#FFFFFF', marginBottom: '2px' }}>Cheese Burst Burger</div>
+                  <div style={{ fontSize: '0.75rem', color: '#94A3B8', marginBottom: '10px' }}>Food Court • Grill & Bites</div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px dashed rgba(255,255,255,0.1)', paddingTop: '8px' }}>
+                    <span style={{ fontSize: '0.75rem', color: '#FF8A65', fontWeight: 600 }}>Most Loved</span>
+                    <span style={{ fontSize: '1rem', fontWeight: 900, color: '#34D399' }}>₹140</span>
+                  </div>
+                </div>
+
+                {/* Special 3 */}
+                <div 
+                  onClick={() => navigate('/student/shop/cool-cravings?highlight=coffee')}
+                  style={{ 
+                    background: 'linear-gradient(135deg, #0F121C 0%, #1A2035 100%)', 
+                    borderRadius: '20px', 
+                    padding: '16px', 
+                    color: '#FFFFFF',
+                    cursor: 'pointer',
+                    border: '1px solid rgba(56, 189, 248, 0.2)',
+                    boxShadow: '0 8px 20px rgba(0,0,0,0.12)',
+                    transition: 'all 0.25s ease'
+                  }}
+                  className="tap-effect"
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                    <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(56, 189, 248, 0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#38BDF8' }}>
+                      <Clock size={20} />
+                    </div>
+                    <span style={{ color: '#38BDF8', fontWeight: 700, fontSize: '0.75rem', background: 'rgba(56, 189, 248, 0.15)', padding: '3px 8px', borderRadius: '999px' }}>
+                      ❄️ Campus Fav
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#FFFFFF', marginBottom: '2px' }}>Cold Coffee Shake</div>
+                  <div style={{ fontSize: '0.75rem', color: '#94A3B8', marginBottom: '10px' }}>Campus Express • Juice Hub</div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px dashed rgba(255,255,255,0.1)', paddingTop: '8px' }}>
+                    <span style={{ fontSize: '0.75rem', color: '#FF8A65', fontWeight: 600 }}>Chilled & Rich</span>
+                    <span style={{ fontSize: '1rem', fontWeight: 900, color: '#34D399' }}>₹90</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {/* Section Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
               <h2 className="heading-2 section-title-home" style={{ fontSize: '1.25rem', fontWeight: 900, color: '#0F172A', textTransform: 'uppercase', letterSpacing: '-0.02em', margin: 0 }}>

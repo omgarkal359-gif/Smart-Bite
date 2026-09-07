@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  IconUser, IconLoader2, IconBuildingStore, IconLock, IconMail, IconArrowRight
+  IconUser, IconLoader2, IconBuildingStore, IconLock, IconMail, IconArrowRight,
+  IconSchool, IconClock, IconBell, IconBolt, IconShieldCheck, IconToolsKitchen2, IconMailCheck
 } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
@@ -113,12 +114,8 @@ const LoginPage = () => {
     setIsLoading(true);
     setErrorMsg('');
     try {
-      let assumedRole = 'student';
-      const lowerId = idInput.toLowerCase();
-      if (lowerId === 'admin' || lowerId.startsWith('admin@')) assumedRole = 'admin';
-      else if (['mangales-snacks', 'tea-coffee', 'rohit-vadewale', 'oodles-of-noodles', 'narayana', 'cool-cravings'].includes(lowerId)) assumedRole = 'owner';
-
-      const resData = await api.login(idInput, pwd, assumedRole);
+      // Role is assigned server-side from the DB user record. Never guessed on the client.
+      const resData = await api.login(idInput, pwd);
 
       if (resData?.success && resData?.user) {
         finish(resData.user.role, resData.user.name, resData.user.username, resData.user.shopId, resData.token);
@@ -189,15 +186,15 @@ const LoginPage = () => {
           role = 'admin';
         }
 
-        // Domain & Email Access Guard (@sguk.ac.in, @sgu.ac.in, or authorized ADMIN_EMAILS)
+        // Domain & Email Access Guard (strict: @sguk.ac.in only, or authorized ADMIN_EMAILS)
         const isAllowedDomain = (email) => {
           if (!email) return false;
           if (isAdminEmail(email)) return true;
-          return email.endsWith('@sguk.ac.in') || email.endsWith('@sgu.ac.in') || email.endsWith('@sgu.edu');
+          return email.endsWith('@sguk.ac.in');
         };
 
         if (!isAllowedDomain(userEmail)) {
-          setErrorMsg("Access Restricted: Only @sguk.ac.in / @sgu.ac.in college emails and authorized admin accounts are allowed.");
+          setErrorMsg("Access Restricted: Only @sguk.ac.in college email addresses and authorized admin accounts are allowed.");
           await supabase.auth.signOut();
           clearStoredUser();
           setIsLoading(false);
@@ -224,101 +221,198 @@ const LoginPage = () => {
 
   return (
     <main className="sb-root">
-      <div className="sb-bg-accent" aria-hidden="true" />
+      {/* Ambient Canvas Glows */}
+      <div className="sb-bg-canvas-glows" aria-hidden="true">
+        <div className="sb-glow-orb sb-orb-left" />
+        <div className="sb-glow-orb sb-orb-right" />
+      </div>
 
-      <div className="sb-card sb-card--centered" role="region" aria-label="SmartBite authentication">
-        {/* Top Icon */}
-        <div className="sb-profile-avatar-wrap">
-          <div className="sb-profile-avatar-circle">
-            <IconUser size={34} strokeWidth={1.8} className="sb-profile-avatar-icon" />
-          </div>
-        </div>
+      <div className="sb-viewport-wrapper">
+        <div className="sb-split-grid">
 
-        {/* Title */}
-        <h1 className="sb-heading sb-heading--center">Sign in to Register</h1>
+          {/* LEFT COLUMN: HERO SECTION (Specials Removed) */}
+          <main className="sb-left-hero">
 
-        {/* Subtext */}
-        <p className="sb-subtext">
-          Sign in with your college roll-number email (e.g. <span className="sb-highlight-email">252921001@sguk.ac.in</span>) to access campus food court services.
-        </p>
+            {/* University Canteen Pill Tag */}
+            <div className="sb-badge-pill">
+              <IconSchool size={16} className="sb-badge-pill-icon" />
+              <span className="sb-badge-pill-text">SGU Campus Canteen</span>
+            </div>
 
-        {/* Error message banner if any */}
-        {errorMsg && (
-          <div className="sb-error-banner" role="alert" aria-live="assertive">
-            {errorMsg}
-          </div>
-        )}
+            {/* Hero Headline */}
+            <h1 className="sb-hero-title">
+              Skip Canteen Queues. <br />
+              <span className="sb-gradient-text">Enjoy Hot Fresh Food.</span> 🍕🔥
+            </h1>
 
-        {/* Primary Button */}
-        <button
-          type="button"
-          onClick={handleGoogleLogin}
-          disabled={isLoading || isSuccess}
-          className="sb-btn-google-primary"
-          aria-label="Continue with Google"
-        >
-          {isLoading ? (
-            <IconLoader2 size={20} className="sb-spin" />
-          ) : (
-            <GoogleIcon size={22} />
-          )}
-          <span>{isLoading ? 'Connecting...' : 'Continue with Google'}</span>
-        </button>
+            {/* High-Energy Subtitle */}
+            <p className="sb-hero-subtitle">
+              Order right from your phone between lectures! Freshly prepared, sizzling hot, and ready for pickup before you even reach the food court.
+            </p>
 
-        {/* Footnote */}
-        <p className="sb-footnote">
-          Only @sguk.ac.in email addresses allowed
-        </p>
-
-        {/* Collapsible Staff / Vendor Access */}
-        <div className="sb-staff-section">
-          <button
-            type="button"
-            className="sb-staff-toggle-btn"
-            onClick={() => setShowStaffLogin(prev => !prev)}
-          >
-            <IconBuildingStore size={15} />
-            <span>{showStaffLogin ? 'Hide Password Login' : 'Vendor / Admin / Email Login'}</span>
-          </button>
-
-          {showStaffLogin && (
-            <form onSubmit={handleStaffLogin} className="sb-staff-form">
-              <div className="sb-field">
-                <label className="sb-field-label" htmlFor="staff-id">Email ID or Username</label>
-                <div className="sb-field-wrap">
-                  <IconMail className="sb-field-icon" size={17} />
-                  <input
-                    id="staff-id"
-                    type="text"
-                    value={staffId}
-                    onChange={(e) => setStaffId(e.target.value)}
-                    placeholder="e.g. vendor@sgu.edu or admin"
-                    className="sb-field-input"
-                  />
+            {/* Quick Feature Highlights */}
+            <div className="sb-highlights-grid">
+              <div className="sb-hl-card">
+                <div className="sb-hl-icon-box">
+                  <IconClock size={20} />
+                </div>
+                <div className="sb-hl-text-wrap">
+                  <div className="sb-hl-title">Order in under 2 mins</div>
+                  <div className="sb-hl-desc">Instant 1-tap checkout</div>
                 </div>
               </div>
 
-              <div className="sb-field">
-                <label className="sb-field-label" htmlFor="staff-pwd">Password</label>
-                <div className="sb-field-wrap">
-                  <IconLock className="sb-field-icon" size={17} />
-                  <input
-                    id="staff-pwd"
-                    type="password"
-                    value={staffPwd}
-                    onChange={(e) => setStaffPwd(e.target.value)}
-                    placeholder="Enter password"
-                    className="sb-field-input"
-                  />
+              <div className="sb-hl-card">
+                <div className="sb-hl-icon-box gold">
+                  <IconBell size={20} />
+                </div>
+                <div className="sb-hl-text-wrap">
+                  <div className="sb-hl-title">Instant Pickup Alerts</div>
+                  <div className="sb-hl-desc">Get notified when ready</div>
                 </div>
               </div>
+            </div>
 
-              <button type="submit" disabled={isLoading} className="sb-btn-primary sb-btn-staff">
-                <span>Sign in</span>
-                <IconArrowRight size={17} />
-              </button>
-            </form>
-          )}
+            {/* Canteen Perks Footer Row */}
+            <div className="sb-perks-row">
+              <div className="sb-perk-item">
+                <IconBolt size={16} /> Ready When You Arrive
+              </div>
+              <div className="sb-perk-item green">
+                <IconShieldCheck size={16} /> Secure Payment Method
+              </div>
+              <div className="sb-perk-item">
+                <IconToolsKitchen2 size={16} /> Freshly Prepared
+              </div>
+            </div>
+
+          </main>
+
+          {/* RIGHT COLUMN: FROSTED GLASS SIGN-IN CARD */}
+          <aside className="sb-right-card-wrapper">
+            <div className="sb-glass-card-compact" role="region" aria-label="Student Portal Sign-In">
+
+              {/* Card Header */}
+              <div className="sb-card-brand-header">
+                <div className="sb-brand-icon-circle">
+                  <IconToolsKitchen2 size={28} />
+                </div>
+                <h2 className="sb-card-title">Login to Smart Bite</h2>
+                <p className="sb-card-subtext">Sign in to order food & track orders</p>
+              </div>
+
+              {/* Error Banner */}
+              {errorMsg && (
+                <div className="sb-error-banner" role="alert" aria-live="assertive">
+                  {errorMsg}
+                </div>
+              )}
+
+              {/* Google Sign-In Button with Arrow Disk */}
+              <div className="sb-cta-area">
+                <button
+                  type="button"
+                  onClick={handleGoogleLogin}
+                  disabled={isLoading || isSuccess}
+                  className="sb-btn-google-glass"
+                  aria-label="Sign in with Google"
+                >
+                  <div className="sb-btn-left">
+                    <svg className="sb-google-svg" viewBox="0 0 24 24">
+                      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+                    </svg>
+                    <span>{isLoading ? 'Connecting...' : 'Sign in with Google'}</span>
+                  </div>
+                  <div className="sb-btn-icon-disk">
+                    {isLoading ? <IconLoader2 size={18} className="sb-spin" /> : <IconArrowRight size={18} />}
+                  </div>
+                </button>
+              </div>
+
+              {/* Verified Access Tag */}
+              <div className="sb-security-tag">
+                <IconShieldCheck size={16} />
+                <span>Verified SGU Student Access</span>
+              </div>
+
+              {/* Card Footer Note */}
+              <div className="sb-card-footer-note">
+                <IconMailCheck size={15} />
+                <span>Please sign in with your <strong>authorized university email ID</strong>.</span>
+              </div>
+
+              {/* Hidden Staff / Vendor Access — double-click the small icon to reveal */}
+              <div className="sb-staff-section">
+                {!showStaffLogin && (
+                  <button
+                    type="button"
+                    className="sb-staff-icon-btn"
+                    onDoubleClick={() => setShowStaffLogin(true)}
+                    title="Staff access (double-click)"
+                    aria-label="Staff access"
+                    style={{
+                      background: 'transparent', border: 'none', cursor: 'pointer',
+                      color: 'rgba(148,163,184,0.55)', padding: 6, margin: '4px auto 0',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center'
+                    }}
+                  >
+                    <IconBuildingStore size={16} />
+                  </button>
+                )}
+
+                {showStaffLogin && (
+                  <form onSubmit={handleStaffLogin} className="sb-staff-form">
+                    <div className="sb-field">
+                      <label className="sb-field-label" htmlFor="staff-id">Email ID or Username</label>
+                      <div className="sb-field-wrap">
+                        <IconMail className="sb-field-icon" size={17} />
+                        <input
+                          id="staff-id"
+                          type="text"
+                          value={staffId}
+                          onChange={(e) => setStaffId(e.target.value)}
+                          placeholder="e.g. vendor@sgu.edu or admin"
+                          className="sb-field-input"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="sb-field">
+                      <label className="sb-field-label" htmlFor="staff-pwd">Password</label>
+                      <div className="sb-field-wrap">
+                        <IconLock className="sb-field-icon" size={17} />
+                        <input
+                          id="staff-pwd"
+                          type="password"
+                          value={staffPwd}
+                          onChange={(e) => setStaffPwd(e.target.value)}
+                          placeholder="Enter password"
+                          className="sb-field-input"
+                        />
+                      </div>
+                    </div>
+
+                    <button type="submit" disabled={isLoading} className="sb-btn-primary">
+                      <span>Sign in</span>
+                      <IconArrowRight size={17} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setShowStaffLogin(false); setStaffId(''); setStaffPwd(''); setErrorMsg(''); }}
+                      style={{ background: 'none', border: 'none', color: 'var(--text-muted, #94a3b8)', fontSize: '0.75rem', cursor: 'pointer', marginTop: 4 }}
+                    >
+                      ← Back to student sign-in
+                    </button>
+                  </form>
+                )}
+              </div>
+
+            </div>
+          </aside>
+
         </div>
       </div>
     </main>
@@ -326,3 +420,4 @@ const LoginPage = () => {
 };
 
 export default LoginPage;
+

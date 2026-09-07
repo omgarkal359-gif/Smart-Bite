@@ -5,13 +5,13 @@ const STORAGE_KEY = 'sgu_system_audit_logs';
 function getInitialLogs() {
   const now = new Date();
   return [
-    { id: 'seed-1', level: 'SECURITY', message: 'Super Admin login session initialized from ip 157.32.14.88', timestamp: new Date(now - 1000 * 60 * 2).toLocaleTimeString([], { hour12: false }), category: 'Auth' },
-    { id: 'seed-2', level: 'INFO', message: 'Order #1004 created at stall "rohit-vadewale" (₹155 - Online UPI)', timestamp: new Date(now - 1000 * 60 * 5).toLocaleTimeString([], { hour12: false }), category: 'Orders' },
-    { id: 'seed-3', level: 'INFO', message: 'Stall "mangales-snacks" updated status to ONLINE (busyMode: false)', timestamp: new Date(now - 1000 * 60 * 12).toLocaleTimeString([], { hour12: false }), category: 'Vendors' },
-    { id: 'seed-4', level: 'WARN', message: 'Supabase DB pool connection latency spike detected (42ms)', timestamp: new Date(now - 1000 * 60 * 22).toLocaleTimeString([], { hour12: false }), category: 'Database' },
-    { id: 'seed-5', level: 'INFO', message: 'Order #1002 marked COMPLETED by vendor "narayana"', timestamp: new Date(now - 1000 * 60 * 35).toLocaleTimeString([], { hour12: false }), category: 'Orders' },
-    { id: 'seed-6', level: 'SECURITY', message: 'Failed login attempt for user "admin_invalid" from ip 103.22.10.4', timestamp: new Date(now - 1000 * 60 * 50).toLocaleTimeString([], { hour12: false }), category: 'Auth' },
-    { id: 'seed-7', level: 'INFO', message: 'Socket.io broadcast room "vendor-cool-cravings" client connected', timestamp: new Date(now - 1000 * 60 * 75).toLocaleTimeString([], { hour12: false }), category: 'Socket' },
+    { id: 'seed-1', level: 'SECURITY', message: 'Super Admin login session initialized from ip 157.32.14.88', userEmail: 'admin@sgu.edu', timestamp: new Date(now - 1000 * 60 * 2).toLocaleTimeString([], { hour12: false }), category: 'Auth' },
+    { id: 'seed-2', level: 'INFO', message: 'Order #1004 created by student (₹155 - Online UPI)', userEmail: 'student@sgu.edu', timestamp: new Date(now - 1000 * 60 * 5).toLocaleTimeString([], { hour12: false }), category: 'Orders' },
+    { id: 'seed-3', level: 'INFO', message: 'Stall "mangales-snacks" updated status to ONLINE (busyMode: false)', userEmail: 'vendor.mangales@sguk.ac.in', timestamp: new Date(now - 1000 * 60 * 12).toLocaleTimeString([], { hour12: false }), category: 'Vendors' },
+    { id: 'seed-4', level: 'WARN', message: 'Supabase DB pool connection latency spike detected (42ms)', userEmail: 'system@sgu.edu', timestamp: new Date(now - 1000 * 60 * 22).toLocaleTimeString([], { hour12: false }), category: 'Database' },
+    { id: 'seed-5', level: 'INFO', message: 'Order #1002 marked COMPLETED by vendor', userEmail: 'vendor.narayana@sguk.ac.in', timestamp: new Date(now - 1000 * 60 * 35).toLocaleTimeString([], { hour12: false }), category: 'Orders' },
+    { id: 'seed-6', level: 'SECURITY', message: 'Failed login attempt for user "admin_invalid" from ip 103.22.10.4', userEmail: 'admin_invalid@sgu.edu', timestamp: new Date(now - 1000 * 60 * 50).toLocaleTimeString([], { hour12: false }), category: 'Auth' },
+    { id: 'seed-7', level: 'INFO', message: 'Socket.io broadcast room "vendor-cool-cravings" client connected', userEmail: 'vendor.coolcravings@sguk.ac.in', timestamp: new Date(now - 1000 * 60 * 75).toLocaleTimeString([], { hour12: false }), category: 'Socket' },
   ];
 }
 
@@ -55,8 +55,20 @@ function getLogChannel() {
   return logChannel;
 }
 
-export function addAuditLog({ level = 'INFO', category = 'System', message = '' }) {
+export function addAuditLog({ level = 'INFO', category = 'System', message = '', userEmail = '' }) {
   if (!message) return null;
+
+  let email = userEmail;
+  if (!email) {
+    try {
+      const raw = sessionStorage.getItem('sgu_user') || localStorage.getItem('sgu_user');
+      if (raw) {
+        const u = JSON.parse(raw);
+        email = u?.username || u?.email || u?.id || '';
+      }
+    } catch (_e) {}
+  }
+  if (!email) email = 'system@sgu.edu';
 
   const now = new Date();
   const timeStr = now.toLocaleTimeString([], { hour12: false });
@@ -65,6 +77,7 @@ export function addAuditLog({ level = 'INFO', category = 'System', message = '' 
     level,
     category,
     message,
+    userEmail: email,
     timestamp: timeStr,
     createdAt: now.toISOString()
   };
@@ -130,33 +143,7 @@ export function subscribeRealtimeLogs(onNewLog, onCleared) {
   };
 }
 
-// Background operational telemetry stream generator
-const TRACE_TEMPLATES = [
-  { level: 'INFO', category: 'Database', message: 'Supabase DB connection pool ping latency: {ms}ms' },
-  { level: 'INFO', category: 'Socket', message: 'Socket.io heartbeat response received (stall room active)' },
-  { level: 'INFO', category: 'Orders', message: 'Order queue sync verified — {count} pending items in pipeline' },
-  { level: 'INFO', category: 'Auth', message: 'JWT session state verified for active user session' },
-  { level: 'WARN', category: 'Database', message: 'Minor query delay detected on vendor_metrics index ({ms}ms)' },
-  { level: 'SECURITY', category: 'Auth', message: 'CSRF token & origin header validation check PASSED' },
-  { level: 'INFO', category: 'Vendors', message: 'Stalls online health check complete — 6 of 6 stalls reporting healthy' },
-  { level: 'INFO', category: 'System', message: 'Garbage collection & memory sweep complete ({mem} MB active)' },
-  { level: 'INFO', category: 'Payment', message: 'UPI payment gateway webhook listener ready & listening on port 443' },
-];
-
+// Operational telemetry stream generator (RPC / background fake logs removed as requested)
 export function generateRandomTraceLog() {
-  const template = TRACE_TEMPLATES[Math.floor(Math.random() * TRACE_TEMPLATES.length)];
-  const ms = Math.floor(Math.random() * 25) + 12;
-  const count = Math.floor(Math.random() * 5) + 1;
-  const mem = (Math.random() * 10 + 42).toFixed(1);
-
-  const message = template.message
-    .replace('{ms}', ms)
-    .replace('{count}', count)
-    .replace('{mem}', mem);
-
-  return addAuditLog({
-    level: template.level,
-    category: template.category,
-    message
-  });
+  return null;
 }

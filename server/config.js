@@ -90,6 +90,13 @@ const JWT_SECRET = validateJwtSecret();
 
 const PAYMENT_PROVIDER = process.env.PAYMENT_PROVIDER || 'mock';
 const PLATFORM_COMMISSION_PERCENT = parseFloat(process.env.PLATFORM_COMMISSION_PERCENT) || 10;
+
+// Payouts / vendor settlements (Cashfree Easy Split when live)
+const PAYOUT_PROVIDER = process.env.PAYOUT_PROVIDER || (process.env.CASHFREE_APP_ID ? 'cashfree' : 'mock');
+const PAYOUT_ENCRYPTION_KEY = process.env.PAYOUT_ENCRYPTION_KEY || (NODE_ENV === 'test' ? 'test_payout_key_please_change_in_prod' : '');
+const CASHFREE_APP_ID = process.env.CASHFREE_APP_ID || '';
+const CASHFREE_SECRET_KEY = process.env.CASHFREE_SECRET_KEY || '';
+const CASHFREE_ENV = process.env.CASHFREE_ENV || 'sandbox';
 const RECONCILE_TOKEN = process.env.RECONCILE_TOKEN || (NODE_ENV === 'test' ? 'sgu_reconcile_secret_token_2026' : '');
 const PAYMENT_WEBHOOK_SECRET = process.env.PAYMENT_WEBHOOK_SECRET || (NODE_ENV === 'test' ? 'sgu_payment_webhook_secret_key_2026' : '');
 
@@ -119,6 +126,11 @@ export const config = {
   BCRYPT_SALT_ROUNDS,
   JWT_SECRET,
   PAYMENT_PROVIDER,
+  PAYOUT_PROVIDER,
+  PAYOUT_ENCRYPTION_KEY,
+  CASHFREE_APP_ID,
+  CASHFREE_SECRET_KEY,
+  CASHFREE_ENV,
   PLATFORM_COMMISSION_PERCENT,
   RECONCILE_TOKEN,
   PAYMENT_WEBHOOK_SECRET,

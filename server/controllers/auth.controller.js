@@ -181,6 +181,15 @@ export async function loginGoogle(req, res, next) {
     }
 
     const isAllowedAdmin = config.ADMIN_EMAILS.includes(cleanId);
+
+    // Strict domain guard: only @sguk.ac.in college emails, or authorized admin allowlist.
+    if (!isAllowedAdmin && !cleanId.endsWith('@sguk.ac.in')) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access restricted: Only @sguk.ac.in college email addresses are allowed.'
+      });
+    }
+
     const assignedRole = isAllowedAdmin ? 'admin' : 'student';
 
     let user = await db.get('SELECT * FROM users WHERE LOWER(username) = ?', [cleanId]);
@@ -252,9 +261,10 @@ export async function verifyRegistration(req, res, next) {
       });
     }
 
+    // Do not expose user profile (name/role/shopId) to unauthenticated callers.
+    // Frontend only needs the boolean; extra fields are needless PII disclosure.
     res.json({
       registered: true,
-      user: sanitizeUser(user),
       message: 'Account verified successfully.'
     });
   } catch (err) {

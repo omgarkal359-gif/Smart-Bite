@@ -5,8 +5,10 @@ import {
 import { adminApi } from '../../utils/adminApi';
 import { addAuditLog } from '../../utils/logger';
 import { SHOPS } from '../../data/foodCourtDB';
+import { useCart } from '../../context/CartContext';
 
 export const UserDirectoryModule = () => {
+  const { showToast } = useCart();
   const [users, setUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -328,25 +330,31 @@ export const UserDirectoryModule = () => {
                       <td style={{ textAlign: 'right' }}>
                         <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
                           <button 
-                            className="btn-action-sm"
                             title="Promote / Edit Role"
-                            style={{ display: 'flex', alignItems: 'center', gap: 4, background: '#EFF6FF', color: '#2563EB', borderColor: '#BFDBFE' }}
+                            style={{ width: 34, height: 34, borderRadius: 10, border: '1px solid #BFDBFE', background: '#EFF6FF', color: '#2563EB', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s ease' }}
                             onClick={() => openEditRoleModal(user)}
                           >
-                            <UserCheck size={13} /> Promote Role
+                            <UserCheck size={15} />
                           </button>
                           <button 
-                            className="btn-action-sm"
                             title="Reset Auth Session"
+                            style={{ width: 34, height: 34, borderRadius: 10, border: '1px solid #E2E8F0', background: '#FFFFFF', color: '#475569', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s ease' }}
                             onClick={() => handleResetSession(user.id, user.username)}
                           >
-                            <KeyRound size={13} /> Reset Session
+                            <KeyRound size={15} />
                           </button>
                           <button 
-                            className={`btn-action-sm ${isSuspended ? '' : 'btn-action-danger'}`}
+                            title={isSuspended ? 'Reactivate User Account' : 'Suspend User Account'}
+                            style={{ 
+                              width: 34, height: 34, borderRadius: 10, 
+                              border: isSuspended ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(239, 68, 68, 0.3)', 
+                              background: isSuspended ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)', 
+                              color: isSuspended ? '#059669' : '#DC2626', 
+                              cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s ease' 
+                            }}
                             onClick={() => handleToggleUserStatus(user.id, user.status)}
                           >
-                            {isSuspended ? 'Reactivate' : 'Suspend'}
+                            {isSuspended ? <UserCheck size={15} /> : <UserX size={15} />}
                           </button>
                         </div>
                       </td>

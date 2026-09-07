@@ -17,13 +17,22 @@ export async function getPaymentStatus(req, res, next) {
       return res.status(404).json({ success: false, message: 'Payment/Order not found.' });
     }
 
-    // Owner check: Students and guests can only check status of their own payments
-    const reqUserId = (req.user?.id || '').trim().toLowerCase();
+    // Authorization: students/guests may only view their own payment; owners only
+    // payments for orders containing their stall; admins any. Fails closed.
+    const reqUserId = (req.user?.email || req.user?.id || '').trim().toLowerCase();
     const reqUserRole = (req.user?.role || 'student').trim().toLowerCase();
     const orderOwner = (order.customerId || '').trim().toLowerCase();
 
-    if ((reqUserRole === 'student' || reqUserRole === 'guest') && reqUserId && orderOwner && orderOwner !== reqUserId) {
-      return res.status(403).json({ success: false, message: 'Access Denied: You are not authorized to view this payment status.' });
+    if (reqUserRole === 'student' || reqUserRole === 'guest') {
+      if (!reqUserId || orderOwner !== reqUserId) {
+        return res.status(403).json({ success: false, message: 'Access Denied: You are not authorized to view this payment status.' });
+      }
+    } else if (reqUserRole === 'owner') {
+      const items = await db.all('SELECT stallId FROM order_items WHERE orderId = ?', [order.id]);
+      const belongsToStall = items.some(i => (i.stallId || i.stallid) === req.user?.shopId);
+      if (!belongsToStall) {
+        return res.status(403).json({ success: false, message: 'Access Denied: You are not authorized to view this payment status.' });
+      }
     }
 
     res.json({

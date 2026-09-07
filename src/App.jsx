@@ -40,6 +40,7 @@ const UserProfile = lazyWithRetry(() => import('./pages/UserProfile'));
 const SearchPage = lazyWithRetry(() => import('./pages/SearchPage'));
 const OrdersPage = lazyWithRetry(() => import('./pages/OrdersPage'));
 const LoginPage = lazyWithRetry(() => import('./pages/LoginPage'));
+const OnboardingPage = lazyWithRetry(() => import('./pages/OnboardingPage'));
 const ForgotPassword = lazyWithRetry(() => import('./pages/ForgotPassword'));
 const ResetPassword = lazyWithRetry(() => import('./pages/ResetPassword'));
 const CartPage = lazyWithRetry(() => import('./pages/CartPage'));
@@ -160,6 +161,7 @@ function App() {
           <Routes>
             <Route path="/" element={<RootRedirect />} />
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/onboard/:token" element={<OnboardingPage />} />
             <Route path="/forgot-password" element={<Navigate to="/login" replace />} />
             <Route path="/reset-password" element={<Navigate to="/login" replace />} />
             

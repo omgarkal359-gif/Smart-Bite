@@ -118,12 +118,6 @@ const UserProfile = () => {
         <h1 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.25rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '-0.02em', color: '#0F172A', margin: 0 }}>
           Student Profile
         </h1>
-        <button 
-          onClick={handleLogout}
-          style={{ background: 'none', border: 'none', color: '#FF3B5C', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700, fontSize: '0.85rem' }}
-        >
-          <LogOut size={18} /> Sign Out
-        </button>
       </header>
 
       <main className="profile-main" style={{ padding: '20px', maxWidth: 600, margin: '0 auto' }}>

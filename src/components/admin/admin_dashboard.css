@@ -1,18 +1,19 @@
-/* Master Admin Dashboard - Vibrant Light Red Theme System */
+/* Master Admin Dashboard - $1M Startup Executive UI Theme System */
 :root {
-  --admin-navy: #E11D48; /* Light Vibrant Rose Red */
-  --admin-navy-dark: #BE123C;
+  --admin-navy: #FF3B00; /* Ember / Flame Accent */
+  --admin-navy-dark: #D83000;
   --admin-amber: #F59E0B;
   --admin-green: #10B981;
-  --admin-red: #E11D48;
-  --admin-red-light: #FFF1F2; /* Soft Rose Background */
-  --admin-bg: #FBFBFC;
+  --admin-red: #FF3B00;
+  --admin-red-light: #FFF5F3;
+  --admin-bg: #F8FAFC;
+  --admin-sidebar-bg: #0A0E17;
   --admin-card-bg: #FFFFFF;
   --admin-text-main: #0F172A;
   --admin-text-muted: #64748B;
-  --admin-border: #F1F5F9;
-  --admin-glass: rgba(255, 255, 255, 0.95);
-  --admin-shadow: 0 10px 30px -5px rgba(225, 29, 72, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
+  --admin-border: #E2E8F0;
+  --admin-glass: rgba(255, 255, 255, 0.85);
+  --admin-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.04), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
 }
 
 .admin-layout-root {
@@ -41,21 +42,21 @@
 .admin-layout-root .kpi-value,
 .admin-layout-root .sidebar-logo,
 .admin-layout-root .font-heading {
-  font-family: 'Oswald', sans-serif !important;
+  font-family: 'Outfit', 'Plus Jakarta Sans', system-ui, sans-serif !important;
 }
 
-/* Sidebar Styling - Vibrant Light Red Theme */
+/* Sidebar Styling - Executive Dark Obsidian Theme */
 .admin-sidebar {
   width: 76px;
-  background: linear-gradient(180deg, #FF3B5C 0%, #E11D48 100%);
+  background: var(--admin-sidebar-bg);
   color: #FFFFFF;
   display: flex;
   flex-direction: column;
   transition: width 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
   z-index: 100;
   position: relative;
-  border-right: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 4px 0 25px rgba(225, 29, 72, 0.15);
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 4px 0 30px rgba(0, 0, 0, 0.25);
   flex-shrink: 0;
   overflow: hidden;
 }
@@ -71,7 +72,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .sidebar-logo {
@@ -81,10 +82,10 @@
   transition: gap 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
   text-decoration: none;
   color: #FFFFFF !important;
-  font-family: 'Oswald', sans-serif !important;
+  font-family: 'Outfit', sans-serif !important;
   font-size: 1.25rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
+  font-weight: 800;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
   white-space: nowrap;
 }
@@ -114,12 +115,12 @@
   width: 40px;
   height: 40px;
   border-radius: 12px;
-  background: #FFFFFF;
+  background: linear-gradient(135deg, #FF3B00 0%, #D83000 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #E11D48;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+  color: #FFFFFF;
+  box-shadow: 0 6px 18px rgba(255, 59, 0, 0.4);
   flex-shrink: 0;
 }
 
@@ -127,7 +128,7 @@
   padding: 16px 12px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   flex: 1;
 }
 
@@ -136,18 +137,18 @@
   display: flex !important;
   align-items: center !important;
   gap: 0 !important;
-  padding: 12px 14px !important;
+  padding: 11px 14px !important;
   border-radius: 12px !important;
-  color: rgba(255, 255, 255, 0.8) !important;
+  color: #94A3B8 !important;
   font-family: 'Inter', system-ui, sans-serif !important;
   font-weight: 600 !important;
-  font-size: 0.9rem !important;
+  font-size: 0.88rem !important;
   cursor: pointer !important;
-  border: none !important;
+  border: 1px solid transparent !important;
   background: transparent !important;
   width: 100% !important;
   text-align: left !important;
-  transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1) !important;
+  transition: all 0.2s ease !important;
   position: relative !important;
   white-space: nowrap !important;
   text-shadow: none !important;
@@ -160,7 +161,8 @@
   justify-content: center;
   flex-shrink: 0;
   width: 24px;
-  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), color 0.25s ease;
+  color: #94A3B8;
+  transition: transform 0.2s ease, color 0.2s ease;
 }
 
 .admin-nav-item:hover .admin-nav-icon-wrapper {
@@ -194,19 +196,18 @@
 
 .admin-nav-item:hover {
   color: #FFFFFF !important;
-  background: rgba(255, 255, 255, 0.18) !important;
+  background: rgba(255, 255, 255, 0.06) !important;
 }
 
 .admin-nav-item.active {
-  color: #E11D48 !important;
-  background: #FFFFFF !important;
-  border-left: none !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
-  font-weight: 800 !important;
-  text-shadow: none !important;
+  color: #FFFFFF !important;
+  background: rgba(255, 59, 0, 0.14) !important;
+  border-color: rgba(255, 59, 0, 0.3) !important;
+  box-shadow: 0 4px 14px rgba(255, 59, 0, 0.15) !important;
+  font-weight: 700 !important;
 }
 .admin-nav-item.active .admin-nav-icon-wrapper {
-  color: #E11D48 !important;
+  color: #FF5722 !important;
 }
 
 .admin-nav-item-badge {
@@ -214,7 +215,7 @@
   margin-left: auto;
   max-width: 0;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.15);
   color: white !important;
   font-size: 0.65rem !important;
   font-weight: 800 !important;
@@ -234,7 +235,7 @@
 }
 
 .admin-nav-item.active .admin-nav-item-badge {
-  background: #E11D48 !important;
+  background: #FF3B00 !important;
   color: #FFFFFF !important;
 }
 
@@ -249,9 +250,10 @@
 
 .admin-topbar {
   height: 70px;
-  background: #FFFFFF;
-  backdrop-filter: blur(12px);
-  border-bottom: 3px solid #FF3B5C; /* Light Red Signature Bottom Line */
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--admin-border);
   padding: 0 28px;
   display: flex;
   align-items: center;
@@ -259,7 +261,7 @@
   position: sticky;
   top: 0;
   z-index: 90;
-  box-shadow: 0 4px 16px rgba(225, 29, 72, 0.04);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
 }
 
 .cmdk-trigger-btn {
