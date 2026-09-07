@@ -428,7 +428,10 @@ const VendorDashboard = () => {
           className={`sidebar-btn ${isBusyMode ? 'busy' : 'active'}`} 
           onClick={handleToggleBusy}
         >
-          <Clock size={24} /> <span>{isBusyMode ? 'BUSY' : 'NORMAL'}</span>
+          <span className="sidebar-icon-wrap">
+            <Clock size={24} />
+          </span>
+          <span>{isBusyMode ? 'BUSY' : 'NORMAL'}</span>
         </motion.button>
 
         <motion.button 
@@ -437,7 +440,10 @@ const VendorDashboard = () => {
           className={`sidebar-btn ${activeSidebarTab === 'menu' && isSidebarOpen ? 'is-active' : ''}`} 
           onClick={() => { setActiveSidebarTab('menu'); setIsSidebarOpen(true); }}
         >
-          <Settings size={24} /> <span>MENU</span>
+          <span className="sidebar-icon-wrap">
+            <Settings size={24} />
+          </span>
+          <span>MENU</span>
         </motion.button>
 
         <motion.button 
@@ -446,7 +452,10 @@ const VendorDashboard = () => {
           className={`sidebar-btn ${activeSidebarTab === 'history' && isSidebarOpen ? 'is-active' : ''}`} 
           onClick={() => { setActiveSidebarTab('history'); setIsSidebarOpen(true); }}
         >
-          <History size={24} /> <span>HISTORY</span>
+          <span className="sidebar-icon-wrap">
+            <History size={24} />
+          </span>
+          <span>HISTORY</span>
         </motion.button>
 
         <motion.button 
@@ -459,7 +468,10 @@ const VendorDashboard = () => {
             navigate('/login', { replace: true });
           }}
         >
-          <LogOut size={24} /> <span>LOGOUT</span>
+          <span className="sidebar-icon-wrap">
+            <LogOut size={24} />
+          </span>
+          <span>LOGOUT</span>
         </motion.button>
       </aside>
 
