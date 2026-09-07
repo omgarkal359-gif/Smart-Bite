@@ -348,19 +348,29 @@ const VendorDashboard = () => {
   }, [tickets, completedTickets]);
 
   const handleToggleShop = async () => {
+    const prevStatus = shopStatus;
     const newStatus = shopStatus === 'OPEN' ? 'CLOSED' : 'OPEN';
     const isOnlineVal = newStatus === 'OPEN' ? 1 : 0;
+    
+    setShopStatus(newStatus);
+    
     try {
       if (targetShopId) {
-        await api.updateStallStatus(targetShopId, { online: isOnlineVal });
-        socket.emit('stall_status_update', { id: targetShopId, online: isOnlineVal });
+        const payload = {
+          id: targetShopId,
+          stallId: targetShopId,
+          online: isOnlineVal,
+          status: newStatus === 'OPEN' ? 'ONLINE' : 'OFFLINE'
+        };
+        await api.updateStallStatus(targetShopId, payload);
+        socket.emit('stall_status_update', payload);
       }
-      setShopStatus(newStatus);
       if (newStatus === 'OPEN') {
         setShowConfetti(true);
         setTimeout(() => setShowConfetti(false), 3000);
       }
     } catch (err) {
+      setShopStatus(prevStatus);
       alert('Failed to update shop status: ' + err.message);
     }
   };

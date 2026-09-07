@@ -1,5 +1,6 @@
 import { supabase } from './supabaseClient';
 import { SHOPS, getItemsByStall, ALL_FOOD_ITEMS } from './data/foodCourtDB';
+import { addAuditLog } from './utils/logger';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || window.location.origin;
 const API_BASE_URL = BACKEND_URL === window.location.origin ? '/api' : `${BACKEND_URL}/api`;
@@ -144,37 +145,86 @@ export const api = {
     return SHOPS.map(shop => {
       const baseMatch = baseStalls.find(s => String(s.id) === String(shop.id)) || {};
       const localMatch = stored.find(s => String(s.id) === String(shop.id)) || {};
-      return {
+      const merged = {
         ...shop,
         ...baseMatch,
         ...localMatch
+      };
+      const isOnline = (merged.online === 1 || merged.online === true || merged.online === '1' || merged.status === 'ONLINE') &&
+                       merged.online !== 0 && merged.online !== false && merged.online !== '0' && merged.online !== 'false' &&
+                       merged.status !== 'OFFLINE' && merged.status !== 'CLOSED';
+      return {
+        ...merged,
+        online: isOnline ? 1 : 0,
+        status: isOnline ? 'ONLINE' : 'OFFLINE'
       };
     });
   },
 
   async updateStallStatus(stallId, statusData) {
     try {
+      try {
+        addAuditLog({
+          level: 'INFO',
+          category: 'Vendors',
+          message: `Stall "${stallId}" updated status to ${statusData.isOpen === false || statusData.online === 0 || statusData.online === false || statusData.status === 'OFFLINE' || statusData.status === 'CLOSED' ? 'OFFLINE' : (statusData.status || 'ONLINE')} (busyMode: ${statusData.busyMode || false})`
+        });
+      } catch (e) {}
+
+      const isOnlineVal = (
+        (statusData.online === 1 || statusData.online === true || statusData.online === '1' || statusData.status === 'ONLINE') &&
+        statusData.online !== 0 && statusData.online !== false && statusData.online !== '0' && statusData.online !== 'false' &&
+        statusData.status !== 'OFFLINE' && statusData.status !== 'CLOSED'
+      ) ? 1 : 0;
+
+      const normalizedData = {
+        ...statusData,
+        id: stallId,
+        stallId: stallId,
+        online: isOnlineVal,
+        status: isOnlineVal ? 'ONLINE' : 'OFFLINE'
+      };
+
       // Local cache update
       try {
         const stored = JSON.parse(localStorage.getItem('sgu_stalls') || '[]');
         const existingIdx = stored.findIndex(s => String(s.id) === String(stallId));
         let updated;
         if (existingIdx >= 0) {
-          updated = stored.map(s => String(s.id) === String(stallId) ? { ...s, ...statusData } : s);
+          updated = stored.map(s => String(s.id) === String(stallId) ? { ...s, ...normalizedData } : s);
         } else {
-          updated = [...stored, { id: stallId, ...statusData }];
+          updated = [...stored, normalizedData];
         }
         localStorage.setItem('sgu_stalls', JSON.stringify(updated));
       } catch (e) {}
 
+      // Dispatch local DOM event for single-window instant reactivity
+      window.dispatchEvent(new CustomEvent('sgu:stall_status_updated', { detail: normalizedData }));
+      window.dispatchEvent(new Event('storage'));
+
       // Socket broadcast
       try {
-        socket.emit('stall_status_update', { id: stallId, ...statusData });
+        socket.emit('stall_status_update', normalizedData);
       } catch (e) {}
 
-      const { data, error } = await supabase.from('stalls').update(statusData).eq('id', stallId).select();
+      // Global Supabase Broadcast Channel (received by all directory/admin/vendor screens)
+      try {
+        const globalCh = supabase.channel('global-stall-broadcasts');
+        globalCh.subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            globalCh.send({
+              type: 'broadcast',
+              event: 'stall_status_changed',
+              payload: normalizedData
+            });
+            setTimeout(() => supabase.removeChannel(globalCh), 1500);
+          }
+        });
+      } catch (e) {}
+
+      const { data, error } = await supabase.from('stalls').update(normalizedData).eq('id', stallId).select();
       if (!error && data) {
-        const updatedStall = data[0] || { id: stallId, ...statusData };
+        const updatedStall = data[0] || { id: stallId, ...normalizedData };
         const broadcastChannel = supabase.channel(`stall-status-${stallId}`);
         broadcastChannel.subscribe((status) => {
           if (status === 'SUBSCRIBED') {
@@ -190,7 +240,7 @@ export const api = {
       }
       const res = await fetchAPI(`/stalls/${stallId}/status`, {
         method: 'PUT',
-        body: JSON.stringify(statusData)
+        body: JSON.stringify(normalizedData)
       });
       const broadcastChannel2 = supabase.channel(`stall-status-${stallId}`);
       broadcastChannel2.subscribe((status) => {
@@ -198,7 +248,7 @@ export const api = {
           broadcastChannel2.send({
             type: 'broadcast',
             event: 'stall_status_changed',
-            payload: { id: stallId, ...statusData }
+            payload: { id: stallId, ...normalizedData }
           });
           setTimeout(() => supabase.removeChannel(broadcastChannel2), 2000);
         }
@@ -311,6 +361,14 @@ export const api = {
       localStorage.setItem('sgu_orders', JSON.stringify(savedOrders));
     }
 
+    try {
+      addAuditLog({
+        level: 'INFO',
+        category: 'Orders',
+        message: `Order #${orderId} created at stall "${orderData.stallName || stallId || 'campus-stall'}" (₹${orderData.total || orderData.totalAmount || 0} - ${orderData.payment || 'Online UPI'})`
+      });
+    } catch (e) {}
+
     return { success: true, order: actualOrder };
   },
 
@@ -333,34 +391,77 @@ export const api = {
   },
 
   async getOrderQueue() {
-    let orders = [];
-    try {
-      const queue = await fetchAPI('/orders/queue');
-      if (Array.isArray(queue) && queue.length > 0) {
-        orders = queue;
-      }
-    } catch (err) {}
+    const ordersMap = new Map();
 
-    if (orders.length === 0) {
-      try {
-        const { data, error } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
-        if (!error && data && data.length > 0) {
-          orders = data.map(o => ({
+    // 1. Load from Supabase Database table
+    try {
+      const { data, error } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
+      if (!error && data && data.length > 0) {
+        data.forEach(o => {
+          ordersMap.set(String(o.id), {
             ...o,
             customerName: o.customer_name || o.customerName || 'Student',
             customerId: o.customer_id || o.customerId || 'student@sgu.edu',
+            stallId: o.stall_id || o.stallId || 'stall',
+            stallName: o.stall_name || o.stallName || 'Stall',
             paymentStatus: o.payment_status || o.paymentStatus || 'success'
-          }));
-        }
-      } catch (e) {}
-    }
+          });
+        });
+      }
+    } catch (e) {}
 
-    if (orders.length === 0) {
+    // 2. Load from REST Backend API
+    try {
+      const queue = await fetchAPI('/orders/queue').catch(() => null);
+      if (Array.isArray(queue) && queue.length > 0) {
+        queue.forEach(o => {
+          if (!ordersMap.has(String(o.id))) {
+            ordersMap.set(String(o.id), o);
+          }
+        });
+      }
+    } catch (err) {}
+
+    // 3. Merge from sgu_orders in localStorage
+    try {
       const savedOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
-      orders = savedOrders;
+      if (Array.isArray(savedOrders)) {
+        savedOrders.forEach(o => {
+          if (o && o.id && !ordersMap.has(String(o.id))) {
+            ordersMap.set(String(o.id), o);
+          }
+        });
+      }
+    } catch (e) {}
+
+    // 4. Merge from all sgu_vendor_orders_* in localStorage
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('sgu_vendor_orders_')) {
+          try {
+            const list = JSON.parse(localStorage.getItem(key) || '[]');
+            if (Array.isArray(list)) {
+              list.forEach(o => {
+                if (o && o.id && !ordersMap.has(String(o.id))) {
+                  ordersMap.set(String(o.id), o);
+                }
+              });
+            }
+          } catch (e) {}
+        }
+      }
+    } catch (e) {}
+
+    // 5. Seed initial active campus orders if no orders exist anywhere yet
+    // Disabled so that orders can be completely reset to zero by Admin.
+    if (ordersMap.size === 0) {
+      // Intentionally left blank to allow zero orders
     }
 
-    return orders;
+    const merged = Array.from(ordersMap.values());
+    merged.sort((a, b) => new Date(b.created_at || b.timestamp || 0) - new Date(a.created_at || a.timestamp || 0));
+    return merged;
   },
 
 
@@ -531,6 +632,14 @@ export const api = {
   },
 
   async updateOrderStatus(orderId, status) {
+    try {
+      addAuditLog({
+        level: 'INFO',
+        category: 'Orders',
+        message: `Order #${orderId} status updated to ${String(status).toUpperCase()}`
+      });
+    } catch (e) {}
+
     // 0. Update local storage caches immediately
     try {
       const savedOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');

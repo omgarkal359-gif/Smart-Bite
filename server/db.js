@@ -22,16 +22,23 @@ if (supabaseUrl && supabaseKey && supabaseUrl.startsWith('http')) {
   }
 }
 
-// Connection configuration & variables
-const connectionString = config.DATABASE_URL || process.env.DATABASE_URL || '';
 let pool = null;
-if (connectionString && !connectionString.includes('[YOUR-PASSWORD]')) {
-  pool = new Pool({
-    connectionString,
-    idleTimeoutMillis: 5000, // Close idle connections after 5 seconds
-    max: 10 // Maximum pool size
-  });
+
+function getPool() {
+  const connectionString = config.DATABASE_URL || process.env.DATABASE_URL || '';
+  if (!pool && connectionString && !connectionString.includes('[YOUR-PASSWORD]')) {
+    const isSupabase = connectionString.includes('supabase.com') || connectionString.includes('supabase.co');
+    pool = new Pool({
+      connectionString,
+      idleTimeoutMillis: 5000, // Close idle connections after 5 seconds
+      max: process.env.VERCEL ? 2 : 10, // Max pool size tuned for serverless
+      ssl: isSupabase ? { rejectUnauthorized: false } : false
+    });
+  }
+  return pool;
 }
+
+
 
 let isPgActive = false;
 let isSqliteActive = false;
@@ -104,7 +111,7 @@ export const db = {
       if (pgSql.trim().toUpperCase().startsWith('INSERT ') && !pgSql.trim().toUpperCase().includes('RETURNING')) {
         pgSql = `${pgSql} RETURNING id`;
       }
-      const res = await pool.query(pgSql, params);
+      const res = await getPool().query(pgSql, params);
       return { id: res.rows[0]?.id, changes: res.rowCount };
     } else if (isSqliteActive && sqliteDb) {
       return new Promise((resolve, reject) => {
@@ -123,7 +130,7 @@ export const db = {
     let rows = [];
     if (isPgActive) {
       const pgSql = convertSql(sql);
-      const res = await pool.query(pgSql, params);
+      const res = await getPool().query(pgSql, params);
       rows = res.rows || [];
     } else if (isSqliteActive && sqliteDb) {
       rows = await new Promise((resolve, reject) => {
@@ -142,7 +149,7 @@ export const db = {
     let row = null;
     if (isPgActive) {
       const pgSql = convertSql(sql);
-      const res = await pool.query(pgSql, params);
+      const res = await getPool().query(pgSql, params);
       row = res.rows[0] || null;
     } else if (isSqliteActive && sqliteDb) {
       row = await new Promise((resolve, reject) => {
@@ -161,7 +168,7 @@ export const db = {
   async exec(sql) {
     if (isPgActive) {
       const pgSql = convertSql(sql);
-      await pool.query(pgSql);
+      await getPool().query(pgSql);
     } else if (isSqliteActive && sqliteDb) {
       return new Promise((resolve, reject) => {
         sqliteDb.exec(sql, (err) => {
@@ -174,8 +181,10 @@ export const db = {
   },
 
   async transaction(callback) {
-    if (isPgActive && pool) {
-      const client = await pool.connect();
+    const activePool = getPool();
+    if (isPgActive && activePool) {
+      const client = await activePool.connect();
+
       try {
         await client.query('BEGIN');
         const tx = {
@@ -525,14 +534,17 @@ function executeMemAll(sql, params) {
 }
 
 export async function initDatabase() {
+  const connStr = config.DATABASE_URL || process.env.DATABASE_URL || '';
+  const activePool = getPool();
+
   // 1. Test PostgreSQL connection
-  if (connectionString && !connectionString.includes('[YOUR-PASSWORD]') && pool) {
+  if (connStr && !connStr.includes('[YOUR-PASSWORD]') && activePool) {
     let client;
     try {
-      client = await pool.connect();
+      client = await activePool.connect();
       await client.query('SELECT 1');
       isPgActive = true;
-      console.log('[DATABASE] Connected to PostgreSQL database.');
+      console.log('[DATABASE INFO] Connected successfully to PostgreSQL database engine.');
     } catch (err) {
       isPgActive = false;
       console.warn('[DATABASE WARNING] PostgreSQL connection failed (' + err.message + '). Fallback to local memory engine.');
@@ -545,6 +557,7 @@ export async function initDatabase() {
     isPgActive = false;
     console.warn('[DATABASE NOTICE] DATABASE_URL is unconfigured. Operating on in-memory engine fallback.');
   }
+
 
   // 2. Try SQLite if PostgreSQL is not active
   if (!isPgActive) {
@@ -722,6 +735,67 @@ export async function initDatabase() {
     );
   `);
 
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS menu_categories (
+      id ${idType},
+      stall_id TEXT NOT NULL,
+      name TEXT NOT NULL,
+      display_order INTEGER DEFAULT 0,
+      is_active INTEGER DEFAULT 1,
+      created_at TEXT
+    );
+  `);
+
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS order_status_history (
+      id ${idType},
+      order_id TEXT NOT NULL,
+      previous_status TEXT,
+      new_status TEXT NOT NULL,
+      changed_by TEXT DEFAULT 'system',
+      reason TEXT,
+      created_at TEXT
+    );
+  `);
+
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS audit_logs (
+      id ${idType},
+      actor_id TEXT DEFAULT 'system',
+      action TEXT NOT NULL,
+      resource_type TEXT,
+      resource_id TEXT,
+      severity TEXT DEFAULT 'INFO',
+      status TEXT DEFAULT 'SUCCESS',
+      metadata TEXT DEFAULT '{}',
+      ip_address TEXT,
+      created_at TEXT
+    );
+  `);
+
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS notifications (
+      id ${idType},
+      user_id TEXT NOT NULL,
+      type TEXT NOT NULL,
+      title TEXT NOT NULL,
+      message TEXT NOT NULL,
+      is_read INTEGER DEFAULT 0,
+      metadata TEXT DEFAULT '{}',
+      created_at TEXT
+    );
+  `);
+
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS system_settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL,
+      description TEXT,
+      updated_by TEXT DEFAULT 'admin',
+      updated_at TEXT
+    );
+  `);
+
   // Create indices to optimize query performance (Finding 9)
   await db.exec('CREATE INDEX IF NOT EXISTS idx_menu_items_stall_id ON menu_items (stallId);');
   await db.exec('CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON order_items (orderId);');
@@ -730,6 +804,8 @@ export async function initDatabase() {
   await db.exec('CREATE INDEX IF NOT EXISTS idx_settlement_status ON order_settlements (status);');
   await db.exec('CREATE INDEX IF NOT EXISTS idx_settlement_provider_account ON order_settlements (provider_account_id);');
   await db.exec('CREATE INDEX IF NOT EXISTS idx_payment_events_lookup ON payment_events (provider, provider_event_id);');
+  await db.exec('CREATE INDEX IF NOT EXISTS idx_audit_logs_actor ON audit_logs (actor_id, created_at);');
+  await db.exec('CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications (user_id, is_read);');
 
   // Seed Users if empty
   const userCount = await db.get('SELECT COUNT(*) as count FROM users');

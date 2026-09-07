@@ -4,9 +4,10 @@ import {
 } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
-import { setStoredUser, getStoredUser, clearStoredUser } from '../utils/auth';
+import { setStoredUser, getStoredUser, clearStoredUser, ADMIN_EMAILS, isAdminEmail } from '../utils/auth';
 import { GoogleIcon } from '../components/icons/GoogleIcon';
 import { api } from '../api';
+import { addAuditLog } from '../utils/logger';
 import './LoginPage.css';
 
 const LoginPage = () => {
@@ -42,6 +43,16 @@ const LoginPage = () => {
       sessionStorage.setItem('sgu_token', token);
     }
     setStoredUser(ud, true);
+
+    try {
+      const level = ud.role === 'admin' ? 'SECURITY' : 'INFO';
+      addAuditLog({
+        level,
+        category: 'Auth',
+        message: `${ud.role === 'admin' ? 'Super Admin' : ud.role === 'owner' ? 'Vendor Owner' : 'Student'} login session initialized for "${ud.name}" (${ud.id})`
+      });
+    } catch (e) {}
+
     setTimeout(() => {
       setIsSuccess(false);
       redirectByRole(ud.role, ud.shopId);
@@ -129,10 +140,24 @@ const LoginPage = () => {
       if (resData?.success && resData?.user) {
         finish(resData.user.role, resData.user.name, resData.user.username, resData.user.shopId, resData.token);
       } else {
+        try {
+          addAuditLog({
+            level: 'SECURITY',
+            category: 'Auth',
+            message: `Failed login attempt for user "${idInput}"`
+          });
+        } catch (e) {}
         setErrorMsg(resData?.message || 'Invalid credentials.');
         setIsLoading(false);
       }
     } catch (err) {
+      try {
+        addAuditLog({
+          level: 'SECURITY',
+          category: 'Auth',
+          message: `Failed login attempt for user "${idInput}"`
+        });
+      } catch (e) {}
       setErrorMsg(err.message || 'Staff login failed.');
       setIsLoading(false);
     }
@@ -176,16 +201,15 @@ const LoginPage = () => {
         const meta = session.user.user_metadata || {};
 
         // Admin Email Access Configuration
-        const ADMIN_EMAILS = ['omgarkal359@gmail.com', 'omgarkal357@gmail.com', 'admin@sgu.edu', 'admin@sguk.ac.in', 'admin@sgu.ac.in'];
         let role = meta.role || session.user.app_metadata?.role || 'student';
-        if (ADMIN_EMAILS.includes(userEmail)) {
+        if (isAdminEmail(userEmail)) {
           role = 'admin';
         }
 
         // Domain & Email Access Guard (@sguk.ac.in, @sgu.ac.in, or authorized ADMIN_EMAILS)
         const isAllowedDomain = (email) => {
           if (!email) return false;
-          if (ADMIN_EMAILS.includes(email)) return true;
+          if (isAdminEmail(email)) return true;
           return email.endsWith('@sguk.ac.in') || email.endsWith('@sgu.ac.in') || email.endsWith('@sgu.edu');
         };
 
@@ -209,15 +233,6 @@ const LoginPage = () => {
       }
     });
 
-    const saved = getStoredUser();
-    if (saved && saved.role) {
-      const bad = saved.role === 'owner' && (!saved.shopId || saved.shopId === 'undefined' || saved.shopId === 'null');
-      if (bad) {
-        clearStoredUser();
-      } else {
-        redirectByRole(saved.role, saved.shopId);
-      }
-    }
     return () => {
       window.removeEventListener('focus', handleWindowFocus);
       subscription.unsubscribe();

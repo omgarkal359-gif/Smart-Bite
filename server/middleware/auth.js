@@ -47,8 +47,8 @@ export function requireAuth(req, res, next) {
           req.user = {
             id: data.user.id,
             email: data.user.email,
-            role: data.user.user_metadata?.role || data.user.app_metadata?.role || 'student',
-            shopId: data.user.user_metadata?.shopId || data.user.app_metadata?.shopId || null
+            role: data.user.app_metadata?.role || data.user.user_metadata?.role || 'student',
+            shopId: data.user.app_metadata?.shopId || data.user.user_metadata?.shopId || null
           };
           return next();
         }

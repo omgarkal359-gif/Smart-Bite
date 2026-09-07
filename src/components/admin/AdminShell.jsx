@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   BarChart3, ShoppingBag, Users, Settings, ShieldAlert, 
   Menu, X, Search, LogOut, ChevronDown, Activity, 
-  LayoutDashboard, Store, AlertTriangle, Radio
+  LayoutDashboard, Store, AlertTriangle, Radio, Lock, ShieldCheck, Database, RefreshCw, Cpu
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import sguLogo from '../../assets/sgu-logo.jpg';
@@ -63,9 +63,14 @@ export const AdminShell = ({ activeModule, setActiveModule, user, children }) =>
   const navItems = [
     { id: 'overview', label: 'Overview', icon: LayoutDashboard, badge: null },
     { id: 'orders', label: 'Orders & Shops', icon: ShoppingBag, badge: 'LIVE' },
-    { id: 'users', label: 'User Access', icon: Users, badge: null },
+    { id: 'vendors', label: 'Vendors', icon: Store, badge: null },
+    { id: 'roles', label: 'Roles & Permissions', icon: Lock, badge: 'RBAC' },
+    { id: 'security-logs', label: 'Security Logs', icon: ShieldAlert, badge: 'AUDIT' },
+    { id: 'data-recovery', label: 'Data Recovery', icon: RefreshCw, badge: null },
+    { id: 'backups', label: 'Database Backups', icon: Database, badge: null },
+    { id: 'system-health', label: 'System Health', icon: Cpu, badge: 'BENTO' },
+    { id: 'users', label: 'User Directory', icon: Users, badge: null },
     { id: 'config', label: 'Platform Config', icon: Settings, badge: null },
-    { id: 'logs', label: 'System Audit Logs', icon: ShieldAlert, badge: 'LOGS' },
   ];
 
   return (

@@ -437,7 +437,22 @@ export async function updateOrderStatus(req, res, next) {
       }
     }
 
+    const previousStatus = order.status;
     await db.run('UPDATE orders SET status = ? WHERE id = ?', [status, id]);
+
+    // Record order status history
+    try {
+      const actor = req.user?.email || req.user?.id || 'system';
+      await db.run(
+        'INSERT INTO order_status_history (order_id, previous_status, new_status, changed_by, reason, created_at) VALUES (?, ?, ?, ?, ?, ?)',
+        [id, previousStatus, status, actor, `Status updated to ${status}`, new Date().toISOString()]
+      );
+      await db.run(
+        'INSERT INTO audit_logs (actor_id, action, resource_type, resource_id, severity, status, metadata, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        [actor, 'ORDER_STATUS_CHANGED', 'orders', id, 'INFO', 'SUCCESS', JSON.stringify({ previousStatus, newStatus: status }), new Date().toISOString()]
+      );
+    } catch (_e) {}
+
     const updated = await db.get('SELECT * FROM orders WHERE id = ?', [id]);
     updated.items = orderItems;
 

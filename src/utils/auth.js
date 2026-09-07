@@ -1,12 +1,26 @@
+export const ADMIN_EMAILS = [
+  'omgarkal359@gmail.com',
+  'omgarkal357@gmail.com',
+  'admin@sgu.edu',
+  'admin@sguk.ac.in',
+  'admin@sgu.ac.in'
+];
+
+export const isAdminEmail = (email) => {
+  if (!email) return false;
+  return ADMIN_EMAILS.includes(email.toLowerCase().trim());
+};
+
 export const getStoredUser = () => {
   try {
+    const token = sessionStorage.getItem('sgu_token') || localStorage.getItem('sgu_token');
     const sessionSaved = sessionStorage.getItem('sgu_user');
-    if (sessionSaved) {
+    if (token && sessionSaved) {
       const u = JSON.parse(sessionSaved);
       if (u && u.role) return u;
     }
     const localSaved = localStorage.getItem('sgu_user');
-    if (localSaved) {
+    if (token && localSaved) {
       const u = JSON.parse(localSaved);
       if (u && u.role) return u;
     }

@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-route
 import { MobileLayout } from './components/layout/MobileLayout';
 import { CartProvider } from './context/CartContext';
 import { supabase } from './supabaseClient';
-import { getStoredUser, clearStoredUser } from './utils/auth';
+import { getStoredUser, clearStoredUser, isAdminEmail } from './utils/auth';
 
 // Helper to automatically reload the page if a chunk fails to load (due to a new deployment)
 const lazyWithRetry = (componentImport) => {
@@ -43,86 +43,71 @@ const LoginPage = lazyWithRetry(() => import('./pages/LoginPage'));
 const ForgotPassword = lazyWithRetry(() => import('./pages/ForgotPassword'));
 const ResetPassword = lazyWithRetry(() => import('./pages/ResetPassword'));
 const CartPage = lazyWithRetry(() => import('./pages/CartPage'));
+const Unauthorized = lazyWithRetry(() => import('./pages/Unauthorized'));
 
-// Dynamic Root Redirect based on active session & role
+// Root Redirect: Always redirect main project link to login page
 const RootRedirect = () => {
-  const [session, setSession] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setLoading(false);
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  if (loading) {
-    return <div className="flex h-screen items-center justify-center font-semibold">Verifying session...</div>;
-  }
-
-  // 1. Check stored user session (sessionStorage or localStorage)
-  const saved = getStoredUser();
-  if (saved) {
-    if (saved?.role === 'admin') return <Navigate to="/admin" replace />;
-    if (saved?.role === 'owner') return <Navigate to="/vendor" replace />;
-    if (saved?.role === 'student' || saved?.role === 'guest') return <Navigate to="/student" replace />;
-  }
-
-  // 2. Check Supabase session
-  if (session?.user) {
-    const role = session.user?.user_metadata?.role || session.user?.app_metadata?.role || 'student';
-    if (role === 'admin') return <Navigate to="/admin" replace />;
-    if (role === 'owner') return <Navigate to="/vendor" replace />;
-    return <Navigate to="/student" replace />;
-  }
-
-  // Force login requirement for unauthenticated users
   return <Navigate to="/login" replace />;
 };
 
 // Strict Protected Route Guard Component
 const ProtectedRoute = ({ children, allowedRoles }) => {
-  const [isAllowed, setIsAllowed] = useState(null);
+  const [authStatus, setAuthStatus] = useState('checking'); // 'checking' | 'allowed' | 'unauthorized' | 'unauthenticated'
 
   useEffect(() => {
     async function checkAuth() {
-      // 1. Check stored session
       const saved = getStoredUser();
-      if (saved) {
-        if (saved && saved.role && (!allowedRoles || allowedRoles.includes(saved.role))) {
-          setIsAllowed(true);
+
+      // 1. Check Supabase active session first
+      try {
+        const { data } = await supabase.auth.getSession();
+        if (data?.session?.user) {
+          const userEmail = (data.session.user.email || '').toLowerCase().trim();
+          let role = data.session.user.app_metadata?.role || data.session.user.user_metadata?.role;
+          
+          if (isAdminEmail(userEmail) || (saved && saved.role === 'admin')) {
+            role = 'admin';
+          }
+          if (!role && saved?.role) {
+            role = saved.role;
+          }
+          if (!role) {
+            role = 'student';
+          }
+
+          if (!allowedRoles || allowedRoles.includes(role)) {
+            setAuthStatus('allowed');
+            return;
+          } else {
+            setAuthStatus('unauthorized');
+            return;
+          }
+        }
+      } catch (_e) {}
+
+      // 2. Check active app token & authenticated user
+      if (saved && saved.role) {
+        if (!allowedRoles || allowedRoles.includes(saved.role)) {
+          setAuthStatus('allowed');
+          return;
+        } else {
+          setAuthStatus('unauthorized');
           return;
         }
       }
 
-      // 2. Check Supabase session
-      const { data } = await supabase.auth.getSession();
-      if (data?.session?.user) {
-        const role = data.session.user.user_metadata?.role || data.session.user.app_metadata?.role || 'student';
-        if (!allowedRoles || allowedRoles.includes(role)) {
-          setIsAllowed(true);
-          return;
-        }
-      }
-
-      setIsAllowed(false);
+      // No active login session found -> Force redirect to login page
+      setAuthStatus('unauthenticated');
     }
 
     checkAuth();
   }, [allowedRoles]);
 
-  if (isAllowed === null) {
-    return <div className="flex h-screen items-center justify-center font-semibold">Verifying permissions...</div>;
+  if (authStatus === 'checking') {
+    return <div className="flex h-screen items-center justify-center font-semibold text-slate-700">Verifying security credentials...</div>;
   }
 
-  if (!isAllowed) {
+  if (authStatus === 'unauthorized' || authStatus === 'unauthenticated') {
     return <Navigate to="/login" replace />;
   }
 
@@ -219,6 +204,9 @@ function App() {
                 <AdminControlCenter />
               </ProtectedRoute>
             } />
+
+            {/* Unauthorized Access Fallback -> Redirect to Login */}
+            <Route path="/unauthorized" element={<Navigate to="/login" replace />} />
 
             {/* Wildcard 404 Fallback Route -> Forces Login */}
             <Route path="*" element={<Navigate to="/login" replace />} />

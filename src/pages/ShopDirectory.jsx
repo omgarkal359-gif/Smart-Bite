@@ -138,6 +138,17 @@ const ShopDirectory = () => {
     };
     socket.on('stall_status_update', handleStatusUpdate);
 
+    const handleCustomStallUpdate = (e) => {
+      const data = e?.detail;
+      const targetId = data?.id || data?.stallId;
+      if (targetId) {
+        setStalls(prev => prev.map(s => String(s.id) === String(targetId) ? { ...s, ...data } : s));
+      }
+    };
+
+    window.addEventListener('sgu:stall_status_updated', handleCustomStallUpdate);
+    window.addEventListener('storage', loadStalls);
+
     // Subscribe to Supabase broadcast event for real-time stall updates
     const broadcastChannel = supabase
       .channel('global-stall-broadcasts')
@@ -156,6 +167,8 @@ const ShopDirectory = () => {
       supabase.removeChannel(stallsChannel);
       supabase.removeChannel(broadcastChannel);
       socket.off('stall_status_update', handleStatusUpdate);
+      window.removeEventListener('sgu:stall_status_updated', handleCustomStallUpdate);
+      window.removeEventListener('storage', loadStalls);
       clearInterval(interval);
     };
   }, []);
@@ -323,7 +336,9 @@ const ShopDirectory = () => {
                     shop.online !== '0' &&
                     shop.online !== 'false' &&
                     shop.online !== undefined &&
-                    shop.online !== null
+                    shop.online !== null &&
+                    shop.status !== 'OFFLINE' &&
+                    shop.status !== 'CLOSED'
                   );
 
                   return (

@@ -19,7 +19,33 @@ export const OrdersVendorsModule = () => {
   useEffect(() => {
     loadData();
 
-    // 1. Supabase Realtime Postgres Changes Subscription
+    // 1. Local DOM event listeners for instant single-window real-time sync
+    const handleLocalNewOrder = (e) => {
+      if (e.detail && e.detail.id) {
+        setOrders(prev => [e.detail, ...prev.filter(o => o.id !== e.detail.id)]);
+      }
+    };
+    const handleLocalOrderUpdate = (e) => {
+      if (e.detail && e.detail.id) {
+        setOrders(prev => prev.map(o => o.id === e.detail.id ? { ...o, ...e.detail } : o));
+      }
+    };
+    const handleLocalStallUpdate = (e) => {
+      if (e?.detail?.id) {
+        const { id, online, status } = e.detail;
+        const isOnline = (online === 1 || online === true || online === '1' || status === 'ONLINE') &&
+                         online !== 0 && online !== false && online !== '0' && online !== 'false' &&
+                         status !== 'OFFLINE' && status !== 'CLOSED';
+        setStalls(prev => prev.map(s => String(s.id) === String(id) ? { ...s, online: isOnline ? 1 : 0, status: isOnline ? 'ONLINE' : 'OFFLINE' } : s));
+      }
+    };
+
+    window.addEventListener('sgu:new_order', handleLocalNewOrder);
+    window.addEventListener('sgu:order_updated', handleLocalOrderUpdate);
+    window.addEventListener('sgu:stall_status_updated', handleLocalStallUpdate);
+    window.addEventListener('storage', loadData);
+
+    // 2. Supabase Realtime Postgres Changes & Broadcast Subscription
     const channel = supabase
       .channel('admin-orders-module')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
@@ -33,6 +59,8 @@ export const OrdersVendorsModule = () => {
           setOrders(prev => [newOrd, ...prev.filter(o => o.id !== newOrd.id)]);
         } else if (payload.eventType === 'UPDATE') {
           setOrders(prev => prev.map(o => o.id === payload.new.id ? { ...o, ...payload.new } : o));
+        } else if (payload.eventType === 'DELETE') {
+          setOrders(prev => prev.filter(o => o.id !== payload.old.id));
         }
       })
       .on('broadcast', { event: 'new_order' }, (payload) => {
@@ -45,18 +73,32 @@ export const OrdersVendorsModule = () => {
           setOrders(prev => prev.map(o => o.id === payload.payload.id ? { ...o, ...payload.payload } : o));
         }
       })
+      .on('broadcast', { event: 'stall_status_changed' }, (payload) => {
+        const data = payload?.payload;
+        const targetId = data?.id || data?.stallId;
+        if (targetId) {
+          const isOnline = (data.online === 1 || data.online === true || data.online === '1' || data.status === 'ONLINE') &&
+                           data.online !== 0 && data.online !== false && data.online !== '0' && data.online !== 'false' &&
+                           data.status !== 'OFFLINE' && data.status !== 'CLOSED';
+          setStalls(prev => prev.map(s => String(s.id) === String(targetId) ? { ...s, online: isOnline ? 1 : 0, status: isOnline ? 'ONLINE' : 'OFFLINE' } : s));
+        }
+      })
       .subscribe();
 
-    // 2. Auto-polling loop (every 5 seconds) for instant sync across serverless cold starts
+    // 3. Auto-polling loop (every 3 seconds) for instant sync across serverless cold starts
     const pollInterval = setInterval(() => {
       api.getOrderQueue().then(queue => {
         if (queue && queue.length > 0) {
           setOrders(queue);
         }
       }).catch(() => {});
-    }, 5000);
+    }, 3000);
 
     return () => {
+      window.removeEventListener('sgu:new_order', handleLocalNewOrder);
+      window.removeEventListener('sgu:order_updated', handleLocalOrderUpdate);
+      window.removeEventListener('sgu:stall_status_updated', handleLocalStallUpdate);
+      window.removeEventListener('storage', loadData);
       supabase.removeChannel(channel);
       clearInterval(pollInterval);
     };
@@ -87,6 +129,29 @@ export const OrdersVendorsModule = () => {
     } catch (err) {
       alert('Failed to override status: ' + err.message);
     }
+  }
+
+  // Handle Reset All Orders
+  async function handleResetAllOrders() {
+    if (!window.confirm("Are you sure you want to permanently delete ALL orders and reset to zero?")) return;
+    
+    // Clear Supabase orders
+    try {
+      await supabase.from('orders').delete().neq('id', 'placeholder_impossible');
+    } catch(err) {
+      console.warn("Failed to delete from supabase", err);
+    }
+
+    // Clear localStorage caches
+    localStorage.removeItem('sgu_orders');
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('sgu_vendor_orders_')) {
+        localStorage.removeItem(key);
+      }
+    }
+
+    setOrders([]);
   }
 
   // Handle Stall Toggle Online/Offline
@@ -200,13 +265,34 @@ export const OrdersVendorsModule = () => {
               </select>
             </div>
 
-            <button 
-              onClick={loadData}
-              className="btn-action-sm"
-              style={{ display: 'flex', alignItems: 'center', gap: 6 }}
-            >
-              <RefreshCw size={14} /> Refresh Data
-            </button>
+            <div style={{ display: 'flex', gap: 12 }}>
+              <button 
+                onClick={loadData}
+                className="btn-action-sm"
+                style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+              >
+                <RefreshCw size={14} /> Refresh Data
+              </button>
+              <button
+                onClick={handleResetAllOrders}
+                title="Delete all orders and reset to zero"
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  padding: '6px 12px',
+                  borderRadius: 10,
+                  border: '1px solid #FCA5A5',
+                  background: '#FEF2F2',
+                  color: '#EF4444',
+                  fontFamily: "'Oswald', sans-serif",
+                  fontWeight: 700,
+                  fontSize: '0.75rem',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                🗑️ RESET ALL ORDERS
+              </button>
+            </div>
           </div>
 
           {/* Master Order Table */}

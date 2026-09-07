@@ -36,28 +36,87 @@ export const OverviewModule = ({ onNavigateModule }) => {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
         const order = payload.new;
         if (payload.eventType === 'INSERT') {
-          setMetrics(prev => ({
-            ...prev,
-            totalOrders: prev.totalOrders + 1,
-            activeOrders: prev.activeOrders + 1,
-            totalSales: prev.totalSales + (order.total || 0)
-          }));
-          setAllRawOrders(prev => [order, ...prev]);
-          addActivityLog(`🆕 New Order #${order.id} placed at ${order.stallName || 'Stall'} (₹${order.total})`, 'order');
+          setAllRawOrders(prev => [order, ...prev.filter(o => String(o.id) !== String(order.id))]);
+          addActivityLog(`🆕 New Order #${order.id} placed at ${order.stallName || order.stall_name || 'Stall'} (₹${order.total})`, 'order');
         } else if (payload.eventType === 'UPDATE') {
-          if (order.status === 'completed' || order.status === 'ready') {
-            setMetrics(prev => ({
-              ...prev,
-              activeOrders: Math.max(0, prev.activeOrders - 1)
-            }));
-          }
+          setAllRawOrders(prev => prev.map(o => String(o.id) === String(order.id) ? { ...o, ...order } : o));
           addActivityLog(`⚡ Order #${order.id} status updated to ${(order.status || '').toUpperCase()}`, 'status');
+        } else if (payload.eventType === 'DELETE') {
+          const oldOrder = payload.old;
+          if (oldOrder && oldOrder.id) {
+            setAllRawOrders(prev => prev.filter(o => String(o.id) !== String(oldOrder.id)));
+            addActivityLog(`🗑️ Order #${oldOrder.id} removed`, 'info');
+          }
         }
       })
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
   }, []);
+
+  // Keep metrics in 100% sync with allRawOrders state and selected timeRange filter
+  useEffect(() => {
+    const now = Date.now();
+    let msRange = 24 * 60 * 60 * 1000;
+    if (timeRange === '7D') msRange = 7 * 24 * 60 * 60 * 1000;
+    else if (timeRange === '30D') msRange = 30 * 24 * 60 * 60 * 1000;
+
+    const filteredOrders = allRawOrders.filter(o => {
+      const d = new Date(o.created_at || o.createdAt || o.timestamp || o.date || 0).getTime();
+      return d >= (now - msRange);
+    });
+
+    const digital = filteredOrders
+      .filter(o => {
+        const p = String(o.payment || o.paymentMethod || o.payment_method || '').toLowerCase();
+        return p.includes('upi') || p.includes('online');
+      })
+      .reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+
+    const cash = filteredOrders
+      .filter(o => {
+        const p = String(o.payment || o.paymentMethod || o.payment_method || '').toLowerCase();
+        return p.includes('cash');
+      })
+      .reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+
+    const totalSalesSum = filteredOrders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+    const activeCount = filteredOrders.filter(o => ['placed', 'preparing', 'pending', 'pending_cash'].includes((o.status || '').toLowerCase())).length;
+
+    setMetrics({
+      totalSales: totalSalesSum,
+      totalOrders: filteredOrders.length,
+      activeOrders: activeCount,
+      digitalSales: digital,
+      cashSales: cash,
+      totalVendors: SHOPS.length,
+      healthScore: 99.8
+    });
+  }, [allRawOrders, timeRange]);
+
+  async function handleResetRevenueData() {
+    if (!window.confirm("Are you sure you want to permanently delete ALL orders and reset all counters to zero?")) return;
+    
+    setAllRawOrders([]);
+    setActivityLogs([]);
+    addActivityLog('⚡ Live active orders & revenue counters reset to zero by Admin. Realtime tracking active.', 'info');
+    
+    // Clear Supabase orders
+    try {
+      await supabase.from('orders').delete().neq('id', 'placeholder_impossible');
+    } catch (err) {}
+
+    // Clear localStorage caches
+    try {
+      localStorage.removeItem('sgu_orders');
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('sgu_vendor_orders_')) {
+          localStorage.removeItem(key);
+        }
+      }
+    } catch (e) {}
+  }
 
   useEffect(() => {
     updateChart(allRawOrders, selectedStallId, chartGranularity);
@@ -69,37 +128,8 @@ export const OverviewModule = ({ onNavigateModule }) => {
       const allOrders = data.orders || [];
       setAllRawOrders(allOrders);
 
-      const activeCount = allOrders.filter(o => ['placed', 'preparing'].includes(o.status)).length;
-      
-      const digital = allOrders
-        .filter(o => o.payment === 'Online UPI')
-        .reduce((sum, o) => sum + o.total, 0);
-
-      const cash = allOrders
-        .filter(o => o.payment === 'Cash')
-        .reduce((sum, o) => sum + o.total, 0);
-
-      setMetrics({
-        totalSales: data.totalSales || (digital + cash),
-        totalOrders: data.totalOrders || allOrders.length,
-        activeOrders: activeCount,
-        digitalSales: digital,
-        cashSales: cash,
-        totalVendors: SHOPS.length,
-        healthScore: 99.8
-      });
-
-      // Seed initial activity log
-      const logs = allOrders.slice(0, 6).map(o => ({
-        id: o.id,
-        text: `Order #${o.id} (${o.customerName || 'Customer'}) — ₹${o.total} [${o.status.toUpperCase()}]`,
-        time: o.time || 'Just now',
-        type: 'order'
-      }));
-      setActivityLogs(logs);
-
-      // Build chart with initial parameters
-      updateChart(allOrders, 'ALL', 'daily');
+      // Activity stream starts clean — only live Realtime events will appear
+      // Do NOT seed from historical orders so stream reflects actual live activity
     } catch (err) {
       console.error('Failed to load overview metrics:', err);
     }
@@ -115,61 +145,132 @@ export const OverviewModule = ({ onNavigateModule }) => {
     setActivityLogs(prev => [newEntry, ...prev.slice(0, 15)]);
   }
 
+  function filterOrdersByStall(ordersList, stallId) {
+    if (!stallId || stallId === 'ALL') return ordersList;
+    return ordersList.filter(o => {
+      const sId = (o.stallId || o.stall_id || o.shopId || o.shop_id || '').toString().toLowerCase();
+      const sName = (o.stallName || o.stall_name || '').toString().toLowerCase();
+      const target = stallId.toString().toLowerCase();
+      return (sId && sId === target) || (sName && (sName === target || sName.includes(target)));
+    });
+  }
+
   function updateChart(orders, stallId, granularity) {
+    const stallOrders = filterOrdersByStall(orders || [], stallId);
+
     if (granularity === 'hourly') {
-      const baseMult = stallId === 'ALL' ? 1 : (stallId === 'mangales-snacks' ? 0.32 : stallId === 'tea-coffee' ? 0.22 : 0.18);
-      const hourlyData = [
-        { time: '8 AM', revenue: Math.round(1450 * baseMult), orders: Math.round(18 * baseMult) },
-        { time: '10 AM', revenue: Math.round(3200 * baseMult), orders: Math.round(42 * baseMult) },
-        { time: '12 PM', revenue: Math.round(8800 * baseMult), orders: Math.round(110 * baseMult) },
-        { time: '2 PM', revenue: Math.round(10500 * baseMult), orders: Math.round(145 * baseMult) },
-        { time: '4 PM', revenue: Math.round(5900 * baseMult), orders: Math.round(78 * baseMult) },
-        { time: '6 PM', revenue: Math.round(9200 * baseMult), orders: Math.round(120 * baseMult) },
-        { time: '8 PM', revenue: Math.round(4800 * baseMult), orders: Math.round(55 * baseMult) },
+      const now = new Date();
+      const todayStr = now.toDateString();
+      const todayOrders = stallOrders.filter(o => {
+        const d = new Date(o.created_at || o.createdAt || o.timestamp || o.date || 0);
+        return d.toDateString() === todayStr;
+      });
+
+      const slots = [
+        { label: '8 AM', startHour: 6, endHour: 9 },
+        { label: '10 AM', startHour: 9, endHour: 11 },
+        { label: '12 PM', startHour: 11, endHour: 13 },
+        { label: '2 PM', startHour: 13, endHour: 15 },
+        { label: '4 PM', startHour: 15, endHour: 17 },
+        { label: '6 PM', startHour: 17, endHour: 19 },
+        { label: '8 PM', startHour: 19, endHour: 24 },
       ];
+
+      const hourlyData = slots.map(slot => {
+        const slotOrders = todayOrders.filter(o => {
+          const h = new Date(o.created_at || o.createdAt || o.timestamp || o.date || 0).getHours();
+          return h >= slot.startHour && h < slot.endHour;
+        });
+        const revenue = slotOrders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+        return { time: slot.label, revenue, orders: slotOrders.length };
+      });
       setChartData(hourlyData);
     } else if (granularity === 'daily') {
-      const baseMult = stallId === 'ALL' ? 1 : (stallId === 'mangales-snacks' ? 0.32 : stallId === 'tea-coffee' ? 0.22 : 0.18);
-      const dailyData = [
-        { time: 'Mon 21', revenue: Math.round(18200 * baseMult), orders: Math.round(210 * baseMult) },
-        { time: 'Tue 22', revenue: Math.round(22400 * baseMult), orders: Math.round(260 * baseMult) },
-        { time: 'Wed 23', revenue: Math.round(19800 * baseMult), orders: Math.round(230 * baseMult) },
-        { time: 'Thu 24', revenue: Math.round(26500 * baseMult), orders: Math.round(310 * baseMult) },
-        { time: 'Fri 25', revenue: Math.round(31200 * baseMult), orders: Math.round(385 * baseMult) },
-        { time: 'Sat 26', revenue: Math.round(15400 * baseMult), orders: Math.round(180 * baseMult) },
-        { time: 'Today', revenue: Math.round(28900 * baseMult), orders: Math.round(340 * baseMult) },
-      ];
-      setChartData(dailyData);
+      const days = [];
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const dayName = i === 0 ? 'Today' : d.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' });
+        const dStr = d.toDateString();
+
+        const dayOrders = stallOrders.filter(o => {
+          const od = new Date(o.created_at || o.createdAt || o.timestamp || o.date || 0);
+          return od.toDateString() === dStr;
+        });
+
+        const revenue = dayOrders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+        days.push({ time: dayName, revenue, orders: dayOrders.length });
+      }
+      setChartData(days);
     } else if (granularity === 'monthly') {
-      const baseMult = stallId === 'ALL' ? 1 : (stallId === 'mangales-snacks' ? 0.32 : stallId === 'tea-coffee' ? 0.22 : 0.18);
-      const monthlyData = [
-        { time: 'Jan', revenue: Math.round(340000 * baseMult), orders: Math.round(4200 * baseMult) },
-        { time: 'Feb', revenue: Math.round(380000 * baseMult), orders: Math.round(4700 * baseMult) },
-        { time: 'Mar', revenue: Math.round(410000 * baseMult), orders: Math.round(5100 * baseMult) },
-        { time: 'Apr', revenue: Math.round(390000 * baseMult), orders: Math.round(4800 * baseMult) },
-        { time: 'May', revenue: Math.round(450000 * baseMult), orders: Math.round(5600 * baseMult) },
-        { time: 'Jun', revenue: Math.round(320000 * baseMult), orders: Math.round(3900 * baseMult) },
-        { time: 'Jul (Cur)', revenue: Math.round(485000 * baseMult), orders: Math.round(6100 * baseMult) },
-      ];
-      setChartData(monthlyData);
+      const months = [];
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setMonth(d.getMonth() - i);
+        const monthName = d.toLocaleDateString('en-US', { month: 'short' }) + (i === 0 ? ' (Cur)' : '');
+        const m = d.getMonth();
+        const y = d.getFullYear();
+
+        const monthOrders = stallOrders.filter(o => {
+          const od = new Date(o.created_at || o.createdAt || o.timestamp || o.date || 0);
+          return od.getMonth() === m && od.getFullYear() === y;
+        });
+
+        const revenue = monthOrders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+        months.push({ time: monthName, revenue, orders: monthOrders.length });
+      }
+      setChartData(months);
     }
   }
 
-  // Calculate per-shop aggregated daily & monthly revenue table
-  const shopRevenueStats = SHOPS.map((shop, idx) => {
-    const stallOrders = allRawOrders.filter(o => o.stallId === shop.id || o.stallName?.toLowerCase().includes(shop.id));
-    
-    // Deterministic realistic multiplier based on shop index
-    const mults = [0.30, 0.22, 0.18, 0.14, 0.10, 0.06];
-    const shopMult = mults[idx % mults.length];
+  // Calculate per-shop aggregated daily & monthly revenue table dynamically from real orders
+  const shopRevenueStats = SHOPS.map(shop => {
+    const stallOrders = allRawOrders.filter(o => {
+      const sId = (o.stallId || o.stall_id || o.shopId || o.shop_id || '').toString().toLowerCase();
+      const sName = (o.stallName || o.stall_name || '').toString().toLowerCase();
+      const targetId = (shop.id || '').toString().toLowerCase();
+      const targetName = (shop.name || '').toString().toLowerCase();
+      return (sId && sId === targetId) || (sName && sName === targetName) || (sName && targetId && sName.includes(targetId));
+    });
 
-    const dailyRev = Math.round(28900 * shopMult);
-    const dailyOrdersCount = Math.round(340 * shopMult);
+    const now = new Date();
+    const todayStr = now.toDateString();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
 
-    const monthlyRev = Math.round(485000 * shopMult);
-    const monthlyOrdersCount = Math.round(6100 * shopMult);
+    let dailyRev = 0;
+    let dailyOrdersCount = 0;
+    let monthlyRev = 0;
+    let monthlyOrdersCount = 0;
+    let upiOrdersCount = 0;
+    const totalOrdersCount = stallOrders.length;
 
-    const upiPct = 85 + (idx % 3) * 3;
+    stallOrders.forEach(o => {
+      const orderDate = new Date(o.created_at || o.createdAt || o.timestamp || o.date || Date.now());
+      const orderTotal = Number(o.total) || 0;
+      
+      const isToday = orderDate.toDateString() === todayStr;
+      const isThisMonth = orderDate.getMonth() === currentMonth && orderDate.getFullYear() === currentYear;
+
+      if (isToday) {
+        dailyRev += orderTotal;
+        dailyOrdersCount += 1;
+      }
+      if (isThisMonth) {
+        monthlyRev += orderTotal;
+        monthlyOrdersCount += 1;
+      }
+      const paymentMethod = String(o.payment || o.paymentMethod || o.payment_method || '').toLowerCase();
+      if (paymentMethod.includes('upi') || paymentMethod.includes('online')) {
+        upiOrdersCount += 1;
+      }
+    });
+
+    const aov = dailyOrdersCount > 0 
+      ? Math.round(dailyRev / dailyOrdersCount) 
+      : (monthlyOrdersCount > 0 ? Math.round(monthlyRev / monthlyOrdersCount) : 0);
+
+    const upiPct = totalOrdersCount > 0 ? Math.round((upiOrdersCount / totalOrdersCount) * 100) : 0;
 
     return {
       ...shop,
@@ -178,7 +279,7 @@ export const OverviewModule = ({ onNavigateModule }) => {
       monthlyRev,
       monthlyOrdersCount,
       upiPct,
-      aov: Math.round(monthlyRev / Math.max(1, monthlyOrdersCount))
+      aov
     };
   });
 
@@ -193,22 +294,42 @@ export const OverviewModule = ({ onNavigateModule }) => {
           <h1 className="heading-2 text-2xl text-slate-900" style={{ margin: 0 }}>PLATFORM OVERVIEW</h1>
           <p className="text-slate-500 text-sm font-medium">Realtime metrics, revenue performance and operational logs across campus stalls.</p>
         </div>
-        <div style={{ display: 'flex', gap: 8, background: '#FFFFFF', padding: 4, borderRadius: 12, border: '1px solid #E2E8F0' }}>
-          {['24H', '7D', '30D'].map(r => (
-            <button
-              key={r}
-              onClick={() => setTimeRange(r)}
-              style={{
-                padding: '6px 14px', borderRadius: 8, border: 'none', cursor: 'pointer',
-                fontFamily: "'Oswald', sans-serif", fontWeight: 700, fontSize: '0.75rem',
-                background: timeRange === r ? '#FF3B5C' : 'transparent',
-                color: timeRange === r ? 'white' : '#64748B',
-                transition: 'all 0.2s ease'
-              }}
-            >
-              {r}
-            </button>
-          ))}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <button
+            onClick={handleResetRevenueData}
+            title="Reset revenue counters to zero"
+            style={{
+              padding: '6px 12px',
+              borderRadius: 10,
+              border: '1px solid #FCA5A5',
+              background: '#FEF2F2',
+              color: '#EF4444',
+              fontFamily: "'Oswald', sans-serif",
+              fontWeight: 700,
+              fontSize: '0.75rem',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            🔄 RESET COUNTERS
+          </button>
+          <div style={{ display: 'flex', gap: 8, background: '#FFFFFF', padding: 4, borderRadius: 12, border: '1px solid #E2E8F0' }}>
+            {['24H', '7D', '30D'].map(r => (
+              <button
+                key={r}
+                onClick={() => setTimeRange(r)}
+                style={{
+                  padding: '6px 14px', borderRadius: 8, border: 'none', cursor: 'pointer',
+                  fontFamily: "'Oswald', sans-serif", fontWeight: 700, fontSize: '0.75rem',
+                  background: timeRange === r ? '#FF3B5C' : 'transparent',
+                  color: timeRange === r ? 'white' : '#64748B',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                {r}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -377,7 +498,11 @@ export const OverviewModule = ({ onNavigateModule }) => {
 
           <div className="flex flex-col gap-3 overflow-y-auto" style={{ maxHeight: 300 }}>
             {activityLogs.length === 0 ? (
-              <p className="text-slate-400 text-xs text-center py-8">Waiting for live activities...</p>
+              <div style={{ textAlign: 'center', padding: '32px 16px' }}>
+                <div style={{ fontSize: '2rem', marginBottom: 8 }}>📭</div>
+                <p style={{ color: '#94A3B8', fontSize: '0.8rem', fontWeight: 700, margin: 0 }}>No orders yet</p>
+                <p style={{ color: '#CBD5E1', fontSize: '0.72rem', fontWeight: 500, margin: '4px 0 0 0' }}>New orders will appear here in realtime</p>
+              </div>
             ) : (
               activityLogs.map((log) => (
                 <div key={log.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: 10, background: '#F8FAFC', borderRadius: 12, borderLeft: '3px solid #FF3B5C' }}>

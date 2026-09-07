@@ -4,6 +4,7 @@ import {
   Trash2, Radio, Server, CheckCircle2, Lock, Unlock, Database, Cpu, RefreshCw 
 } from 'lucide-react';
 import { clearStoredUser } from '../../utils/auth';
+import { addAuditLog } from '../../utils/logger';
 
 export const ConfigEmergencyModule = () => {
   const [isMaintenanceMode, setIsMaintenanceMode] = useState(false);
@@ -14,6 +15,11 @@ export const ConfigEmergencyModule = () => {
   const handleGlobalWipe = () => {
     const confirm = window.confirm("CRITICAL WARNING: This will flush all active queues globally across all stalls. Continue?");
     if (confirm) {
+      addAuditLog({
+        level: 'SECURITY',
+        category: 'System',
+        message: 'EMERGENCY OVERRIDE: Global order queue flushed by Super Admin'
+      });
       alert("System queues flushed successfully.");
     }
   };
@@ -21,10 +27,35 @@ export const ConfigEmergencyModule = () => {
   const handleSessionWipe = () => {
     const confirm = window.confirm("Reset all corrupted user sessions across local storage?");
     if (confirm) {
+      addAuditLog({
+        level: 'WARN',
+        category: 'Auth',
+        message: 'ADMIN ACTION: All user sessions and local storage tokens cleared'
+      });
       clearStoredUser();
       localStorage.removeItem('sgu_pending_name');
       alert("Local session storage cleared.");
     }
+  };
+
+  const toggleMaintenance = () => {
+    const nextState = !isMaintenanceMode;
+    setIsMaintenanceMode(nextState);
+    addAuditLog({
+      level: 'SECURITY',
+      category: 'System',
+      message: `FEATURE FLAG: Global Maintenance Mode set to ${nextState ? 'ENABLED (BLOCKING)' : 'DISABLED'}`
+    });
+  };
+
+  const togglePauseOrders = () => {
+    const nextState = !isPauseOrders;
+    setIsPauseOrders(nextState);
+    addAuditLog({
+      level: 'WARN',
+      category: 'Orders',
+      message: `FEATURE FLAG: Student Order Checkout set to ${nextState ? 'PAUSED' : 'RESUMED'}`
+    });
   };
 
   return (
@@ -55,7 +86,7 @@ export const ConfigEmergencyModule = () => {
             </p>
           </div>
           <button
-            onClick={() => setIsMaintenanceMode(!isMaintenanceMode)}
+            onClick={toggleMaintenance}
             style={{
               marginTop: 16, width: '100%', padding: '12px', borderRadius: 12, border: 'none', cursor: 'pointer',
               fontFamily: "'Oswald', sans-serif", fontWeight: 800, fontSize: '0.85rem', textTransform: 'uppercase',
@@ -84,7 +115,7 @@ export const ConfigEmergencyModule = () => {
             </p>
           </div>
           <button
-            onClick={() => setIsPauseOrders(!isPauseOrders)}
+            onClick={togglePauseOrders}
             style={{
               marginTop: 16, width: '100%', padding: '12px', borderRadius: 12, border: 'none', cursor: 'pointer',
               fontFamily: "'Oswald', sans-serif", fontWeight: 800, fontSize: '0.85rem', textTransform: 'uppercase',

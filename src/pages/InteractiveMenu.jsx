@@ -126,16 +126,34 @@ const InteractiveMenu = () => {
     };
 
     const handleStallStatusUpdate = (updatedStall) => {
-      if (isMounted && updatedStall.id === shopId) {
-        setStallInfo(updatedStall);
+      const targetId = updatedStall?.id || updatedStall?.stallId;
+      if (isMounted && targetId && String(targetId) === String(shopId)) {
+        setStallInfo(prev => ({ ...prev, ...updatedStall }));
       }
     };
+
+    const handleCustomStallUpdate = (e) => {
+      const data = e?.detail;
+      const targetId = data?.id || data?.stallId;
+      if (isMounted && targetId && String(targetId) === String(shopId)) {
+        setStallInfo(prev => ({ ...prev, ...data }));
+      }
+    };
+
+    window.addEventListener('sgu:stall_status_updated', handleCustomStallUpdate);
+    window.addEventListener('storage', () => {
+      api.getStalls().then(stalls => {
+        if (isMounted && stalls) {
+          const s = stalls.find(x => String(x.id) === String(shopId));
+          if (s) setStallInfo(s);
+        }
+      });
+    });
 
     socket.on('menu_item_update', handleMenuItemUpdate);
     socket.on('stall_status_update', handleStallStatusUpdate);
 
     // --- Supabase Realtime: listen for stall status changes ---
-    // Broadcast channel: vendor pushes 'stall_closed' event when toggling
     const stallBroadcastChannel = supabase
       .channel(`stall-status-${shopId}`)
       .on('broadcast', { event: 'stall_status_changed' }, (payload) => {
@@ -145,24 +163,37 @@ const InteractiveMenu = () => {
       })
       .subscribe();
 
-    // Polling fallback: re-fetch stall status every 5 seconds
+    const globalBroadcastChannel = supabase
+      .channel('global-stall-broadcasts')
+      .on('broadcast', { event: 'stall_status_changed' }, (payload) => {
+        const data = payload?.payload;
+        const targetId = data?.id || data?.stallId;
+        if (isMounted && targetId && String(targetId) === String(shopId)) {
+          setStallInfo(prev => ({ ...prev, ...data }));
+        }
+      })
+      .subscribe();
+
+    // Polling fallback: re-fetch stall status every 3 seconds
     const pollInterval = setInterval(async () => {
       try {
         const stalls = await api.getStalls();
         if (isMounted && stalls && Array.isArray(stalls)) {
-          const stall = stalls.find(s => s.id === shopId);
+          const stall = stalls.find(s => String(s.id) === String(shopId));
           if (stall) setStallInfo(stall);
         }
       } catch (_) {
         // silent
       }
-    }, 5000);
+    }, 3000);
 
     return () => {
       isMounted = false;
       socket.off('menu_item_update', handleMenuItemUpdate);
       socket.off('stall_status_update', handleStallStatusUpdate);
+      window.removeEventListener('sgu:stall_status_updated', handleCustomStallUpdate);
       supabase.removeChannel(stallBroadcastChannel);
+      supabase.removeChannel(globalBroadcastChannel);
       clearInterval(pollInterval);
     };
   }, [shopId]);
@@ -217,7 +248,9 @@ const InteractiveMenu = () => {
     stallInfo.online !== '0' &&
     stallInfo.online !== 'false' &&
     stallInfo.online !== undefined &&
-    stallInfo.online !== null
+    stallInfo.online !== null &&
+    stallInfo.status !== 'OFFLINE' &&
+    stallInfo.status !== 'CLOSED'
   );
 
   // Auto-clear cart when shop goes offline
