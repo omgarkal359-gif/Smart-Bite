@@ -228,11 +228,31 @@ export async function resendReceipt(req, res, next) {
 
     const orderItems = await db.all('SELECT * FROM order_items WHERE orderId = ?', [id]);
     
+    const reqUserId = (req.user?.email || req.user?.id || '').trim().toLowerCase();
+    const reqUserRole = (req.user?.role || 'student').trim().toLowerCase();
+    const reqShopId = req.user?.shopId;
+
+    if ((reqUserRole === 'student' || reqUserRole === 'guest') && reqUserId) {
+      const orderOwner = (order.customerId || '').trim().toLowerCase();
+      if (orderOwner && orderOwner !== reqUserId) {
+        return res.status(403).json({ success: false, message: 'Access Denied: You cannot resend receipts for another student\'s order.' });
+      }
+    }
+
+    if (reqUserRole === 'owner') {
+      const belongsToStall = orderItems.some(item => item.stallId === reqShopId);
+      if (!belongsToStall) {
+        return res.status(403).json({ success: false, message: 'Access Denied: You cannot resend receipts for orders outside your assigned stall.' });
+      }
+    }
+
     const customerIdVal = order.customerId || '';
     const customerNameVal = order.customerName || 'Student';
     const paymentVal = order.payment || 'Online UPI';
     const totalVal = order.total || 0;
-    const targetRecipient = customEmail || customerIdVal;
+    
+    // Students/guests can only send receipts to their own email
+    const targetRecipient = (reqUserRole === 'student' || reqUserRole === 'guest') ? (reqUserId || customerIdVal) : (customEmail || customerIdVal);
     
     const isEmail = targetRecipient.includes('@');
     const dispatchMethod = isEmail ? 'EMAIL' : 'MOBILE SMS';

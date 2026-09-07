@@ -79,8 +79,8 @@ io.use((socket, next) => {
     };
     next();
   } catch (err) {
-    socket.user = null;
-    next();
+    // Reject invalid or expired JWT token for Socket connections
+    return next(new Error('Authentication error: Invalid or expired token'));
   }
 });
 
@@ -88,7 +88,7 @@ io.use((socket, next) => {
 io.on('connection', (socket) => {
   logger.info(`Client socket connected: ${socket.id}`);
 
-  socket.on('join', (room) => {
+  socket.on('join', async (room) => {
     if (typeof room !== 'string') return;
 
     // Public room authorization
@@ -111,13 +111,34 @@ io.on('connection', (socket) => {
       return;
     }
 
-    // Protected order room: require authenticated user
+    // Protected order room: require order owner, stall vendor, or admin
     if (room.startsWith('order-')) {
-      if (socket.user) {
-        socket.join(room);
-        logger.info(`Authenticated socket ${socket.id} joined ${room}`);
-      } else {
+      const orderId = room.replace('order-', '');
+      const user = socket.user;
+      if (!user) {
         logger.warn(`Unauthenticated socket ${socket.id} attempted to join ${room}`);
+        return;
+      }
+      try {
+        const order = await db.get('SELECT customerId FROM orders WHERE id = ?', [orderId]);
+        if (!order) return;
+        const userEmail = (user.email || user.id || '').toLowerCase();
+        const orderOwner = (order.customerId || '').toLowerCase();
+        if (user.role === 'admin' || userEmail === orderOwner) {
+          socket.join(room);
+          logger.info(`Authorized socket ${socket.id} joined ${room}`);
+        } else if (user.role === 'owner') {
+          const items = await db.all('SELECT stallId FROM order_items WHERE orderId = ?', [orderId]);
+          const belongsToStall = items.some(i => i.stallId === user.shopId);
+          if (belongsToStall) {
+            socket.join(room);
+            logger.info(`Authorized vendor socket ${socket.id} joined ${room}`);
+          } else {
+            logger.warn(`Unauthorized vendor socket ${socket.id} attempted to join ${room}`);
+          }
+        }
+      } catch (err) {
+        logger.error(`Error authorizing socket join for ${room}:`, err.message);
       }
       return;
     }

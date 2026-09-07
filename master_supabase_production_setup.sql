@@ -131,11 +131,15 @@ ALTER TABLE IF EXISTS public.stalls ADD COLUMN IF NOT EXISTS busy_mode BOOLEAN D
 ALTER TABLE IF EXISTS public.stalls ADD COLUMN IF NOT EXISTS wait_time_minutes INTEGER DEFAULT 0;
 ALTER TABLE IF EXISTS public.stalls ADD COLUMN IF NOT EXISTS description TEXT;
 ALTER TABLE IF EXISTS public.stalls ADD COLUMN IF NOT EXISTS operating_hours TEXT DEFAULT '08:00 AM - 08:00 PM';
+ALTER TABLE IF EXISTS public.stalls ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
 ALTER TABLE IF EXISTS public.stalls ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
 
 CREATE OR REPLACE FUNCTION public.is_vendor_of_stall(p_stall_id TEXT)
 RETURNS BOOLEAN AS $$
 BEGIN
+  IF p_stall_id IS NULL OR TRIM(p_stall_id) = '' THEN
+    RETURN FALSE;
+  END IF;
   IF public.is_admin() THEN
     RETURN TRUE;
   END IF;
@@ -166,6 +170,7 @@ ALTER TABLE IF EXISTS public.menu_items ADD COLUMN IF NOT EXISTS preparation_tim
 ALTER TABLE IF EXISTS public.menu_items ADD COLUMN IF NOT EXISTS display_order INTEGER DEFAULT 0;
 ALTER TABLE IF EXISTS public.menu_items ADD COLUMN IF NOT EXISTS is_available BOOLEAN DEFAULT TRUE;
 ALTER TABLE IF EXISTS public.menu_items ADD COLUMN IF NOT EXISTS is_vegetarian BOOLEAN DEFAULT TRUE;
+ALTER TABLE IF EXISTS public.menu_items ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
 ALTER TABLE IF EXISTS public.menu_items ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
 
 DO $$
@@ -181,18 +186,29 @@ END $$;
 -- DOMAIN 10, 11 & 12: ORDERS, ITEMS & HISTORY
 ALTER TABLE IF EXISTS public.orders ADD COLUMN IF NOT EXISTS order_number TEXT UNIQUE;
 ALTER TABLE IF EXISTS public.orders ADD COLUMN IF NOT EXISTS customer_uuid UUID REFERENCES auth.users(id) ON DELETE SET NULL;
+ALTER TABLE IF EXISTS public.orders ADD COLUMN IF NOT EXISTS customerid TEXT;
+ALTER TABLE IF EXISTS public.orders ADD COLUMN IF NOT EXISTS customer_id TEXT;
 ALTER TABLE IF EXISTS public.orders ADD COLUMN IF NOT EXISTS stall_id TEXT REFERENCES public.stalls(id) ON DELETE SET NULL;
+ALTER TABLE IF EXISTS public.orders ADD COLUMN IF NOT EXISTS stallid TEXT REFERENCES public.stalls(id) ON DELETE SET NULL;
+ALTER TABLE IF EXISTS public.orders ADD COLUMN IF NOT EXISTS stallId TEXT REFERENCES public.stalls(id) ON DELETE SET NULL;
 ALTER TABLE IF EXISTS public.orders ADD COLUMN IF NOT EXISTS stall_name_snapshot TEXT;
 ALTER TABLE IF EXISTS public.orders ADD COLUMN IF NOT EXISTS subtotal NUMERIC(12, 2) DEFAULT 0.00;
 ALTER TABLE IF EXISTS public.orders ADD COLUMN IF NOT EXISTS tax_amount NUMERIC(12, 2) DEFAULT 0.00;
 ALTER TABLE IF EXISTS public.orders ADD COLUMN IF NOT EXISTS discount_amount NUMERIC(12, 2) DEFAULT 0.00;
 ALTER TABLE IF EXISTS public.orders ADD COLUMN IF NOT EXISTS total_amount NUMERIC(12, 2) DEFAULT 0.00;
+ALTER TABLE IF EXISTS public.orders ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
 ALTER TABLE IF EXISTS public.orders ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
 
+ALTER TABLE IF EXISTS public.order_items ADD COLUMN IF NOT EXISTS orderid TEXT;
+ALTER TABLE IF EXISTS public.order_items ADD COLUMN IF NOT EXISTS order_id TEXT;
+ALTER TABLE IF EXISTS public.order_items ADD COLUMN IF NOT EXISTS stallid TEXT;
+ALTER TABLE IF EXISTS public.order_items ADD COLUMN IF NOT EXISTS stall_id TEXT;
+ALTER TABLE IF EXISTS public.order_items ADD COLUMN IF NOT EXISTS stallId TEXT;
 ALTER TABLE IF EXISTS public.order_items ADD COLUMN IF NOT EXISTS menu_item_id INTEGER REFERENCES public.menu_items(id) ON DELETE SET NULL;
 ALTER TABLE IF EXISTS public.order_items ADD COLUMN IF NOT EXISTS item_name_snapshot TEXT;
 ALTER TABLE IF EXISTS public.order_items ADD COLUMN IF NOT EXISTS unit_price_snapshot NUMERIC(12, 2) DEFAULT 0.00;
 ALTER TABLE IF EXISTS public.order_items ADD COLUMN IF NOT EXISTS total_price NUMERIC(12, 2) DEFAULT 0.00;
+ALTER TABLE IF EXISTS public.order_items ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
 
 CREATE TABLE IF NOT EXISTS public.order_status_history (
   id SERIAL PRIMARY KEY,
@@ -345,13 +361,51 @@ DROP POLICY IF EXISTS "Vendor manage menu items" ON public.menu_items;
 CREATE POLICY "Vendor manage menu items" ON public.menu_items FOR ALL TO authenticated USING (public.is_admin() OR public.is_vendor_of_stall(stallId));
 
 DROP POLICY IF EXISTS "Customer and Vendor read orders" ON public.orders;
-CREATE POLICY "Customer and Vendor read orders" ON public.orders FOR SELECT TO authenticated USING (public.is_admin() OR auth.uid() = customer_uuid OR (auth.jwt() ->> 'email') = customerId OR public.is_vendor_of_stall(stall_id) OR public.is_vendor_of_stall(stallId));
+CREATE POLICY "Customer and Vendor read orders" ON public.orders FOR SELECT TO authenticated USING (
+  public.is_admin() 
+  OR auth.uid() = customer_uuid 
+  OR (auth.jwt() ->> 'email') = customerId 
+  OR (auth.jwt() ->> 'email') = customer_id
+  OR (auth.jwt() ->> 'email') = customerid
+  OR public.is_vendor_of_stall(stall_id) 
+  OR public.is_vendor_of_stall(stallid)
+  OR public.is_vendor_of_stall(stallId)
+  OR EXISTS (
+    SELECT 1 FROM public.order_items oi 
+    WHERE (oi.orderid = orders.id OR oi.order_id = orders.id OR oi.orderId = orders.id) 
+    AND (
+      public.is_vendor_of_stall(oi.stallid) 
+      OR public.is_vendor_of_stall(oi.stall_id) 
+      OR public.is_vendor_of_stall(oi.stallId)
+    )
+  )
+);
 
 DROP POLICY IF EXISTS "Customer create own orders" ON public.orders;
-CREATE POLICY "Customer create own orders" ON public.orders FOR INSERT TO authenticated WITH CHECK (public.is_admin() OR auth.uid() = customer_uuid OR (auth.jwt() ->> 'email') = customerId);
+CREATE POLICY "Customer create own orders" ON public.orders FOR INSERT TO authenticated WITH CHECK (
+  public.is_admin() 
+  OR auth.uid() = customer_uuid 
+  OR (auth.jwt() ->> 'email') = customerId
+  OR (auth.jwt() ->> 'email') = customer_id
+  OR (auth.jwt() ->> 'email') = customerid
+);
 
 DROP POLICY IF EXISTS "Vendor update order status" ON public.orders;
-CREATE POLICY "Vendor update order status" ON public.orders FOR UPDATE TO authenticated USING (public.is_admin() OR public.is_vendor_of_stall(stall_id) OR public.is_vendor_of_stall(stallId));
+CREATE POLICY "Vendor update order status" ON public.orders FOR UPDATE TO authenticated USING (
+  public.is_admin() 
+  OR public.is_vendor_of_stall(stall_id) 
+  OR public.is_vendor_of_stall(stallid)
+  OR public.is_vendor_of_stall(stallId)
+  OR EXISTS (
+    SELECT 1 FROM public.order_items oi 
+    WHERE (oi.orderid = orders.id OR oi.order_id = orders.id OR oi.orderId = orders.id) 
+    AND (
+      public.is_vendor_of_stall(oi.stallid) 
+      OR public.is_vendor_of_stall(oi.stall_id) 
+      OR public.is_vendor_of_stall(oi.stallId)
+    )
+  )
+);
 
 DROP POLICY IF EXISTS "Read order items" ON public.order_items;
 CREATE POLICY "Read order items" ON public.order_items FOR SELECT TO authenticated USING (true);

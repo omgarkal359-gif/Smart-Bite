@@ -40,9 +40,10 @@ async function syncUserToSupabaseAuth(username, name, password, role) {
     const existingUser = listRes?.data?.users?.find(u => u.email?.toLowerCase() === userEmail.toLowerCase());
 
     if (!existingUser) {
+      const syncPassword = password || process.env.SUPABASE_DEFAULT_USER_PASSWORD || `P@ss-${Math.random().toString(36).substring(2, 10)}`;
       await supabase.auth.admin.createUser({
         email: userEmail,
-        password: password || 'DefaultPass123!',
+        password: syncPassword,
         email_confirm: true,
         user_metadata: { full_name: displayName, display_name: displayName, role: role || 'student' }
       }).catch(e => console.warn('Supabase createUser notice:', e.message));
@@ -79,29 +80,13 @@ export async function login(req, res, next) {
       return res.json({ success: true, user: sanitizeUser(user), token });
     }
 
-    // Special demo login support for cashfreedemo@smartbite.in
-    if ((cleanUsername.toLowerCase() === 'cashfreedemo@smartbite.in' || cleanUsername.toLowerCase() === 'cashfreedemo') && password?.trim() === '123456789') {
-      let demoUser = await db.get('SELECT * FROM users WHERE LOWER(username) = ?', ['cashfreedemo@smartbite.in']);
-      if (!demoUser) {
-        const hashedPassword = await hashPassword('123456789');
-        await db.run(
-          'INSERT INTO users (username, name, password, role, shopId) VALUES (?, ?, ?, ?, ?)',
-          ['cashfreedemo@smartbite.in', 'Cashfree Demo Student', hashedPassword, 'student', null]
-        );
-        demoUser = await db.get('SELECT * FROM users WHERE LOWER(username) = ?', ['cashfreedemo@smartbite.in']);
-      }
-      syncUserToSupabaseAuth('cashfreedemo@smartbite.in', demoUser.name, '123456789', 'student');
-      const token = issueToken(demoUser);
-      return res.json({ success: true, user: sanitizeUser(demoUser), token });
-    }
-
-    // Auto-detect user in database by username, email, or shopId
+    // Resolve user profile from PostgreSQL users table by username, email, or stall shopId
     let user = await db.get(
       'SELECT * FROM users WHERE LOWER(username) = LOWER(?) OR LOWER(email) = LOWER(?) OR (LOWER(shopId) = LOWER(?) AND role = ?)',
       [cleanUsername, cleanUsername, cleanUsername, 'owner']
     );
 
-    // Fallback: If user record not found in users table, check stalls table by email or shop ID
+    // Fallback: Check stalls table if user profile record doesn't exist yet
     if (!user) {
       const stall = await db.get(
         'SELECT * FROM stalls WHERE LOWER(email) = LOWER(?) OR LOWER(id) = LOWER(?)',
@@ -111,7 +96,10 @@ export async function login(req, res, next) {
       if (stall) {
         user = await db.get('SELECT * FROM users WHERE LOWER(shopId) = LOWER(?)', [stall.id]);
         if (!user) {
-          const plainPwd = (password && password.trim()) ? password.trim() : '00000000';
+          if (!password || !password.trim()) {
+            return res.status(400).json({ success: false, message: 'Password is required.' });
+          }
+          const plainPwd = password.trim();
           const defaultHashed = await hashPassword(plainPwd);
           await db.run(
             'INSERT INTO users (id, username, email, name, password, role, shopId, account_status) VALUES (?, ?, ?, ?, ?, ?, ?, "ACTIVE")',
@@ -122,19 +110,48 @@ export async function login(req, res, next) {
       }
     }
 
-    if (user) {
-      if (!password || password.trim() === '') {
-        return res.status(400).json({ success: false, message: 'Password is required.' });
+    if (!password || password.trim() === '') {
+      return res.status(400).json({ success: false, message: 'Password is required.' });
+    }
+
+    const cleanPassword = password.trim();
+    const userEmail = (user?.email || (cleanUsername.includes('@') ? cleanUsername : `${cleanUsername}@sgu.edu`)).toLowerCase();
+
+    // ── Direct Online Supabase Auth Credential Verification ──
+    let isSupabaseVerified = false;
+    let supabaseAuthSession = null;
+
+    if (supabase) {
+      const { data: authData, error: authErr } = await supabase.auth.signInWithPassword({
+        email: userEmail,
+        password: cleanPassword
+      }).catch(() => ({ data: null, error: true }));
+
+      if (!authErr && authData?.user) {
+        isSupabaseVerified = true;
+        supabaseAuthSession = authData.session;
+      }
+    }
+
+    // If not verified yet by Supabase Auth (e.g. user not synced to Supabase Auth table), check DB password hash and sync online
+    if (!isSupabaseVerified) {
+      if (!user) {
+        return res.status(401).json({ success: false, message: 'Invalid credentials.' });
       }
 
-      const isValid = await verifyPassword(password.trim(), user.password);
+      const isValid = await verifyPassword(cleanPassword, user.password);
       if (!isValid) {
         return res.status(401).json({ success: false, message: 'Invalid credentials.' });
       }
 
-      syncUserToSupabaseAuth(user.username, user.name, password.trim(), user.role);
+      // Sync verified user credentials directly to online Supabase Auth
+      await syncUserToSupabaseAuth(user.username || userEmail, user.name, cleanPassword, user.role);
+      isSupabaseVerified = true;
+    }
+
+    if (user && isSupabaseVerified) {
       const token = issueToken(user);
-      return res.json({ success: true, user: sanitizeUser(user), token });
+      return res.json({ success: true, user: sanitizeUser(user), token, session: supabaseAuthSession });
     }
 
     return res.status(401).json({ success: false, message: 'Invalid credentials.' });

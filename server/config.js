@@ -90,7 +90,12 @@ const JWT_SECRET = validateJwtSecret();
 
 const PAYMENT_PROVIDER = process.env.PAYMENT_PROVIDER || 'mock';
 const PLATFORM_COMMISSION_PERCENT = parseFloat(process.env.PLATFORM_COMMISSION_PERCENT) || 10;
-const RECONCILE_TOKEN = process.env.RECONCILE_TOKEN || 'sgu_reconcile_secret_token_2026';
+const RECONCILE_TOKEN = process.env.RECONCILE_TOKEN || (NODE_ENV === 'test' ? 'sgu_reconcile_secret_token_2026' : '');
+const PAYMENT_WEBHOOK_SECRET = process.env.PAYMENT_WEBHOOK_SECRET || (NODE_ENV === 'test' ? 'sgu_payment_webhook_secret_key_2026' : '');
+
+if (NODE_ENV === 'production' && (!RECONCILE_TOKEN || !PAYMENT_WEBHOOK_SECRET)) {
+  console.warn('Production Security Warning: RECONCILE_TOKEN or PAYMENT_WEBHOOK_SECRET environment variables are missing.');
+}
 
 const ADMIN_EMAILS_RAW = process.env.ADMIN_EMAILS || 'omgarkal357@gmail.com,omgarkal359@gmail.com';
 const ADMIN_EMAILS = ADMIN_EMAILS_RAW
@@ -116,6 +121,7 @@ export const config = {
   PAYMENT_PROVIDER,
   PLATFORM_COMMISSION_PERCENT,
   RECONCILE_TOKEN,
+  PAYMENT_WEBHOOK_SECRET,
   ADMIN_EMAILS
 };
 

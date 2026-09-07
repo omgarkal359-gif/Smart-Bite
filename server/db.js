@@ -51,7 +51,9 @@ const memStore = {
   menu_items: [],
   orders: [],
   order_items: [],
-  nextId: { users: 1, menu_items: 1, order_items: 1 }
+  order_settlements: [],
+  payment_events: [],
+  nextId: { users: 1, menu_items: 1, order_items: 1, order_settlements: 1, payment_events: 1 }
 };
 
 function convertSql(sql) {
@@ -312,9 +314,42 @@ function executeMemRun(sql, params) {
   }
 
   if (upper.startsWith('INSERT INTO STALLS')) {
-    const [id, name, category, online, busyMode, waitTime, rating, img, logo] = params;
+    let id = params[0];
+    let name = params[1];
+    let category, online, busyMode, waitTime, rating, img, logo, provider_account_id, onboarding_status, settlement_status;
+    
+    if (params.length === 5) {
+      onboarding_status = params[2];
+      settlement_status = params[3];
+      provider_account_id = params[4];
+    } else {
+      category = params[2];
+      online = params[3];
+      busyMode = params[4];
+      waitTime = params[5];
+      rating = params[6];
+      img = params[7];
+      logo = params[8];
+      provider_account_id = params[9];
+      onboarding_status = params[10];
+      settlement_status = params[11];
+    }
+
     const existing = memStore.stalls.find(s => s.id === id);
-    const newStall = { id, name, category, online: online ? 1 : 0, busyMode: busyMode ? 1 : 0, waitTime: waitTime || 0, rating: rating || 4.5, img, logo };
+    const newStall = {
+      id,
+      name: name || existing?.name,
+      category: category || existing?.category || 'Campus Stall',
+      online: online !== undefined ? (online ? 1 : 0) : (existing?.online !== undefined ? existing.online : 1),
+      busyMode: busyMode !== undefined ? (busyMode ? 1 : 0) : (existing?.busyMode !== undefined ? existing.busyMode : 0),
+      waitTime: waitTime !== undefined ? waitTime : (existing?.waitTime || 0),
+      rating: rating || existing?.rating || 4.5,
+      img: img || existing?.img,
+      logo: logo || existing?.logo,
+      provider_account_id: provider_account_id || existing?.provider_account_id || `acc_${id}_123`,
+      onboarding_status: onboarding_status || existing?.onboarding_status || 'active',
+      settlement_status: settlement_status || existing?.settlement_status || 'enabled'
+    };
     if (existing) Object.assign(existing, newStall);
     else memStore.stalls.push(newStall);
     return { id, changes: 1 };
@@ -339,23 +374,35 @@ function executeMemRun(sql, params) {
     return { id, changes: 1 };
   }
 
-  if (upper.startsWith('UPDATE MENU_ITEMS SET STOCK')) {
-    const [stock, price, available, name, category, itemId] = params;
+  if (upper.startsWith('UPDATE MENU_ITEMS')) {
+    const itemId = params[params.length - 1];
     const item = memStore.menu_items.find(i => i.id == itemId);
     if (item) {
-      item.stock = stock;
-      item.price = price;
-      item.available = available;
-      item.name = name;
-      item.category = category;
+      if (upper.includes('PRICE')) {
+        let priceVal = params.length >= 2 ? params[0] : null;
+        if (priceVal === null || typeof priceVal !== 'number') {
+          const matchPrice = cleanSql.match(/price\s*=\s*([0-9.]+)/i);
+          if (matchPrice) priceVal = parseFloat(matchPrice[1]);
+        }
+        if (priceVal !== null && !isNaN(priceVal)) item.price = priceVal;
+      }
+      if (upper.includes('STOCK')) {
+        let stockVal = params.length >= 2 ? params[0] : null;
+        if (stockVal === null || typeof stockVal !== 'number') {
+          const matchStock = cleanSql.match(/stock\s*=\s*([0-9]+)/i);
+          if (matchStock) stockVal = parseInt(matchStock[1], 10);
+        }
+        if (stockVal !== null && !isNaN(stockVal)) item.stock = stockVal;
+      }
+      if (upper.includes('AVAILABLE')) {
+        let availVal = params.length >= 2 ? params[0] : null;
+        if (availVal === null || typeof availVal !== 'number') {
+          const matchAvail = cleanSql.match(/available\s*=\s*([0-9]+)/i);
+          if (matchAvail) availVal = parseInt(matchAvail[1], 10);
+        }
+        if (availVal !== null) item.available = availVal ? 1 : 0;
+      }
     }
-    return { id: itemId, changes: item ? 1 : 0 };
-  }
-
-  if (upper.startsWith('UPDATE MENU_ITEMS SET AVAILABLE')) {
-    const [available, itemId] = params;
-    const item = memStore.menu_items.find(i => i.id == itemId);
-    if (item) item.available = available ? 1 : 0;
     return { id: itemId, changes: item ? 1 : 0 };
   }
 
@@ -382,31 +429,123 @@ function executeMemRun(sql, params) {
     return { id, changes: 1 };
   }
 
-  if (upper.startsWith('UPDATE ORDERS SET STATUS = ?, PAYMENTSTATUS = ?')) {
-    const [status, paymentStatus, providerPaymentId, paymentVerifiedAt, paymentFailureReason, id] = params;
+  if (upper.startsWith('UPDATE ORDERS')) {
+    const id = params[params.length - 1];
     const order = memStore.orders.find(o => o.id === id);
     if (order) {
-      order.status = status;
-      order.paymentStatus = paymentStatus;
-      order.providerPaymentId = providerPaymentId;
-      order.paymentVerifiedAt = paymentVerifiedAt;
-      order.paymentFailureReason = paymentFailureReason;
+      if (upper.includes('STATUS = ?')) {
+        order.status = params[0];
+      }
+      if (upper.includes('PAYMENTSTATUS') || upper.includes('PAYMENT_STATUS')) {
+        order.paymentStatus = params[1] || params[0];
+        order.payment_status = order.paymentStatus;
+      }
+      if (upper.includes('PROVIDERPAYMENTID') || upper.includes('PROVIDER_PAYMENT_ID')) {
+        order.providerPaymentId = params[3] || params[2];
+        order.provider_payment_id = order.providerPaymentId;
+      }
     }
     return { id, changes: order ? 1 : 0 };
   }
 
-  if (upper.startsWith('UPDATE ORDERS SET STATUS')) {
-    const [status, id] = params;
-    const order = memStore.orders.find(o => o.id === id);
-    if (order) order.status = status;
-    return { id, changes: order ? 1 : 0 };
+  if (upper.startsWith('UPDATE STALLS')) {
+    let id = params[params.length - 1];
+    if (!id || id === params[0]) {
+      const matchId = cleanSql.match(/WHERE\s+id\s*=\s*'([^']+)'/i);
+      if (matchId) id = matchId[1];
+    }
+    const stall = memStore.stalls.find(s => s.id === id);
+    if (stall) {
+      if (upper.includes('ONBOARDING_STATUS = ?') || upper.includes('ONBOARDING_STATUS=?')) {
+        stall.onboarding_status = params[0];
+        stall.onboardingStatus = params[0];
+      }
+      if (upper.includes('SETTLEMENT_STATUS = ?') || upper.includes('SETTLEMENT_STATUS=?')) {
+        const val = upper.includes('ONBOARDING_STATUS') ? params[1] : params[0];
+        stall.settlement_status = val;
+        stall.settlementStatus = val;
+      }
+      const matchProv = cleanSql.match(/provider_account_id\s*=\s*'([^']+)'/i);
+      if (matchProv) {
+        stall.provider_account_id = matchProv[1];
+        stall.providerAccountId = matchProv[1];
+      }
+      const matchOnb = cleanSql.match(/onboarding_status\s*=\s*'([^']+)'/i);
+      if (matchOnb) {
+        stall.onboarding_status = matchOnb[1];
+        stall.onboardingStatus = matchOnb[1];
+      }
+      const matchSet = cleanSql.match(/settlement_status\s*=\s*'([^']+)'/i);
+      if (matchSet) {
+        stall.settlement_status = matchSet[1];
+        stall.settlementStatus = matchSet[1];
+      }
+    }
+    return { id, changes: stall ? 1 : 0 };
+  }
+
+  if (upper.startsWith('INSERT INTO ORDER_SETTLEMENTS')) {
+    const [order_id, stall_id, provider, provider_account_id, order_amount_paise, shop_amount_paise, platform_commission_paise, currency, status, provider_transfer_id, provider_settlement_id, failure_reason, created_at, updated_at, settled_at] = params;
+    const id = memStore.nextId.order_settlements++;
+    const newSettlement = {
+      id, order_id, stall_id, provider, provider_account_id, order_amount_paise, shop_amount_paise, platform_commission_paise, currency: currency || 'INR', status: status || 'pending', provider_transfer_id, provider_settlement_id, failure_reason, created_at: created_at || new Date().toISOString(), updated_at: updated_at || new Date().toISOString(), settled_at
+    };
+    memStore.order_settlements.push(newSettlement);
+    return { id, changes: 1 };
+  }
+
+  if (upper.startsWith('INSERT INTO PAYMENT_EVENTS')) {
+    const [provider, provider_event_id, event_type, payload_hash, processed_at, created_at] = params;
+    const id = memStore.nextId.payment_events++;
+    const existing = memStore.payment_events.find(e => e.provider === provider && e.provider_event_id === provider_event_id);
+    if (!existing) {
+      memStore.payment_events.push({ id, provider, provider_event_id, event_type, payload_hash, processed_at, created_at });
+      return { id, changes: 1 };
+    }
+    return { id: existing.id, changes: 0 };
+  }
+
+  if (upper.startsWith('DELETE FROM STALLS')) {
+    const [id] = params;
+    const idx = memStore.stalls.findIndex(s => s.id === id);
+    if (idx !== -1) memStore.stalls.splice(idx, 1);
+    return { id, changes: idx !== -1 ? 1 : 0 };
   }
 
   return { id: 1, changes: 0 };
 }
 
 function executeMemAll(sql, params) {
-  const upper = sql.trim().toUpperCase();
+  const cleanSql = sql.trim();
+  const upper = cleanSql.toUpperCase();
+
+  if (upper.includes('FROM ORDER_SETTLEMENTS')) {
+    if (upper.includes('WHERE ORDER_ID = ? AND STALL_ID = ?')) {
+      const [order_id, stall_id] = params;
+      return memStore.order_settlements.filter(s => s.order_id === order_id && s.stall_id === stall_id);
+    }
+    if (upper.includes('WHERE ORDER_ID = ?')) {
+      const [order_id] = params;
+      return memStore.order_settlements.filter(s => s.order_id === order_id);
+    }
+    if (upper.includes('WHERE STALL_ID = ?')) {
+      const [stall_id] = params;
+      return memStore.order_settlements.filter(s => s.stall_id === stall_id);
+    }
+    return memStore.order_settlements;
+  }
+
+  if (upper.includes('FROM PAYMENT_EVENTS')) {
+    if (upper.includes('WHERE PROVIDER = ? AND PROVIDER_EVENT_ID = ?')) {
+      const [provider, provider_event_id] = params;
+      return memStore.payment_events.filter(e => e.provider === provider && e.provider_event_id === provider_event_id);
+    }
+    if (upper.includes('WHERE PROVIDER_EVENT_ID = ?')) {
+      const [provider_event_id] = params;
+      return memStore.payment_events.filter(e => e.provider_event_id === provider_event_id);
+    }
+    return memStore.payment_events;
+  }
 
   if (upper.includes('COUNT(*) AS COUNT FROM USERS')) {
     return [{ count: memStore.users.length }];
@@ -467,8 +606,12 @@ function executeMemAll(sql, params) {
     return match ? [match] : [];
   }
 
-  if (upper.includes('FROM STALLS WHERE ID = ?')) {
-    const [id] = params;
+  if (upper.includes('FROM STALLS WHERE ID')) {
+    let id = params[0];
+    if (!id) {
+      const matchId = cleanSql.match(/id\s*=\s*'([^']+)'/i);
+      if (matchId) id = matchId[1];
+    }
     const match = memStore.stalls.find(s => s.id === id);
     return match ? [match] : [];
   }
@@ -477,15 +620,27 @@ function executeMemAll(sql, params) {
     return memStore.stalls;
   }
 
-  if (upper.includes('FROM MENU_ITEMS WHERE STALLID = ? AND AVAILABLE = 1')) {
-    const [stallId] = params;
-    return memStore.menu_items.filter(i => i.stallId === stallId && i.available === 1);
+  if (upper.includes('FROM MENU_ITEMS WHERE STALLID')) {
+    let stallId = params[0];
+    if (!stallId) {
+      const matchStall = cleanSql.match(/stallId\s*=\s*'([^']+)'/i);
+      if (matchStall) stallId = matchStall[1];
+    }
+    return memStore.menu_items.filter(i => i.stallId === stallId);
   }
 
-  if (upper.includes('FROM MENU_ITEMS WHERE ID = ?')) {
-    const [id] = params;
+  if (upper.includes('FROM MENU_ITEMS WHERE ID')) {
+    let id = params[0];
+    if (!id) {
+      const matchId = cleanSql.match(/id\s*=\s*'?(\w+)'?/i);
+      if (matchId) id = matchId[1];
+    }
     const match = memStore.menu_items.find(i => i.id == id);
     return match ? [match] : [];
+  }
+
+  if (upper.includes('FROM MENU_ITEMS')) {
+    return memStore.menu_items;
   }
 
   if (upper.includes('FROM ORDERS WHERE STATUS IN')) {
@@ -538,17 +693,17 @@ export async function initDatabase() {
   const connStr = config.DATABASE_URL || process.env.DATABASE_URL || '';
   const activePool = getPool();
 
-  // 1. Test PostgreSQL connection
+  // 1. Test online Supabase PostgreSQL connection
   if (connStr && !connStr.includes('[YOUR-PASSWORD]') && activePool) {
     let client;
     try {
       client = await activePool.connect();
       await client.query('SELECT 1');
       isPgActive = true;
-      console.log('[DATABASE INFO] Connected successfully to PostgreSQL database engine.');
+      console.log('[DATABASE INFO] Connected successfully to online Supabase PostgreSQL database engine.');
     } catch (err) {
       isPgActive = false;
-      console.warn('[DATABASE WARNING] PostgreSQL connection failed (' + err.message + '). Fallback to local memory engine.');
+      console.warn('[DATABASE WARNING] Online Supabase PostgreSQL connection failed (' + err.message + '). Operating via Supabase REST API & memory store.');
     } finally {
       if (client) {
         client.release();
@@ -556,27 +711,12 @@ export async function initDatabase() {
     }
   } else {
     isPgActive = false;
-    console.warn('[DATABASE NOTICE] DATABASE_URL is unconfigured. Operating on in-memory engine fallback.');
+    console.warn('[DATABASE NOTICE] DATABASE_URL unconfigured or offline. Operating via Supabase REST API & memory store.');
   }
 
-
-  // 2. Try SQLite if PostgreSQL is not active
-  if (!isPgActive) {
-    try {
-      const sqliteMod = await import('sqlite3').catch(() => null);
-      const sqlite3Lib = sqliteMod?.default || sqliteMod;
-      if (sqlite3Lib) {
-        if (!sqliteDb) {
-          const dbPath = process.env.VERCEL ? '/tmp/database.sqlite' : join(__dirname, 'database.sqlite');
-          sqliteDb = new sqlite3Lib.Database(dbPath);
-        }
-        isSqliteActive = true;
-        sqliteDb.run('PRAGMA foreign_keys = ON;');
-      }
-    } catch (e) {
-      isSqliteActive = false;
-    }
-  }
+  // Disable local SQLite database creation completely
+  isSqliteActive = false;
+  sqliteDb = null;
 
   const idType = isPgActive ? 'SERIAL PRIMARY KEY' : 'INTEGER PRIMARY KEY AUTOINCREMENT';
 
@@ -880,20 +1020,25 @@ export async function initDatabase() {
   // Seed Users if empty
   const userCount = await db.get('SELECT COUNT(*) as count FROM users');
   if (!userCount || parseInt(userCount.count, 10) === 0) {
-    const studentHash = await hashPassword('password');
+    const studentPass = process.env.SEED_STUDENT_PASSWORD || 'Student@SmartBite2026!';
+    const adminPass = process.env.SEED_ADMIN_PASSWORD || 'Admin@SmartBite2026!';
+    const vendorPass = process.env.SEED_VENDOR_PASSWORD || 'Vendor@SmartBite2026!';
+
+    const studentHash = await hashPassword(studentPass);
+    const demoHash = await hashPassword(studentPass);
     await db.run(
       'INSERT INTO users (username, name, password, role, shopId) VALUES (?, ?, ?, ?, ?)',
       ['student@sgu.edu', 'Satej', studentHash, 'student', null]
     );
     await db.run(
       'INSERT INTO users (username, name, password, role, shopId) VALUES (?, ?, ?, ?, ?)',
-      ['cashfreedemo@smartbite.in', 'Cashfree Demo Student', '$2b$10$w6M6N7g0QJtWJ1A4qf5u.e1/Vj1hL5/1zD6Yy9M/q1xG9t1m1l1l1', 'student', null]
+      ['cashfreedemo@smartbite.in', 'Cashfree Demo Student', demoHash, 'student', null]
     );
     await db.run(
       'INSERT INTO users (username, name, password, role, shopId) VALUES (?, ?, ?, ?, ?)',
       ['9876543210', 'Guest Satej', '', 'guest', null]
     );
-    const adminHash = await hashPassword('admin123');
+    const adminHash = await hashPassword(adminPass);
     await db.run(
       'INSERT INTO users (username, name, password, role, shopId) VALUES (?, ?, ?, ?, ?)',
       ['admin@sgu.edu', 'Administrator', adminHash, 'admin', null]
@@ -908,7 +1053,7 @@ export async function initDatabase() {
       'narayana',
       'cool-cravings'
     ];
-    const vendorHash = await hashPassword('000000000');
+    const vendorHash = await hashPassword(vendorPass);
     for (const sid of stallIds) {
       await db.run(
         'INSERT INTO users (username, name, password, role, shopId) VALUES (?, ?, ?, ?, ?)',

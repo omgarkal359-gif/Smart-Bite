@@ -66,10 +66,19 @@ class EmailService {
    * @returns {Promise<string>} Rendered HTML string
    */
   async renderTemplate(templateName, data = {}) {
+    if (!templateName || typeof templateName !== 'string' || !/^[a-zA-Z0-9_-]+$/.test(templateName)) {
+      throw new Error(`Invalid email template name '${templateName}'`);
+    }
+
     const templatePath = path.join(TEMPLATE_DIR, `${templateName}.ejs`);
+    const resolvedPath = path.resolve(templatePath);
+
+    if (!resolvedPath.startsWith(path.resolve(TEMPLATE_DIR))) {
+      throw new Error('Path traversal detected in email template lookup');
+    }
     
-    if (!fs.existsSync(templatePath)) {
-      throw new Error(`Email template '${templateName}' not found at path: ${templatePath}`);
+    if (!fs.existsSync(resolvedPath)) {
+      throw new Error(`Email template '${templateName}' not found at path: ${resolvedPath}`);
     }
 
     const defaultData = {

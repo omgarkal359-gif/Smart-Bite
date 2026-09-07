@@ -44,13 +44,13 @@ export async function getVendors(req, res, next) {
 export async function createVendor(req, res, next) {
   try {
     const { id, name, ownerName, email, password, role, accountNumber, ifscCode, bankName, branch, category, operatingHours } = req.body;
-    if (!name || !email) {
-      return res.status(400).json({ success: false, message: 'Vendor name and contact email are required.' });
+    if (!name || !email || !password || !password.trim()) {
+      return res.status(400).json({ success: false, message: 'Vendor name, contact email, and password are required.' });
     }
 
     const stallId = id || name.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') || `stall-${Date.now()}`;
     const cleanRole = (role || 'owner').toLowerCase();
-    const plainPassword = (password && password.trim()) ? password.trim() : '00000000';
+    const plainPassword = password.trim();
     const hashedPassword = await hashPassword(plainPassword);
 
     // 1. Insert into SQLite `stalls` table

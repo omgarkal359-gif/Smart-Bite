@@ -7,6 +7,10 @@ export async function updateMenuItem(req, res, next) {
     const item = await db.get('SELECT * FROM menu_items WHERE id = ?', [itemId]);
     if (!item) return res.status(404).json({ message: 'Menu item not found' });
 
+    if (req.user?.role !== 'admin' && req.user?.shopId !== item.stallId && req.user?.shopId !== item.stallid) {
+      return res.status(403).json({ success: false, message: 'Access Denied: You are only authorized to modify menu items for your assigned stall.' });
+    }
+
     const newStock = stock !== undefined ? stock : item.stock;
     const newPrice = price !== undefined ? price : item.price;
     const newAvailable = available !== undefined ? (available ? 1 : 0) : item.available;

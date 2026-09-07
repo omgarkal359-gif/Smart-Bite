@@ -118,56 +118,7 @@ const LoginPage = () => {
       if (lowerId === 'admin' || lowerId.startsWith('admin@')) assumedRole = 'admin';
       else if (['mangales-snacks', 'tea-coffee', 'rohit-vadewale', 'oodles-of-noodles', 'narayana', 'cool-cravings'].includes(lowerId)) assumedRole = 'owner';
 
-      const resData = await api.login(idInput, pwd, assumedRole).catch(() => {
-        const shopList = ['mangales-snacks', 'tea-coffee', 'rohit-vadewale', 'oodles-of-noodles', 'narayana', 'cool-cravings'];
-        if (shopList.includes(lowerId) && (pwd === '000000000' || pwd === '00000000' || pwd === 'admin123')) {
-          return {
-            success: true,
-            user: { role: 'owner', name: `${idInput} Owner`, username: idInput, shopId: lowerId },
-            token: 'mock-vendor-token'
-          };
-        }
-        if ((lowerId === 'admin' || lowerId === 'admin@sgu.edu') && pwd === 'admin123') {
-          return {
-            success: true,
-            user: { role: 'admin', name: 'System Admin', username: 'admin', shopId: null },
-            token: 'mock-admin-token'
-          };
-        }
-        if ((lowerId === 'cashfreedemo@smartbite.in' || lowerId === 'cashfreedemo') && pwd === '123456789') {
-          return {
-            success: true,
-            user: { role: 'student', name: 'Cashfree Demo Student', username: 'cashfreedemo@smartbite.in', shopId: null },
-            token: 'mock-student-token'
-          };
-        }
-
-        // Check dynamically registered vendors from localStorage
-        try {
-          const storedStalls = JSON.parse(localStorage.getItem('sgu_stalls') || '[]');
-          const storedUsers = JSON.parse(localStorage.getItem('sgu_user_directory') || '[]');
-          
-          const foundUser = storedUsers.find(u => String(u.username || u.email).toLowerCase() === lowerId);
-          if (foundUser && (!foundUser.password || foundUser.password === pwd)) {
-            return {
-              success: true,
-              user: { role: foundUser.role || 'owner', name: foundUser.name, username: foundUser.username || foundUser.email, shopId: foundUser.shopId },
-              token: 'mock-vendor-token'
-            };
-          }
-
-          const foundStall = storedStalls.find(s => String(s.email).toLowerCase() === lowerId || String(s.id).toLowerCase() === lowerId);
-          if (foundStall && (!foundStall.password || foundStall.password === pwd)) {
-            return {
-              success: true,
-              user: { role: foundStall.role || 'owner', name: foundStall.ownerName || foundStall.name, username: foundStall.email || foundStall.id, shopId: foundStall.id },
-              token: 'mock-vendor-token'
-            };
-          }
-        } catch (e) {}
-
-        throw new Error('Invalid credentials.');
-      });
+      const resData = await api.login(idInput, pwd, assumedRole);
 
       if (resData?.success && resData?.user) {
         finish(resData.user.role, resData.user.name, resData.user.username, resData.user.shopId, resData.token);

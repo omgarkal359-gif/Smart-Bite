@@ -1,12 +1,13 @@
 import crypto from 'crypto';
 import { PaymentProviderInterface } from './PaymentProviderInterface.js';
+import { config } from '../config.js';
 
 export class MockPaymentProvider extends PaymentProviderInterface {
   /**
    * Initializes the mock provider with a webhook secret.
    * @param {string} secret 
    */
-  constructor(secret = 'sgu_payment_webhook_secret_key_2026') {
+  constructor(secret = config.PAYMENT_WEBHOOK_SECRET) {
     super();
     this.secret = secret;
   }

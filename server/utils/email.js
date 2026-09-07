@@ -48,6 +48,16 @@ async function getTransporter() {
   return dynamicTransporter;
 }
 
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 export async function sendReceiptEmail(toEmail, order, items) {
   const itemsText = items.map(item => `   - ${item.quantity}x ${item.name} (₹${item.price} each) - Stall: ${item.stallName || item.stallname}`).join('\n');
   
@@ -67,7 +77,7 @@ export async function sendReceiptEmail(toEmail, order, items) {
   const itemsHtml = items.map(item => `
     <tr>
       <td style="padding-top: 4px; padding-bottom: 4px; text-align: left; vertical-align: top; text-transform: uppercase;">
-        ${item.name}
+        ${escapeHtml(item.name)}
       </td>
       <td style="padding-top: 4px; padding-bottom: 4px; text-align: center; vertical-align: top; width: 40px;">
         ${item.quantity || 1}
