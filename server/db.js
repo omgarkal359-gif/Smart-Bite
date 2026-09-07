@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
 import { config } from './config.js';
+import { hashPassword } from './utils/password.js';
 
 const { Pool } = pg;
 
@@ -810,17 +811,19 @@ export async function initDatabase() {
   // Seed Users if empty
   const userCount = await db.get('SELECT COUNT(*) as count FROM users');
   if (!userCount || parseInt(userCount.count, 10) === 0) {
+    const studentHash = await hashPassword('password');
     await db.run(
       'INSERT INTO users (username, name, password, role, shopId) VALUES (?, ?, ?, ?, ?)',
-      ['student@sgu.edu', 'Satej', 'password', 'student', null]
+      ['student@sgu.edu', 'Satej', studentHash, 'student', null]
     );
     await db.run(
       'INSERT INTO users (username, name, password, role, shopId) VALUES (?, ?, ?, ?, ?)',
       ['9876543210', 'Guest Satej', '', 'guest', null]
     );
+    const adminHash = await hashPassword('admin123');
     await db.run(
       'INSERT INTO users (username, name, password, role, shopId) VALUES (?, ?, ?, ?, ?)',
-      ['admin@sgu.edu', 'Administrator', 'admin123', 'admin', null]
+      ['admin@sgu.edu', 'Administrator', adminHash, 'admin', null]
     );
 
     // Add stall owners
@@ -832,10 +835,11 @@ export async function initDatabase() {
       'narayana',
       'cool-cravings'
     ];
+    const vendorHash = await hashPassword('000000000');
     for (const sid of stallIds) {
       await db.run(
         'INSERT INTO users (username, name, password, role, shopId) VALUES (?, ?, ?, ?, ?)',
-        [sid, `${sid.replace('-', ' ')} Owner`, '000000000', 'owner', sid]
+        [sid, `${sid.replace('-', ' ')} Owner`, vendorHash, 'owner', sid]
       );
     }
   }

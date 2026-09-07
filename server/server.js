@@ -215,19 +215,6 @@ app.use('/api/v1/payments', paymentsRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/v1/admin', adminRoutes);
 
-app.use('/api/payments', paymentsRoutes);
-app.use('/api/v1/payments', paymentsRoutes);
-
-// Global Error Handling Middleware
-app.use((err, req, res, next) => {
-  logger.error('[UNHANDLED EXCEPTION]', err, { url: req.url, method: req.method });
-  const status = err.status || 500;
-  res.status(status).json({
-    success: false,
-    message: err.message || 'An internal error occurred.'
-  });
-});
-
 // Developer Email Template Preview Route (Admin only, disabled in Production)
 app.get('/api/dev/email-preview/:template', requireAuth, requireRole('admin'), async (req, res) => {
   if (config.NODE_ENV === 'production' || process.env.NODE_ENV === 'production') {
@@ -294,8 +281,6 @@ app.use((err, req, res, next) => {
     error: errorMessage
   });
 });
-
-
 
 // Graceful Shutdown Sequence
 async function shutdown(signal) {

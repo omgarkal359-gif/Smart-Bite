@@ -101,7 +101,7 @@ const LoginPage = () => {
     }
   };
 
-  /* ── Staff / Vendor fallback login ── */
+  /* ── Staff / Vendor login ── */
   const handleStaffLogin = async (e) => {
     e.preventDefault();
     const idInput = staffId.trim();
@@ -113,29 +113,7 @@ const LoginPage = () => {
     setIsLoading(true);
     setErrorMsg('');
     try {
-      let assumedRole = 'student';
-      const lowerId = idInput.toLowerCase();
-      if (lowerId === 'admin' || lowerId.startsWith('admin@')) assumedRole = 'admin';
-      else if (['mangales-snacks', 'tea-coffee', 'rohit-vadewale', 'oodles-of-noodles', 'narayana', 'cool-cravings'].includes(lowerId)) assumedRole = 'owner';
-
-      const resData = await api.login(idInput, pwd, assumedRole).catch(() => {
-        const shopList = ['mangales-snacks', 'tea-coffee', 'rohit-vadewale', 'oodles-of-noodles', 'narayana', 'cool-cravings'];
-        if (shopList.includes(lowerId) && (pwd === '000000000' || pwd === '00000000' || pwd === 'admin123')) {
-          return {
-            success: true,
-            user: { role: 'owner', name: `${idInput} Owner`, username: idInput, shopId: lowerId },
-            token: 'mock-vendor-token'
-          };
-        }
-        if ((lowerId === 'admin' || lowerId === 'admin@sgu.edu') && pwd === 'admin123') {
-          return {
-            success: true,
-            user: { role: 'admin', name: 'System Admin', username: 'admin', shopId: null },
-            token: 'mock-admin-token'
-          };
-        }
-        throw new Error('Invalid credentials.');
-      });
+      const resData = await api.login(idInput, pwd);
 
       if (resData?.success && resData?.user) {
         finish(resData.user.role, resData.user.name, resData.user.username, resData.user.shopId, resData.token);
@@ -158,7 +136,7 @@ const LoginPage = () => {
           message: `Failed login attempt for user "${idInput}"`
         });
       } catch (e) {}
-      setErrorMsg(err.message || 'Staff login failed.');
+      setErrorMsg(err.message || 'Login failed. Please check your credentials and try again.');
       setIsLoading(false);
     }
   };

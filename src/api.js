@@ -23,15 +23,7 @@ async function fetchAPI(endpoint, options = {}, retries = 2) {
   const cacheKey = `sb_cache_${endpoint}`;
 
   let token = sessionStorage.getItem('sgu_token') || localStorage.getItem('sgu_token') || '';
-  let storedUserId = 'student-local';
-  let storedUserRole = 'student';
   try {
-    const rawUser = localStorage.getItem('user');
-    if (rawUser) {
-      const parsed = JSON.parse(rawUser);
-      storedUserId = parsed.id || parsed.username || storedUserId;
-      storedUserRole = parsed.role || storedUserRole;
-    }
     const { data } = await supabase.auth.getSession();
     if (data?.session?.access_token) {
       token = data.session.access_token;
@@ -45,8 +37,6 @@ async function fetchAPI(endpoint, options = {}, retries = 2) {
       const response = await fetch(url, {
         headers: {
           'Content-Type': 'application/json',
-          'x-user-id': String(storedUserId),
-          'x-user-role': String(storedUserRole),
           ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
           ...options.headers,
         },
@@ -370,10 +360,6 @@ export const api = {
     } catch (e) {}
 
     return { success: true, order: actualOrder };
-  },
-
-  async getPaymentStatus(paymentId) {
-    return await fetchAPI(`/payments/${paymentId}/status`);
   },
 
   async simulatePayment(paymentId, action) {
