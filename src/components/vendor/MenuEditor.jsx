@@ -571,10 +571,10 @@ export const MenuEditor = ({ shopId }) => {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.96, y: 8 }}
               transition={{ duration: 0.18, ease: "easeOut" }}
-              className="relative w-full max-w-[540px] bg-white rounded-[26px] shadow-2xl border border-slate-100 overflow-hidden my-auto max-h-[92vh] flex flex-col"
+              className="relative w-full max-w-[540px] bg-white rounded-[26px] shadow-2xl border-none overflow-hidden my-auto max-h-[92vh] flex flex-col"
             >
               {/* Modal Header without Clutter */}
-              <div className="px-7 pt-5 pb-4 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
+              <div className="px-7 pt-5 pb-3 border-none flex items-center justify-between bg-white shrink-0">
                 <h3 className="text-[19px] font-bold text-slate-900 tracking-tight m-0 font-['Inter',sans-serif]">
                   Edit Dish Details
                 </h3>
@@ -681,7 +681,7 @@ export const MenuEditor = ({ shopId }) => {
 
                   {editingItem.img ? (
                     <div className="flex flex-col gap-3">
-                      <div className="relative w-full h-[175px] rounded-2xl overflow-hidden border border-slate-200 bg-slate-950 shadow-xs group">
+                      <div className="relative w-full h-[175px] rounded-2xl overflow-hidden bg-slate-950 shadow-xs group">
                         <img 
                           src={editingItem.img} 
                           alt={editingItem.name || 'Dish Preview'} 
