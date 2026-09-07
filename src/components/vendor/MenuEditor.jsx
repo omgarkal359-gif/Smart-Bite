@@ -351,10 +351,10 @@ export const MenuEditor = ({ shopId }) => {
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="flex-1 h-10 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold flex items-center justify-center gap-2 transition-all border border-slate-200 cursor-pointer shadow-xs"
+                    className="flex-1 h-10 px-4 rounded-xl bg-[#dc2626] hover:bg-[#b91c1c] active:bg-[#991b1b] text-white text-xs font-bold flex items-center justify-center gap-2 transition-all border-none cursor-pointer shadow-sm shadow-red-500/20 active:scale-[0.99]"
                   >
-                    <Camera size={15} className="text-slate-700" />
-                    <span>Change Photo</span>
+                    <Camera size={15} className="text-white" />
+                    <span className="text-white">Change Photo</span>
                   </button>
                   <button
                     type="button"
@@ -363,10 +363,10 @@ export const MenuEditor = ({ shopId }) => {
                       setNewItem({ ...newItem, img: '' });
                       if (fileInputRef.current) fileInputRef.current.value = '';
                     }}
-                    className="h-10 px-4 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all border border-rose-200 cursor-pointer shadow-xs"
+                    className="h-10 px-4 rounded-xl bg-[#dc2626] hover:bg-[#b91c1c] active:bg-[#991b1b] text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-all border-none cursor-pointer shadow-sm shadow-red-500/20 active:scale-[0.99]"
                   >
-                    <Trash2 size={15} className="text-rose-600" />
-                    <span>Remove</span>
+                    <Trash2 size={15} className="text-white" />
+                    <span className="text-white">Remove</span>
                   </button>
                 </div>
               </div>
@@ -696,23 +696,23 @@ export const MenuEditor = ({ shopId }) => {
                         </span>
                       </div>
                       
-                      {/* Explicit Change Photo & Remove Action Buttons */}
+                      {/* Explicit Red Change Photo & Remove Action Buttons */}
                       <div className="flex items-center gap-2.5">
                         <button
                           type="button"
                           onClick={() => editFileInputRef.current?.click()}
-                          className="flex-1 h-10 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-800 text-xs font-semibold flex items-center justify-center gap-2 transition-all border border-slate-200/90 cursor-pointer shadow-xs"
+                          className="flex-1 h-10 px-4 rounded-xl bg-[#dc2626] hover:bg-[#b91c1c] active:bg-[#991b1b] text-white text-xs font-bold flex items-center justify-center gap-2 transition-all border-none cursor-pointer shadow-sm shadow-red-500/20 active:scale-[0.99]"
                         >
-                          <Camera size={15} className="text-slate-700" />
-                          <span>Change Photo</span>
+                          <Camera size={15} className="text-white" />
+                          <span className="text-white">Change Photo</span>
                         </button>
                         <button
                           type="button"
                           onClick={(e) => handleRemoveImage(e)}
-                          className="h-10 px-4 rounded-xl bg-rose-50 hover:bg-rose-100 active:bg-rose-200 text-rose-600 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all border border-rose-200 cursor-pointer shadow-xs"
+                          className="h-10 px-4 rounded-xl bg-[#dc2626] hover:bg-[#b91c1c] active:bg-[#991b1b] text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-all border-none cursor-pointer shadow-sm shadow-red-500/20 active:scale-[0.99]"
                         >
-                          <Trash2 size={15} className="text-rose-600" />
-                          <span>Remove</span>
+                          <Trash2 size={15} className="text-white" />
+                          <span className="text-white">Remove</span>
                         </button>
                       </div>
                     </div>
