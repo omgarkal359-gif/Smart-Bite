@@ -571,7 +571,7 @@ export const MenuEditor = ({ shopId }) => {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.96, y: 8 }}
               transition={{ duration: 0.18, ease: "easeOut" }}
-              className="relative w-full max-w-[500px] bg-white rounded-[26px] shadow-2xl border border-slate-100 overflow-hidden my-auto max-h-[92vh] flex flex-col"
+              className="relative w-full max-w-[540px] bg-white rounded-[26px] shadow-2xl border border-slate-100 overflow-hidden my-auto max-h-[92vh] flex flex-col"
             >
               {/* Modal Header without Clutter */}
               <div className="px-7 pt-5 pb-4 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
@@ -589,7 +589,7 @@ export const MenuEditor = ({ shopId }) => {
               </div>
               
               {/* Modal Form Body */}
-              <form onSubmit={handleSaveEdit} className="p-7 flex flex-col gap-5 m-0 bg-white font-['Inter',sans-serif] overflow-y-auto">
+              <form onSubmit={handleSaveEdit} className="p-6.5 sm:p-7 flex flex-col gap-5 m-0 bg-white font-['Inter',sans-serif] overflow-y-auto">
                 
                 {/* 1. DISH NAME */}
                 <div className="flex flex-col gap-1.5">
@@ -681,7 +681,7 @@ export const MenuEditor = ({ shopId }) => {
 
                   {editingItem.img ? (
                     <div className="flex flex-col gap-3">
-                      <div className="relative w-full h-[170px] rounded-2xl overflow-hidden border border-slate-200 bg-slate-950 shadow-xs group">
+                      <div className="relative w-full h-[175px] rounded-2xl overflow-hidden border border-slate-200 bg-slate-950 shadow-xs group">
                         <img 
                           src={editingItem.img} 
                           alt={editingItem.name || 'Dish Preview'} 
@@ -693,12 +693,12 @@ export const MenuEditor = ({ shopId }) => {
                       </div>
                       
                       {/* Action Buttons */}
-                      <div className="flex items-center gap-2.5 mt-1">
+                      <div className="flex items-center gap-3 mt-1">
                         <button
                           type="button"
                           onClick={() => editFileInputRef.current?.click()}
                           style={{ backgroundColor: '#dc2626', color: '#ffffff' }}
-                          className="h-10 px-4 rounded-xl bg-[#dc2626] hover:bg-[#b91c1c] active:bg-[#991b1b] text-white text-xs font-bold inline-flex items-center justify-center gap-1.5 transition-all border-none cursor-pointer shadow-sm shadow-red-500/25 active:scale-[0.98]"
+                          className="h-10.5 px-4.5 rounded-xl bg-[#dc2626] hover:bg-[#b91c1c] active:bg-[#991b1b] text-white text-xs font-bold inline-flex items-center justify-center gap-2 transition-all border-none cursor-pointer shadow-sm shadow-red-500/25 active:scale-[0.98] shrink-0"
                         >
                           <Camera size={14} className="text-white shrink-0" />
                           <span className="text-white font-bold whitespace-nowrap">Change Photo</span>
@@ -707,7 +707,7 @@ export const MenuEditor = ({ shopId }) => {
                           type="button"
                           onClick={(e) => handleRemoveImage(e)}
                           style={{ backgroundColor: '#dc2626', color: '#ffffff' }}
-                          className="h-10 px-3.5 rounded-xl bg-[#dc2626] hover:bg-[#b91c1c] active:bg-[#991b1b] text-white text-xs font-bold inline-flex items-center justify-center gap-1.5 transition-all border-none cursor-pointer shadow-sm shadow-red-500/25 active:scale-[0.98]"
+                          className="h-10.5 px-4 rounded-xl bg-[#dc2626] hover:bg-[#b91c1c] active:bg-[#991b1b] text-white text-xs font-bold inline-flex items-center justify-center gap-2 transition-all border-none cursor-pointer shadow-sm shadow-red-500/25 active:scale-[0.98] shrink-0"
                         >
                           <Trash2 size={14} className="text-white shrink-0" />
                           <span className="text-white font-bold whitespace-nowrap">Remove</span>
@@ -716,7 +716,7 @@ export const MenuEditor = ({ shopId }) => {
                           type="submit"
                           disabled={isSaving || isUploading}
                           style={{ backgroundColor: '#dc2626', color: '#ffffff' }}
-                          className="h-10 px-4 flex-1 rounded-xl bg-[#dc2626] hover:bg-[#b91c1c] active:bg-[#991b1b] text-white text-xs font-bold inline-flex items-center justify-center gap-1.5 transition-all border-none cursor-pointer shadow-sm shadow-red-500/25 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="h-10.5 px-5 flex-1 rounded-xl bg-[#dc2626] hover:bg-[#b91c1c] active:bg-[#991b1b] text-white text-xs font-bold inline-flex items-center justify-center gap-2 transition-all border-none cursor-pointer shadow-sm shadow-red-500/25 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           {isSaving ? (
                             <>
@@ -736,7 +736,7 @@ export const MenuEditor = ({ shopId }) => {
                     <div className="flex flex-col gap-3">
                       <div 
                         onClick={() => editFileInputRef.current?.click()}
-                        className={`w-full h-[140px] rounded-2xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all ${
+                        className={`w-full h-[145px] rounded-2xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all ${
                           isUploading 
                             ? 'border-slate-200 bg-slate-50' 
                             : 'border-slate-200 hover:border-red-400 bg-slate-50/50 hover:bg-red-50/20'
@@ -757,12 +757,12 @@ export const MenuEditor = ({ shopId }) => {
                         )}
                       </div>
 
-                      <div className="flex items-center gap-2.5">
+                      <div className="flex items-center gap-3">
                         <button
                           type="button"
                           onClick={() => editFileInputRef.current?.click()}
                           style={{ backgroundColor: '#dc2626', color: '#ffffff' }}
-                          className="h-10 px-4 rounded-xl bg-[#dc2626] hover:bg-[#b91c1c] active:bg-[#991b1b] text-white text-xs font-bold inline-flex items-center justify-center gap-1.5 transition-all border-none cursor-pointer shadow-sm shadow-red-500/25 active:scale-[0.98]"
+                          className="h-10.5 px-4.5 rounded-xl bg-[#dc2626] hover:bg-[#b91c1c] active:bg-[#991b1b] text-white text-xs font-bold inline-flex items-center justify-center gap-2 transition-all border-none cursor-pointer shadow-sm shadow-red-500/25 active:scale-[0.98] shrink-0"
                         >
                           <Camera size={14} className="text-white shrink-0" />
                           <span className="text-white font-bold whitespace-nowrap">Change Photo</span>
@@ -771,7 +771,7 @@ export const MenuEditor = ({ shopId }) => {
                           type="submit"
                           disabled={isSaving || isUploading}
                           style={{ backgroundColor: '#dc2626', color: '#ffffff' }}
-                          className="h-10 px-4 flex-1 rounded-xl bg-[#dc2626] hover:bg-[#b91c1c] active:bg-[#991b1b] text-white text-xs font-bold inline-flex items-center justify-center gap-1.5 transition-all border-none cursor-pointer shadow-sm shadow-red-500/25 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="h-10.5 px-5 flex-1 rounded-xl bg-[#dc2626] hover:bg-[#b91c1c] active:bg-[#991b1b] text-white text-xs font-bold inline-flex items-center justify-center gap-2 transition-all border-none cursor-pointer shadow-sm shadow-red-500/25 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           {isSaving ? (
                             <>
