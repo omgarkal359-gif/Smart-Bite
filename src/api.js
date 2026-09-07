@@ -1,5 +1,6 @@
 import { supabase } from './supabaseClient';
 import { addAuditLog } from './utils/logger';
+import { isAdminEmail } from './utils/auth';
 
 // =============================================================================
 // SINGLE SOURCE OF TRUTH: Supabase (PostgREST + Auth + Realtime).
@@ -140,14 +141,23 @@ export const api = {
       const { data: p } = await supabase.from('profiles').select('*').eq('id', data.user.id).single();
       profile = p;
     } catch (_e) {}
+
+    let role = profile?.role || data.user.app_metadata?.role || data.user.user_metadata?.role;
+    if (isAdminEmail(email)) {
+      role = 'admin';
+    }
+    if (!role) {
+      role = 'student';
+    }
+
     return {
       success: true,
       token: data.session?.access_token,
       user: {
         username: email,
-        name: profile?.full_name || email.split('@')[0],
-        role: profile?.role || 'student',
-        shopId: profile?.shop_id || null
+        name: profile?.full_name || data.user.user_metadata?.full_name || email.split('@')[0],
+        role,
+        shopId: profile?.shop_id || data.user.user_metadata?.shopId || null
       }
     };
   },

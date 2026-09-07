@@ -118,7 +118,11 @@ const LoginPage = () => {
       const resData = await api.login(idInput, pwd);
 
       if (resData?.success && resData?.user) {
-        finish(resData.user.role, resData.user.name, resData.user.username, resData.user.shopId, resData.token);
+        let userRole = resData.user.role;
+        if (isAdminEmail(idInput)) {
+          userRole = 'admin';
+        }
+        finish(userRole, resData.user.name, resData.user.username, resData.user.shopId, resData.token);
       } else {
         try {
           addAuditLog({
