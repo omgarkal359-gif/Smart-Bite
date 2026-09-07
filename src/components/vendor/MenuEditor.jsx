@@ -155,6 +155,11 @@ export const MenuEditor = ({ shopId }) => {
         stock: newStock,
         available: 1
       });
+      setToastMessage({ 
+        type: 'success', 
+        text: `Save changes: "${item.name}" marked ${newInStock ? 'IN STOCK' : 'OUT OF STOCK'}` 
+      });
+      setTimeout(() => setToastMessage(null), 3000);
     } catch (err) {
       console.error('Failed to update item stock status:', err);
     }
@@ -175,7 +180,7 @@ export const MenuEditor = ({ shopId }) => {
       setItems([createdItem, ...items]);
       setNewItem({ name: '', price: '', category: 'Main', img: '' });
       setIsAdding(false);
-      setToastMessage({ type: 'success', text: `"${createdItem.name || 'Item'}" added successfully!` });
+      setToastMessage({ type: 'success', text: `Save changes: "${createdItem.name || 'Item'}" added successfully!` });
       setTimeout(() => setToastMessage(null), 3500);
     } catch (err) {
       alert('Failed to add item: ' + err.message);
@@ -344,10 +349,10 @@ export const MenuEditor = ({ shopId }) => {
               whileHover={{ scale: 1.01 }}
               whileTap={{ scale: 0.99 }}
               type="submit" 
-              className="w-full mt-4 h-[52px] rounded-[18px] text-[15px] font-bold tracking-wide uppercase text-white bg-[#dc2626] hover:bg-[#b91c1c] active:bg-[#991b1b] shadow-[0_4px_20px_rgba(220,38,38,0.4)] hover:shadow-[0_6px_25px_rgba(220,38,38,0.5)] transition-all flex items-center justify-center gap-2 border-none cursor-pointer"
+              className="w-full mt-4 h-[52px] rounded-[18px] text-[15px] font-bold tracking-wide text-white bg-[#dc2626] hover:bg-[#b91c1c] active:bg-[#991b1b] shadow-[0_4px_20px_rgba(220,38,38,0.4)] hover:shadow-[0_6px_25px_rgba(220,38,38,0.5)] transition-all flex items-center justify-center gap-2 border-none cursor-pointer"
             >
               <Check size={19} strokeWidth={3} className="text-white" />
-              <span>SAVE CHANGES</span>
+              <span>Save Changes</span>
             </motion.button>
           </motion.form>
         )}
@@ -684,17 +689,17 @@ export const MenuEditor = ({ shopId }) => {
                 <button
                   type="submit"
                   disabled={isSaving || isUploading}
-                  className="w-full mt-1.5 h-[52px] rounded-[18px] text-[15px] font-bold tracking-wide uppercase text-white bg-[#dc2626] hover:bg-[#b91c1c] active:bg-[#991b1b] active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_4px_20px_rgba(220,38,38,0.4)] hover:shadow-[0_6px_25px_rgba(220,38,38,0.5)] transition-all flex items-center justify-center gap-2 border-none cursor-pointer"
+                  className="w-full mt-1.5 h-[52px] rounded-[18px] text-[15px] font-bold tracking-wide text-white bg-[#dc2626] hover:bg-[#b91c1c] active:bg-[#991b1b] active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_4px_20px_rgba(220,38,38,0.4)] hover:shadow-[0_6px_25px_rgba(220,38,38,0.5)] transition-all flex items-center justify-center gap-2 border-none cursor-pointer"
                 >
                   {isSaving ? (
                     <>
                       <Loader2 size={18} className="animate-spin text-white" />
-                      <span>SAVING...</span>
+                      <span>Saving Changes...</span>
                     </>
                   ) : (
                     <>
                       <Check size={19} strokeWidth={3} className="text-white" />
-                      <span>SAVE CHANGES</span>
+                      <span>Save Changes</span>
                     </>
                   )}
                 </button>
