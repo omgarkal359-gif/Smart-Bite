@@ -719,7 +719,7 @@ export const MenuEditor = ({ shopId }) => {
                   ) : (
                     <div 
                       onClick={() => editFileInputRef.current?.click()}
-                      className={`w-full h-[140px] rounded-xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all ${
+                      className={`w-full h-[145px] rounded-xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all ${
                         isUploading 
                           ? 'border-slate-200 bg-slate-50' 
                           : 'border-slate-200 hover:border-red-400 bg-slate-50/50 hover:bg-red-50/30'
@@ -731,14 +731,16 @@ export const MenuEditor = ({ shopId }) => {
                           <span className="text-xs font-medium text-slate-500">Uploading photo...</span>
                         </div>
                       ) : (
-                        <div className="flex flex-col items-center gap-2 text-center p-4">
-                          <div className="w-10 h-10 rounded-full bg-white shadow-xs border border-slate-200 flex items-center justify-center text-slate-400">
-                            <Upload size={16} />
-                          </div>
-                          <div>
-                            <p className="text-xs font-semibold text-slate-700 m-0">Click to upload photo</p>
-                            <p className="text-[11px] text-slate-400 m-0 mt-0.5">PNG, JPG or WebP up to 5MB</p>
-                          </div>
+                        <div className="flex flex-col items-center gap-2.5 text-center p-4">
+                          <button
+                            type="button"
+                            onClick={() => editFileInputRef.current?.click()}
+                            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#dc2626] hover:bg-[#b91c1c] active:bg-[#991b1b] text-white text-xs font-bold shadow-sm shadow-red-500/30 border-none cursor-pointer transition-all hover:scale-105 active:scale-95"
+                          >
+                            <Camera size={15} className="text-white" />
+                            <span className="text-white">Change Photo</span>
+                          </button>
+                          <p className="text-[11px] text-slate-400 m-0">Click to browse PNG, JPG or WebP (up to 5MB)</p>
                         </div>
                       )}
                     </div>
