@@ -64,7 +64,14 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
         const { data } = await supabase.auth.getSession();
         if (data?.session?.user) {
           const userEmail = (data.session.user.email || '').toLowerCase().trim();
-          let role = data.session.user.app_metadata?.role || data.session.user.user_metadata?.role;
+
+          let profile = null;
+          try {
+            const { data: p } = await supabase.from('profiles').select('role, shop_id').eq('id', data.session.user.id).single();
+            profile = p;
+          } catch (_e) {}
+
+          let role = profile?.role || data.session.user.app_metadata?.role || data.session.user.user_metadata?.role;
           
           if (isAdminEmail(userEmail) || (saved && saved.role === 'admin')) {
             role = 'admin';

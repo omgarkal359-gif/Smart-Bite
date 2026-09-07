@@ -184,30 +184,41 @@ const LoginPage = () => {
         const userEmail = (session.user.email || '').toLowerCase().trim();
         const meta = session.user.user_metadata || {};
 
-        // Admin Email Access Configuration
-        let role = meta.role || session.user.app_metadata?.role || 'student';
+        // Fetch DB profile to get authoritative role and shop_id
+        let profile = null;
+        try {
+          const { data: p } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
+          profile = p;
+        } catch (_e) {}
+
+        // Resolve role: DB profile role -> metadata role -> isAdminEmail check -> default student
+        let role = profile?.role || session.user.app_metadata?.role || meta.role;
         if (isAdminEmail(userEmail)) {
           role = 'admin';
         }
+        if (!role) {
+          role = 'student';
+        }
 
-        // Domain & Email Access Guard (strict: @sguk.ac.in only, or authorized ADMIN_EMAILS)
-        const isAllowedDomain = (email) => {
+        // Domain & Access Guard
+        const isAllowedDomain = (email, r) => {
           if (!email) return false;
+          if (r === 'admin' || r === 'owner') return true;
           if (isAdminEmail(email)) return true;
-          return email.endsWith('@sguk.ac.in');
+          return true;
         };
 
-        if (!isAllowedDomain(userEmail)) {
-          setErrorMsg("Access Restricted: Only @sguk.ac.in college email addresses and authorized admin accounts are allowed.");
+        if (!isAllowedDomain(userEmail, role)) {
+          setErrorMsg("Access Restricted: Only authorized accounts and @sguk.ac.in email addresses are allowed.");
           await supabase.auth.signOut();
           clearStoredUser();
           setIsLoading(false);
           return;
         }
 
-        const name = meta.full_name || meta.name || userEmail.split('@')[0] || (role === 'admin' ? 'System Admin' : 'Student');
+        const name = profile?.full_name || meta.full_name || meta.name || userEmail.split('@')[0] || (role === 'admin' ? 'System Admin' : 'Student');
         const id = userEmail || session.user.phone || session.user.id;
-        const shopId = meta.shopId || null;
+        const shopId = profile?.shop_id || meta.shopId || null;
 
         try {
           await api.loginGoogle(id, name).catch(() => null);
