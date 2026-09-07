@@ -716,7 +716,7 @@ export const MenuEditor = ({ shopId }) => {
                   />
                 </div>
 
-                {/* Primary Update Menu CTA Button */}
+                {/* Save Changes Red Button */}
                 <button
                   type="submit"
                   disabled={isSaving || isUploading}
@@ -725,12 +725,12 @@ export const MenuEditor = ({ shopId }) => {
                   {isSaving ? (
                     <>
                       <Loader2 size={18} className="animate-spin text-white" />
-                      <span>Updating Menu...</span>
+                      <span className="text-white">Saving Changes...</span>
                     </>
                   ) : (
                     <>
                       <Check size={19} strokeWidth={3} className="text-white" />
-                      <span>Update Menu</span>
+                      <span className="text-white">Save Changes</span>
                     </>
                   )}
                 </button>
