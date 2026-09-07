@@ -495,7 +495,7 @@ export const MenuEditor = ({ shopId }) => {
         )}
       </AnimatePresence>
 
-      {/* Exact 1:1 Pixel-Matched Edit Menu Item Modal */}
+      {/* Exact 1:1 Pixel-Matched Edit Dish Details Modal */}
       <AnimatePresence>
         {editingItem && (
           <div 
@@ -511,8 +511,8 @@ export const MenuEditor = ({ shopId }) => {
             >
               {/* Header */}
               <div className="px-6 pt-5 pb-4 border-b border-slate-100 flex items-center justify-between bg-white">
-                <h3 className="text-[20px] font-bold text-slate-800 tracking-tight m-0">
-                  Edit Menu Item
+                <h3 className="text-[20px] font-bold text-slate-800 tracking-tight m-0 font-['Inter',sans-serif]">
+                  Edit Dish Details
                 </h3>
                 <button 
                   type="button"
@@ -525,7 +525,7 @@ export const MenuEditor = ({ shopId }) => {
               </div>
               
               {/* Form Body */}
-              <form onSubmit={handleSaveEdit} className="p-6 flex flex-col gap-4 m-0 bg-white">
+              <form onSubmit={handleSaveEdit} className="p-6 flex flex-col gap-4 m-0 bg-white font-['Inter',sans-serif]">
                 
                 {/* ITEM NAME */}
                 <div className="flex flex-col gap-1.5">
@@ -685,7 +685,7 @@ export const MenuEditor = ({ shopId }) => {
                   />
                 </div>
 
-                {/* SAVE CHANGES Button with Exact Red Background, White Text & Ambient Red Glow */}
+                {/* Primary Update Menu CTA Button */}
                 <button
                   type="submit"
                   disabled={isSaving || isUploading}
@@ -694,12 +694,12 @@ export const MenuEditor = ({ shopId }) => {
                   {isSaving ? (
                     <>
                       <Loader2 size={18} className="animate-spin text-white" />
-                      <span>Saving Changes...</span>
+                      <span>Updating Menu...</span>
                     </>
                   ) : (
                     <>
                       <Check size={19} strokeWidth={3} className="text-white" />
-                      <span>Save Changes</span>
+                      <span>Update Menu</span>
                     </>
                   )}
                 </button>
