@@ -347,14 +347,15 @@ export const MenuEditor = ({ shopId }) => {
                 >
                   <img src={newItem.img} className="preview-image" alt="New dish preview" />
                 </div>
-                <div className="flex items-center gap-2.5">
+                <div className="flex items-center gap-2 mt-1">
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="flex-1 h-10 px-4 rounded-xl bg-[#dc2626] hover:bg-[#b91c1c] active:bg-[#991b1b] text-white text-xs font-bold flex items-center justify-center gap-2 transition-all border-none cursor-pointer shadow-sm shadow-red-500/20 active:scale-[0.99]"
+                    style={{ backgroundColor: '#dc2626', color: '#ffffff' }}
+                    className="h-[34px] px-3.5 rounded-lg bg-[#dc2626] hover:bg-[#b91c1c] active:bg-[#991b1b] text-white text-xs font-bold inline-flex items-center justify-center gap-1.5 transition-all border-none cursor-pointer shadow-sm shadow-red-500/20 active:scale-[0.98]"
                   >
-                    <Camera size={15} className="text-white" />
-                    <span className="text-white">Change Photo</span>
+                    <Camera size={14} className="text-white shrink-0" />
+                    <span className="text-white font-bold whitespace-nowrap">Change Photo</span>
                   </button>
                   <button
                     type="button"
@@ -363,10 +364,11 @@ export const MenuEditor = ({ shopId }) => {
                       setNewItem({ ...newItem, img: '' });
                       if (fileInputRef.current) fileInputRef.current.value = '';
                     }}
-                    className="h-10 px-4 rounded-xl bg-[#dc2626] hover:bg-[#b91c1c] active:bg-[#991b1b] text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-all border-none cursor-pointer shadow-sm shadow-red-500/20 active:scale-[0.99]"
+                    style={{ backgroundColor: '#dc2626', color: '#ffffff' }}
+                    className="h-[34px] px-3.5 rounded-lg bg-[#dc2626] hover:bg-[#b91c1c] active:bg-[#991b1b] text-white text-xs font-bold inline-flex items-center justify-center gap-1.5 transition-all border-none cursor-pointer shadow-sm shadow-red-500/20 active:scale-[0.98]"
                   >
-                    <Trash2 size={15} className="text-white" />
-                    <span className="text-white">Remove</span>
+                    <Trash2 size={14} className="text-white shrink-0" />
+                    <span className="text-white font-bold whitespace-nowrap">Remove</span>
                   </button>
                 </div>
               </div>
@@ -696,32 +698,32 @@ export const MenuEditor = ({ shopId }) => {
                         </span>
                       </div>
                       
-                      {/* Change Photo & Remove Action Buttons */}
-                      <div className="flex items-center gap-2">
+                      {/* Compact Change Photo & Remove Action Buttons */}
+                      <div className="flex items-center gap-2 mt-0.5">
                         <button
                           type="button"
                           onClick={() => editFileInputRef.current?.click()}
                           style={{ backgroundColor: '#dc2626', color: '#ffffff' }}
-                          className="flex-1 h-9 px-3 rounded-lg bg-[#dc2626] hover:bg-[#b91c1c] active:bg-[#991b1b] text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-all border-none cursor-pointer shadow-sm shadow-red-500/20 active:scale-[0.99]"
+                          className="h-[34px] px-3.5 rounded-lg bg-[#dc2626] hover:bg-[#b91c1c] active:bg-[#991b1b] text-white text-xs font-bold inline-flex items-center justify-center gap-1.5 transition-all border-none cursor-pointer shadow-sm shadow-red-500/20 active:scale-[0.98]"
                         >
                           <Camera size={14} className="text-white shrink-0" />
-                          <span className="text-white font-bold">Change Photo</span>
+                          <span className="text-white font-bold whitespace-nowrap">Change Photo</span>
                         </button>
                         <button
                           type="button"
                           onClick={(e) => handleRemoveImage(e)}
                           style={{ backgroundColor: '#dc2626', color: '#ffffff' }}
-                          className="h-9 px-3 rounded-lg bg-[#dc2626] hover:bg-[#b91c1c] active:bg-[#991b1b] text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-all border-none cursor-pointer shadow-sm shadow-red-500/20 active:scale-[0.99]"
+                          className="h-[34px] px-3.5 rounded-lg bg-[#dc2626] hover:bg-[#b91c1c] active:bg-[#991b1b] text-white text-xs font-bold inline-flex items-center justify-center gap-1.5 transition-all border-none cursor-pointer shadow-sm shadow-red-500/20 active:scale-[0.98]"
                         >
                           <Trash2 size={14} className="text-white shrink-0" />
-                          <span className="text-white font-bold">Remove</span>
+                          <span className="text-white font-bold whitespace-nowrap">Remove</span>
                         </button>
                       </div>
                     </div>
                   ) : (
                     <div 
                       onClick={() => editFileInputRef.current?.click()}
-                      className={`w-full h-[125px] rounded-xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all ${
+                      className={`w-full h-[120px] rounded-xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all ${
                         isUploading 
                           ? 'border-slate-200 bg-slate-50' 
                           : 'border-slate-200 hover:border-red-400 bg-slate-50/50 hover:bg-red-50/20'
@@ -738,10 +740,10 @@ export const MenuEditor = ({ shopId }) => {
                             type="button"
                             onClick={() => editFileInputRef.current?.click()}
                             style={{ backgroundColor: '#dc2626', color: '#ffffff' }}
-                            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#dc2626] hover:bg-[#b91c1c] active:bg-[#991b1b] text-white text-xs font-bold shadow-sm shadow-red-500/30 border-none cursor-pointer transition-all hover:scale-105 active:scale-95"
+                            className="inline-flex items-center gap-1.5 px-3.5 h-[34px] rounded-lg bg-[#dc2626] hover:bg-[#b91c1c] active:bg-[#991b1b] text-white text-xs font-bold shadow-sm shadow-red-500/30 border-none cursor-pointer transition-all hover:scale-105 active:scale-95"
                           >
                             <Camera size={14} className="text-white shrink-0" />
-                            <span className="text-white font-bold">Change Photo</span>
+                            <span className="text-white font-bold whitespace-nowrap">Change Photo</span>
                           </button>
                           <p className="text-[10px] text-slate-400 m-0">PNG, JPG or WebP up to 5MB</p>
                         </div>
