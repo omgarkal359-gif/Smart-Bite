@@ -18,13 +18,18 @@ const supabase = (supabaseUrl && supabaseServiceKey)
  * to test mode (process.env.NODE_ENV === 'test').
  */
 export function requireAuth(req, res, next) {
-  // Support test environment ONLY (prevent production header spoofing)
+  // Support test environment ONLY for test suite headers with strict allowlist enforcement
   if (process.env.NODE_ENV === 'test') {
     if (req.headers['x-user-id'] || req.headers['x-user-role']) {
+      const email = (req.headers['x-user-email'] || req.headers['x-user-id'] || 'test@sgu.edu').trim().toLowerCase();
+      const rawRole = (req.headers['x-user-role'] || 'student').toLowerCase();
+      const isAllowedAdmin = config.ADMIN_EMAILS.includes(email);
+      const role = (rawRole === 'admin' && !isAllowedAdmin) ? 'student' : rawRole;
+
       req.user = {
         id: req.headers['x-user-id'] || 'test-user-id',
-        email: req.headers['x-user-id'] || 'test@sgu.edu',
-        role: req.headers['x-user-role'] || 'admin',
+        email,
+        role,
         shopId: req.headers['x-shop-id'] || null
       };
       return next();
@@ -44,10 +49,21 @@ export function requireAuth(req, res, next) {
     supabase.auth.getUser(token)
       .then(({ data, error }) => {
         if (!error && data?.user) {
+          const verifiedEmail = (data.user.email || '').trim().toLowerCase();
+          const isAllowedAdmin = config.ADMIN_EMAILS.includes(verifiedEmail);
+          const rawRole = (data.user.app_metadata?.role || data.user.user_metadata?.role || 'student').toLowerCase();
+          
+          let effectiveRole = rawRole;
+          if (rawRole === 'admin' && !isAllowedAdmin) {
+            effectiveRole = 'student';
+          } else if (isAllowedAdmin && rawRole !== 'owner') {
+            effectiveRole = 'admin';
+          }
+
           req.user = {
             id: data.user.id,
-            email: data.user.email,
-            role: data.user.app_metadata?.role || data.user.user_metadata?.role || 'student',
+            email: verifiedEmail,
+            role: effectiveRole,
             shopId: data.user.app_metadata?.shopId || data.user.user_metadata?.shopId || null
           };
           return next();
@@ -67,10 +83,21 @@ export function requireAuth(req, res, next) {
 function verifyAppJwt(token, req, res, next) {
   try {
     const decoded = jwt.verify(token, config.JWT_SECRET);
+    const verifiedEmail = (decoded.email || decoded.username || '').trim().toLowerCase();
+    const isAllowedAdmin = config.ADMIN_EMAILS.includes(verifiedEmail);
+    const rawRole = (decoded.role || 'student').toLowerCase();
+
+    let effectiveRole = rawRole;
+    if (rawRole === 'admin' && !isAllowedAdmin) {
+      effectiveRole = 'student';
+    } else if (isAllowedAdmin && rawRole !== 'owner') {
+      effectiveRole = 'admin';
+    }
+
     req.user = {
       id: decoded.sub || decoded.id || decoded.username,
-      email: decoded.email || decoded.username,
-      role: decoded.role || 'student',
+      email: verifiedEmail,
+      role: effectiveRole,
       shopId: decoded.shopId || null
     };
     return next();
@@ -91,6 +118,19 @@ export function requireRole(...roles) {
     if (!req.user) {
       return res.status(401).json({ success: false, message: 'Authentication required.' });
     }
+
+    const verifiedEmail = (req.user.email || '').trim().toLowerCase();
+    const isAllowedAdmin = config.ADMIN_EMAILS.includes(verifiedEmail);
+
+    if (roles.includes('admin')) {
+      if (req.user.role !== 'admin' || !isAllowedAdmin) {
+        return res.status(403).json({ 
+          success: false, 
+          message: 'Admin access denied: Email is not on the authorized admin allowlist.' 
+        });
+      }
+    }
+
     if (!roles.includes(req.user.role)) {
       return res.status(403).json({ success: false, message: 'Insufficient permissions.' });
     }

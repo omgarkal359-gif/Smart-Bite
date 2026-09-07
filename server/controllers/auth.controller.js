@@ -16,11 +16,15 @@ function sanitizeUser(user) {
 }
 
 function issueToken(user) {
+  const verifiedEmail = (user.username || user.email || '').trim().toLowerCase();
+  const isAllowedAdmin = config.ADMIN_EMAILS.includes(verifiedEmail);
+  const effectiveRole = (user.role === 'admin' && !isAllowedAdmin) ? 'student' : user.role;
+
   const payload = {
     sub: user.id || user.username,
     username: user.username,
-    email: user.username,
-    role: user.role,
+    email: verifiedEmail,
+    role: effectiveRole,
     shopId: user.shopId || null
   };
   return jwt.sign(payload, config.JWT_SECRET, { expiresIn: '7d' });
@@ -122,8 +126,8 @@ export async function loginGoogle(req, res, next) {
       return res.status(400).json({ success: false, message: 'Authentication token or email is required.' });
     }
 
-    const ADMIN_EMAILS = ['omgarkal359@gmail.com', 'omgarkal357@gmail.com', 'admin@sgu.edu', 'admin@sguk.ac.in', 'admin@sgu.ac.in'];
-    const assignedRole = ADMIN_EMAILS.includes(cleanId) ? 'admin' : 'student';
+    const isAllowedAdmin = config.ADMIN_EMAILS.includes(cleanId);
+    const assignedRole = isAllowedAdmin ? 'admin' : 'student';
 
     let user = await db.get('SELECT * FROM users WHERE LOWER(username) = ?', [cleanId]);
     
@@ -133,9 +137,12 @@ export async function loginGoogle(req, res, next) {
         [cleanId, displayName, '', assignedRole, null]
       );
       user = await db.get('SELECT * FROM users WHERE LOWER(username) = ?', [cleanId]);
-    } else if (ADMIN_EMAILS.includes(cleanId) && user.role !== 'admin') {
+    } else if (isAllowedAdmin && user.role !== 'admin' && user.role !== 'owner') {
       await db.run('UPDATE users SET role = ? WHERE LOWER(username) = ?', ['admin', cleanId]);
       user.role = 'admin';
+    } else if (!isAllowedAdmin && user.role === 'admin') {
+      await db.run('UPDATE users SET role = ? WHERE LOWER(username) = ?', ['student', cleanId]);
+      user.role = 'student';
     }
 
     syncUserToSupabaseAuth(cleanId, displayName, null, user.role);

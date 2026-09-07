@@ -28,6 +28,12 @@ const PAYMENT_PROVIDER = process.env.PAYMENT_PROVIDER || 'mock';
 const PLATFORM_COMMISSION_PERCENT = parseFloat(process.env.PLATFORM_COMMISSION_PERCENT) || 10;
 const RECONCILE_TOKEN = process.env.RECONCILE_TOKEN || 'sgu_reconcile_secret_token_2026';
 
+const ADMIN_EMAILS_RAW = process.env.ADMIN_EMAILS || 'omgarkal357@gmail.com,omgarkal359@gmail.com';
+const ADMIN_EMAILS = ADMIN_EMAILS_RAW
+  .split(',')
+  .map(email => email.trim().toLowerCase())
+  .filter(Boolean);
+
 export const config = {
   NODE_ENV,
   VERCEL,
@@ -45,7 +51,8 @@ export const config = {
   JWT_SECRET,
   PAYMENT_PROVIDER,
   PLATFORM_COMMISSION_PERCENT,
-  RECONCILE_TOKEN
+  RECONCILE_TOKEN,
+  ADMIN_EMAILS
 };
 
 // Soft warnings in production for environment configuration

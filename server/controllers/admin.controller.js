@@ -395,6 +395,16 @@ export async function createUser(req, res, next) {
     const userRole = (role || 'student').toLowerCase();
     const userName = name || userEmail.split('@')[0];
 
+    if (userRole === 'admin') {
+      const isAllowedAdmin = config.ADMIN_EMAILS.includes(userEmail.trim().toLowerCase());
+      if (!isAllowedAdmin) {
+        return res.status(403).json({
+          success: false,
+          message: 'Cannot create user with admin role: Email is not in the strict server-side admin allowlist.'
+        });
+      }
+    }
+
     await db.run(
       'INSERT INTO users (id, username, name, role, shopId, account_status) VALUES (?, ?, ?, ?, ?, "ACTIVE")',
       [userId, userEmail, userName, userRole, shopId || null]
@@ -475,6 +485,19 @@ export async function updateUserRole(req, res, next) {
 
     const cleanRole = role.toLowerCase();
     const actor = req.user?.email || req.user?.id || 'admin';
+
+    // 0. Enforce strict server-side admin allowlist for admin role assignment
+    if (cleanRole === 'admin') {
+      const targetUser = await db.get('SELECT * FROM users WHERE id = ? OR LOWER(username) = LOWER(?)', [id, id]).catch(() => null);
+      const targetEmail = (targetUser?.username || id).trim().toLowerCase();
+      const isAllowedAdmin = config.ADMIN_EMAILS.includes(targetEmail);
+      if (!isAllowedAdmin) {
+        return res.status(403).json({
+          success: false,
+          message: 'Cannot assign admin role: Email is not in the strict server-side admin allowlist.'
+        });
+      }
+    }
 
     // 1. Prevent admin self-demotion
     if ((String(id) === String(req.user?.id) || id === req.user?.email) && cleanRole !== 'admin') {
