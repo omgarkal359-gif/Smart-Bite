@@ -112,7 +112,7 @@ export const MenuEditor = ({ shopId }) => {
       };
       await api.updateMenuItem(editingItem.id, payload);
       setItems(items.map(i => i.id === editingItem.id ? { ...i, ...payload, inStock: !isOut, isOutOfStock: isOut } : i));
-      setToastMessage({ type: 'success', text: `"${payload.name}" updated successfully!` });
+      setToastMessage({ type: 'success', text: `Save changes: "${payload.name}" updated successfully!` });
       setTimeout(() => setToastMessage(null), 3500);
       setEditingItem(null);
       setOriginalItem(null);
@@ -458,30 +458,33 @@ export const MenuEditor = ({ shopId }) => {
         })}
       </div>
 
-      {/* Floating Toast Notification */}
+      {/* Floating Toast Notification matching white pill with red ambient glow */}
       <AnimatePresence>
         {toastMessage && (
           <motion.div
-            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            initial={{ opacity: 0, y: 30, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            className={`fixed bottom-6 right-6 z-[3000] flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl border text-sm font-medium ${
+            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            className={`fixed bottom-8 right-8 z-[3000] flex items-center gap-3 px-6 py-3.5 rounded-[20px] bg-white border-[1.5px] ${
               toastMessage.type === 'error'
-                ? 'bg-rose-950 text-rose-100 border-rose-800'
-                : 'bg-slate-900 text-white border-slate-800'
-            }`}
+                ? 'border-rose-400 shadow-[0_0_22px_rgba(244,63,94,0.4)] text-rose-700'
+                : 'border-[#f87171] shadow-[0_0_24px_rgba(239,68,68,0.38)] ring-2 ring-red-100/70 text-slate-800'
+            } text-sm font-bold tracking-wide`}
           >
             {toastMessage.type === 'error' ? (
-              <AlertCircle size={18} className="text-rose-400 shrink-0" />
+              <AlertCircle size={19} className="text-rose-500 shrink-0" />
             ) : (
-              <CheckCircle2 size={18} className="text-emerald-400 shrink-0" />
+              <div className="w-6 h-6 rounded-full bg-red-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+                <Check size={14} strokeWidth={3} />
+              </div>
             )}
-            <span>{toastMessage.text}</span>
+            <span className="font-bold">{toastMessage.text}</span>
             <button
               onClick={() => setToastMessage(null)}
-              className="ml-2 text-slate-400 hover:text-white bg-transparent border-none cursor-pointer p-1 flex items-center"
+              className="ml-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 p-1 rounded-full transition-colors border-none bg-transparent cursor-pointer flex items-center"
             >
-              <X size={14} />
+              <X size={15} strokeWidth={2.5} />
             </button>
           </motion.div>
         )}
