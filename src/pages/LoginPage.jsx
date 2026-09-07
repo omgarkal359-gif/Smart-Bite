@@ -107,7 +107,7 @@ const LoginPage = () => {
     const idInput = staffId.trim();
     const pwd = staffPwd.trim();
     if (!idInput || !pwd) {
-      setErrorMsg('Please enter both ID and password.');
+      setErrorMsg('Please enter your email and password.');
       return;
     }
     setIsLoading(true);
@@ -273,13 +273,13 @@ const LoginPage = () => {
             onClick={() => setShowStaffLogin(prev => !prev)}
           >
             <IconBuildingStore size={15} />
-            <span>{showStaffLogin ? 'Hide Staff Login' : 'Staff / Vendor / Admin Login'}</span>
+            <span>{showStaffLogin ? 'Hide Vendor Login' : 'Vendor / Admin Login'}</span>
           </button>
 
           {showStaffLogin && (
             <form onSubmit={handleStaffLogin} className="sb-staff-form">
               <div className="sb-field">
-                <label className="sb-field-label" htmlFor="staff-id">Shop ID or Admin Username</label>
+                <label className="sb-field-label" htmlFor="staff-id">Email or Username</label>
                 <div className="sb-field-wrap">
                   <IconMail className="sb-field-icon" size={17} />
                   <input
@@ -287,7 +287,7 @@ const LoginPage = () => {
                     type="text"
                     value={staffId}
                     onChange={(e) => setStaffId(e.target.value)}
-                    placeholder="e.g. mangales-snacks or admin"
+                    placeholder="e.g. vendor@email.com"
                     className="sb-field-input"
                   />
                 </div>
@@ -309,7 +309,7 @@ const LoginPage = () => {
               </div>
 
               <button type="submit" disabled={isLoading} className="sb-btn-primary sb-btn-staff">
-                <span>Sign in as Staff</span>
+                <span>Sign in</span>
                 <IconArrowRight size={17} />
               </button>
             </form>
