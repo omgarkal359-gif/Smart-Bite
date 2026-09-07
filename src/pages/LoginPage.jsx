@@ -141,6 +141,31 @@ const LoginPage = () => {
             token: 'mock-student-token'
           };
         }
+
+        // Check dynamically registered vendors from localStorage
+        try {
+          const storedStalls = JSON.parse(localStorage.getItem('sgu_stalls') || '[]');
+          const storedUsers = JSON.parse(localStorage.getItem('sgu_user_directory') || '[]');
+          
+          const foundUser = storedUsers.find(u => String(u.username || u.email).toLowerCase() === lowerId);
+          if (foundUser && (!foundUser.password || foundUser.password === pwd)) {
+            return {
+              success: true,
+              user: { role: foundUser.role || 'owner', name: foundUser.name, username: foundUser.username || foundUser.email, shopId: foundUser.shopId },
+              token: 'mock-vendor-token'
+            };
+          }
+
+          const foundStall = storedStalls.find(s => String(s.email).toLowerCase() === lowerId || String(s.id).toLowerCase() === lowerId);
+          if (foundStall && (!foundStall.password || foundStall.password === pwd)) {
+            return {
+              success: true,
+              user: { role: foundStall.role || 'owner', name: foundStall.ownerName || foundStall.name, username: foundStall.email || foundStall.id, shopId: foundStall.id },
+              token: 'mock-vendor-token'
+            };
+          }
+        } catch (e) {}
+
         throw new Error('Invalid credentials.');
       });
 
@@ -302,21 +327,13 @@ const LoginPage = () => {
             onClick={() => setShowStaffLogin(prev => !prev)}
           >
             <IconBuildingStore size={15} />
-<<<<<<< HEAD
-            <span>{showStaffLogin ? 'Hide Vendor Login' : 'Vendor / Admin Login'}</span>
-=======
-            <span>{showStaffLogin ? 'Hide Staff / Student Login' : 'Staff / Vendor / Student Login'}</span>
->>>>>>> 796a41d (feat(auth): add demo student login support for cashfreedemo@smartbite.in)
+            <span>{showStaffLogin ? 'Hide Password Login' : 'Vendor / Admin / Email Login'}</span>
           </button>
 
           {showStaffLogin && (
             <form onSubmit={handleStaffLogin} className="sb-staff-form">
               <div className="sb-field">
-<<<<<<< HEAD
-                <label className="sb-field-label" htmlFor="staff-id">Email or Username</label>
-=======
-                <label className="sb-field-label" htmlFor="staff-id">Shop ID, Admin Username, or Student Email</label>
->>>>>>> 796a41d (feat(auth): add demo student login support for cashfreedemo@smartbite.in)
+                <label className="sb-field-label" htmlFor="staff-id">Email ID or Username</label>
                 <div className="sb-field-wrap">
                   <IconMail className="sb-field-icon" size={17} />
                   <input
@@ -324,11 +341,7 @@ const LoginPage = () => {
                     type="text"
                     value={staffId}
                     onChange={(e) => setStaffId(e.target.value)}
-<<<<<<< HEAD
-                    placeholder="e.g. vendor@email.com"
-=======
-                    placeholder="e.g. cashfreedemo@smartbite.in or admin"
->>>>>>> 796a41d (feat(auth): add demo student login support for cashfreedemo@smartbite.in)
+                    placeholder="e.g. vendor@sgu.edu or admin"
                     className="sb-field-input"
                   />
                 </div>

@@ -585,10 +585,12 @@ export async function initDatabase() {
     CREATE TABLE IF NOT EXISTS users (
       id ${idType},
       username TEXT UNIQUE,
+      email TEXT,
       name TEXT,
       password TEXT,
       role TEXT,
-      shopId TEXT
+      shopId TEXT,
+      account_status TEXT DEFAULT 'ACTIVE'
     );
   `);
 
@@ -796,6 +798,10 @@ export async function initDatabase() {
       updated_at TEXT
     );
   `);
+
+  // Ensure optional columns exist on existing users tables
+  await db.exec('ALTER TABLE users ADD COLUMN email TEXT;').catch(() => {});
+  await db.exec("ALTER TABLE users ADD COLUMN account_status TEXT DEFAULT 'ACTIVE';").catch(() => {});
 
   // Create indices to optimize query performance (Finding 9)
   await db.exec('CREATE INDEX IF NOT EXISTS idx_menu_items_stall_id ON menu_items (stallId);');

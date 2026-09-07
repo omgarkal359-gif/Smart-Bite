@@ -95,11 +95,32 @@ export async function login(req, res, next) {
       return res.json({ success: true, user: sanitizeUser(demoUser), token });
     }
 
-    // Auto-detect user in database by username or shopId
+    // Auto-detect user in database by username, email, or shopId
     let user = await db.get(
-      'SELECT * FROM users WHERE LOWER(username) = LOWER(?) OR (LOWER(shopId) = LOWER(?) AND role = ?)',
-      [cleanUsername, cleanUsername, 'owner']
+      'SELECT * FROM users WHERE LOWER(username) = LOWER(?) OR LOWER(email) = LOWER(?) OR (LOWER(shopId) = LOWER(?) AND role = ?)',
+      [cleanUsername, cleanUsername, cleanUsername, 'owner']
     );
+
+    // Fallback: If user record not found in users table, check stalls table by email or shop ID
+    if (!user) {
+      const stall = await db.get(
+        'SELECT * FROM stalls WHERE LOWER(email) = LOWER(?) OR LOWER(id) = LOWER(?)',
+        [cleanUsername, cleanUsername]
+      );
+
+      if (stall) {
+        user = await db.get('SELECT * FROM users WHERE LOWER(shopId) = LOWER(?)', [stall.id]);
+        if (!user) {
+          const plainPwd = (password && password.trim()) ? password.trim() : '00000000';
+          const defaultHashed = await hashPassword(plainPwd);
+          await db.run(
+            'INSERT INTO users (id, username, email, name, password, role, shopId, account_status) VALUES (?, ?, ?, ?, ?, ?, ?, "ACTIVE")',
+            [`usr-${stall.id}`, stall.email || `${stall.id}@sgu.edu`, stall.email || `${stall.id}@sgu.edu`, stall.owner_name || stall.name, defaultHashed, 'owner', stall.id]
+          );
+          user = await db.get('SELECT * FROM users WHERE LOWER(shopId) = LOWER(?)', [stall.id]);
+        }
+      }
+    }
 
     if (user) {
       if (!password || password.trim() === '') {

@@ -239,7 +239,9 @@ export const VendorsModule = () => {
         storedUsers.unshift({
           id: `usr-${vendorId}`,
           username: formData.email,
+          email: formData.email,
           name: formData.ownerName,
+          password: formData.password,
           role: formData.role || 'owner',
           shopId: vendorId,
           status: 'ACTIVE'

@@ -10,7 +10,7 @@ import { config } from '../config.js';
 let server;
 let PORT;
 
-function getAuthHeader(role = 'admin', userId = 'admin@sgu.edu', shopId = 'mangales-snacks') {
+function getAuthHeader(role = 'admin', userId = 'omgarkal357@gmail.com', shopId = 'mangales-snacks') {
   const token = jwt.sign(
     { sub: userId, email: userId, role, shopId },
     config.JWT_SECRET,
@@ -27,7 +27,7 @@ function request(method, path, body = null, headers = {}) {
     let authHeaders = {};
     if (!headers['Authorization'] && !headers['authorization']) {
       const role = headers['x-user-role'] || 'admin';
-      const userId = headers['x-user-id'] || 'admin@sgu.edu';
+      const userId = headers['x-user-id'] || 'omgarkal357@gmail.com';
       const shopId = headers['x-shop-id'] || 'mangales-snacks';
       authHeaders = getAuthHeader(role, userId, shopId);
     }
@@ -218,7 +218,7 @@ async function runControllerTests() {
 
   await test('GET /api/orders/:id security guard allows order owner', async () => {
     const res = await request('GET', `/api/orders/${createdOrderId}`, null, {
-      'x-user-id': 'admin@sgu.edu',
+      'x-user-id': 'omgarkal357@gmail.com',
       'x-user-role': 'admin'
     });
     assert.strictEqual(res.status, 200);

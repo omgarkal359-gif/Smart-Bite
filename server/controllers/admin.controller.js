@@ -5,6 +5,7 @@ import { runDatabaseIntegrityCheck } from '../utils/dbIntegrity.js';
 import { archiveAuditLogs } from '../utils/auditArchival.js';
 import { createClient } from '@supabase/supabase-js';
 import { config } from '../config.js';
+import { hashPassword } from '../utils/password.js';
 
 const supabaseUrl = config.SUPABASE_URL;
 const supabaseServiceKey = config.SUPABASE_SERVICE_ROLE_KEY;
@@ -49,21 +50,23 @@ export async function createVendor(req, res, next) {
 
     const stallId = id || name.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') || `stall-${Date.now()}`;
     const cleanRole = (role || 'owner').toLowerCase();
+    const plainPassword = (password && password.trim()) ? password.trim() : '00000000';
+    const hashedPassword = await hashPassword(plainPassword);
 
     // 1. Insert into SQLite `stalls` table
     await db.run(
       `INSERT INTO stalls (id, name, owner_name, email, category, operating_hours, online, status, bank_account_number, ifsc_code, bank_name, branch)
        VALUES (?, ?, ?, ?, ?, ?, 1, "ONLINE", ?, ?, ?, ?)
-       ON CONFLICT(id) DO UPDATE SET name=excluded.name, owner_name=excluded.owner_name, email=excluded.email, category=excluded.category`,
+       ON CONFLICT(id) DO UPDATE SET name=excluded.name, owner_name=excluded.owner_name, email=excluded.email, category=excluded.category, bank_account_number=excluded.bank_account_number, ifsc_code=excluded.ifsc_code, bank_name=excluded.bank_name, branch=excluded.branch`,
       [stallId, name, ownerName || null, email, category || 'Campus Stall', operatingHours || '08:30 AM - 07:30 PM', accountNumber || null, ifscCode || null, bankName || null, branch || null]
     ).catch(() => {});
 
-    // 2. Insert into SQLite `users` table
+    // 2. Insert into SQLite `users` table with password so vendor can log in
     await db.run(
-      `INSERT INTO users (id, username, name, role, shopId, account_status)
-       VALUES (?, ?, ?, ?, ?, "ACTIVE")
-       ON CONFLICT(username) DO UPDATE SET role=excluded.role, shopId=excluded.shopId`,
-      [`usr-${stallId}`, email, ownerName || name, cleanRole, stallId]
+      `INSERT INTO users (id, username, email, name, password, role, shopId, account_status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, "ACTIVE")
+       ON CONFLICT(username) DO UPDATE SET password=excluded.password, role=excluded.role, shopId=excluded.shopId, name=excluded.name, email=excluded.email`,
+      [`usr-${stallId}`, email, email, ownerName || name, hashedPassword, cleanRole, stallId]
     ).catch(() => {});
 
     // 3. Commit to Supabase PostgreSQL database tables
@@ -95,6 +98,7 @@ export async function createVendor(req, res, next) {
           username: email,
           email: email,
           name: ownerName || name,
+          password: hashedPassword,
           role: cleanRole,
           shop_id: stallId,
           shopId: stallId,
