@@ -799,6 +799,69 @@ export async function initDatabase() {
     );
   `);
 
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS vendors (
+      id TEXT PRIMARY KEY,
+      user_id TEXT,
+      business_name TEXT NOT NULL,
+      owner_name TEXT,
+      contact_email TEXT,
+      contact_phone TEXT,
+      vendor_status TEXT DEFAULT 'ACTIVE',
+      created_at TEXT,
+      updated_at TEXT
+    );
+  `);
+
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS vendor_payout_accounts (
+      id TEXT PRIMARY KEY,
+      vendor_id TEXT NOT NULL,
+      account_holder_name TEXT,
+      bank_name TEXT,
+      account_number_encrypted TEXT,
+      ifsc_code TEXT,
+      upi_id TEXT,
+      is_primary INTEGER DEFAULT 1,
+      verification_status TEXT DEFAULT 'VERIFIED',
+      created_at TEXT,
+      updated_at TEXT,
+      FOREIGN KEY (vendor_id) REFERENCES vendors(id) ON DELETE CASCADE
+    );
+  `);
+
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS payments (
+      id TEXT PRIMARY KEY,
+      order_id TEXT NOT NULL,
+      payment_method TEXT NOT NULL,
+      payment_provider TEXT,
+      provider_payment_id TEXT UNIQUE,
+      amount REAL NOT NULL,
+      currency TEXT DEFAULT 'INR',
+      status TEXT DEFAULT 'pending',
+      paid_at TEXT,
+      failure_reason TEXT,
+      created_at TEXT,
+      updated_at TEXT,
+      FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
+    );
+  `);
+
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS receipts (
+      id TEXT PRIMARY KEY,
+      order_id TEXT NOT NULL,
+      payment_id TEXT,
+      receipt_number TEXT UNIQUE NOT NULL,
+      receipt_url TEXT,
+      generated_at TEXT,
+      created_at TEXT,
+      FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
+      FOREIGN KEY (payment_id) REFERENCES payments(id) ON DELETE SET NULL
+    );
+  `);
+
   // Ensure optional columns exist on existing users tables
   await db.exec('ALTER TABLE users ADD COLUMN email TEXT;').catch(() => {});
   await db.exec("ALTER TABLE users ADD COLUMN account_status TEXT DEFAULT 'ACTIVE';").catch(() => {});
