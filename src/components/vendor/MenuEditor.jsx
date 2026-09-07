@@ -559,7 +559,7 @@ export const MenuEditor = ({ shopId }) => {
         )}
       </AnimatePresence>
 
-      {/* Generous & Beautifully Spaced Edit Dish Details Modal */}
+      {/* Premium Design-System Edit Dish Details Modal */}
       <AnimatePresence>
         {editingItem && (
           <div 
@@ -571,43 +571,38 @@ export const MenuEditor = ({ shopId }) => {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.96, y: 8 }}
               transition={{ duration: 0.18, ease: "easeOut" }}
-              className="relative w-full max-w-[540px] bg-white rounded-3xl shadow-2xl border border-slate-200/90 overflow-hidden my-auto max-h-[92vh] flex flex-col"
+              className="relative w-full max-w-[500px] bg-white rounded-[26px] shadow-2xl border border-slate-100 overflow-hidden my-auto max-h-[92vh] flex flex-col"
             >
-              {/* Modal Header with Generous Padding */}
-              <div className="px-8 pt-6 pb-4.5 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
-                <div>
-                  <h3 className="text-[18px] font-bold text-slate-900 tracking-tight m-0 font-['Inter',sans-serif]">
-                    Edit Dish Details
-                  </h3>
-                  <p className="text-xs text-slate-500 m-0 mt-1">
-                    Update item details and sync live with your restaurant menu.
-                  </p>
-                </div>
+              {/* Modal Header without Clutter */}
+              <div className="px-7 pt-5 pb-4 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
+                <h3 className="text-[19px] font-bold text-slate-900 tracking-tight m-0 font-['Inter',sans-serif]">
+                  Edit Dish Details
+                </h3>
                 <button 
                   type="button"
                   onClick={handleCloseModal} 
                   aria-label="Close modal"
-                  className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all border-none bg-transparent cursor-pointer p-0 shrink-0"
+                  className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all border-none bg-transparent cursor-pointer p-0 shrink-0"
                 >
-                  <X size={19} strokeWidth={2.2} />
+                  <X size={18} strokeWidth={2.2} />
                 </button>
               </div>
               
-              {/* Modal Form Body with Ample Margin & Spacing */}
-              <form onSubmit={handleSaveEdit} className="px-8 py-6 flex flex-col gap-5 m-0 bg-white font-['Inter',sans-serif] overflow-y-auto">
+              {/* Modal Form Body */}
+              <form onSubmit={handleSaveEdit} className="p-7 flex flex-col gap-5 m-0 bg-white font-['Inter',sans-serif] overflow-y-auto">
                 
                 {/* 1. DISH NAME */}
-                <div className="flex flex-col gap-2">
-                  <label className="text-xs font-semibold text-slate-700 tracking-normal flex items-center justify-between">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[13px] font-semibold text-slate-700 tracking-normal flex items-center justify-between">
                     <span>Dish Name</span>
                     <span className="text-[11px] text-slate-400 font-normal">Required</span>
                   </label>
                   <input
                     type="text"
-                    className={`w-full h-11 px-4 rounded-xl border ${
+                    className={`w-full h-[46px] px-4 rounded-xl border ${
                       fieldErrors.name 
                         ? 'border-rose-400 ring-2 ring-rose-500/10 bg-rose-50/20' 
-                        : 'border-slate-200 hover:border-slate-300 focus:border-red-500 focus:ring-2 focus:ring-red-500/10'
+                        : 'border-slate-200 hover:border-slate-300 focus:border-red-500 focus:ring-4 focus:ring-red-500/10'
                     } bg-white text-[15px] text-slate-800 font-medium placeholder:text-slate-400 outline-none transition-all shadow-xs`}
                     value={editingItem.name}
                     onChange={(e) => {
@@ -624,21 +619,21 @@ export const MenuEditor = ({ shopId }) => {
                 </div>
 
                 {/* 2. PRICE & CATEGORY */}
-                <div className="grid grid-cols-2 gap-4.5">
+                <div className="grid grid-cols-2 gap-4">
                   {/* PRICE */}
-                  <div className="flex flex-col gap-2">
-                    <label className="text-xs font-semibold text-slate-700 tracking-normal flex items-center justify-between">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[13px] font-semibold text-slate-700 tracking-normal flex items-center justify-between">
                       <span>Price</span>
                       <span className="text-[11px] text-slate-400 font-normal">INR</span>
                     </label>
-                    <div className={`flex items-center h-11 rounded-xl border ${
+                    <div className={`flex items-center h-[46px] rounded-xl border ${
                       fieldErrors.price 
                         ? 'border-rose-400 ring-2 ring-rose-500/10' 
-                        : 'border-slate-200 hover:border-slate-300 focus-within:border-red-500 focus-within:ring-2 focus-within:ring-red-500/10'
+                        : 'border-slate-200 hover:border-slate-300 focus-within:border-red-500 focus-within:ring-4 focus-within:ring-red-500/10'
                     } bg-white overflow-hidden transition-all shadow-xs`}>
-                      <span className="px-3.5 h-full flex items-center justify-center bg-slate-50 border-r border-slate-200 text-slate-500 font-semibold text-sm select-none shrink-0">
+                      <div className="px-3.5 h-full flex items-center justify-center bg-slate-50 border-r border-slate-200 text-slate-500 font-semibold text-sm select-none shrink-0">
                         ₹
-                      </span>
+                      </div>
                       <input
                         type="number"
                         step="any"
@@ -659,13 +654,13 @@ export const MenuEditor = ({ shopId }) => {
                   </div>
 
                   {/* CATEGORY */}
-                  <div className="flex flex-col gap-2">
-                    <label className="text-xs font-semibold text-slate-700 tracking-normal">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[13px] font-semibold text-slate-700 tracking-normal">
                       Category
                     </label>
-                    <div className="relative flex items-center h-11">
+                    <div className="relative flex items-center h-[46px]">
                       <select
-                        className="w-full h-full pl-4 pr-10 rounded-xl border border-slate-200 hover:border-slate-300 focus:border-red-500 focus:ring-2 focus:ring-red-500/10 bg-white text-[15px] text-slate-800 font-medium outline-none transition-all appearance-none cursor-pointer shadow-xs"
+                        className="w-full h-full pl-4 pr-10 rounded-xl border border-slate-200 hover:border-slate-300 focus:border-red-500 focus:ring-4 focus:ring-red-500/10 bg-white text-[15px] text-slate-800 font-medium outline-none transition-all appearance-none cursor-pointer shadow-xs"
                         value={editingItem.category}
                         onChange={(e) => setEditingItem({ ...editingItem, category: e.target.value })}
                       >
@@ -679,10 +674,9 @@ export const MenuEditor = ({ shopId }) => {
                 </div>
 
                 {/* 3. DISH PHOTO */}
-                <div className="flex flex-col gap-2">
-                  <label className="text-xs font-semibold text-slate-700 tracking-normal flex items-center justify-between">
-                    <span>Dish Photo</span>
-                    <span className="text-[11px] text-slate-400 font-normal">Recommended 1:1 or 16:9</span>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[13px] font-semibold text-slate-700 tracking-normal">
+                    Dish Photo
                   </label>
 
                   {editingItem.img ? (
@@ -693,12 +687,12 @@ export const MenuEditor = ({ shopId }) => {
                           alt={editingItem.name || 'Dish Preview'} 
                           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.02]" 
                         />
-                        <span className="absolute top-3 left-3 text-[11px] font-semibold text-white bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-md">
+                        <span className="absolute top-3 left-3 text-[11px] font-semibold text-white bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-lg">
                           Live Photo
                         </span>
                       </div>
                       
-                      {/* Action Buttons with Generous Padding & Space */}
+                      {/* Action Buttons */}
                       <div className="flex items-center gap-3 mt-1">
                         <button
                           type="button"
@@ -745,7 +739,6 @@ export const MenuEditor = ({ shopId }) => {
                             <Camera size={15} className="text-white shrink-0" />
                             <span className="text-white font-bold whitespace-nowrap">Change Photo</span>
                           </button>
-                          <p className="text-[11px] text-slate-400 m-0">PNG, JPG or WebP up to 5MB</p>
                         </div>
                       )}
                     </div>
@@ -771,7 +764,7 @@ export const MenuEditor = ({ shopId }) => {
                   type="submit"
                   disabled={isSaving || isUploading}
                   style={{ backgroundColor: '#dc2626', color: '#ffffff' }}
-                  className="w-full mt-2 h-12 rounded-xl text-[15px] font-bold tracking-wide text-white bg-[#dc2626] hover:bg-[#b91c1c] active:bg-[#991b1b] active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-red-600/25 hover:shadow-lg hover:shadow-red-600/35 transition-all flex items-center justify-center gap-2 border-none cursor-pointer shrink-0"
+                  className="w-full mt-2.5 h-[50px] rounded-2xl text-[15px] font-bold tracking-wide text-white bg-[#dc2626] hover:bg-[#b91c1c] active:bg-[#991b1b] active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-red-600/25 hover:shadow-lg hover:shadow-red-600/35 transition-all flex items-center justify-center gap-2 border-none cursor-pointer shrink-0"
                 >
                   {isSaving ? (
                     <>
