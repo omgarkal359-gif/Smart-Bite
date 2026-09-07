@@ -14,95 +14,120 @@ const supabase = (supabaseUrl && supabaseServiceKey)
   : null;
 
 /**
- * Middleware that verifies the Supabase JWT from the Authorization header.
- * Sets req.user = { id, email, role } on success.
+ * Verifies whether the authenticated user has authorization to access or modify
+ * resources belonging to the specified stallId.
  *
- * Falls back to decoding the JWT payload without verification when
- * Supabase env vars are not configured (local development only).
+ * Authorization Rules:
+ * - 'admin': Universal access to all stalls.
+ * - 'owner': Access ONLY if req.user.shopId matches stallId.
+ * - Any other role: Denied.
+ *
+ * @param {object} user - The authenticated req.user object
+ * @param {string|number} stallId - The resource's canonical stall ID from the database
+ * @returns {boolean}
+ */
+export function hasStallAccess(user, stallId) {
+  if (!user) return false;
+  if (user.role === 'admin') return true;
+  if (user.role === 'owner') {
+    if (!user.shopId || !stallId) return false;
+    return String(user.shopId).trim().toLowerCase() === String(stallId).trim().toLowerCase();
+  }
+  return false;
+}
+
+/**
+ * Middleware that verifies the JWT from the Authorization header.
+ * Sets req.user = { id, email, role, shopId } on success.
  */
 export function requireAuth(req, res, next) {
-  // Support test environment overrides
-  if (process.env.NODE_ENV === 'test') {
-    req.user = {
-      id: 'test-user-id',
-      email: 'test@sgu.edu',
-      role: 'admin',
-      shopId: null
-    };
-    return next();
-  }
-
   const authHeader = req.headers.authorization;
 
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    req.user = {
-      id: req.body?.customerId || 'student-local',
-      email: 'student@sgu.edu',
-      role: 'student'
-    };
-    return next();
-  }
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.split(' ')[1];
 
-  const token = authHeader.split(' ')[1];
-
-  // Try verifying local JWT first
-  try {
-    const payload = jwt.verify(token, JWT_SECRET);
-    req.user = {
-      id: payload.id,
-      email: payload.email,
-      role: payload.role,
-      shopId: payload.shopId
-    };
-    return next();
-  } catch (err) {
-    // Local verification failed, let's try Supabase next
-  }
-
-  if (!supabaseUrl || !supabaseServiceKey || !supabase) {
-    // Local dev fallback: decode JWT payload without verification
+    // 1. Try verifying local JWT first
     try {
-      const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+      const payload = jwt.verify(token, JWT_SECRET);
       req.user = {
-        id: payload.sub || payload.id || 'student-local',
-        email: payload.email || 'student@sgu.edu',
-        role: payload.user_metadata?.role || payload.app_metadata?.role || payload.role || 'student'
+        id: payload.id,
+        email: payload.email,
+        role: payload.role,
+        shopId: payload.shopId || null
       };
       return next();
     } catch (err) {
-      req.user = { id: 'student-local', email: 'student@sgu.edu', role: 'student' };
-      return next();
+      // Local verification failed, fallback to payload decoding or Supabase
     }
+
+    if (!supabaseUrl || !supabaseServiceKey || !supabase) {
+      // Local dev fallback: decode JWT payload without verification
+      try {
+        const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+        req.user = {
+          id: payload.sub || payload.id || 'user-local',
+          email: payload.email || 'user@sgu.edu',
+          role: payload.user_metadata?.role || payload.app_metadata?.role || payload.role || 'student',
+          shopId: payload.user_metadata?.shopId || payload.app_metadata?.shopId || payload.shopId || null
+        };
+        return next();
+      } catch (err) {
+        req.user = { id: 'user-local', email: 'user@sgu.edu', role: 'student', shopId: null };
+        return next();
+      }
+    }
+
+    // Verify with Supabase
+    supabase.auth.getUser(token)
+      .then(({ data, error }) => {
+        if (error || !data?.user) {
+          try {
+            const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+            req.user = {
+              id: payload.sub || payload.id || 'user-local',
+              email: payload.email || 'user@sgu.edu',
+              role: payload.user_metadata?.role || payload.app_metadata?.role || payload.role || 'student',
+              shopId: payload.user_metadata?.shopId || payload.app_metadata?.shopId || payload.shopId || null
+            };
+            return next();
+          } catch (_e) {
+            req.user = { id: 'user-local', email: 'user@sgu.edu', role: 'student', shopId: null };
+            return next();
+          }
+        }
+        req.user = {
+          id: data.user.id,
+          email: data.user.email,
+          role: data.user.user_metadata?.role || data.user.app_metadata?.role || 'student',
+          shopId: data.user.user_metadata?.shopId || data.user.app_metadata?.shopId || data.user.shopId || null
+        };
+        next();
+      })
+      .catch(() => {
+        req.user = { id: 'user-local', email: 'user@sgu.edu', role: 'student', shopId: null };
+        return next();
+      });
+    return;
   }
 
-  // Verify with Supabase
-  supabase.auth.getUser(token)
-    .then(({ data, error }) => {
-      if (error || !data?.user) {
-        try {
-          const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
-          req.user = {
-            id: payload.sub || payload.id || 'student-local',
-            email: payload.email || 'student@sgu.edu',
-            role: payload.user_metadata?.role || payload.app_metadata?.role || payload.role || 'student'
-          };
-          return next();
-        } catch (_e) {
-          req.user = { id: 'student-local', email: 'student@sgu.edu', role: 'student' };
-          return next();
-        }
-      }
-      req.user = {
-        id: data.user.id,
-        email: data.user.email,
-        role: data.user.user_metadata?.role || data.user.app_metadata?.role || 'student'
-      };
-      next();
-    })
-    .catch(() => {
-      req.user = { id: 'student-local', email: 'student@sgu.edu', role: 'student' };
-      return next();
-    });
+  // Support test environment overrides when no Bearer header is passed
+  if (process.env.NODE_ENV === 'test') {
+    req.user = {
+      id: req.headers['x-test-user-id'] || 'test-user-id',
+      email: req.headers['x-test-email'] || 'test@sgu.edu',
+      role: req.headers['x-test-role'] || 'admin',
+      shopId: req.headers['x-test-shop-id'] || null
+    };
+    return next();
+  }
+
+  req.user = {
+    id: req.body?.customerId || 'student-local',
+    email: 'student@sgu.edu',
+    role: 'student',
+    shopId: null
+  };
+  return next();
 }
 
 /**

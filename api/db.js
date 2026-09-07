@@ -305,6 +305,16 @@ function executeMemRun(sql, params) {
     return { id: itemId, changes: item ? 1 : 0 };
   }
 
+  if (upper.startsWith('DELETE FROM MENU_ITEMS')) {
+    const [itemId] = params;
+    const idx = memStore.menu_items.findIndex(i => i.id == itemId);
+    if (idx !== -1) {
+      memStore.menu_items.splice(idx, 1);
+      return { id: itemId, changes: 1 };
+    }
+    return { id: itemId, changes: 0 };
+  }
+
   if (upper.startsWith('INSERT INTO ORDERS ')) {
     const [id, customerName, customerId, type, payment, status, total, time, timestamp] = params;
     const newOrder = { id, customerName, customerId, type, payment, status, total, time, timestamp };

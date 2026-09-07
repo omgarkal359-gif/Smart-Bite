@@ -1,5 +1,6 @@
 import { db } from '../db.js';
 import { sendReceiptEmail } from '../utils/email.js';
+import { hasStallAccess } from '../middleware/auth.js';
 
 export async function broadcastQueueUpdate(io) {
   if (!io) return;
@@ -245,6 +246,15 @@ export async function getStallOrders(req, res, next) {
   const { stallId } = req.params;
   const limit = parseInt(req.query.limit, 10) || 50;
   const offset = parseInt(req.query.offset, 10) || 0;
+
+  // Server-side ownership validation:
+  if (!hasStallAccess(req.user, stallId)) {
+    return res.status(403).json({
+      success: false,
+      message: 'You are not authorized to view orders for this stall'
+    });
+  }
+
   try {
     const orderItems = await db.all('SELECT * FROM order_items WHERE stallId = ?', [stallId]);
     const orderIds = [...new Set(orderItems.map(oi => oi.orderId))];
@@ -281,7 +291,7 @@ export async function getOrderById(req, res, next) {
 
   try {
     const order = await db.get('SELECT * FROM orders WHERE id = ?', [id]);
-    if (!order) return res.status(404).json({ message: 'Order not found' });
+    if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
 
     if ((reqUserRole === 'student' || reqUserRole === 'guest') && reqUserId) {
       const orderOwner = (order.customerId || '').trim().toLowerCase();
@@ -307,12 +317,25 @@ export async function updateOrderStatus(req, res, next) {
   const { status } = req.body;
   try {
     const order = await db.get('SELECT * FROM orders WHERE id = ?', [id]);
-    if (!order) return res.status(404).json({ message: 'Order not found' });
+    if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
+
+    const orderItems = await db.all('SELECT * FROM order_items WHERE orderId = ?', [id]);
+
+    // Server-side ownership validation:
+    // If user is owner, they can only update orders that contain items belonging to their stall
+    if (req.user && req.user.role === 'owner') {
+      const hasStallItem = orderItems.some(item => hasStallAccess(req.user, item.stallId));
+      if (!hasStallItem) {
+        return res.status(403).json({
+          success: false,
+          message: 'You are not authorized to update this order'
+        });
+      }
+    }
 
     await db.run('UPDATE orders SET status = ? WHERE id = ?', [status, id]);
     const updated = await db.get('SELECT * FROM orders WHERE id = ?', [id]);
 
-    const orderItems = await db.all('SELECT * FROM order_items WHERE orderId = ?', [id]);
     updated.items = orderItems;
 
     const io = req.app.get('io');

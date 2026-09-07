@@ -233,6 +233,166 @@ async function runControllerTests() {
     assert.ok(res.body.totalOrders !== undefined);
   });
 
+  // 7. BOLA / IDOR Authorization Security Matrix Tests
+  console.log('\n--------------------------------------------------');
+  console.log(' BOLA / IDOR AUTHORIZATION MATRIX TESTS');
+  console.log('--------------------------------------------------');
+
+  const jwtModule = (await import('jsonwebtoken')).default;
+  const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_for_local_dev_only_998877';
+
+  const ownerAToken = jwtModule.sign(
+    { id: 101, email: 'mangales@sgu.edu', role: 'owner', shopId: 'mangales-snacks' },
+    JWT_SECRET
+  );
+  const ownerBToken = jwtModule.sign(
+    { id: 102, email: 'noodles@sgu.edu', role: 'owner', shopId: 'oodles-of-noodles' },
+    JWT_SECRET
+  );
+  const adminAuthToken = jwtModule.sign(
+    { id: 1, email: 'admin@sgu.edu', role: 'admin', shopId: null },
+    JWT_SECRET
+  );
+  const studentAuthToken = jwtModule.sign(
+    { id: 201, email: 'student@sgu.edu', role: 'student', shopId: null },
+    JWT_SECRET
+  );
+
+  // Identify menu items for Stall A (mangales-snacks) and Stall B (oodles-of-noodles)
+  const stallAItems = await db.all('SELECT * FROM menu_items WHERE stallId = ?', ['mangales-snacks']);
+  const stallBItems = await db.all('SELECT * FROM menu_items WHERE stallId = ?', ['oodles-of-noodles']);
+  assert.ok(stallAItems.length > 0, 'Stall A should have menu items');
+  assert.ok(stallBItems.length > 0, 'Stall B should have menu items');
+
+  const itemA = stallAItems[0];
+  const itemB = stallBItems[0];
+
+  // TEST 1: Owner A updates an item belonging to Stall A -> SUCCESS (200)
+  await test('TEST 1: Owner A updates an item belonging to Stall A -> SUCCESS', async () => {
+    const res = await request('PUT', `/api/menu/${itemA.id}`, {
+      price: 65,
+      stock: 35
+    }, {
+      'Authorization': `Bearer ${ownerAToken}`
+    });
+    assert.strictEqual(res.status, 200);
+    assert.strictEqual(res.body.id, itemA.id);
+    assert.strictEqual(res.body.price, 65);
+    assert.strictEqual(res.body.stock, 35);
+  });
+
+  // TEST 2: Owner A attempts to update an item belonging to Stall B -> HTTP 403 (DB unchanged)
+  await test('TEST 2: Owner A attempts to update an item belonging to Stall B -> HTTP 403 (DB unchanged)', async () => {
+    const beforeItem = await db.get('SELECT * FROM menu_items WHERE id = ?', [itemB.id]);
+    const res = await request('PUT', `/api/menu/${itemB.id}`, {
+      price: 9999,
+      stock: 9999,
+      name: 'HACKED NOODLES'
+    }, {
+      'Authorization': `Bearer ${ownerAToken}`
+    });
+    assert.strictEqual(res.status, 403);
+    assert.strictEqual(res.body.success, false);
+
+    // Verify database record was NOT modified
+    const afterItem = await db.get('SELECT * FROM menu_items WHERE id = ?', [itemB.id]);
+    assert.strictEqual(afterItem.price, beforeItem.price);
+    assert.strictEqual(afterItem.stock, beforeItem.stock);
+    assert.strictEqual(afterItem.name, beforeItem.name);
+  });
+
+  // TEST 3: Admin updates an item belonging to Stall B -> SUCCESS (200)
+  await test('TEST 3: Admin updates an item belonging to Stall B -> SUCCESS', async () => {
+    const res = await request('PUT', `/api/menu/${itemB.id}`, {
+      price: 75,
+      stock: 40
+    }, {
+      'Authorization': `Bearer ${adminAuthToken}`
+    });
+    assert.strictEqual(res.status, 200);
+    assert.strictEqual(res.body.id, itemB.id);
+    assert.strictEqual(res.body.price, 75);
+  });
+
+  // TEST 4: Unauthorized role (student) attempts update -> HTTP 403
+  await test('TEST 4: Unauthorized role (student) attempts update -> HTTP 403', async () => {
+    const res = await request('PUT', `/api/menu/${itemA.id}`, {
+      price: 10
+    }, {
+      'Authorization': `Bearer ${studentAuthToken}`
+    });
+    assert.strictEqual(res.status, 403);
+    assert.strictEqual(res.body.success, false);
+  });
+
+  // TEST 5: Invalid / non-existent menu item ID -> HTTP 404
+  await test('TEST 5: Invalid/non-existent menu item ID -> HTTP 404', async () => {
+    const res = await request('PUT', '/api/menu/99999999', {
+      price: 50
+    }, {
+      'Authorization': `Bearer ${ownerAToken}`
+    });
+    assert.strictEqual(res.status, 404);
+    assert.strictEqual(res.body.success, false);
+  });
+
+  // TEST 6: Owner attempts to bypass authorization by sending another stallId/shopId in body -> HTTP 403
+  await test('TEST 6: Owner attempts to bypass authorization with forged stallId/shopId in body -> HTTP 403', async () => {
+    const beforeItem = await db.get('SELECT * FROM menu_items WHERE id = ?', [itemB.id]);
+    const res = await request('PUT', `/api/menu/${itemB.id}`, {
+      stallId: 'mangales-snacks',
+      shopId: 'mangales-snacks',
+      price: 1337
+    }, {
+      'Authorization': `Bearer ${ownerAToken}`
+    });
+    assert.strictEqual(res.status, 403);
+    assert.strictEqual(res.body.success, false);
+
+    // Verify database record was NOT modified
+    const afterItem = await db.get('SELECT * FROM menu_items WHERE id = ?', [itemB.id]);
+    assert.strictEqual(afterItem.price, beforeItem.price);
+  });
+
+  // TEST 7: Owner attempts cross-stall operations through related endpoints -> HTTP 403
+  await test('TEST 7a: Owner A attempts to update Stall B status -> HTTP 403', async () => {
+    const res = await request('PUT', '/api/stalls/oodles-of-noodles/status', {
+      online: false,
+      waitTime: 99
+    }, {
+      'Authorization': `Bearer ${ownerAToken}`
+    });
+    assert.strictEqual(res.status, 403);
+    assert.strictEqual(res.body.success, false);
+  });
+
+  await test('TEST 7b: Owner A attempts to add a menu item to Stall B -> HTTP 403', async () => {
+    const res = await request('POST', '/api/stalls/oodles-of-noodles/menu', {
+      name: 'Unauthorized Cross-Stall Item',
+      price: 50
+    }, {
+      'Authorization': `Bearer ${ownerAToken}`
+    });
+    assert.strictEqual(res.status, 403);
+    assert.strictEqual(res.body.success, false);
+  });
+
+  await test('TEST 7c: Owner A attempts to view Stall B orders -> HTTP 403', async () => {
+    const res = await request('GET', '/api/orders/stall/oodles-of-noodles', null, {
+      'Authorization': `Bearer ${ownerAToken}`
+    });
+    assert.strictEqual(res.status, 403);
+    assert.strictEqual(res.body.success, false);
+  });
+
+  await test('TEST 7d: Owner A attempts to delete Stall B menu item -> HTTP 403', async () => {
+    const res = await request('DELETE', `/api/menu/${itemB.id}`, null, {
+      'Authorization': `Bearer ${ownerAToken}`
+    });
+    assert.strictEqual(res.status, 403);
+    assert.strictEqual(res.body.success, false);
+  });
+
   server.close();
 
   console.log('\n==================================================');

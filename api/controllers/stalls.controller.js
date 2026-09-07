@@ -1,4 +1,5 @@
 import { db } from '../db.js';
+import { hasStallAccess } from '../middleware/auth.js';
 
 export async function getStalls(req, res, next) {
   try {
@@ -14,7 +15,18 @@ export async function updateStallStatus(req, res, next) {
   const { online, waitTime, busyMode } = req.body;
   try {
     const current = await db.get('SELECT * FROM stalls WHERE id = ?', [id]);
-    if (!current) return res.status(404).json({ message: 'Stall not found' });
+    if (!current) {
+      return res.status(404).json({ success: false, message: 'Stall not found' });
+    }
+
+    // Server-side ownership validation:
+    // Admin has universal access. Owner can only modify their own stall.
+    if (!hasStallAccess(req.user, id)) {
+      return res.status(403).json({
+        success: false,
+        message: 'You are not authorized to modify this stall status'
+      });
+    }
 
     const newOnline = online !== undefined ? (online ? 1 : 0) : (current.online !== undefined ? current.online : 0);
     const newWaitTime = waitTime !== undefined ? waitTime : (current.waitTime !== undefined ? current.waitTime : 0);
@@ -57,9 +69,23 @@ export async function addStallMenuItem(req, res, next) {
   const { id } = req.params;
   const { name, price, isVeg, category, stock, img } = req.body;
   try {
+    const stall = await db.get('SELECT * FROM stalls WHERE id = ?', [id]);
+    if (!stall) {
+      return res.status(404).json({ success: false, message: 'Stall not found' });
+    }
+
+    // Server-side ownership validation:
+    // Admin has universal access. Owner can only add menu items to their own stall.
+    if (!hasStallAccess(req.user, id)) {
+      return res.status(403).json({
+        success: false,
+        message: 'You are not authorized to add menu items to this stall'
+      });
+    }
+
     const result = await db.run(
-      'INSERT INTO menu_items (stallId, name, price, isVeg, category, stock, available) VALUES (?, ?, ?, ?, ?, ?, 1)',
-      [id, name, price, isVeg !== undefined ? (isVeg ? 1 : 0) : 1, category || 'Main', stock !== undefined ? stock : 20]
+      'INSERT INTO menu_items (stallId, name, price, isVeg, category, stock, available, img) VALUES (?, ?, ?, ?, ?, ?, 1, ?)',
+      [id, name, price, isVeg !== undefined ? (isVeg ? 1 : 0) : 1, category || 'Main', stock !== undefined ? stock : 20, img || null]
     );
     
     const newItem = await db.get('SELECT * FROM menu_items WHERE id = ?', [result.id]);
