@@ -339,24 +339,55 @@ export const MenuEditor = ({ shopId }) => {
               accept="image/*" 
               onChange={handleFileChange} 
             />
-            <div 
-              className={`drop-zone ${isUploading ? 'shimmer' : ''}`}
-              onClick={() => fileInputRef.current.click()}
-            >
-              {newItem.img ? (
-                <img src={newItem.img} className="preview-image" />
-              ) : isUploading ? (
-                <Loader2 size={40} className="upload-spinner" />
-              ) : (
-                <>
-                  <div className="upload-icon-wrapper">
-                    <Camera size={32} />
-                  </div>
-                  <p className="upload-text">Upload Photo</p>
-                  <p className="upload-hint">DRAG & DROP OR TAP</p>
-                </>
-              )}
-            </div>
+            {newItem.img ? (
+              <div className="flex flex-col gap-2.5">
+                <div 
+                  className="drop-zone relative overflow-hidden group cursor-pointer"
+                  onClick={() => fileInputRef.current.click()}
+                >
+                  <img src={newItem.img} className="preview-image" alt="New dish preview" />
+                </div>
+                <div className="flex items-center gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex-1 h-10 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold flex items-center justify-center gap-2 transition-all border border-slate-200 cursor-pointer shadow-xs"
+                  >
+                    <Camera size={15} className="text-slate-700" />
+                    <span>Change Photo</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setNewItem({ ...newItem, img: '' });
+                      if (fileInputRef.current) fileInputRef.current.value = '';
+                    }}
+                    className="h-10 px-4 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all border border-rose-200 cursor-pointer shadow-xs"
+                  >
+                    <Trash2 size={15} className="text-rose-600" />
+                    <span>Remove</span>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div 
+                className={`drop-zone ${isUploading ? 'shimmer' : ''}`}
+                onClick={() => fileInputRef.current.click()}
+              >
+                {isUploading ? (
+                  <Loader2 size={40} className="upload-spinner" />
+                ) : (
+                  <>
+                    <div className="upload-icon-wrapper">
+                      <Camera size={32} />
+                    </div>
+                    <p className="upload-text">Upload Photo</p>
+                    <p className="upload-hint">DRAG & DROP OR TAP</p>
+                  </>
+                )}
+              </div>
+            )}
 
             <motion.button 
               whileHover={{ scale: 1.01 }}
@@ -646,42 +677,43 @@ export const MenuEditor = ({ shopId }) => {
                 </div>
 
                 {/* ITEM PHOTO */}
-                <div className="flex flex-col gap-1.5">
+                <div className="flex flex-col gap-2">
                   <label className="text-[12px] font-semibold text-slate-700 tracking-normal flex items-center justify-between">
                     <span>Dish Photo</span>
-                    <span className="text-[11px] text-slate-400 font-normal">Recommended 1:1</span>
+                    <span className="text-[11px] text-slate-400 font-normal">Recommended 1:1 or 16:9</span>
                   </label>
 
                   {editingItem.img ? (
-                    <div className="relative w-full h-[155px] rounded-xl overflow-hidden border border-slate-200 bg-slate-950 shadow-xs group">
-                      <img 
-                        src={editingItem.img} 
-                        alt={editingItem.name || 'Dish Preview'} 
-                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.02]" 
-                      />
-                      {/* Frosted Action Overlay */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent flex items-end justify-between p-3">
-                        <span className="text-[11px] font-medium text-white/90 bg-black/40 backdrop-blur-md px-2.5 py-1 rounded-md">
+                    <div className="flex flex-col gap-2.5">
+                      <div className="relative w-full h-[160px] rounded-xl overflow-hidden border border-slate-200 bg-slate-950 shadow-xs group">
+                        <img 
+                          src={editingItem.img} 
+                          alt={editingItem.name || 'Dish Preview'} 
+                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.02]" 
+                        />
+                        <span className="absolute top-2.5 left-2.5 text-[11px] font-medium text-white/90 bg-black/50 backdrop-blur-md px-2.5 py-1 rounded-md">
                           Live Photo
                         </span>
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => editFileInputRef.current?.click()}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/95 hover:bg-white text-slate-800 text-xs font-semibold shadow-sm backdrop-blur-md border border-slate-200/80 transition-all hover:scale-105 active:scale-95 cursor-pointer"
-                          >
-                            <Camera size={13} className="text-slate-600" />
-                            <span>Change</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={(e) => handleRemoveImage(e)}
-                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-rose-600/90 hover:bg-rose-600 text-white text-xs font-semibold shadow-sm backdrop-blur-md transition-all hover:scale-105 active:scale-95 cursor-pointer"
-                            title="Remove photo"
-                          >
-                            <Trash2 size={13} className="text-white" />
-                          </button>
-                        </div>
+                      </div>
+                      
+                      {/* Explicit Change Photo & Remove Action Buttons */}
+                      <div className="flex items-center gap-2.5">
+                        <button
+                          type="button"
+                          onClick={() => editFileInputRef.current?.click()}
+                          className="flex-1 h-10 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-800 text-xs font-semibold flex items-center justify-center gap-2 transition-all border border-slate-200/90 cursor-pointer shadow-xs"
+                        >
+                          <Camera size={15} className="text-slate-700" />
+                          <span>Change Photo</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => handleRemoveImage(e)}
+                          className="h-10 px-4 rounded-xl bg-rose-50 hover:bg-rose-100 active:bg-rose-200 text-rose-600 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all border border-rose-200 cursor-pointer shadow-xs"
+                        >
+                          <Trash2 size={15} className="text-rose-600" />
+                          <span>Remove</span>
+                        </button>
                       </div>
                     </div>
                   ) : (
