@@ -693,54 +693,99 @@ export const MenuEditor = ({ shopId }) => {
                       </div>
                       
                       {/* Action Buttons */}
-                      <div className="flex items-center gap-3 mt-1">
+                      <div className="flex items-center gap-2.5 mt-1">
                         <button
                           type="button"
                           onClick={() => editFileInputRef.current?.click()}
                           style={{ backgroundColor: '#dc2626', color: '#ffffff' }}
-                          className="h-10 px-5 rounded-xl bg-[#dc2626] hover:bg-[#b91c1c] active:bg-[#991b1b] text-white text-xs font-bold inline-flex items-center justify-center gap-2 transition-all border-none cursor-pointer shadow-sm shadow-red-500/25 active:scale-[0.98]"
+                          className="h-10 px-4 rounded-xl bg-[#dc2626] hover:bg-[#b91c1c] active:bg-[#991b1b] text-white text-xs font-bold inline-flex items-center justify-center gap-1.5 transition-all border-none cursor-pointer shadow-sm shadow-red-500/25 active:scale-[0.98]"
                         >
-                          <Camera size={15} className="text-white shrink-0" />
+                          <Camera size={14} className="text-white shrink-0" />
                           <span className="text-white font-bold whitespace-nowrap">Change Photo</span>
                         </button>
                         <button
                           type="button"
                           onClick={(e) => handleRemoveImage(e)}
                           style={{ backgroundColor: '#dc2626', color: '#ffffff' }}
-                          className="h-10 px-4.5 rounded-xl bg-[#dc2626] hover:bg-[#b91c1c] active:bg-[#991b1b] text-white text-xs font-bold inline-flex items-center justify-center gap-1.5 transition-all border-none cursor-pointer shadow-sm shadow-red-500/25 active:scale-[0.98]"
+                          className="h-10 px-3.5 rounded-xl bg-[#dc2626] hover:bg-[#b91c1c] active:bg-[#991b1b] text-white text-xs font-bold inline-flex items-center justify-center gap-1.5 transition-all border-none cursor-pointer shadow-sm shadow-red-500/25 active:scale-[0.98]"
                         >
-                          <Trash2 size={15} className="text-white shrink-0" />
+                          <Trash2 size={14} className="text-white shrink-0" />
                           <span className="text-white font-bold whitespace-nowrap">Remove</span>
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={isSaving || isUploading}
+                          style={{ backgroundColor: '#dc2626', color: '#ffffff' }}
+                          className="h-10 px-4 flex-1 rounded-xl bg-[#dc2626] hover:bg-[#b91c1c] active:bg-[#991b1b] text-white text-xs font-bold inline-flex items-center justify-center gap-1.5 transition-all border-none cursor-pointer shadow-sm shadow-red-500/25 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {isSaving ? (
+                            <>
+                              <Loader2 size={14} className="animate-spin text-white shrink-0" />
+                              <span className="text-white font-bold whitespace-nowrap">Saving...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Check size={15} strokeWidth={2.5} className="text-white shrink-0" />
+                              <span className="text-white font-bold whitespace-nowrap">Save Changes</span>
+                            </>
+                          )}
                         </button>
                       </div>
                     </div>
                   ) : (
-                    <div 
-                      onClick={() => editFileInputRef.current?.click()}
-                      className={`w-full h-[145px] rounded-2xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all ${
-                        isUploading 
-                          ? 'border-slate-200 bg-slate-50' 
-                          : 'border-slate-200 hover:border-red-400 bg-slate-50/50 hover:bg-red-50/20'
-                      }`}
-                    >
-                      {isUploading ? (
-                        <div className="flex flex-col items-center gap-2">
-                          <Loader2 size={22} className="text-red-500 animate-spin" />
-                          <span className="text-xs font-medium text-slate-500">Uploading photo...</span>
-                        </div>
-                      ) : (
-                        <div className="flex flex-col items-center gap-2.5 text-center p-4">
-                          <button
-                            type="button"
-                            onClick={() => editFileInputRef.current?.click()}
-                            style={{ backgroundColor: '#dc2626', color: '#ffffff' }}
-                            className="inline-flex items-center gap-2 px-5 h-10 rounded-xl bg-[#dc2626] hover:bg-[#b91c1c] active:bg-[#991b1b] text-white text-xs font-bold shadow-sm shadow-red-500/30 border-none cursor-pointer transition-all hover:scale-105 active:scale-95"
-                          >
-                            <Camera size={15} className="text-white shrink-0" />
-                            <span className="text-white font-bold whitespace-nowrap">Change Photo</span>
-                          </button>
-                        </div>
-                      )}
+                    <div className="flex flex-col gap-3">
+                      <div 
+                        onClick={() => editFileInputRef.current?.click()}
+                        className={`w-full h-[140px] rounded-2xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all ${
+                          isUploading 
+                            ? 'border-slate-200 bg-slate-50' 
+                            : 'border-slate-200 hover:border-red-400 bg-slate-50/50 hover:bg-red-50/20'
+                        }`}
+                      >
+                        {isUploading ? (
+                          <div className="flex flex-col items-center gap-2">
+                            <Loader2 size={22} className="text-red-500 animate-spin" />
+                            <span className="text-xs font-medium text-slate-500">Uploading photo...</span>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col items-center gap-1.5 text-center p-4">
+                            <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center text-red-500 mb-0.5">
+                              <Camera size={18} />
+                            </div>
+                            <span className="text-xs font-semibold text-slate-600">Click to select photo</span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-2.5">
+                        <button
+                          type="button"
+                          onClick={() => editFileInputRef.current?.click()}
+                          style={{ backgroundColor: '#dc2626', color: '#ffffff' }}
+                          className="h-10 px-4 rounded-xl bg-[#dc2626] hover:bg-[#b91c1c] active:bg-[#991b1b] text-white text-xs font-bold inline-flex items-center justify-center gap-1.5 transition-all border-none cursor-pointer shadow-sm shadow-red-500/25 active:scale-[0.98]"
+                        >
+                          <Camera size={14} className="text-white shrink-0" />
+                          <span className="text-white font-bold whitespace-nowrap">Change Photo</span>
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={isSaving || isUploading}
+                          style={{ backgroundColor: '#dc2626', color: '#ffffff' }}
+                          className="h-10 px-4 flex-1 rounded-xl bg-[#dc2626] hover:bg-[#b91c1c] active:bg-[#991b1b] text-white text-xs font-bold inline-flex items-center justify-center gap-1.5 transition-all border-none cursor-pointer shadow-sm shadow-red-500/25 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {isSaving ? (
+                            <>
+                              <Loader2 size={14} className="animate-spin text-white shrink-0" />
+                              <span className="text-white font-bold whitespace-nowrap">Saving...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Check size={15} strokeWidth={2.5} className="text-white shrink-0" />
+                              <span className="text-white font-bold whitespace-nowrap">Save Changes</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
                     </div>
                   )}
 
@@ -758,26 +803,6 @@ export const MenuEditor = ({ shopId }) => {
                     style={{ display: 'none' }}
                   />
                 </div>
-
-                {/* 4. PRIMARY SAVE CHANGES BUTTON */}
-                <button
-                  type="submit"
-                  disabled={isSaving || isUploading}
-                  style={{ backgroundColor: '#dc2626', color: '#ffffff' }}
-                  className="w-full mt-2.5 h-[50px] rounded-2xl text-[15px] font-bold tracking-wide text-white bg-[#dc2626] hover:bg-[#b91c1c] active:bg-[#991b1b] active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-red-600/25 hover:shadow-lg hover:shadow-red-600/35 transition-all flex items-center justify-center gap-2 border-none cursor-pointer shrink-0"
-                >
-                  {isSaving ? (
-                    <>
-                      <Loader2 size={18} className="animate-spin text-white shrink-0" />
-                      <span className="text-white font-bold">Saving Changes...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Check size={19} strokeWidth={2.5} className="text-white shrink-0" />
-                      <span className="text-white font-bold">Save Changes</span>
-                    </>
-                  )}
-                </button>
               </form>
             </motion.div>
           </div>
