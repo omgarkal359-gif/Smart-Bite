@@ -112,14 +112,22 @@ export const MenuEditor = ({ shopId }) => {
       };
       await api.updateMenuItem(editingItem.id, payload);
       setItems(items.map(i => i.id === editingItem.id ? { ...i, ...payload, inStock: !isOut, isOutOfStock: isOut } : i));
-      setToastMessage({ type: 'success', text: `Save changes: "${payload.name}" updated successfully!` });
+      setToastMessage({ 
+        type: 'success', 
+        title: 'Changes Saved',
+        text: `"${payload.name}" updated live on menu` 
+      });
       setTimeout(() => setToastMessage(null), 3500);
       setEditingItem(null);
       setOriginalItem(null);
       setFieldErrors({});
     } catch (err) {
       console.error('Failed to update item:', err);
-      setToastMessage({ type: 'error', text: 'Failed to update item: ' + (err.message || 'Unknown error') });
+      setToastMessage({ 
+        type: 'error', 
+        title: 'Update Failed',
+        text: err.message || 'Could not save changes. Please try again.' 
+      });
       setTimeout(() => setToastMessage(null), 4000);
     } finally {
       setIsSaving(false);
@@ -157,7 +165,8 @@ export const MenuEditor = ({ shopId }) => {
       });
       setToastMessage({ 
         type: 'success', 
-        text: `Save changes: "${item.name}" marked ${newInStock ? 'IN STOCK' : 'OUT OF STOCK'}` 
+        title: 'Stock Updated',
+        text: `"${item.name}" is now ${newInStock ? 'In Stock' : 'Out of Stock'}` 
       });
       setTimeout(() => setToastMessage(null), 3000);
     } catch (err) {
@@ -180,7 +189,11 @@ export const MenuEditor = ({ shopId }) => {
       setItems([createdItem, ...items]);
       setNewItem({ name: '', price: '', category: 'Main', img: '' });
       setIsAdding(false);
-      setToastMessage({ type: 'success', text: `Save changes: "${createdItem.name || 'Item'}" added successfully!` });
+      setToastMessage({ 
+        type: 'success', 
+        title: 'Item Created',
+        text: `"${createdItem.name || 'Item'}" added to menu catalog` 
+      });
       setTimeout(() => setToastMessage(null), 3500);
     } catch (err) {
       alert('Failed to add item: ' + err.message);
@@ -463,33 +476,51 @@ export const MenuEditor = ({ shopId }) => {
         })}
       </div>
 
-      {/* Floating Toast Notification matching white pill with red ambient glow */}
+      {/* Ultra-Sleek Professional Toast Notification */}
       <AnimatePresence>
         {toastMessage && (
           <motion.div
-            initial={{ opacity: 0, y: 30, scale: 0.95 }}
+            initial={{ opacity: 0, y: 24, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className={`fixed bottom-8 right-8 z-[3000] flex items-center gap-3 px-6 py-3.5 rounded-[20px] bg-white border-[1.5px] ${
+            exit={{ opacity: 0, y: 16, scale: 0.95 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+            className={`fixed bottom-6 right-6 z-[3000] flex items-center gap-3.5 pl-4 pr-3 py-3 rounded-2xl bg-white/95 backdrop-blur-md border ${
               toastMessage.type === 'error'
-                ? 'border-rose-400 shadow-[0_0_22px_rgba(244,63,94,0.4)] text-rose-700'
-                : 'border-[#f87171] shadow-[0_0_24px_rgba(239,68,68,0.38)] ring-2 ring-red-100/70 text-slate-800'
-            } text-sm font-bold tracking-wide`}
+                ? 'border-rose-200 shadow-xl shadow-rose-900/10'
+                : 'border-slate-200/80 shadow-2xl shadow-slate-900/15 ring-1 ring-black/5'
+            } min-w-[280px] max-w-sm`}
           >
+            {/* Status Icon */}
             {toastMessage.type === 'error' ? (
-              <AlertCircle size={19} className="text-rose-500 shrink-0" />
+              <div className="w-9 h-9 rounded-xl bg-rose-50 border border-rose-200/80 flex items-center justify-center text-rose-600 shrink-0">
+                <AlertCircle size={18} strokeWidth={2.5} />
+              </div>
             ) : (
-              <div className="w-6 h-6 rounded-full bg-red-600 text-white flex items-center justify-center shrink-0 shadow-sm">
-                <Check size={14} strokeWidth={3} />
+              <div className="w-9 h-9 rounded-xl bg-emerald-50 border border-emerald-200/80 flex items-center justify-center text-emerald-600 shrink-0">
+                <CheckCircle2 size={18} strokeWidth={2.5} />
               </div>
             )}
-            <span className="font-bold">{toastMessage.text}</span>
+
+            {/* Content */}
+            <div className="flex flex-col min-w-0 flex-1">
+              <span className="text-[13px] font-bold text-slate-900 tracking-tight flex items-center gap-1.5">
+                {toastMessage.title || (toastMessage.type === 'error' ? 'Update Failed' : 'Changes Saved')}
+                {toastMessage.type !== 'error' && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                )}
+              </span>
+              <span className="text-xs text-slate-500 font-medium truncate">
+                {toastMessage.text}
+              </span>
+            </div>
+
+            {/* Close Button */}
             <button
               onClick={() => setToastMessage(null)}
-              className="ml-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 p-1 rounded-full transition-colors border-none bg-transparent cursor-pointer flex items-center"
+              className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors border-none bg-transparent cursor-pointer p-0 shrink-0"
+              aria-label="Dismiss notification"
             >
-              <X size={15} strokeWidth={2.5} />
+              <X size={15} strokeWidth={2.2} />
             </button>
           </motion.div>
         )}
