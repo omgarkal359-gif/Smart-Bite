@@ -818,6 +818,10 @@ export async function initDatabase() {
     );
     await db.run(
       'INSERT INTO users (username, name, password, role, shopId) VALUES (?, ?, ?, ?, ?)',
+      ['cashfreedemo@smartbite.in', 'Cashfree Demo Student', '$2b$10$w6M6N7g0QJtWJ1A4qf5u.e1/Vj1hL5/1zD6Yy9M/q1xG9t1m1l1l1', 'student', null]
+    );
+    await db.run(
+      'INSERT INTO users (username, name, password, role, shopId) VALUES (?, ?, ?, ?, ?)',
       ['9876543210', 'Guest Satej', '', 'guest', null]
     );
     const adminHash = await hashPassword('admin123');

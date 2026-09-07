@@ -79,6 +79,22 @@ export async function login(req, res, next) {
       return res.json({ success: true, user: sanitizeUser(user), token });
     }
 
+    // Special demo login support for cashfreedemo@smartbite.in
+    if ((cleanUsername.toLowerCase() === 'cashfreedemo@smartbite.in' || cleanUsername.toLowerCase() === 'cashfreedemo') && password?.trim() === '123456789') {
+      let demoUser = await db.get('SELECT * FROM users WHERE LOWER(username) = ?', ['cashfreedemo@smartbite.in']);
+      if (!demoUser) {
+        const hashedPassword = await hashPassword('123456789');
+        await db.run(
+          'INSERT INTO users (username, name, password, role, shopId) VALUES (?, ?, ?, ?, ?)',
+          ['cashfreedemo@smartbite.in', 'Cashfree Demo Student', hashedPassword, 'student', null]
+        );
+        demoUser = await db.get('SELECT * FROM users WHERE LOWER(username) = ?', ['cashfreedemo@smartbite.in']);
+      }
+      syncUserToSupabaseAuth('cashfreedemo@smartbite.in', demoUser.name, '123456789', 'student');
+      const token = issueToken(demoUser);
+      return res.json({ success: true, user: sanitizeUser(demoUser), token });
+    }
+
     // Auto-detect user in database by username or shopId
     let user = await db.get(
       'SELECT * FROM users WHERE LOWER(username) = LOWER(?) OR (LOWER(shopId) = LOWER(?) AND role = ?)',
