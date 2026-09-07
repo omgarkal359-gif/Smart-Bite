@@ -559,7 +559,7 @@ export const MenuEditor = ({ shopId }) => {
         )}
       </AnimatePresence>
 
-      {/* Generous & Perfectly Sized Edit Dish Details Modal */}
+      {/* Generous & Beautifully Spaced Edit Dish Details Modal */}
       <AnimatePresence>
         {editingItem && (
           <div 
@@ -571,15 +571,15 @@ export const MenuEditor = ({ shopId }) => {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.96, y: 8 }}
               transition={{ duration: 0.18, ease: "easeOut" }}
-              className="relative w-full max-w-[520px] bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden my-auto max-h-[92vh] flex flex-col"
+              className="relative w-full max-w-[540px] bg-white rounded-3xl shadow-2xl border border-slate-200/90 overflow-hidden my-auto max-h-[92vh] flex flex-col"
             >
-              {/* Modal Header */}
-              <div className="px-6 py-4.5 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
+              {/* Modal Header with Generous Padding */}
+              <div className="px-8 pt-6 pb-4.5 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
                 <div>
-                  <h3 className="text-[17px] font-bold text-slate-900 tracking-tight m-0 font-['Inter',sans-serif]">
+                  <h3 className="text-[18px] font-bold text-slate-900 tracking-tight m-0 font-['Inter',sans-serif]">
                     Edit Dish Details
                   </h3>
-                  <p className="text-xs text-slate-500 m-0 mt-0.5">
+                  <p className="text-xs text-slate-500 m-0 mt-1">
                     Update item details and sync live with your restaurant menu.
                   </p>
                 </div>
@@ -587,24 +587,24 @@ export const MenuEditor = ({ shopId }) => {
                   type="button"
                   onClick={handleCloseModal} 
                   aria-label="Close modal"
-                  className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all border-none bg-transparent cursor-pointer p-0 shrink-0"
+                  className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all border-none bg-transparent cursor-pointer p-0 shrink-0"
                 >
-                  <X size={18} strokeWidth={2.2} />
+                  <X size={19} strokeWidth={2.2} />
                 </button>
               </div>
               
-              {/* Modal Form Body */}
-              <form onSubmit={handleSaveEdit} className="p-6 flex flex-col gap-4.5 m-0 bg-white font-['Inter',sans-serif] overflow-y-auto">
+              {/* Modal Form Body with Ample Margin & Spacing */}
+              <form onSubmit={handleSaveEdit} className="px-8 py-6 flex flex-col gap-5 m-0 bg-white font-['Inter',sans-serif] overflow-y-auto">
                 
                 {/* 1. DISH NAME */}
-                <div className="flex flex-col gap-1.5">
+                <div className="flex flex-col gap-2">
                   <label className="text-xs font-semibold text-slate-700 tracking-normal flex items-center justify-between">
                     <span>Dish Name</span>
                     <span className="text-[11px] text-slate-400 font-normal">Required</span>
                   </label>
                   <input
                     type="text"
-                    className={`w-full h-11 px-3.5 rounded-xl border ${
+                    className={`w-full h-11 px-4 rounded-xl border ${
                       fieldErrors.name 
                         ? 'border-rose-400 ring-2 ring-rose-500/10 bg-rose-50/20' 
                         : 'border-slate-200 hover:border-slate-300 focus:border-red-500 focus:ring-2 focus:ring-red-500/10'
@@ -624,9 +624,9 @@ export const MenuEditor = ({ shopId }) => {
                 </div>
 
                 {/* 2. PRICE & CATEGORY */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-4.5">
                   {/* PRICE */}
-                  <div className="flex flex-col gap-1.5">
+                  <div className="flex flex-col gap-2">
                     <label className="text-xs font-semibold text-slate-700 tracking-normal flex items-center justify-between">
                       <span>Price</span>
                       <span className="text-[11px] text-slate-400 font-normal">INR</span>
@@ -636,13 +636,13 @@ export const MenuEditor = ({ shopId }) => {
                         ? 'border-rose-400 ring-2 ring-rose-500/10' 
                         : 'border-slate-200 hover:border-slate-300 focus-within:border-red-500 focus-within:ring-2 focus-within:ring-red-500/10'
                     } bg-white overflow-hidden transition-all shadow-xs`}>
-                      <span className="px-3 h-full flex items-center justify-center bg-slate-50 border-r border-slate-200 text-slate-500 font-semibold text-sm select-none shrink-0">
+                      <span className="px-3.5 h-full flex items-center justify-center bg-slate-50 border-r border-slate-200 text-slate-500 font-semibold text-sm select-none shrink-0">
                         ₹
                       </span>
                       <input
                         type="number"
                         step="any"
-                        className="w-full h-full px-3 bg-transparent border-none outline-none text-[15px] text-slate-800 font-medium placeholder:text-slate-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        className="w-full h-full px-3.5 bg-transparent border-none outline-none text-[15px] text-slate-800 font-medium placeholder:text-slate-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         value={editingItem.price}
                         onChange={(e) => {
                           setEditingItem({ ...editingItem, price: e.target.value });
@@ -659,13 +659,13 @@ export const MenuEditor = ({ shopId }) => {
                   </div>
 
                   {/* CATEGORY */}
-                  <div className="flex flex-col gap-1.5">
+                  <div className="flex flex-col gap-2">
                     <label className="text-xs font-semibold text-slate-700 tracking-normal">
                       Category
                     </label>
                     <div className="relative flex items-center h-11">
                       <select
-                        className="w-full h-full pl-3.5 pr-9 rounded-xl border border-slate-200 hover:border-slate-300 focus:border-red-500 focus:ring-2 focus:ring-red-500/10 bg-white text-[15px] text-slate-800 font-medium outline-none transition-all appearance-none cursor-pointer shadow-xs"
+                        className="w-full h-full pl-4 pr-10 rounded-xl border border-slate-200 hover:border-slate-300 focus:border-red-500 focus:ring-2 focus:ring-red-500/10 bg-white text-[15px] text-slate-800 font-medium outline-none transition-all appearance-none cursor-pointer shadow-xs"
                         value={editingItem.category}
                         onChange={(e) => setEditingItem({ ...editingItem, category: e.target.value })}
                       >
@@ -673,38 +673,38 @@ export const MenuEditor = ({ shopId }) => {
                           <option key={c} value={c}>{c}</option>
                         ))}
                       </select>
-                      <ChevronDown size={16} className="absolute right-3 text-slate-400 pointer-events-none" />
+                      <ChevronDown size={17} className="absolute right-3.5 text-slate-400 pointer-events-none" />
                     </div>
                   </div>
                 </div>
 
                 {/* 3. DISH PHOTO */}
-                <div className="flex flex-col gap-1.5">
+                <div className="flex flex-col gap-2">
                   <label className="text-xs font-semibold text-slate-700 tracking-normal flex items-center justify-between">
                     <span>Dish Photo</span>
                     <span className="text-[11px] text-slate-400 font-normal">Recommended 1:1 or 16:9</span>
                   </label>
 
                   {editingItem.img ? (
-                    <div className="flex flex-col gap-2.5">
-                      <div className="relative w-full h-[165px] rounded-xl overflow-hidden border border-slate-200 bg-slate-950 shadow-xs group">
+                    <div className="flex flex-col gap-3">
+                      <div className="relative w-full h-[170px] rounded-2xl overflow-hidden border border-slate-200 bg-slate-950 shadow-xs group">
                         <img 
                           src={editingItem.img} 
                           alt={editingItem.name || 'Dish Preview'} 
                           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.02]" 
                         />
-                        <span className="absolute top-2.5 left-2.5 text-[11px] font-semibold text-white bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-md">
+                        <span className="absolute top-3 left-3 text-[11px] font-semibold text-white bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-md">
                           Live Photo
                         </span>
                       </div>
                       
-                      {/* Compact Change Photo & Remove Action Buttons */}
-                      <div className="flex items-center gap-2.5 mt-0.5">
+                      {/* Action Buttons with Generous Padding & Space */}
+                      <div className="flex items-center gap-3 mt-1">
                         <button
                           type="button"
                           onClick={() => editFileInputRef.current?.click()}
                           style={{ backgroundColor: '#dc2626', color: '#ffffff' }}
-                          className="h-9 px-4 rounded-xl bg-[#dc2626] hover:bg-[#b91c1c] active:bg-[#991b1b] text-white text-xs font-bold inline-flex items-center justify-center gap-2 transition-all border-none cursor-pointer shadow-sm shadow-red-500/20 active:scale-[0.98]"
+                          className="h-10 px-5 rounded-xl bg-[#dc2626] hover:bg-[#b91c1c] active:bg-[#991b1b] text-white text-xs font-bold inline-flex items-center justify-center gap-2 transition-all border-none cursor-pointer shadow-sm shadow-red-500/25 active:scale-[0.98]"
                         >
                           <Camera size={15} className="text-white shrink-0" />
                           <span className="text-white font-bold whitespace-nowrap">Change Photo</span>
@@ -713,7 +713,7 @@ export const MenuEditor = ({ shopId }) => {
                           type="button"
                           onClick={(e) => handleRemoveImage(e)}
                           style={{ backgroundColor: '#dc2626', color: '#ffffff' }}
-                          className="h-9 px-4 rounded-xl bg-[#dc2626] hover:bg-[#b91c1c] active:bg-[#991b1b] text-white text-xs font-bold inline-flex items-center justify-center gap-1.5 transition-all border-none cursor-pointer shadow-sm shadow-red-500/20 active:scale-[0.98]"
+                          className="h-10 px-4.5 rounded-xl bg-[#dc2626] hover:bg-[#b91c1c] active:bg-[#991b1b] text-white text-xs font-bold inline-flex items-center justify-center gap-1.5 transition-all border-none cursor-pointer shadow-sm shadow-red-500/25 active:scale-[0.98]"
                         >
                           <Trash2 size={15} className="text-white shrink-0" />
                           <span className="text-white font-bold whitespace-nowrap">Remove</span>
@@ -723,7 +723,7 @@ export const MenuEditor = ({ shopId }) => {
                   ) : (
                     <div 
                       onClick={() => editFileInputRef.current?.click()}
-                      className={`w-full h-[140px] rounded-xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all ${
+                      className={`w-full h-[145px] rounded-2xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all ${
                         isUploading 
                           ? 'border-slate-200 bg-slate-50' 
                           : 'border-slate-200 hover:border-red-400 bg-slate-50/50 hover:bg-red-50/20'
@@ -740,7 +740,7 @@ export const MenuEditor = ({ shopId }) => {
                             type="button"
                             onClick={() => editFileInputRef.current?.click()}
                             style={{ backgroundColor: '#dc2626', color: '#ffffff' }}
-                            className="inline-flex items-center gap-2 px-4 h-9 rounded-xl bg-[#dc2626] hover:bg-[#b91c1c] active:bg-[#991b1b] text-white text-xs font-bold shadow-sm shadow-red-500/30 border-none cursor-pointer transition-all hover:scale-105 active:scale-95"
+                            className="inline-flex items-center gap-2 px-5 h-10 rounded-xl bg-[#dc2626] hover:bg-[#b91c1c] active:bg-[#991b1b] text-white text-xs font-bold shadow-sm shadow-red-500/30 border-none cursor-pointer transition-all hover:scale-105 active:scale-95"
                           >
                             <Camera size={15} className="text-white shrink-0" />
                             <span className="text-white font-bold whitespace-nowrap">Change Photo</span>
@@ -771,16 +771,16 @@ export const MenuEditor = ({ shopId }) => {
                   type="submit"
                   disabled={isSaving || isUploading}
                   style={{ backgroundColor: '#dc2626', color: '#ffffff' }}
-                  className="w-full mt-2 h-12 rounded-xl text-sm font-bold tracking-normal text-white bg-[#dc2626] hover:bg-[#b91c1c] active:bg-[#991b1b] active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-red-600/25 hover:shadow-lg hover:shadow-red-600/35 transition-all flex items-center justify-center gap-2 border-none cursor-pointer shrink-0"
+                  className="w-full mt-2 h-12 rounded-xl text-[15px] font-bold tracking-wide text-white bg-[#dc2626] hover:bg-[#b91c1c] active:bg-[#991b1b] active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-red-600/25 hover:shadow-lg hover:shadow-red-600/35 transition-all flex items-center justify-center gap-2 border-none cursor-pointer shrink-0"
                 >
                   {isSaving ? (
                     <>
-                      <Loader2 size={17} className="animate-spin text-white shrink-0" />
+                      <Loader2 size={18} className="animate-spin text-white shrink-0" />
                       <span className="text-white font-bold">Saving Changes...</span>
                     </>
                   ) : (
                     <>
-                      <Check size={18} strokeWidth={2.5} className="text-white shrink-0" />
+                      <Check size={19} strokeWidth={2.5} className="text-white shrink-0" />
                       <span className="text-white font-bold">Save Changes</span>
                     </>
                   )}
