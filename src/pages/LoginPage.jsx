@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   IconUser, IconLoader2, IconBuildingStore, IconLock, IconMail, IconArrowRight,
   IconSchool, IconClock, IconBell, IconBolt, IconShieldCheck, IconToolsKitchen2, IconMailCheck
@@ -22,7 +22,14 @@ const LoginPage = () => {
   const [staffId, setStaffId] = useState('');
   const [staffPwd, setStaffPwd] = useState('');
 
+  const cardRef = useRef(null);
   const navigate = useNavigate();
+
+  const scrollToCard = useCallback(() => {
+    if (cardRef.current) {
+      cardRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, []);
 
   const redirectByRole = useCallback((role, shopId) => {
     if (role === 'student' || role === 'guest') navigate('/student');
@@ -252,6 +259,20 @@ const LoginPage = () => {
       </div>
 
       <div className="sb-viewport-wrapper">
+        {/* Top Navigation Bar with Top-Right Sign In Action */}
+        <header className="sb-top-bar">
+          <button
+            type="button"
+            onClick={scrollToCard}
+            className="sb-btn-top-signin"
+            aria-label="Scroll to Sign In"
+          >
+            <IconUser size={16} />
+            <span>Sign In</span>
+            <IconArrowRight size={14} className="sb-btn-top-arrow" />
+          </button>
+        </header>
+
         <div className="sb-split-grid">
 
           {/* LEFT COLUMN: HERO SECTION */}
@@ -340,7 +361,7 @@ const LoginPage = () => {
           </main>
 
           {/* RIGHT COLUMN: FROSTED GLASS SIGN-IN CARD WITH GRIDBEAM GLOW */}
-          <aside className="sb-right-card-wrapper">
+          <aside className="sb-right-card-wrapper" ref={cardRef}>
             <GridBeam
               className="sb-glass-card-compact"
               role="region"

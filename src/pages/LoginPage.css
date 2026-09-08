@@ -574,3 +574,65 @@
   .sb-hero-title { font-size: 2.1rem; }
   .sb-glass-card-compact { padding: 30px 20px 24px; border-radius: 24px; }
 }
+
+/* ════════════════════════════════════════════
+   TOP NAVIGATION BAR & TOP-RIGHT SIGN IN BUTTON
+════════════════════════════════════════════ */
+.sb-top-bar {
+  width: 100%;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin-bottom: 20px;
+  position: relative;
+  z-index: 25;
+}
+
+.sb-btn-top-signin {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 87, 34, 0.14);
+  border: 1px solid rgba(255, 87, 34, 0.4);
+  color: #FFFFFF;
+  font-family: var(--sb-font-disp);
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 8px 18px;
+  border-radius: 999px;
+  cursor: pointer;
+  box-shadow: 0 4px 18px rgba(255, 87, 34, 0.25);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.sb-btn-top-signin:hover {
+  background: linear-gradient(135deg, #FF5722 0%, #F59E0B 100%);
+  box-shadow: 0 6px 24px rgba(255, 87, 34, 0.45);
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: translateY(-1px);
+}
+
+.sb-btn-top-signin:active {
+  transform: scale(0.96);
+}
+
+.sb-btn-top-arrow {
+  transition: transform 0.2s ease;
+}
+
+.sb-btn-top-signin:hover .sb-btn-top-arrow {
+  transform: translateX(3px);
+}
+
+@media (max-width: 580px) {
+  .sb-top-bar {
+    margin-bottom: 14px;
+  }
+  .sb-btn-top-signin {
+    padding: 7px 15px;
+    font-size: 0.8rem;
+  }
+}
+
