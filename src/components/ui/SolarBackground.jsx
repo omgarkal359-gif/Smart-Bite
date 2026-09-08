@@ -271,31 +271,57 @@ const ParticleSwarm = () => {
   );
 };
 
+class SolarErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  componentDidCatch(err) {
+    console.warn('SolarBackground 3D Canvas error caught safely:', err);
+  }
+  render() {
+    if (this.state.hasError) return null;
+    return this.props.children;
+  }
+}
+
 export const SolarBackground = () => {
+  const bloomResolution = useMemo(() => {
+    if (typeof window !== 'undefined') {
+      return new THREE.Vector2(window.innerWidth, window.innerHeight);
+    }
+    return new THREE.Vector2(512, 512);
+  }, []);
+
   return (
-    <div 
-      className="sb-solar-bg-container"
-      style={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        width: '100%',
-        height: '100%',
-        zIndex: 0,
-        pointerEvents: 'none',
-        overflow: 'hidden'
-      }}
-    >
-      <Canvas camera={{ position: [0, 0, 350], fov: 60 }} style={{ pointerEvents: 'none' }}>
-        <ResponsiveCamera />
-        <fog attach="fog" args={['#000000', 0.01]} />
-        <ParticleSwarm />
-        <OrbitControls autoRotate={true} autoRotateSpeed={0.8} enableZoom={false} enablePan={false} enableRotate={false} />
-        <Effects disableGamma>
-          <unrealBloomPass threshold={0} strength={1.6} radius={0.4} />
-        </Effects>
-      </Canvas>
-    </div>
+    <SolarErrorBoundary>
+      <div 
+        className="sb-solar-bg-container"
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          zIndex: 0,
+          pointerEvents: 'none',
+          overflow: 'hidden'
+        }}
+      >
+        <Canvas camera={{ position: [0, 0, 350], fov: 60 }} style={{ pointerEvents: 'none' }}>
+          <ResponsiveCamera />
+          <fog attach="fog" args={['#000000', 0.01]} />
+          <ParticleSwarm />
+          <OrbitControls autoRotate={true} autoRotateSpeed={0.8} enableZoom={false} enablePan={false} enableRotate={false} />
+          <Effects disableGamma>
+            <unrealBloomPass attach="passes" args={[bloomResolution, 1.6, 0.4, 0]} />
+          </Effects>
+        </Canvas>
+      </div>
+    </SolarErrorBoundary>
   );
 };
 
