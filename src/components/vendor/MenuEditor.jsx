@@ -64,10 +64,12 @@ export const MenuEditor = ({ shopId }) => {
         price: parseFloat(newItem.price),
         category: newItem.category,
         stock: 20,
-        isVeg: 1
+        isVeg: 1,
+        img: newItem.img || null
       };
-      const createdItem = await api.addMenuItem(shopId, payload);
-      setItems([createdItem, ...items]);
+      const result = await api.addMenuItem(shopId, payload);
+      if (!result?.success) throw new Error(result?.message || 'Insert failed');
+      setItems([result.item, ...items]);
       setNewItem({ name: '', price: '', category: 'Main', img: '' });
       setIsAdding(false);
       showToast(`Added "${newItem.name}" to menu! 🍲`, 'success');
@@ -76,29 +78,31 @@ export const MenuEditor = ({ shopId }) => {
     }
   };
 
-  const handleFileChange = (e) => {
+  const handleFileChange = async (e) => {
     const file = e.target.files[0];
-    if (file) {
-      setIsUploading(true);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setNewItem({ ...newItem, img: reader.result });
-        setIsUploading(false);
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+    setIsUploading(true);
+    try {
+      const url = await api.uploadMenuImage(shopId, file);
+      setNewItem((prev) => ({ ...prev, img: url }));
+    } catch (err) {
+      showToast('Image upload failed: ' + err.message, 'error');
+    } finally {
+      setIsUploading(false);
     }
   };
 
-  const handleEditFileChange = (e) => {
+  const handleEditFileChange = async (e) => {
     const file = e.target.files[0];
-    if (file) {
-      setIsUploading(true);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setEditingItem({ ...editingItem, img: reader.result });
-        setIsUploading(false);
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+    setIsUploading(true);
+    try {
+      const url = await api.uploadMenuImage(shopId, file);
+      setEditingItem((prev) => ({ ...prev, img: url }));
+    } catch (err) {
+      showToast('Image upload failed: ' + err.message, 'error');
+    } finally {
+      setIsUploading(false);
     }
   };
 

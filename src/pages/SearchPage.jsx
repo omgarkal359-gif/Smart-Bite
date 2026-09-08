@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { GlassCard } from '../components/ui/GlassCard';
 import { searchFoodItems } from '../data/foodCourtDB';
 import { useDebounce } from '../hooks/useDebounce';
-import { getFoodItemImage } from '../utils/imageHelper';
+import { getFoodItemImage, PLACEHOLDER_IMAGE } from '../utils/imageHelper';
 import './home_v21.css';
 
 const SearchPage = () => {
@@ -76,7 +76,7 @@ const SearchPage = () => {
                       className="shop-hd-img" 
                       onError={(e) => {
                         e.target.onerror = null;
-                        e.target.src = 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=200&q=80';
+                        e.target.src = PLACEHOLDER_IMAGE;
                       }}
                     />
                   </div>

@@ -181,7 +181,7 @@ const DigitalReceiptTracker = () => {
     }, 4000);
   };
 
-  const handleDownloadPDF = () => {
+  const handleDownloadPDF = async () => {
     if (!order) return;
     
     const shopName = vendor?.name || order.items?.[0]?.stallName || 'SGU Food Court';
@@ -537,20 +537,53 @@ const DigitalReceiptTracker = () => {
 </body>
 </html>`;
 
-    const blob = new Blob([invoiceContent], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `SGU_Receipt_${order.id}.html`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-    
-    setToastMsg(`Receipt downloaded successfully!`);
-    setTimeout(() => {
-      setToastMsg('');
-    }, 4000);
+    // Render the receipt HTML in an offscreen iframe, snapshot the ticket with
+    // html2canvas, then place it into a PDF sized to the ticket and download.
+    const iframe = document.createElement('iframe');
+    iframe.style.cssText = 'position:fixed;left:-9999px;top:0;width:420px;height:10px;border:0;';
+    document.body.appendChild(iframe);
+
+    try {
+      const [{ jsPDF }, { default: html2canvas }] = await Promise.all([
+        import('jspdf'),
+        import('html2canvas')
+      ]);
+
+      const doc = iframe.contentDocument;
+      doc.open();
+      doc.write(invoiceContent);
+      doc.close();
+
+      // Wait for the iframe document + web fonts to be ready.
+      await new Promise((resolve) => {
+        if (doc.readyState === 'complete') resolve();
+        else iframe.onload = () => resolve();
+      });
+      try { await doc.fonts?.ready; } catch (_e) {}
+      await new Promise((r) => setTimeout(r, 150));
+
+      const ticket = doc.querySelector('.ticket-container') || doc.body;
+      const canvas = await html2canvas(ticket, {
+        scale: 2,
+        backgroundColor: '#FFFFFF',
+        useCORS: true,
+        windowWidth: ticket.scrollWidth,
+        windowHeight: ticket.scrollHeight
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: [canvas.width, canvas.height] });
+      pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+      pdf.save(`SGU_Receipt_${order.id}.pdf`);
+
+      setToastMsg('Receipt downloaded successfully!');
+    } catch (err) {
+      console.error('PDF generation failed:', err);
+      setToastMsg('Could not generate PDF. Please try again.');
+    } finally {
+      document.body.removeChild(iframe);
+      setTimeout(() => setToastMsg(''), 4000);
+    }
   };
 
   if (isAccessDenied) {

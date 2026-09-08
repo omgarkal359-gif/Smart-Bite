@@ -262,9 +262,26 @@ export const api = {
     if (itemData.isVeg !== undefined) patch.is_veg = !!itemData.isVeg;
     if (itemData.name !== undefined) patch.name = itemData.name;
     if (itemData.category !== undefined) patch.category = itemData.category;
+    if (itemData.img !== undefined) patch.img = itemData.img || null;
     const { data, error } = await supabase.from('menu_items').update(patch).eq('id', itemId).select();
     if (error) return { success: false, message: error.message };
     return { success: true, item: data?.[0] ? mapMenuItem(data[0]) : null };
+  },
+
+  // ── Menu item image upload (Supabase Storage) ────────────────────────────
+  // Uploads a vendor's photo to the public `menu-images` bucket and returns
+  // its public URL. The URL is what gets stored in menu_items.img.
+  async uploadMenuImage(stallId, file) {
+    if (!file) throw new Error('No file provided.');
+    const ext = (file.name?.split('.').pop() || 'jpg').toLowerCase();
+    const safeStall = String(stallId || 'unknown').replace(/[^a-z0-9_-]/gi, '');
+    const path = `${safeStall}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    const { error } = await supabase.storage
+      .from('menu-images')
+      .upload(path, file, { cacheControl: '3600', upsert: false, contentType: file.type || undefined });
+    if (error) throw new Error(error.message);
+    const { data } = supabase.storage.from('menu-images').getPublicUrl(path);
+    return data.publicUrl;
   },
 
   // ── Orders ─────────────────────────────────────────────────────────────

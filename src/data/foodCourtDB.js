@@ -13,7 +13,7 @@ export const FOOD_COURT = {
       online: true,
       rating: 4.6,
       contact: ["8805682020", "9372221444"],
-      img: "https://images.unsplash.com/photo-1601050690117-94f5f6fa8bd7?auto=format&fit=crop&w=400&q=80",
+      img: null,
       categories: [
         {
           name: "Thalipeeth",
@@ -151,7 +151,7 @@ export const FOOD_COURT = {
       online: true,
       rating: 4.3,
       contact: [],
-      img: "https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=400&q=80",
+      img: null,
       categories: [
         {
           name: "Tea's",
@@ -202,7 +202,7 @@ export const FOOD_COURT = {
       online: true,
       rating: 4.1,
       contact: [],
-      img: "https://images.unsplash.com/photo-1567337710282-00832b415979?auto=format&fit=crop&w=400&q=80",
+      img: null,
       categories: [
         {
           name: "Breakfast",
@@ -303,7 +303,7 @@ export const FOOD_COURT = {
       online: true,
       rating: 4.4,
       contact: ["9823916186"],
-      img: "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=400&q=80",
+      img: null,
       categories: [
         {
           name: "Starter",
@@ -383,7 +383,7 @@ export const FOOD_COURT = {
       online: true,
       rating: 4.5,
       contact: [],
-      img: "https://images.unsplash.com/photo-1630383249896-424e482df921?auto=format&fit=crop&w=400&q=80",
+      img: null,
       categories: [
         {
           name: "Idli's",
@@ -499,7 +499,7 @@ export const FOOD_COURT = {
       online: true,
       rating: 4.3,
       contact: [],
-      img: "https://images.unsplash.com/photo-1572490122747-3968b75cc699?auto=format&fit=crop&w=400&q=80",
+      img: null,
       categories: [
         {
           name: "Cold Coffee",

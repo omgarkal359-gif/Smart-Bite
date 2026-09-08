@@ -38,12 +38,13 @@ function slugify(s: string) {
 }
 
 function tempPass() {
-  // Must satisfy the project's password policy: upper + lower + digit, len >= 8.
-  const b = new Uint8Array(5);
+  // ~128 bits of CSPRNG entropy, no Math.random(). Base62 body, then a fixed
+  // Aa1 suffix guarantees the policy (upper + lower + digit, len >= 8).
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  const b = new Uint8Array(22);
   crypto.getRandomValues(b);
-  const hex = Array.from(b).map((x) => x.toString(16).padStart(2, '0')).join('');
-  const digit = Math.floor(Math.random() * 10);
-  return `Sb-${hex}${digit}`; // e.g. Sb-a1b2c3d4e57
+  const body = Array.from(b).map((x) => alphabet[x % alphabet.length]).join('');
+  return `Sb-${body}Aa1`; // e.g. Sb-<22 random base62>Aa1
 }
 
 Deno.serve(async (req) => {
