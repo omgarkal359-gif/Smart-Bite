@@ -204,6 +204,22 @@ const LoginPage = () => {
 
   return (
     <main className="sb-root">
+      {/* Full-screen background video — place bg-video.mp4 in /public */}
+      <video
+        className="sb-bg-video"
+        autoPlay
+        muted
+        loop
+        playsInline
+        disablePictureInPicture
+        preload="auto"
+        aria-hidden="true"
+      >
+        <source src="/bg-video.mp4" type="video/mp4" />
+      </video>
+      {/* Dark overlay so text stays readable over the video */}
+      <div className="sb-bg-overlay" aria-hidden="true" />
+
       <div className="sb-viewport-wrapper">
         <div className="sb-split-grid">
 
