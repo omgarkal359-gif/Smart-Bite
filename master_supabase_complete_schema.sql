@@ -66,6 +66,24 @@ CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
+-- BACKFILL ALL EXISTING auth.users INTO public.accounts
+INSERT INTO public.accounts (id, email, full_name, role, shop_id)
+SELECT 
+  u.id,
+  LOWER(COALESCE(u.email, '')),
+  COALESCE(u.raw_user_meta_data ->> 'full_name', u.raw_user_meta_data ->> 'name', split_part(u.email, '@', 1)),
+  CASE 
+    WHEN EXISTS (SELECT 1 FROM public.admin_allowlist a WHERE a.email = LOWER(COALESCE(u.email, ''))) THEN 'admin'
+    WHEN COALESCE(u.raw_app_meta_data ->> 'role', u.raw_user_meta_data ->> 'role') IN ('vendor', 'owner') THEN 'vendor'
+    ELSE 'student'
+  END AS role,
+  u.raw_app_meta_data ->> 'shopId' AS shop_id
+FROM auth.users u
+ON CONFLICT (id) DO UPDATE SET 
+  email = EXCLUDED.email,
+  role = EXCLUDED.role,
+  shop_id = COALESCE(public.accounts.shop_id, EXCLUDED.shop_id);
+
 -- Auth helper functions
 CREATE OR REPLACE FUNCTION public.is_admin()
 RETURNS BOOLEAN AS $$
