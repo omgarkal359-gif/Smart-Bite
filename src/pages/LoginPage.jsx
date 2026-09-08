@@ -274,7 +274,7 @@ const LoginPage = () => {
               colorVariant="red"
               active={true}
               breathe={true}
-              duration={3.0}
+              duration={7.0}
               strength={1}
               borderRadius={999}
               beamCount={2}
@@ -315,7 +315,7 @@ const LoginPage = () => {
                 colorVariant="red"
                 active={true}
                 breathe={true}
-                duration={3.5}
+                duration={8.0}
                 strength={1}
                 borderRadius={18}
                 beamCount={3}
@@ -334,7 +334,7 @@ const LoginPage = () => {
                 colorVariant="red"
                 active={true}
                 breathe={true}
-                duration={3.5}
+                duration={8.0}
                 strength={1}
                 borderRadius={18}
                 beamCount={3}
@@ -373,7 +373,7 @@ const LoginPage = () => {
               colorVariant="red"
               active={true}
               breathe={true}
-              duration={4.0}
+              duration={9.0}
               strength={1}
               borderRadius={24}
               beamCount={4}
