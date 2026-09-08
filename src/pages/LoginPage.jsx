@@ -131,7 +131,11 @@ const LoginPage = () => {
             message: `Failed login attempt for user "${idInput}"`
           });
         } catch (e) {}
-        setErrorMsg(resData?.message || 'Invalid credentials.');
+        const rawMsg = resData?.message;
+        const displayMsg = typeof rawMsg === 'string' && rawMsg.trim() && rawMsg !== '{}'
+          ? rawMsg
+          : 'Invalid login credentials. Please check your email and password.';
+        setErrorMsg(displayMsg);
         setIsLoading(false);
       }
     } catch (err) {
@@ -142,7 +146,11 @@ const LoginPage = () => {
           message: `Failed login attempt for user "${idInput}"`
         });
       } catch (e) {}
-      setErrorMsg(err.message || 'Login failed. Please check your credentials and try again.');
+      const rawMsg = err?.message;
+      const displayMsg = typeof rawMsg === 'string' && rawMsg.trim() && rawMsg !== '{}'
+        ? rawMsg
+        : 'Login failed. Please check your credentials and try again.';
+      setErrorMsg(displayMsg);
       setIsLoading(false);
     }
   };
@@ -319,7 +327,7 @@ const LoginPage = () => {
               {/* Error Banner */}
               {errorMsg && (
                 <div className="sb-error-banner" role="alert" aria-live="assertive">
-                  {errorMsg}
+                  {typeof errorMsg === 'string' && errorMsg !== '{}' ? errorMsg : 'Invalid login credentials. Please check your email and password.'}
                 </div>
               )}
 
