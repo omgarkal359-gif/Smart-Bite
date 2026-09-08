@@ -9,6 +9,7 @@ import { setStoredUser, getStoredUser, clearStoredUser, ADMIN_EMAILS, isAdminEma
 import { GoogleIcon } from '../components/icons/GoogleIcon';
 import { api } from '../api';
 import { addAuditLog } from '../utils/logger';
+import { GridBeam } from '../components/ui/grid-beam';
 import './LoginPage.css';
 
 const LoginPage = () => {
@@ -253,7 +254,7 @@ const LoginPage = () => {
       <div className="sb-viewport-wrapper">
         <div className="sb-split-grid">
 
-          {/* LEFT COLUMN: HERO SECTION (Specials Removed) */}
+          {/* LEFT COLUMN: HERO SECTION */}
           <main className="sb-left-hero">
 
             {/* University Canteen Pill Tag */}
@@ -311,9 +312,21 @@ const LoginPage = () => {
 
           </main>
 
-          {/* RIGHT COLUMN: FROSTED GLASS SIGN-IN CARD */}
+          {/* RIGHT COLUMN: FROSTED GLASS SIGN-IN CARD WITH GRIDBEAM GLOW */}
           <aside className="sb-right-card-wrapper">
-            <div className="sb-glass-card-compact" role="region" aria-label="Student Portal Sign-In">
+            <GridBeam
+              className="sb-glass-card-compact"
+              role="region"
+              aria-label="Student Portal Sign-In"
+              colorVariant="colorful"
+              active={true}
+              breathe={true}
+              duration={3.4}
+              strength={1}
+              borderRadius={24}
+              rows={2}
+              cols={2}
+            >
 
               {/* Card Header */}
               <div className="sb-card-brand-header">
@@ -367,7 +380,7 @@ const LoginPage = () => {
                 <span>Please sign in with your <strong>authorized university email ID</strong>.</span>
               </div>
 
-              {/* Hidden Staff / Vendor Access — double-click the small icon to reveal */}
+              {/* Hidden Staff / Vendor Access */}
               <div className="sb-staff-section">
                 {!showStaffLogin && (
                   <button
@@ -433,7 +446,7 @@ const LoginPage = () => {
                 )}
               </div>
 
-            </div>
+            </GridBeam>
           </aside>
 
         </div>
@@ -443,4 +456,3 @@ const LoginPage = () => {
 };
 
 export default LoginPage;
-
