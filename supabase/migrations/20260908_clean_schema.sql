@@ -18,8 +18,9 @@
 BEGIN;
 
 -- =============================================
--- STEP 1: DROP UNUSED TABLES
+-- STEP 1: DROP UNUSED & LEGACY TABLES
 -- =============================================
+DROP TABLE IF EXISTS public.users CASCADE;
 DROP TABLE IF EXISTS public.user_roles CASCADE;
 DROP TABLE IF EXISTS public.roles CASCADE;
 DROP TABLE IF EXISTS public.stall_categories CASCADE;
