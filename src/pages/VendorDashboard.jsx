@@ -237,7 +237,6 @@ const VendorDashboard = () => {
     }
 
     const userShopId = parsedUser.shopId || parsedUser.shopid;
-    const cleanUrlShopId = shopId;
 
     // If owner tries to access without a shopId in URL, redirect to their own shop
     if (parsedUser.role === 'vendor' && !cleanUrlShopId && userShopId) {
