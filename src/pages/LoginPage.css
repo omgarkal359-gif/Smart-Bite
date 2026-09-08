@@ -137,6 +137,7 @@
 }
 
 .sb-hero-cta-wrap {
+  display: none; /* Hidden on laptops where login card is side-by-side */
   margin-top: 14px;
   margin-bottom: 22px;
 }
@@ -577,6 +578,12 @@
 
   .sb-perks-row {
     justify-content: center;
+  }
+
+  .sb-hero-cta-wrap {
+    display: flex;
+    justify-content: center;
+    width: 100%;
   }
 }
 
