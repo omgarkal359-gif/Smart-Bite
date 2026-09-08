@@ -483,6 +483,16 @@ export const api = {
           account_status: 'ACTIVE'
         });
 
+        // 3. Upsert vendor record in Supabase
+        await supabase.from('vendors').upsert({
+          stall_id: stallId,
+          business_name: shopName,
+          owner_name: data.full_name || shopName,
+          contact_email: email,
+          vendor_status: 'ACTIVE',
+          fssai: data.fssai || null
+        }, { onConflict: 'stall_id' });
+
         // 3. Store vendor KYC & bank details in local storage cache
         try {
           const records = JSON.parse(localStorage.getItem('sgu_vendor_records') || '{}');
