@@ -15,7 +15,12 @@ CREATE TABLE IF NOT EXISTS public.admin_allowlist (
 INSERT INTO public.admin_allowlist (email) VALUES
   ('omgarkal357@gmail.com'),
   ('omgarkal359@gmail.com'),
-  ('admin@smartbite.in')
+  ('admin@smartbite.in'),
+  ('admin@smartbite'),
+  ('admin@smartbite.com'),
+  ('admin@sgu.edu'),
+  ('admin@sguk.ac.in'),
+  ('admin@sgu.ac.in')
 ON CONFLICT (email) DO NOTHING;
 
 -- 2. AUTHENTICATION PROFILES (Single identity table linked 1:1 with auth.users)
