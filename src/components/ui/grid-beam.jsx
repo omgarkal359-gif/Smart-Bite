@@ -184,9 +184,21 @@ export function GridBeamDividers({ borderRadius = 24, className }) {
 /**
  * GridBeamContent - Relative wrapper for card inner items
  */
-export function GridBeamContent({ children, className, ...props }) {
+export function GridBeamContent({ children, className, style, ...props }) {
   return (
-    <div className={cn("relative z-10 h-full w-full", className)} {...props}>
+    <div
+      className={cn("relative z-10 h-full w-full", className)}
+      style={{
+        display: 'inherit',
+        flexDirection: 'inherit',
+        alignItems: 'inherit',
+        justifyContent: 'inherit',
+        gap: 'inherit',
+        padding: 'inherit',
+        ...style
+      }}
+      {...props}
+    >
       {children}
     </div>
   );

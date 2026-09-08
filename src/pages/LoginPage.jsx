@@ -258,10 +258,19 @@ const LoginPage = () => {
           <main className="sb-left-hero">
 
             {/* University Canteen Pill Tag */}
-            <div className="sb-badge-pill">
+            <GridBeam
+              className="sb-badge-pill"
+              colorVariant="sunset"
+              active={true}
+              breathe={true}
+              duration={3.0}
+              strength={1}
+              borderRadius={999}
+              beamCount={2}
+            >
               <IconSchool size={16} className="sb-badge-pill-icon" />
               <span className="sb-badge-pill-text">SGU Campus Canteen</span>
-            </div>
+            </GridBeam>
 
             {/* Hero Headline */}
             <h1 className="sb-hero-title">
@@ -276,7 +285,16 @@ const LoginPage = () => {
 
             {/* Quick Feature Highlights */}
             <div className="sb-highlights-grid">
-              <div className="sb-hl-card">
+              <GridBeam
+                className="sb-hl-card"
+                colorVariant="sunset"
+                active={true}
+                breathe={true}
+                duration={3.5}
+                strength={1}
+                borderRadius={18}
+                beamCount={3}
+              >
                 <div className="sb-hl-icon-box">
                   <IconClock size={20} />
                 </div>
@@ -284,9 +302,18 @@ const LoginPage = () => {
                   <div className="sb-hl-title">Order in under 2 mins</div>
                   <div className="sb-hl-desc">Instant 1-tap checkout</div>
                 </div>
-              </div>
+              </GridBeam>
 
-              <div className="sb-hl-card">
+              <GridBeam
+                className="sb-hl-card"
+                colorVariant="sunset"
+                active={true}
+                breathe={true}
+                duration={3.5}
+                strength={1}
+                borderRadius={18}
+                beamCount={3}
+              >
                 <div className="sb-hl-icon-box gold">
                   <IconBell size={20} />
                 </div>
@@ -294,7 +321,7 @@ const LoginPage = () => {
                   <div className="sb-hl-title">Instant Pickup Alerts</div>
                   <div className="sb-hl-desc">Get notified when ready</div>
                 </div>
-              </div>
+              </GridBeam>
             </div>
 
             {/* Canteen Perks Footer Row */}
