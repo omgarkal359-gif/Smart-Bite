@@ -138,7 +138,7 @@ export const api = {
     }
     let profile = null;
     try {
-      const { data: p } = await supabase.from('profiles').select('*').eq('id', data.user.id).single();
+      const { data: p } = await supabase.from('accounts').select('*').eq('id', data.user.id).single();
       profile = p;
     } catch (_e) {}
 
@@ -177,7 +177,7 @@ export const api = {
   async loginGoogle(email) {
     const clean = (email || '').trim().toLowerCase();
     try {
-      const { data } = await supabase.from('profiles').select('*').eq('email', clean).single();
+      const { data } = await supabase.from('accounts').select('*').eq('email', clean).single();
       return { success: true, user: { username: clean, name: data?.full_name || clean.split('@')[0], role: data?.role || 'student', shopId: data?.shop_id || null } };
     } catch (_e) {
       return { success: true, user: { username: clean, role: 'student' } };
@@ -186,7 +186,7 @@ export const api = {
 
   async verifyRegistration(identifier) {
     const clean = (identifier || '').trim().toLowerCase();
-    const { data } = await supabase.from('profiles').select('email, full_name').eq('email', clean).maybeSingle();
+    const { data } = await supabase.from('accounts').select('email, full_name').eq('email', clean).maybeSingle();
     if (!data) return { registered: false, message: 'Account not registered.' };
     return { registered: true, user: { username: data.email, name: data.full_name } };
   },
@@ -430,7 +430,7 @@ export const api = {
   },
 
   async getAdminUsers() {
-    const { data, error } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
+    const { data, error } = await supabase.from('accounts').select('*').order('created_at', { ascending: false });
     if (error || !data) return [];
     return data.map(p => ({ id: p.id, username: p.email, name: p.full_name, role: p.role, shopId: p.shop_id, status: p.account_status }));
   },
@@ -475,7 +475,7 @@ export const api = {
         });
 
         // 2. Upsert profile in Supabase
-        await supabase.from('profiles').upsert({
+        await supabase.from('accounts').upsert({
           email: email,
           full_name: data.full_name || shopName,
           role: 'vendor',

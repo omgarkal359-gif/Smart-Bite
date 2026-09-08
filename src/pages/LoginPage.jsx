@@ -195,7 +195,7 @@ const LoginPage = () => {
         // Fetch DB profile to get authoritative role and shop_id
         let profile = null;
         try {
-          const { data: p } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
+          const { data: p } = await supabase.from('accounts').select('*').eq('id', session.user.id).single();
           profile = p;
         } catch (_e) {}
 

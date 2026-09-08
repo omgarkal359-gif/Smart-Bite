@@ -67,7 +67,7 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
 
           let profile = null;
           try {
-            const { data: p } = await supabase.from('profiles').select('role, shop_id').eq('id', data.session.user.id).single();
+            const { data: p } = await supabase.from('accounts').select('role, shop_id').eq('id', data.session.user.id).single();
             profile = p;
           } catch (_e) {}
 

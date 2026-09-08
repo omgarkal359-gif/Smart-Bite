@@ -20,6 +20,21 @@ BEGIN;
 -- =============================================
 -- STEP 1: DROP UNUSED & LEGACY TABLES
 -- =============================================
+DROP TABLE IF EXISTS public.profiles CASCADE;
+CREATE TABLE IF NOT EXISTS public.accounts (
+  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  email TEXT,
+  full_name TEXT,
+  display_name TEXT,
+  phone TEXT,
+  roll_number TEXT,
+  avatar_url TEXT,
+  role TEXT NOT NULL DEFAULT 'student' CHECK (role IN ('student', 'vendor', 'admin')),
+  shop_id TEXT,
+  account_status TEXT DEFAULT 'ACTIVE' CHECK (account_status IN ('ACTIVE', 'SUSPENDED', 'PENDING_VERIFICATION')),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
 DROP TABLE IF EXISTS public.users CASCADE;
 DROP TABLE IF EXISTS public.user_roles CASCADE;
 DROP TABLE IF EXISTS public.roles CASCADE;
@@ -29,10 +44,10 @@ DROP TABLE IF EXISTS public.vendor_payout_accounts CASCADE;
 -- =============================================
 -- STEP 2: FIX ROLE TERMINOLOGY (owner -> vendor)
 -- =============================================
-ALTER TABLE public.profiles DROP CONSTRAINT IF EXISTS profiles_role_check;
-UPDATE public.profiles SET role = 'vendor' WHERE role = 'owner';
-ALTER TABLE public.profiles
-  ADD CONSTRAINT profiles_role_check CHECK (role IN ('student', 'vendor', 'admin'));
+ALTER TABLE public.accounts DROP CONSTRAINT IF EXISTS accounts_role_check;
+UPDATE public.accounts SET role = 'vendor' WHERE role = 'owner';
+ALTER TABLE public.accounts
+  ADD CONSTRAINT accounts_role_check CHECK (role IN ('student', 'vendor', 'admin'));
 
 -- =============================================
 -- STEP 3: ENSURE admin_allowlist EXISTS
@@ -64,7 +79,7 @@ BEGIN
     v_role := 'vendor';
   END IF;
 
-  INSERT INTO public.profiles (id, email, full_name, role, shop_id)
+  INSERT INTO public.accounts (id, email, full_name, role, shop_id)
   VALUES (
     NEW.id,
     v_email,
@@ -92,7 +107,7 @@ BEGIN
     SELECT 1 FROM public.admin_allowlist
     WHERE email = LOWER(COALESCE(auth.jwt() ->> 'email', ''))
   ) OR EXISTS (
-    SELECT 1 FROM public.profiles
+    SELECT 1 FROM public.accounts
     WHERE id = auth.uid() AND role = 'admin'
   );
 END;
@@ -104,7 +119,7 @@ BEGIN
   IF p_stall_id IS NULL OR TRIM(p_stall_id) = '' THEN RETURN FALSE; END IF;
   IF public.is_admin() THEN RETURN TRUE; END IF;
   RETURN EXISTS (
-    SELECT 1 FROM public.profiles
+    SELECT 1 FROM public.accounts
     WHERE id = auth.uid() AND role = 'vendor' AND shop_id = p_stall_id
   );
 END;
@@ -292,7 +307,7 @@ ON CONFLICT (key) DO NOTHING;
 -- =============================================
 -- STEP 13: INDEXES
 -- =============================================
-CREATE INDEX IF NOT EXISTS idx_profiles_email ON public.profiles(email);
+CREATE INDEX IF NOT EXISTS idx_accounts_email ON public.accounts(email);
 CREATE INDEX IF NOT EXISTS idx_admin_allowlist_email ON public.admin_allowlist(email);
 CREATE INDEX IF NOT EXISTS idx_vendors_stall_id ON public.vendors(stall_id);
 CREATE INDEX IF NOT EXISTS idx_vendors_user_id ON public.vendors(user_id);
@@ -317,7 +332,7 @@ CREATE INDEX IF NOT EXISTS idx_audit_logs_actor ON public.audit_logs(actor_id, c
 -- =============================================
 -- STEP 14: ROW LEVEL SECURITY
 -- =============================================
-ALTER TABLE public.profiles           ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.accounts           ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.admin_allowlist    ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.vendors            ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.vendor_invites     ENABLE ROW LEVEL SECURITY;
@@ -338,20 +353,20 @@ ALTER TABLE public.system_settings    ENABLE ROW LEVEL SECURITY;
 -- =============================================
 
 -- profiles
-DROP POLICY IF EXISTS p_profiles_self_read ON public.profiles;
-DROP POLICY IF EXISTS "Public read profiles" ON public.profiles;
-DROP POLICY IF EXISTS p_profiles_read ON public.profiles;
-CREATE POLICY p_profiles_read ON public.profiles FOR SELECT TO authenticated
+DROP POLICY IF EXISTS p_accounts_self_read ON public.accounts;
+DROP POLICY IF EXISTS "Public read profiles" ON public.accounts;
+DROP POLICY IF EXISTS p_accounts_read ON public.accounts;
+CREATE POLICY p_accounts_read ON public.accounts FOR SELECT TO authenticated
   USING (id = auth.uid() OR public.is_admin());
 
-DROP POLICY IF EXISTS p_profiles_self_update ON public.profiles;
-DROP POLICY IF EXISTS "Users update own profile" ON public.profiles;
-DROP POLICY IF EXISTS p_profiles_update ON public.profiles;
-CREATE POLICY p_profiles_update ON public.profiles FOR UPDATE TO authenticated
+DROP POLICY IF EXISTS p_accounts_self_update ON public.accounts;
+DROP POLICY IF EXISTS "Users update own profile" ON public.accounts;
+DROP POLICY IF EXISTS p_accounts_update ON public.accounts;
+CREATE POLICY p_accounts_update ON public.accounts FOR UPDATE TO authenticated
   USING (id = auth.uid() OR public.is_admin());
 
-DROP POLICY IF EXISTS p_profiles_insert ON public.profiles;
-CREATE POLICY p_profiles_insert ON public.profiles FOR INSERT TO authenticated
+DROP POLICY IF EXISTS p_accounts_insert ON public.accounts;
+CREATE POLICY p_accounts_insert ON public.accounts FOR INSERT TO authenticated
   WITH CHECK (id = auth.uid() OR public.is_admin());
 
 -- admin_allowlist
@@ -566,7 +581,7 @@ FROM public.vendors v
 WHERE v.stall_id = s.id AND s.vendor_id IS NULL;
 
 -- Delete non-admin profiles
-DELETE FROM public.profiles
+DELETE FROM public.accounts
 WHERE email NOT IN ('omgarkal357@gmail.com', 'omgarkal359@gmail.com', 'admin@smartbite.in');
 
 -- Clear audit/notifications

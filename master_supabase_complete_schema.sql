@@ -19,7 +19,7 @@ INSERT INTO public.admin_allowlist (email) VALUES
 ON CONFLICT (email) DO NOTHING;
 
 -- 2. AUTHENTICATION PROFILES (Single identity table linked 1:1 with auth.users)
-CREATE TABLE IF NOT EXISTS public.profiles (
+CREATE TABLE IF NOT EXISTS public.accounts (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   email TEXT,
   full_name TEXT,
@@ -48,7 +48,7 @@ BEGIN
     v_role := 'vendor';
   END IF;
 
-  INSERT INTO public.profiles (id, email, full_name, role, shop_id)
+  INSERT INTO public.accounts (id, email, full_name, role, shop_id)
   VALUES (
     NEW.id,
     v_email,
@@ -74,7 +74,7 @@ BEGIN
     SELECT 1 FROM public.admin_allowlist
     WHERE email = LOWER(COALESCE(auth.jwt() ->> 'email', ''))
   ) OR EXISTS (
-    SELECT 1 FROM public.profiles
+    SELECT 1 FROM public.accounts
     WHERE id = auth.uid() AND role = 'admin'
   );
 END;
@@ -86,7 +86,7 @@ BEGIN
   IF p_stall_id IS NULL OR TRIM(p_stall_id) = '' THEN RETURN FALSE; END IF;
   IF public.is_admin() THEN RETURN TRUE; END IF;
   RETURN EXISTS (
-    SELECT 1 FROM public.profiles
+    SELECT 1 FROM public.accounts
     WHERE id = auth.uid() AND role = 'vendor' AND shop_id = p_stall_id
   );
 END;
@@ -96,7 +96,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public STABLE;
 CREATE TABLE IF NOT EXISTS public.vendors (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   stall_id TEXT UNIQUE,
-  user_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+  user_id UUID REFERENCES public.accounts(id) ON DELETE SET NULL,
   business_name TEXT NOT NULL,
   owner_name TEXT,
   contact_email TEXT,
@@ -307,7 +307,7 @@ INSERT INTO public.system_settings (key, value, description) VALUES
 ON CONFLICT (key) DO NOTHING;
 
 -- INDEXES
-CREATE INDEX IF NOT EXISTS idx_profiles_email ON public.profiles(email);
+CREATE INDEX IF NOT EXISTS idx_accounts_email ON public.accounts(email);
 CREATE INDEX IF NOT EXISTS idx_admin_allowlist_email ON public.admin_allowlist(email);
 CREATE INDEX IF NOT EXISTS idx_vendors_stall_id ON public.vendors(stall_id);
 CREATE INDEX IF NOT EXISTS idx_vendors_user_id ON public.vendors(user_id);
@@ -330,7 +330,7 @@ CREATE INDEX IF NOT EXISTS idx_notifications_recipient ON public.notifications(r
 CREATE INDEX IF NOT EXISTS idx_audit_logs_actor ON public.audit_logs(actor_id, created_at DESC);
 
 -- ROW LEVEL SECURITY
-ALTER TABLE public.profiles           ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.accounts           ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.admin_allowlist    ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.vendors            ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.vendor_invites     ENABLE ROW LEVEL SECURITY;
@@ -347,9 +347,9 @@ ALTER TABLE public.notifications      ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.system_settings    ENABLE ROW LEVEL SECURITY;
 
 -- POLICIES
-CREATE POLICY p_profiles_read ON public.profiles FOR SELECT TO authenticated USING (id = auth.uid() OR public.is_admin());
-CREATE POLICY p_profiles_update ON public.profiles FOR UPDATE TO authenticated USING (id = auth.uid() OR public.is_admin());
-CREATE POLICY p_profiles_insert ON public.profiles FOR INSERT TO authenticated WITH CHECK (id = auth.uid() OR public.is_admin());
+CREATE POLICY p_accounts_read ON public.accounts FOR SELECT TO authenticated USING (id = auth.uid() OR public.is_admin());
+CREATE POLICY p_accounts_update ON public.accounts FOR UPDATE TO authenticated USING (id = auth.uid() OR public.is_admin());
+CREATE POLICY p_accounts_insert ON public.accounts FOR INSERT TO authenticated WITH CHECK (id = auth.uid() OR public.is_admin());
 
 CREATE POLICY p_allowlist_admin ON public.admin_allowlist FOR ALL TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
 

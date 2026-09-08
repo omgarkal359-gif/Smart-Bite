@@ -115,7 +115,7 @@ async function provisionVendor({ email, data = {}, stallIdHint, invitee }) {
 
   // 2. Profile
   if (userId) {
-    await supabaseAdmin.from('profiles').upsert({
+    await supabaseAdmin.from('accounts').upsert({
       id: userId, email, full_name: fullName, role: 'vendor', shop_id: stallId, account_status: 'ACTIVE'
     });
   }
