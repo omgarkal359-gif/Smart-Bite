@@ -1,16 +1,14 @@
 import React, { useRef, useMemo, useEffect } from 'react';
-import { Canvas, useFrame, extend, useThree } from '@react-three/fiber';
-import { OrbitControls, Effects } from '@react-three/drei';
-import { UnrealBloomPass } from 'three-stdlib';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
-
-extend({ UnrealBloomPass });
 
 // Responsive Camera Controller to keep animation proportional on mobile and desktop
 const ResponsiveCamera = () => {
   const { camera, size } = useThree();
 
   useEffect(() => {
+    if (!camera) return;
     const aspect = size.width / size.height;
     const isMobile = size.width < 768;
 
@@ -30,45 +28,44 @@ const ResponsiveCamera = () => {
 
 const ParticleSwarm = () => {
   const meshRef = useRef();
-  
-  const count = useMemo(() => {
-    if (typeof window === 'undefined') return 20000;
-    return window.innerWidth < 768 ? 10000 : 20000;
-  }, []);
-
+  const count = 12000;
   const speedMult = 1;
+  
   const dummy = useMemo(() => new THREE.Object3D(), []);
   const target = useMemo(() => new THREE.Vector3(), []);
   const pColor = useMemo(() => new THREE.Color(), []);
   const color = pColor;
-  
+
   const positions = useMemo(() => {
-     const pos = [];
-     for (let i = 0; i < count; i++) {
-       pos.push(new THREE.Vector3((Math.random() - 0.5) * 100, (Math.random() - 0.5) * 100, (Math.random() - 0.5) * 100));
-     }
-     return pos;
+    const pos = [];
+    for (let i = 0; i < count; i++) {
+      pos.push(new THREE.Vector3((Math.random() - 0.5) * 100, (Math.random() - 0.5) * 100, (Math.random() - 0.5) * 100));
+    }
+    return pos;
   }, [count]);
 
-  const material = useMemo(() => new THREE.MeshBasicMaterial({ color: 0xffffff }), []);
-  const geometry = useMemo(() => new THREE.TetrahedronGeometry(0.25), []);
+  const material = useMemo(() => new THREE.MeshBasicMaterial({ 
+    color: 0xffffff,
+    transparent: true,
+    opacity: 0.85,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false
+  }), []);
+  
+  const geometry = useMemo(() => new THREE.TetrahedronGeometry(0.3), []);
 
   const PARAMS = useMemo(() => ({"radius": 118, "fusion": 6, "convect": 1.05, "magnetic": 1.65, "wind": 1.2, "loops": 21.28}), []);
   const addControl = (id, l, min, max, val) => {
-      return PARAMS[id] !== undefined ? PARAMS[id] : val;
+    return PARAMS[id] !== undefined ? PARAMS[id] : val;
   };
-  const setInfo = () => {};
-  const annotate = () => {};
 
   useFrame((state) => {
     if (!meshRef.current) return;
     const time = state.clock.getElapsedTime() * speedMult;
 
-    if (material.uniforms && material.uniforms.uTime) {
-         material.uniforms.uTime.value = time;
-    }
-
     for (let i = 0; i < count; i++) {
+        if (!positions[i]) continue;
+
         const scaleR = addControl("radius", "Sun Radius", 40, 300, 120);
         const fusionRate = addControl("fusion", "Fusion Rate", 0.5, 6, 2.5);
         const convection = addControl("convect", "Convection Turbulence", 0, 3, 1.2);
@@ -82,7 +79,6 @@ const ParticleSwarm = () => {
         const h3 = Math.abs(Math.sin(i * 45.1640) * 98765.4320) % 1;
         const h4 = Math.abs(Math.sin(i * 33.7190) * 54321.9870) % 1;
         const h5 = Math.abs(Math.sin(i * 61.4310) * 31415.9265) % 1;
-        const h6 = Math.abs(Math.sin(i * 19.8410) * 27182.8182) % 1;
         
         const t0 = 0.12, t1 = 0.32, t2 = 0.55, t3 = 0.68, t4 = 0.78, t5 = 0.90, t6 = 0.97;
         
@@ -248,13 +244,6 @@ const ParticleSwarm = () => {
         const fx = px * ca - py * sa;
         const fy = px * sa + py * ca;
         target.set(fx, fy, pz);
-        
-        if (i === 0) {
-          setInfo("The Sun", "Layered stellar model...");
-          annotate("core", new THREE.Vector3(0, 0, 0), "Fusion Core");
-          annotate("photo", new THREE.Vector3(scaleR * 0.76, 0, 0), "Photosphere");
-          annotate("corona", new THREE.Vector3(0, scaleR * 1.3, 0), "Corona");
-        }
 
         positions[i].lerp(target, 0.1);
         dummy.position.copy(positions[i]);
@@ -289,13 +278,6 @@ class SolarErrorBoundary extends React.Component {
 }
 
 export const SolarBackground = () => {
-  const bloomResolution = useMemo(() => {
-    if (typeof window !== 'undefined') {
-      return new THREE.Vector2(window.innerWidth, window.innerHeight);
-    }
-    return new THREE.Vector2(512, 512);
-  }, []);
-
   return (
     <SolarErrorBoundary>
       <div 
@@ -316,9 +298,6 @@ export const SolarBackground = () => {
           <fog attach="fog" args={['#000000', 0.01]} />
           <ParticleSwarm />
           <OrbitControls autoRotate={true} autoRotateSpeed={0.8} enableZoom={false} enablePan={false} enableRotate={false} />
-          <Effects disableGamma>
-            <unrealBloomPass attach="passes" args={[bloomResolution, 1.6, 0.4, 0]} />
-          </Effects>
         </Canvas>
       </div>
     </SolarErrorBoundary>
