@@ -259,20 +259,6 @@ const LoginPage = () => {
       </div>
 
       <div className="sb-viewport-wrapper">
-        {/* Top Navigation Bar with Top-Right Sign In Action */}
-        <header className="sb-top-bar">
-          <button
-            type="button"
-            onClick={scrollToCard}
-            className="sb-btn-top-signin"
-            aria-label="Scroll to Sign In"
-          >
-            <IconUser size={16} />
-            <span>Sign In</span>
-            <IconArrowRight size={14} className="sb-btn-top-arrow" />
-          </button>
-        </header>
-
         <div className="sb-split-grid">
 
           {/* LEFT COLUMN: HERO SECTION */}
@@ -303,6 +289,20 @@ const LoginPage = () => {
             <p className="sb-hero-subtitle">
               Order right from your phone between lectures! Freshly prepared, sizzling hot, and ready for pickup before you even reach the food court.
             </p>
+
+            {/* Sign In Action Button below subtitle */}
+            <div className="sb-hero-cta-wrap">
+              <button
+                type="button"
+                onClick={scrollToCard}
+                className="sb-btn-top-signin sb-btn-hero-signin"
+                aria-label="Scroll to Sign In"
+              >
+                <IconUser size={16} />
+                <span>Sign In</span>
+                <IconArrowRight size={14} className="sb-btn-top-arrow" />
+              </button>
+            </div>
 
             {/* Quick Feature Highlights */}
             <div className="sb-highlights-grid">
