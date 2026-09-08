@@ -544,10 +544,30 @@ const DigitalReceiptTracker = () => {
     document.body.appendChild(iframe);
 
     try {
-      const [{ jsPDF }, { default: html2canvas }] = await Promise.all([
-        import('jspdf'),
-        import('html2canvas')
-      ]);
+      let jsPDFModule = null;
+      let html2canvasModule = null;
+      const pdfPkg = 'jspdf';
+      const canvasPkg = 'html2canvas';
+      try {
+        jsPDFModule = await import(/* @vite-ignore */ pdfPkg).then(m => m.jsPDF || m.default).catch(() => null);
+        html2canvasModule = await import(/* @vite-ignore */ canvasPkg).then(m => m.default || m).catch(() => null);
+      } catch (_e) {}
+
+      if (!jsPDFModule || !html2canvasModule) {
+        const win = window.open('', '_blank');
+        if (win) {
+          win.document.write(invoiceContent);
+          win.document.close();
+          win.focus();
+          win.print();
+        } else {
+          setToastMsg('PDF generation unavailable. Please use browser print.');
+        }
+        return;
+      }
+
+      const jsPDF = jsPDFModule;
+      const html2canvas = html2canvasModule;
 
       const doc = iframe.contentDocument;
       doc.open();
