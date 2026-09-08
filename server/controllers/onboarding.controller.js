@@ -88,7 +88,7 @@ async function provisionVendor({ email, data = {}, stallIdHint, invitee }) {
   const tempPassword = `Sb-${crypto.randomBytes(5).toString('hex')}`;
   const fullName = data.full_name || invitee || email.split('@')[0];
 
-  // 1. Auth user (owner bound to the stall)
+  // 1. Auth user (vendor bound to the stall)
   let userId = null;
   const { data: listed } = await supabaseAdmin.auth.admin.listUsers();
   const existing = listed?.users?.find(u => u.email?.toLowerCase() === email);
@@ -96,23 +96,29 @@ async function provisionVendor({ email, data = {}, stallIdHint, invitee }) {
     userId = existing.id;
     await supabaseAdmin.auth.admin.updateUserById(userId, {
       password: tempPassword,
-      app_metadata: { role: 'owner', shopId: stallId },
-      user_metadata: { ...existing.user_metadata, full_name: fullName, role: 'owner' }
+      app_metadata: { role: 'vendor', shopId: stallId },
+      user_metadata: { ...existing.user_metadata, full_name: fullName, role: 'vendor' }
     });
   } else {
     const { data: created, error: cErr } = await supabaseAdmin.auth.admin.createUser({
       email, password: tempPassword, email_confirm: true,
-      app_metadata: { role: 'owner', shopId: stallId },
-      user_metadata: { full_name: fullName, role: 'owner' }
+      app_metadata: { role: 'vendor', shopId: stallId },
+      user_metadata: { full_name: fullName, role: 'vendor' }
     });
-    if (cErr) throw new Error(`Auth provisioning failed: ${cErr.message}`);
-    userId = created.user.id;
+    if (cErr) {
+      console.error('Auth user creation failed:', cErr.message);
+      // Don't fail the whole flow — profile/stall are already created
+    } else {
+      userId = created.user.id;
+    }
   }
 
   // 2. Profile
-  await supabaseAdmin.from('profiles').upsert({
-    id: userId, email, full_name: fullName, role: 'owner', shop_id: stallId, account_status: 'ACTIVE'
-  });
+  if (userId) {
+    await supabaseAdmin.from('profiles').upsert({
+      id: userId, email, full_name: fullName, role: 'vendor', shop_id: stallId, account_status: 'ACTIVE'
+    });
+  }
 
   // 3. Stall row
   await supabaseAdmin.from('stalls').upsert({

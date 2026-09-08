@@ -25,7 +25,7 @@ const LoginPage = () => {
 
   const redirectByRole = useCallback((role, shopId) => {
     if (role === 'student' || role === 'guest') navigate('/student');
-    else if (role === 'owner') navigate(`/vendor/${shopId}`);
+    else if (role === 'vendor') navigate(`/vendor/${shopId}`);
     else if (role === 'admin') navigate('/admin');
   }, [navigate]);
 
@@ -50,7 +50,7 @@ const LoginPage = () => {
       addAuditLog({
         level,
         category: 'Auth',
-        message: `${ud.role === 'admin' ? 'Super Admin' : ud.role === 'owner' ? 'Vendor Owner' : 'Student'} login session initialized for "${ud.name}" (${ud.id})`
+        message: `${ud.role === 'admin' ? 'Super Admin' : ud.role === 'vendor' ? 'Vendor Owner' : 'Student'} login session initialized for "${ud.name}" (${ud.id})`
       });
     } catch (e) {}
 
@@ -211,7 +211,7 @@ const LoginPage = () => {
         // Domain & Access Guard
         const isAllowedDomain = (email, r) => {
           if (!email) return false;
-          if (r === 'admin' || r === 'owner') return true;
+          if (r === 'admin' || r === 'vendor') return true;
           if (isAdminEmail(email)) return true;
           return true;
         };

@@ -45,10 +45,10 @@ export const UserDirectoryModule = () => {
       const seedUsers = [
         { id: 'usr-1', username: 'omgarkal359@gmail.com', name: 'Om Garkal', role: 'admin', shopId: null, status: 'ACTIVE' },
         { id: 'usr-1b', username: 'omgarkal357@gmail.com', name: 'Om Garkal Admin', role: 'admin', shopId: null, status: 'ACTIVE' },
-        { id: 'usr-2', username: 'rohit-vadewale', name: 'Rohit Vadewale Owner', role: 'owner', shopId: 'rohit-vadewale', status: 'ACTIVE' },
+        { id: 'usr-2', username: 'rohit-vadewale', name: 'Rohit Vadewale Owner', role: 'vendor', shopId: 'rohit-vadewale', status: 'ACTIVE' },
         { id: 'usr-3', username: '252921004@sguk.ac.in', name: 'Aditya Sharma', role: 'student', shopId: null, status: 'ACTIVE' },
         { id: 'usr-4', username: '252921012@sguk.ac.in', name: 'Sneha Patil', role: 'student', shopId: null, status: 'ACTIVE' },
-        { id: 'usr-5', username: 'mangales-snacks', name: 'Mangale Snacks Owner', role: 'owner', shopId: 'mangales-snacks', status: 'ACTIVE' }
+        { id: 'usr-5', username: 'mangales-snacks', name: 'Mangale Snacks Owner', role: 'vendor', shopId: 'mangales-snacks', status: 'ACTIVE' }
       ];
 
       // Merge with custom added/updated users in localStorage
@@ -92,7 +92,7 @@ export const UserDirectoryModule = () => {
       email: email,
       name: formData.name.trim() || email.split('@')[0],
       role: formData.role,
-      shopId: formData.role === 'owner' ? (formData.shopId || 'rohit-vadewale') : null,
+      shopId: formData.role === 'vendor' ? (formData.shopId || 'rohit-vadewale') : null,
       status: 'ACTIVE'
     };
 
@@ -129,11 +129,14 @@ export const UserDirectoryModule = () => {
       return;
     }
 
-    const roleLabels = { admin: 'SUPER ADMIN', owner: 'VENDOR OWNER', student: 'STUDENT' };
+    const roleLabels = { admin: 'SUPER ADMIN', vendor: 'VENDOR OWNER', student: 'STUDENT' };
     const oldRoleLabel = roleLabels[targetUser.role] || targetUser.role?.toUpperCase() || 'STUDENT';
     const newRoleLabel = roleLabels[newRole] || newRole?.toUpperCase() || 'STUDENT';
 
-    const effectiveShopId = newRole === 'owner' ? (targetShopId || targetUser.shopId || 'rohit-vadewale') : null;
+    const confirmMessage = `Change role of ${targetUser.name} to ${roleLabels[newRole] || newRole}?`;
+    if (!window.confirm(confirmMessage)) return;
+
+    const effectiveShopId = newRole === 'vendor' ? (targetShopId || targetUser.shopId || 'rohit-vadewale') : null;
 
     // Optimistic Update
     setUsers(prev => prev.map(u => (u.id === userId || u.username === userId) ? { ...u, role: newRole, shopId: effectiveShopId } : u));
@@ -265,7 +268,7 @@ export const UserDirectoryModule = () => {
           >
             <option value="ALL">ALL ROLES</option>
             <option value="admin">SUPER ADMIN</option>
-            <option value="owner">VENDOR OWNER</option>
+            <option value="vendor">VENDOR OWNER</option>
             <option value="student">STUDENT</option>
           </select>
         </div>
@@ -309,13 +312,13 @@ export const UserDirectoryModule = () => {
                             padding: '4px 10px', borderRadius: 8, border: '1px solid #CBD5E1',
                             fontSize: '0.75rem', fontWeight: 800, fontFamily: "'Oswald', sans-serif",
                             cursor: 'pointer', outline: 'none',
-                            background: currentRole === 'admin' ? '#FFE4E6' : currentRole === 'owner' ? '#FEF3C7' : '#F1F5F9',
-                            color: currentRole === 'admin' ? '#E11D48' : currentRole === 'owner' ? '#D97706' : '#475569',
+                            background: currentRole === 'admin' ? '#FFE4E6' : currentRole === 'vendor' ? '#FEF3C7' : '#F1F5F9',
+                            color: currentRole === 'admin' ? '#E11D48' : currentRole === 'vendor' ? '#D97706' : '#475569',
                             transition: 'all 0.15s ease'
                           }}
                         >
                           <option value="student">🎓 STUDENT</option>
-                          <option value="owner">🏪 VENDOR OWNER</option>
+                          <option value="vendor">🏪 VENDOR OWNER</option>
                           <option value="admin">👑 SUPER ADMIN</option>
                         </select>
                       </td>
@@ -405,12 +408,12 @@ export const UserDirectoryModule = () => {
                   style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid #CBD5E1', fontSize: '0.85rem', fontWeight: 700, fontFamily: "'Oswald', sans-serif" }}
                 >
                   <option value="student">🎓 STUDENT (CAMPUS USER)</option>
-                  <option value="owner">🏪 VENDOR OWNER (STALL MANAGER)</option>
+                  <option value="vendor">🏪 VENDOR OWNER (STALL MANAGER)</option>
                   <option value="admin">👑 SUPER ADMIN (SYSTEM OVERSEER)</option>
                 </select>
               </div>
 
-              {formData.role === 'owner' && (
+              {formData.role === 'vendor' && (
                 <div>
                   <label style={{ fontSize: '0.78rem', fontWeight: 800, color: '#475569', display: 'block', marginBottom: 4 }}>ASSIGNED STALL *</label>
                   <select 
@@ -468,12 +471,12 @@ export const UserDirectoryModule = () => {
                   style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid #CBD5E1', fontSize: '0.85rem', fontWeight: 800, fontFamily: "'Oswald', sans-serif" }}
                 >
                   <option value="student">🎓 STUDENT (Standard Ordering Access)</option>
-                  <option value="owner">🏪 VENDOR OWNER (Stall Management Access)</option>
+                  <option value="vendor">🏪 VENDOR OWNER (Stall Management Access)</option>
                   <option value="admin">👑 SUPER ADMIN (Full Control Access)</option>
                 </select>
               </div>
 
-              {editRoleData.role === 'owner' && (
+              {editRoleData.role === 'vendor' && (
                 <div>
                   <label style={{ fontSize: '0.78rem', fontWeight: 800, color: '#475569', display: 'block', marginBottom: 4 }}>ASSIGNED STALL</label>
                   <select 

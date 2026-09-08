@@ -174,7 +174,7 @@ function App() {
             
             {/* Strict Protected Student Routes */}
             <Route path="/student" element={
-              <ProtectedRoute allowedRoles={['student', 'guest', 'owner', 'admin']}>
+              <ProtectedRoute allowedRoles={['student', 'guest', 'vendor', 'admin']}>
                 <MobileLayout />
               </ProtectedRoute>
             }>
@@ -189,12 +189,12 @@ function App() {
             
             {/* Protected Vendor Dashboard Routes */}
             <Route path="/vendor" element={
-              <ProtectedRoute allowedRoles={['owner', 'admin']}>
+              <ProtectedRoute allowedRoles={['vendor', 'admin']}>
                 <VendorDashboard />
               </ProtectedRoute>
             } />
             <Route path="/vendor/:shopId" element={
-              <ProtectedRoute allowedRoles={['owner', 'admin']}>
+              <ProtectedRoute allowedRoles={['vendor', 'admin']}>
                 <VendorDashboard />
               </ProtectedRoute>
             } />
@@ -202,8 +202,15 @@ function App() {
             
             {/* Protected Order Board Route */}
             <Route path="/board" element={
-              <ProtectedRoute allowedRoles={['student', 'guest', 'owner', 'admin']}>
+              <ProtectedRoute allowedRoles={['student', 'guest', 'vendor', 'admin']}>
                 <PublicOrderBoard />
+              </ProtectedRoute>
+            } />
+            
+            {/* Fallback routes */}
+            <Route path="*" element={
+              <ProtectedRoute allowedRoles={['student', 'guest', 'vendor', 'admin']}>
+                <Navigate to="/" replace />
               </ProtectedRoute>
             } />
             

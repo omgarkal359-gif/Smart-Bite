@@ -221,7 +221,7 @@ const VendorDashboard = () => {
     }
     
     // Self-healing session check for corrupted owner sessions from previous bugs
-    const isOwnerSessionCorrupted = parsedUser.role === 'owner' && 
+    const isOwnerSessionCorrupted = parsedUser.role === 'vendor' && 
       (!parsedUser.shopId || parsedUser.shopId === 'undefined' || parsedUser.shopId === 'null');
       
     if (isOwnerSessionCorrupted) {
@@ -231,21 +231,22 @@ const VendorDashboard = () => {
       return;
     }
 
-    if (parsedUser.role !== 'owner' && parsedUser.role !== 'admin') {
+    if (parsedUser.role !== 'vendor' && parsedUser.role !== 'admin') {
       navigate('/student');
       return;
     }
 
     const userShopId = parsedUser.shopId || parsedUser.shopid;
+    const cleanUrlShopId = shopId;
 
     // If owner tries to access without a shopId in URL, redirect to their own shop
-    if (parsedUser.role === 'owner' && !cleanUrlShopId && userShopId) {
+    if (parsedUser.role === 'vendor' && !cleanUrlShopId && userShopId) {
       navigate(`/vendor/${userShopId}`, { replace: true });
       return;
     }
 
     // Security: owners can only access their own shop's dashboard
-    if (parsedUser.role === 'owner' && cleanUrlShopId && userShopId && cleanUrlShopId !== userShopId) {
+    if (parsedUser.role === 'vendor' && cleanUrlShopId && userShopId && cleanUrlShopId !== userShopId) {
       navigate(`/vendor/${userShopId}`, { replace: true });
       return;
     }

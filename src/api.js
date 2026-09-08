@@ -478,7 +478,7 @@ export const api = {
         await supabase.from('profiles').upsert({
           email: email,
           full_name: data.full_name || shopName,
-          role: 'owner',
+          role: 'vendor',
           shop_id: stallId,
           account_status: 'ACTIVE'
         });

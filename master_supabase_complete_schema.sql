@@ -1,160 +1,156 @@
 -- =============================================================================
--- SMARTBITE ENTERPRISE — COMPLETE AUTHORITATIVE 17-DOMAIN SUPABASE SCHEMA
+-- SMARTBITE ENTERPRISE — COMPLETE AUTHORITATIVE 14-DOMAIN SUPABASE SCHEMA
 -- Copy and run this entire script in Supabase SQL Editor:
 -- Supabase Dashboard -> SQL Editor -> New Query -> Paste -> Run
 -- =============================================================================
 
--- DOMAIN 1 & 2: AUTHENTICATION PROFILES
+BEGIN;
+
+-- 1. ADMIN ALLOWLIST
+CREATE TABLE IF NOT EXISTS public.admin_allowlist (
+  email TEXT PRIMARY KEY,
+  added_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+INSERT INTO public.admin_allowlist (email) VALUES
+  ('omgarkal357@gmail.com'),
+  ('omgarkal359@gmail.com'),
+  ('admin@smartbite.in')
+ON CONFLICT (email) DO NOTHING;
+
+-- 2. AUTHENTICATION PROFILES (Single identity table linked 1:1 with auth.users)
 CREATE TABLE IF NOT EXISTS public.profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  email TEXT,
   full_name TEXT,
   display_name TEXT,
-  email TEXT,
   phone TEXT,
   roll_number TEXT,
   avatar_url TEXT,
+  role TEXT NOT NULL DEFAULT 'student' CHECK (role IN ('student', 'vendor', 'admin')),
+  shop_id TEXT,
   account_status TEXT DEFAULT 'ACTIVE' CHECK (account_status IN ('ACTIVE', 'SUSPENDED', 'PENDING_VERIFICATION')),
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- DOMAIN 3: ROLE BASED ACCESS CONTROL (RBAC)
-CREATE TABLE IF NOT EXISTS public.roles (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  name TEXT UNIQUE NOT NULL CHECK (name IN ('admin', 'vendor', 'student', 'support')),
-  description TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-INSERT INTO public.roles (name, description)
-VALUES 
-  ('admin', 'Super administrator with full platform governance'),
-  ('vendor', 'Stall business owner and manager'),
-  ('student', 'Campus food court customer'),
-  ('support', 'Customer support and order fulfillment staff')
-ON CONFLICT (name) DO NOTHING;
-
-CREATE TABLE IF NOT EXISTS public.user_roles (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
-  role_id UUID NOT NULL REFERENCES public.roles(id) ON DELETE CASCADE,
-  assigned_by UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
-  assigned_at TIMESTAMPTZ DEFAULT NOW(),
-  CONSTRAINT uniq_user_role UNIQUE (user_id, role_id)
-);
-
-CREATE OR REPLACE FUNCTION public.is_admin()
-RETURNS BOOLEAN AS $$
+-- Auto-create profile trigger
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
 DECLARE
-  v_email TEXT;
+  v_email TEXT := LOWER(COALESCE(NEW.email, ''));
+  v_meta_role TEXT := COALESCE(NEW.raw_app_meta_data ->> 'role', NEW.raw_user_meta_data ->> 'role');
+  v_role TEXT := 'student';
 BEGIN
-  v_email := LOWER(COALESCE(auth.jwt() ->> 'email', ''));
-  IF v_email IN ('omgarkal357@gmail.com', 'omgarkal359@gmail.com') THEN
-    RETURN TRUE;
+  IF EXISTS (SELECT 1 FROM public.admin_allowlist WHERE email = v_email) THEN
+    v_role := 'admin';
+  ELSIF v_meta_role IN ('vendor', 'owner') THEN
+    v_role := 'vendor';
   END IF;
-  IF EXISTS (
-    SELECT 1 FROM public.user_roles ur
-    JOIN public.roles r ON ur.role_id = r.id
-    WHERE ur.user_id = auth.uid() AND r.name = 'admin'
-  ) THEN
-    RETURN TRUE;
-  END IF;
-  RETURN FALSE;
+
+  INSERT INTO public.profiles (id, email, full_name, role, shop_id)
+  VALUES (
+    NEW.id,
+    v_email,
+    COALESCE(NEW.raw_user_meta_data ->> 'full_name', NEW.raw_user_meta_data ->> 'name', split_part(v_email,'@',1)),
+    v_role,
+    NEW.raw_app_meta_data ->> 'shopId'
+  )
+  ON CONFLICT (id) DO UPDATE SET email = EXCLUDED.email;
+  RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
--- DOMAIN 4: VENDORS & PAYOUT ACCOUNTS
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- Auth helper functions
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS BOOLEAN AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM public.admin_allowlist
+    WHERE email = LOWER(COALESCE(auth.jwt() ->> 'email', ''))
+  ) OR EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE id = auth.uid() AND role = 'admin'
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public STABLE;
+
+CREATE OR REPLACE FUNCTION public.owns_stall(p_stall_id TEXT)
+RETURNS BOOLEAN AS $$
+BEGIN
+  IF p_stall_id IS NULL OR TRIM(p_stall_id) = '' THEN RETURN FALSE; END IF;
+  IF public.is_admin() THEN RETURN TRUE; END IF;
+  RETURN EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE id = auth.uid() AND role = 'vendor' AND shop_id = p_stall_id
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public STABLE;
+
+-- 3. VENDORS
 CREATE TABLE IF NOT EXISTS public.vendors (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  stall_id TEXT UNIQUE,
   user_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
   business_name TEXT NOT NULL,
   owner_name TEXT,
   contact_email TEXT,
   contact_phone TEXT,
   vendor_status TEXT DEFAULT 'ACTIVE' CHECK (vendor_status IN ('PENDING', 'ACTIVE', 'SUSPENDED')),
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS public.vendor_payout_accounts (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  vendor_id UUID NOT NULL REFERENCES public.vendors(id) ON DELETE CASCADE,
-  account_holder_name TEXT,
-  bank_name TEXT,
-  account_number_encrypted TEXT,
-  ifsc_code TEXT,
+  fssai TEXT,
+  details JSONB DEFAULT '{}'::jsonb,
+  account_holder TEXT,
+  account_number_enc TEXT,
+  account_last4 TEXT,
+  ifsc TEXT,
   upi_id TEXT,
-  is_primary BOOLEAN DEFAULT TRUE,
-  verification_status TEXT DEFAULT 'VERIFIED' CHECK (verification_status IN ('PENDING', 'VERIFIED', 'REJECTED')),
+  cashfree_vendor_id TEXT,
+  payout_status TEXT DEFAULT 'pending' CHECK (payout_status IN ('pending', 'registered', 'failed')),
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE OR REPLACE FUNCTION public.is_vendor_owner(p_vendor_id UUID)
-RETURNS BOOLEAN AS $$
-BEGIN
-  IF public.is_admin() THEN
-    RETURN TRUE;
-  END IF;
-  RETURN EXISTS (
-    SELECT 1 FROM public.vendors
-    WHERE id = p_vendor_id AND user_id = auth.uid()
-  );
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
-
--- DOMAIN 5 & 6: STALLS & STALL CATEGORIES
-CREATE TABLE IF NOT EXISTS public.stall_categories (
+-- 4. VENDOR INVITES
+CREATE TABLE IF NOT EXISTS public.vendor_invites (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  name TEXT UNIQUE NOT NULL,
-  description TEXT,
-  icon TEXT,
-  is_active BOOLEAN DEFAULT TRUE,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  token UUID UNIQUE NOT NULL DEFAULT gen_random_uuid(),
+  contact_email TEXT NOT NULL,
+  invitee_name TEXT,
+  required_fields JSONB NOT NULL DEFAULT '[]'::jsonb,
+  submitted_data JSONB,
+  status TEXT NOT NULL DEFAULT 'sent' CHECK (status IN ('sent', 'submitted', 'approved', 'rejected')),
+  stall_id TEXT,
+  reject_reason TEXT,
+  created_by TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-INSERT INTO public.stall_categories (name, description, icon)
-VALUES
-  ('Fast Food & Snacks', 'Quick bites, wadapav, samosas and snacks', '🥟'),
-  ('Beverages & Desserts', 'Teas, coffees, shakes and desserts', '☕'),
-  ('South Indian', 'Idli, dosa, vada and South Indian delights', '🥘'),
-  ('Chinese & Noodles', 'Noodles, fried rice and Indo-Chinese fusion', '🍜'),
-  ('Snacks & Beverages', 'General beverages and multi-cuisine snacks', '🥪')
-ON CONFLICT (name) DO NOTHING;
+-- 5. STALLS
+CREATE TABLE IF NOT EXISTS public.stalls (
+  id TEXT PRIMARY KEY,
+  vendor_id UUID REFERENCES public.vendors(id) ON DELETE SET NULL,
+  name TEXT NOT NULL,
+  category TEXT,
+  description TEXT,
+  operating_hours TEXT DEFAULT '08:00 AM - 08:00 PM',
+  img TEXT,
+  logo TEXT,
+  rating NUMERIC(3, 2) DEFAULT 4.5,
+  is_active BOOLEAN DEFAULT TRUE,
+  is_online BOOLEAN DEFAULT TRUE,
+  busy_mode BOOLEAN DEFAULT FALSE,
+  wait_time_minutes INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
 
-ALTER TABLE IF EXISTS public.stalls ADD COLUMN IF NOT EXISTS vendor_id UUID REFERENCES public.vendors(id) ON DELETE SET NULL;
-ALTER TABLE IF EXISTS public.stalls ADD COLUMN IF NOT EXISTS category_id UUID REFERENCES public.stall_categories(id) ON DELETE SET NULL;
-ALTER TABLE IF EXISTS public.stalls ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;
-ALTER TABLE IF EXISTS public.stalls ADD COLUMN IF NOT EXISTS is_online BOOLEAN DEFAULT TRUE;
-ALTER TABLE IF EXISTS public.stalls ADD COLUMN IF NOT EXISTS maintenance_mode BOOLEAN DEFAULT FALSE;
-ALTER TABLE IF EXISTS public.stalls ADD COLUMN IF NOT EXISTS busy_mode BOOLEAN DEFAULT FALSE;
-ALTER TABLE IF EXISTS public.stalls ADD COLUMN IF NOT EXISTS wait_time_minutes INTEGER DEFAULT 0;
-ALTER TABLE IF EXISTS public.stalls ADD COLUMN IF NOT EXISTS description TEXT;
-ALTER TABLE IF EXISTS public.stalls ADD COLUMN IF NOT EXISTS operating_hours TEXT DEFAULT '08:00 AM - 08:00 PM';
-ALTER TABLE IF EXISTS public.stalls ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
-ALTER TABLE IF EXISTS public.stalls ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
-
-CREATE OR REPLACE FUNCTION public.is_vendor_of_stall(p_stall_id TEXT)
-RETURNS BOOLEAN AS $$
-BEGIN
-  IF p_stall_id IS NULL OR TRIM(p_stall_id) = '' THEN
-    RETURN FALSE;
-  END IF;
-  IF public.is_admin() THEN
-    RETURN TRUE;
-  END IF;
-  IF (auth.jwt() ->> 'shopId') = p_stall_id THEN
-    RETURN TRUE;
-  END IF;
-  RETURN EXISTS (
-    SELECT 1 FROM public.stalls s
-    JOIN public.vendors v ON s.vendor_id = v.id
-    WHERE s.id = p_stall_id AND v.user_id = auth.uid()
-  );
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
-
--- DOMAIN 8 & 9: MENU CATEGORIES & MENU ITEMS
+-- 6. MENU CATEGORIES
 CREATE TABLE IF NOT EXISTS public.menu_categories (
   id SERIAL PRIMARY KEY,
   stall_id TEXT NOT NULL REFERENCES public.stalls(id) ON DELETE CASCADE,
@@ -162,91 +158,113 @@ CREATE TABLE IF NOT EXISTS public.menu_categories (
   display_order INTEGER DEFAULT 0,
   is_active BOOLEAN DEFAULT TRUE,
   created_at TIMESTAMPTZ DEFAULT NOW(),
-  CONSTRAINT uniq_stall_category_name UNIQUE(stall_id, name)
+  CONSTRAINT uniq_stall_category UNIQUE (stall_id, name)
 );
 
-ALTER TABLE IF EXISTS public.menu_items ADD COLUMN IF NOT EXISTS category_id INTEGER REFERENCES public.menu_categories(id) ON DELETE SET NULL;
-ALTER TABLE IF EXISTS public.menu_items ADD COLUMN IF NOT EXISTS preparation_time INTEGER DEFAULT 10;
-ALTER TABLE IF EXISTS public.menu_items ADD COLUMN IF NOT EXISTS display_order INTEGER DEFAULT 0;
-ALTER TABLE IF EXISTS public.menu_items ADD COLUMN IF NOT EXISTS is_available BOOLEAN DEFAULT TRUE;
-ALTER TABLE IF EXISTS public.menu_items ADD COLUMN IF NOT EXISTS is_vegetarian BOOLEAN DEFAULT TRUE;
-ALTER TABLE IF EXISTS public.menu_items ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
-ALTER TABLE IF EXISTS public.menu_items ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
+-- 7. MENU ITEMS
+CREATE TABLE IF NOT EXISTS public.menu_items (
+  id SERIAL PRIMARY KEY,
+  stall_id TEXT NOT NULL REFERENCES public.stalls(id) ON DELETE CASCADE,
+  category_id INTEGER REFERENCES public.menu_categories(id) ON DELETE SET NULL,
+  category TEXT,
+  name TEXT NOT NULL,
+  price NUMERIC(10, 2) NOT NULL CHECK (price >= 0),
+  stock INTEGER DEFAULT 100 CHECK (stock >= 0),
+  img TEXT,
+  is_veg BOOLEAN DEFAULT TRUE,
+  is_available BOOLEAN DEFAULT TRUE,
+  display_order INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
 
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_menu_items_price_nonnegative') THEN
-    ALTER TABLE public.menu_items ADD CONSTRAINT chk_menu_items_price_nonnegative CHECK (price >= 0);
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_menu_items_stock_nonnegative') THEN
-    ALTER TABLE public.menu_items ADD CONSTRAINT chk_menu_items_stock_nonnegative CHECK (stock >= 0);
-  END IF;
-END $$;
+-- 8. ORDERS
+CREATE TABLE IF NOT EXISTS public.orders (
+  id TEXT PRIMARY KEY,
+  order_number TEXT,
+  customer_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  customer_email TEXT,
+  customer_name TEXT,
+  stall_id TEXT REFERENCES public.stalls(id) ON DELETE SET NULL,
+  stall_name TEXT,
+  status TEXT NOT NULL DEFAULT 'placed' CHECK (status IN ('placed', 'pending_cash', 'preparing', 'ready', 'completed', 'cancelled')),
+  payment_method TEXT DEFAULT 'Cash',
+  payment_status TEXT NOT NULL DEFAULT 'pending' CHECK (payment_status IN ('pending', 'paid', 'failed', 'refunded')),
+  subtotal NUMERIC(12, 2) DEFAULT 0.00,
+  tax_amount NUMERIC(12, 2) DEFAULT 0.00,
+  total NUMERIC(12, 2) NOT NULL DEFAULT 0.00 CHECK (total >= 0),
+  idempotency_key TEXT UNIQUE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
 
--- DOMAIN 10, 11 & 12: ORDERS, ITEMS & HISTORY
-ALTER TABLE IF EXISTS public.orders ADD COLUMN IF NOT EXISTS order_number TEXT UNIQUE;
-ALTER TABLE IF EXISTS public.orders ADD COLUMN IF NOT EXISTS customer_uuid UUID REFERENCES auth.users(id) ON DELETE SET NULL;
-ALTER TABLE IF EXISTS public.orders ADD COLUMN IF NOT EXISTS customerid TEXT;
-ALTER TABLE IF EXISTS public.orders ADD COLUMN IF NOT EXISTS customer_id TEXT;
-ALTER TABLE IF EXISTS public.orders ADD COLUMN IF NOT EXISTS stall_id TEXT REFERENCES public.stalls(id) ON DELETE SET NULL;
-ALTER TABLE IF EXISTS public.orders ADD COLUMN IF NOT EXISTS stallid TEXT REFERENCES public.stalls(id) ON DELETE SET NULL;
-ALTER TABLE IF EXISTS public.orders ADD COLUMN IF NOT EXISTS stallId TEXT REFERENCES public.stalls(id) ON DELETE SET NULL;
-ALTER TABLE IF EXISTS public.orders ADD COLUMN IF NOT EXISTS stall_name_snapshot TEXT;
-ALTER TABLE IF EXISTS public.orders ADD COLUMN IF NOT EXISTS subtotal NUMERIC(12, 2) DEFAULT 0.00;
-ALTER TABLE IF EXISTS public.orders ADD COLUMN IF NOT EXISTS tax_amount NUMERIC(12, 2) DEFAULT 0.00;
-ALTER TABLE IF EXISTS public.orders ADD COLUMN IF NOT EXISTS discount_amount NUMERIC(12, 2) DEFAULT 0.00;
-ALTER TABLE IF EXISTS public.orders ADD COLUMN IF NOT EXISTS total_amount NUMERIC(12, 2) DEFAULT 0.00;
-ALTER TABLE IF EXISTS public.orders ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
-ALTER TABLE IF EXISTS public.orders ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
+-- 9. ORDER ITEMS
+CREATE TABLE IF NOT EXISTS public.order_items (
+  id SERIAL PRIMARY KEY,
+  order_id TEXT NOT NULL REFERENCES public.orders(id) ON DELETE CASCADE,
+  menu_item_id INTEGER REFERENCES public.menu_items(id) ON DELETE SET NULL,
+  name TEXT NOT NULL,
+  unit_price NUMERIC(12, 2) NOT NULL DEFAULT 0.00,
+  quantity INTEGER NOT NULL DEFAULT 1 CHECK (quantity > 0),
+  stall_id TEXT REFERENCES public.stalls(id) ON DELETE SET NULL,
+  stall_name TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
 
-ALTER TABLE IF EXISTS public.order_items ADD COLUMN IF NOT EXISTS orderid TEXT;
-ALTER TABLE IF EXISTS public.order_items ADD COLUMN IF NOT EXISTS order_id TEXT;
-ALTER TABLE IF EXISTS public.order_items ADD COLUMN IF NOT EXISTS stallid TEXT;
-ALTER TABLE IF EXISTS public.order_items ADD COLUMN IF NOT EXISTS stall_id TEXT;
-ALTER TABLE IF EXISTS public.order_items ADD COLUMN IF NOT EXISTS stallId TEXT;
-ALTER TABLE IF EXISTS public.order_items ADD COLUMN IF NOT EXISTS menu_item_id INTEGER REFERENCES public.menu_items(id) ON DELETE SET NULL;
-ALTER TABLE IF EXISTS public.order_items ADD COLUMN IF NOT EXISTS item_name_snapshot TEXT;
-ALTER TABLE IF EXISTS public.order_items ADD COLUMN IF NOT EXISTS unit_price_snapshot NUMERIC(12, 2) DEFAULT 0.00;
-ALTER TABLE IF EXISTS public.order_items ADD COLUMN IF NOT EXISTS total_price NUMERIC(12, 2) DEFAULT 0.00;
-ALTER TABLE IF EXISTS public.order_items ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
-
+-- 10. ORDER STATUS HISTORY
 CREATE TABLE IF NOT EXISTS public.order_status_history (
   id SERIAL PRIMARY KEY,
   order_id TEXT NOT NULL REFERENCES public.orders(id) ON DELETE CASCADE,
   previous_status TEXT,
   new_status TEXT NOT NULL,
   changed_by TEXT DEFAULT 'system',
-  reason TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- DOMAIN 13 & 14: PAYMENTS & RECEIPTS
+-- 11. PAYMENTS (Gateway ready)
 CREATE TABLE IF NOT EXISTS public.payments (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  order_id TEXT REFERENCES public.orders(id) ON DELETE CASCADE,
-  payment_method TEXT NOT NULL,
-  payment_provider TEXT,
-  provider_payment_id TEXT UNIQUE,
+  order_id TEXT NOT NULL REFERENCES public.orders(id) ON DELETE CASCADE,
+  gateway TEXT NOT NULL DEFAULT 'razorpay' CHECK (gateway IN ('razorpay', 'cashfree', 'stripe', 'manual', 'cash')),
+  gateway_order_id TEXT,
+  gateway_payment_id TEXT UNIQUE,
+  gateway_signature TEXT,
   amount NUMERIC(12, 2) NOT NULL CHECK (amount >= 0),
   currency TEXT DEFAULT 'INR',
-  status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'authorized', 'captured', 'failed', 'refunded', 'disputed')),
+  status TEXT NOT NULL DEFAULT 'created' CHECK (status IN ('created', 'authorized', 'captured', 'failed', 'refunded', 'disputed')),
+  method TEXT,
+  bank TEXT,
+  vpa TEXT,
+  card_last4 TEXT,
   paid_at TIMESTAMPTZ,
   failure_reason TEXT,
+  refund_id TEXT,
+  refund_amount NUMERIC(12, 2),
+  metadata JSONB DEFAULT '{}'::jsonb,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- 12. RECEIPTS
 CREATE TABLE IF NOT EXISTS public.receipts (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  order_id TEXT REFERENCES public.orders(id) ON DELETE CASCADE,
+  order_id TEXT NOT NULL REFERENCES public.orders(id) ON DELETE CASCADE,
   payment_id UUID REFERENCES public.payments(id) ON DELETE SET NULL,
   receipt_number TEXT UNIQUE NOT NULL,
+  customer_name TEXT,
+  customer_email TEXT,
+  stall_name TEXT,
+  items_snapshot JSONB NOT NULL DEFAULT '[]'::jsonb,
+  subtotal NUMERIC(12, 2),
+  tax_amount NUMERIC(12, 2),
+  total NUMERIC(12, 2),
+  payment_method TEXT,
   receipt_url TEXT,
   generated_at TIMESTAMPTZ DEFAULT NOW(),
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- DOMAIN 15, 16 & 17: SYSTEM GOVERNANCE
+-- 13. AUDIT LOGS
 CREATE TABLE IF NOT EXISTS public.audit_logs (
   id SERIAL PRIMARY KEY,
   actor_id TEXT DEFAULT 'system',
@@ -260,6 +278,7 @@ CREATE TABLE IF NOT EXISTS public.audit_logs (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- 14. NOTIFICATIONS & SYSTEM SETTINGS
 CREATE TABLE IF NOT EXISTS public.notifications (
   id SERIAL PRIMARY KEY,
   recipient_id TEXT NOT NULL,
@@ -279,157 +298,114 @@ CREATE TABLE IF NOT EXISTS public.system_settings (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-INSERT INTO public.system_settings (key, value, description, updated_by)
-VALUES 
-  ('ordering_enabled', 'true'::jsonb, 'Global campus ordering system flag', 'system'),
-  ('maintenance_mode', 'false'::jsonb, 'Platform maintenance mode flag', 'system'),
-  ('platform_commission_percent', '10'::jsonb, 'Default platform commission rate percent', 'system')
+INSERT INTO public.system_settings (key, value, description) VALUES
+  ('ordering_enabled', 'true'::jsonb, 'Global campus ordering system flag'),
+  ('maintenance_mode', 'false'::jsonb, 'Platform maintenance mode flag'),
+  ('platform_commission_percent', '10'::jsonb, 'Default platform commission rate percent'),
+  ('payment_gateway', '"razorpay"'::jsonb, 'Active payment gateway: razorpay/cashfree/stripe'),
+  ('razorpay_key_id', '""'::jsonb, 'Razorpay Key ID (public, used by frontend checkout)')
 ON CONFLICT (key) DO NOTHING;
 
 -- INDEXES
-CREATE INDEX IF NOT EXISTS idx_profiles_id ON public.profiles(id);
-CREATE INDEX IF NOT EXISTS idx_user_roles_user_id ON public.user_roles(user_id);
+CREATE INDEX IF NOT EXISTS idx_profiles_email ON public.profiles(email);
+CREATE INDEX IF NOT EXISTS idx_admin_allowlist_email ON public.admin_allowlist(email);
+CREATE INDEX IF NOT EXISTS idx_vendors_stall_id ON public.vendors(stall_id);
 CREATE INDEX IF NOT EXISTS idx_vendors_user_id ON public.vendors(user_id);
-CREATE INDEX IF NOT EXISTS idx_vendor_payout_vendor_id ON public.vendor_payout_accounts(vendor_id);
+CREATE INDEX IF NOT EXISTS idx_vendor_invites_token ON public.vendor_invites(token);
+CREATE INDEX IF NOT EXISTS idx_vendor_invites_status ON public.vendor_invites(status, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_stalls_vendor_id ON public.stalls(vendor_id);
-CREATE INDEX IF NOT EXISTS idx_stalls_category_id ON public.stalls(category_id);
-CREATE INDEX IF NOT EXISTS idx_menu_categories_stall_id ON public.menu_categories(stall_id, display_order);
-CREATE INDEX IF NOT EXISTS idx_menu_items_stall_id ON public.menu_items(stallId);
-CREATE INDEX IF NOT EXISTS idx_menu_items_category_id ON public.menu_items(category_id);
-CREATE INDEX IF NOT EXISTS idx_orders_customer_id ON public.orders(customer_id);
-CREATE INDEX IF NOT EXISTS idx_orders_customer_uuid ON public.orders(customer_uuid);
-CREATE INDEX IF NOT EXISTS idx_orders_stall_id_status ON public.orders(stall_id, status);
-CREATE INDEX IF NOT EXISTS idx_orders_created_at ON public.orders(created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON public.order_items(order_id);
-CREATE INDEX IF NOT EXISTS idx_payments_order_id ON public.payments(order_id);
-CREATE INDEX IF NOT EXISTS idx_receipts_order_id ON public.receipts(order_id);
+CREATE INDEX IF NOT EXISTS idx_menu_items_stall ON public.menu_items(stall_id);
+CREATE INDEX IF NOT EXISTS idx_menu_items_category ON public.menu_items(category_id);
+CREATE INDEX IF NOT EXISTS idx_menu_categories_stall ON public.menu_categories(stall_id, display_order);
+CREATE INDEX IF NOT EXISTS idx_orders_customer ON public.orders(customer_id);
+CREATE INDEX IF NOT EXISTS idx_orders_customer_email ON public.orders(customer_email);
+CREATE INDEX IF NOT EXISTS idx_orders_stall_status ON public.orders(stall_id, status);
+CREATE INDEX IF NOT EXISTS idx_orders_created ON public.orders(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_order_items_order ON public.order_items(order_id);
+CREATE INDEX IF NOT EXISTS idx_order_items_stall ON public.order_items(stall_id);
+CREATE INDEX IF NOT EXISTS idx_payments_order ON public.payments(order_id);
+CREATE INDEX IF NOT EXISTS idx_payments_gateway_id ON public.payments(gateway_payment_id);
+CREATE INDEX IF NOT EXISTS idx_receipts_order ON public.receipts(order_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_recipient ON public.notifications(recipient_id, is_read, created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_audit_logs_actor_created ON public.audit_logs(actor_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_actor ON public.audit_logs(actor_id, created_at DESC);
 
--- RLS & AUTHORIZATION POLICIES
-ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.roles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.user_roles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.vendors ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.vendor_payout_accounts ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.stall_categories ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.stalls ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.menu_categories ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.menu_items ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.order_items ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.payments ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.receipts ENABLE ROW LEVEL SECURITY;
+-- ROW LEVEL SECURITY
+ALTER TABLE public.profiles           ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.admin_allowlist    ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.vendors            ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.vendor_invites     ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.stalls             ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.menu_categories    ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.menu_items         ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.orders             ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.order_items        ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.order_status_history ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.system_settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.payments           ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.receipts           ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.audit_logs         ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.notifications      ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.system_settings    ENABLE ROW LEVEL SECURITY;
 
 -- POLICIES
-DROP POLICY IF EXISTS "Public read profiles" ON public.profiles;
-CREATE POLICY "Public read profiles" ON public.profiles FOR SELECT TO authenticated, anon USING (true);
+CREATE POLICY p_profiles_read ON public.profiles FOR SELECT TO authenticated USING (id = auth.uid() OR public.is_admin());
+CREATE POLICY p_profiles_update ON public.profiles FOR UPDATE TO authenticated USING (id = auth.uid() OR public.is_admin());
+CREATE POLICY p_profiles_insert ON public.profiles FOR INSERT TO authenticated WITH CHECK (id = auth.uid() OR public.is_admin());
 
-DROP POLICY IF EXISTS "Users update own profile" ON public.profiles;
-CREATE POLICY "Users update own profile" ON public.profiles FOR UPDATE TO authenticated USING (auth.uid() = id OR public.is_admin()) WITH CHECK (auth.uid() = id OR public.is_admin());
+CREATE POLICY p_allowlist_admin ON public.admin_allowlist FOR ALL TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
 
-DROP POLICY IF EXISTS "Public read active vendors" ON public.vendors;
-CREATE POLICY "Public read active vendors" ON public.vendors FOR SELECT TO public USING (vendor_status = 'ACTIVE' OR public.is_admin());
+CREATE POLICY p_vendors_read ON public.vendors FOR SELECT TO anon, authenticated USING (vendor_status = 'ACTIVE' OR public.is_admin());
+CREATE POLICY p_vendors_manage ON public.vendors FOR ALL TO authenticated USING (public.is_admin() OR user_id = auth.uid()) WITH CHECK (public.is_admin() OR user_id = auth.uid());
 
-DROP POLICY IF EXISTS "Owner update vendor profile" ON public.vendors;
-CREATE POLICY "Owner update vendor profile" ON public.vendors FOR UPDATE TO authenticated USING (auth.uid() = user_id OR public.is_admin());
+CREATE POLICY p_invites_admin ON public.vendor_invites FOR ALL TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
 
--- STRICT PAYOUT PRIVACY POLICY (0 STUDENT ACCESS)
-DROP POLICY IF EXISTS "Vendor owner manage payout accounts" ON public.vendor_payout_accounts;
-CREATE POLICY "Vendor owner manage payout accounts" ON public.vendor_payout_accounts FOR ALL TO authenticated USING (public.is_admin() OR public.is_vendor_owner(vendor_id)) WITH CHECK (public.is_admin() OR public.is_vendor_owner(vendor_id));
+CREATE POLICY p_stalls_read ON public.stalls FOR SELECT TO anon, authenticated USING (true);
+CREATE POLICY p_stalls_update ON public.stalls FOR UPDATE TO authenticated USING (public.owns_stall(id)) WITH CHECK (public.owns_stall(id));
+CREATE POLICY p_stalls_insert ON public.stalls FOR INSERT TO authenticated WITH CHECK (public.is_admin());
 
-DROP POLICY IF EXISTS "Public read stalls" ON public.stalls;
-CREATE POLICY "Public read stalls" ON public.stalls FOR SELECT TO public USING (true);
+CREATE POLICY p_cat_read ON public.menu_categories FOR SELECT TO anon, authenticated USING (is_active OR public.is_admin());
+CREATE POLICY p_cat_manage ON public.menu_categories FOR ALL TO authenticated USING (public.owns_stall(stall_id)) WITH CHECK (public.owns_stall(stall_id));
 
-DROP POLICY IF EXISTS "Vendor manage own stall" ON public.stalls;
-CREATE POLICY "Vendor manage own stall" ON public.stalls FOR UPDATE TO authenticated USING (public.is_admin() OR public.is_vendor_of_stall(id));
+CREATE POLICY p_menu_read ON public.menu_items FOR SELECT TO anon, authenticated USING (is_available OR public.owns_stall(stall_id));
+CREATE POLICY p_menu_manage ON public.menu_items FOR ALL TO authenticated USING (public.owns_stall(stall_id)) WITH CHECK (public.owns_stall(stall_id));
 
-DROP POLICY IF EXISTS "Public read categories" ON public.menu_categories;
-CREATE POLICY "Public read categories" ON public.menu_categories FOR SELECT TO public USING (is_active = true OR public.is_admin());
+CREATE POLICY p_orders_read ON public.orders FOR SELECT TO authenticated USING (public.is_admin() OR customer_id = auth.uid() OR customer_email = LOWER(auth.jwt() ->> 'email') OR public.owns_stall(stall_id));
+CREATE POLICY p_orders_insert ON public.orders FOR INSERT TO authenticated WITH CHECK (public.is_admin() OR customer_id = auth.uid() OR customer_email = LOWER(auth.jwt() ->> 'email'));
+CREATE POLICY p_orders_update ON public.orders FOR UPDATE TO authenticated USING (public.is_admin() OR public.owns_stall(stall_id));
+CREATE POLICY p_orders_delete ON public.orders FOR DELETE TO authenticated USING (public.is_admin());
 
-DROP POLICY IF EXISTS "Vendor manage categories" ON public.menu_categories;
-CREATE POLICY "Vendor manage categories" ON public.menu_categories FOR ALL TO authenticated USING (public.is_admin() OR public.is_vendor_of_stall(stall_id));
+CREATE POLICY p_items_read ON public.order_items FOR SELECT TO authenticated USING (EXISTS (SELECT 1 FROM public.orders o WHERE o.id = order_items.order_id));
+CREATE POLICY p_items_insert ON public.order_items FOR INSERT TO authenticated WITH CHECK (EXISTS (SELECT 1 FROM public.orders o WHERE o.id = order_items.order_id AND (o.customer_id = auth.uid() OR o.customer_email = LOWER(auth.jwt() ->> 'email') OR public.is_admin())));
 
-DROP POLICY IF EXISTS "Public read menu items" ON public.menu_items;
-CREATE POLICY "Public read menu items" ON public.menu_items FOR SELECT TO public USING (available = 1 OR is_available = true OR public.is_admin());
+CREATE POLICY p_hist_read ON public.order_status_history FOR SELECT TO authenticated USING (EXISTS (SELECT 1 FROM public.orders o WHERE o.id = order_status_history.order_id));
+CREATE POLICY p_hist_insert ON public.order_status_history FOR INSERT TO authenticated WITH CHECK (public.is_admin() OR EXISTS (SELECT 1 FROM public.orders o WHERE o.id = order_status_history.order_id AND public.owns_stall(o.stall_id)));
 
-DROP POLICY IF EXISTS "Vendor manage menu items" ON public.menu_items;
-CREATE POLICY "Vendor manage menu items" ON public.menu_items FOR ALL TO authenticated USING (public.is_admin() OR public.is_vendor_of_stall(stallId));
+CREATE POLICY p_payments_read ON public.payments FOR SELECT TO authenticated USING (public.is_admin() OR EXISTS (SELECT 1 FROM public.orders o WHERE o.id = payments.order_id AND (o.customer_id = auth.uid() OR o.customer_email = LOWER(auth.jwt() ->> 'email'))));
+CREATE POLICY p_payments_insert ON public.payments FOR INSERT TO authenticated WITH CHECK (public.is_admin());
+CREATE POLICY p_payments_update ON public.payments FOR UPDATE TO authenticated USING (public.is_admin());
 
-DROP POLICY IF EXISTS "Customer and Vendor read orders" ON public.orders;
-CREATE POLICY "Customer and Vendor read orders" ON public.orders FOR SELECT TO authenticated USING (
-  public.is_admin() 
-  OR auth.uid() = customer_uuid 
-  OR (auth.jwt() ->> 'email') = customerId 
-  OR (auth.jwt() ->> 'email') = customer_id
-  OR (auth.jwt() ->> 'email') = customerid
-  OR public.is_vendor_of_stall(stall_id) 
-  OR public.is_vendor_of_stall(stallid)
-  OR public.is_vendor_of_stall(stallId)
-  OR EXISTS (
-    SELECT 1 FROM public.order_items oi 
-    WHERE (oi.orderid = orders.id OR oi.order_id = orders.id OR oi.orderId = orders.id) 
-    AND (
-      public.is_vendor_of_stall(oi.stallid) 
-      OR public.is_vendor_of_stall(oi.stall_id) 
-      OR public.is_vendor_of_stall(oi.stallId)
-    )
-  )
-);
+CREATE POLICY p_receipts_read ON public.receipts FOR SELECT TO authenticated USING (public.is_admin() OR EXISTS (SELECT 1 FROM public.orders o WHERE o.id = receipts.order_id AND (o.customer_id = auth.uid() OR o.customer_email = LOWER(auth.jwt() ->> 'email'))));
+CREATE POLICY p_receipts_insert ON public.receipts FOR INSERT TO authenticated WITH CHECK (public.is_admin());
 
-DROP POLICY IF EXISTS "Customer create own orders" ON public.orders;
-CREATE POLICY "Customer create own orders" ON public.orders FOR INSERT TO authenticated WITH CHECK (
-  public.is_admin() 
-  OR auth.uid() = customer_uuid 
-  OR (auth.jwt() ->> 'email') = customerId
-  OR (auth.jwt() ->> 'email') = customer_id
-  OR (auth.jwt() ->> 'email') = customerid
-);
+CREATE POLICY p_audit_read ON public.audit_logs FOR SELECT TO authenticated USING (public.is_admin());
+CREATE POLICY p_audit_insert ON public.audit_logs FOR INSERT TO authenticated WITH CHECK (true);
 
-DROP POLICY IF EXISTS "Vendor update order status" ON public.orders;
-CREATE POLICY "Vendor update order status" ON public.orders FOR UPDATE TO authenticated USING (
-  public.is_admin() 
-  OR public.is_vendor_of_stall(stall_id) 
-  OR public.is_vendor_of_stall(stallid)
-  OR public.is_vendor_of_stall(stallId)
-  OR EXISTS (
-    SELECT 1 FROM public.order_items oi 
-    WHERE (oi.orderid = orders.id OR oi.order_id = orders.id OR oi.orderId = orders.id) 
-    AND (
-      public.is_vendor_of_stall(oi.stallid) 
-      OR public.is_vendor_of_stall(oi.stall_id) 
-      OR public.is_vendor_of_stall(oi.stallId)
-    )
-  )
-);
+CREATE POLICY p_notif_read ON public.notifications FOR SELECT TO authenticated USING (recipient_id = auth.uid()::text OR recipient_id = (auth.jwt() ->> 'email') OR public.is_admin());
+CREATE POLICY p_notif_insert ON public.notifications FOR INSERT TO authenticated WITH CHECK (true);
+CREATE POLICY p_notif_update ON public.notifications FOR UPDATE TO authenticated USING (recipient_id = auth.uid()::text OR public.is_admin());
 
-DROP POLICY IF EXISTS "Read order items" ON public.order_items;
-CREATE POLICY "Read order items" ON public.order_items FOR SELECT TO authenticated USING (true);
+CREATE POLICY p_settings_read ON public.system_settings FOR SELECT TO public USING (true);
+CREATE POLICY p_settings_manage ON public.system_settings FOR ALL TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
 
-DROP POLICY IF EXISTS "Insert order items" ON public.order_items;
-CREATE POLICY "Insert order items" ON public.order_items FOR INSERT TO authenticated WITH CHECK (true);
+-- REALTIME
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_publication WHERE pubname = 'supabase_realtime') THEN
+    CREATE PUBLICATION supabase_realtime;
+  END IF;
+  BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.orders;
+  EXCEPTION WHEN duplicate_object THEN NULL; END;
+  BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.stalls;
+  EXCEPTION WHEN duplicate_object THEN NULL; END;
+END $$;
 
-DROP POLICY IF EXISTS "Read payments" ON public.payments;
-CREATE POLICY "Read payments" ON public.payments FOR SELECT TO authenticated USING (public.is_admin() OR EXISTS (SELECT 1 FROM public.orders WHERE orders.id = payments.order_id AND (orders.customer_uuid = auth.uid() OR orders.customerId = (auth.jwt() ->> 'email'))));
-
-DROP POLICY IF EXISTS "Read receipts" ON public.receipts;
-CREATE POLICY "Read receipts" ON public.receipts FOR SELECT TO authenticated USING (public.is_admin() OR EXISTS (SELECT 1 FROM public.orders WHERE orders.id = receipts.order_id AND (orders.customer_uuid = auth.uid() OR orders.customerId = (auth.jwt() ->> 'email'))));
-
-DROP POLICY IF EXISTS "Admin read audit logs" ON public.audit_logs;
-CREATE POLICY "Admin read audit logs" ON public.audit_logs FOR SELECT TO authenticated USING (public.is_admin());
-
-DROP POLICY IF EXISTS "Insert audit logs" ON public.audit_logs;
-CREATE POLICY "Insert audit logs" ON public.audit_logs FOR INSERT TO authenticated WITH CHECK (true);
-
-DROP POLICY IF EXISTS "User read notifications" ON public.notifications;
-CREATE POLICY "User read notifications" ON public.notifications FOR SELECT TO authenticated USING (recipient_id = auth.uid()::text OR recipient_id = (auth.jwt() ->> 'email') OR public.is_admin());
-
-DROP POLICY IF EXISTS "Public read settings" ON public.system_settings;
-CREATE POLICY "Public read settings" ON public.system_settings FOR SELECT TO public USING (true);
-
-DROP POLICY IF EXISTS "Admin manage settings" ON public.system_settings;
-CREATE POLICY "Admin manage settings" ON public.system_settings FOR ALL TO authenticated USING (public.is_admin());
+COMMIT;

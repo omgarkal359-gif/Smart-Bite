@@ -28,9 +28,9 @@ export const UsersModule = () => {
         { id: 1, username: 'student@sgu.edu', name: 'Satej', role: 'student', shopId: null },
         { id: 2, username: '9876543210', name: 'Guest Satej', role: 'guest', shopId: null },
         { id: 3, username: 'admin@sgu.edu', name: 'Administrator', role: 'admin', shopId: null },
-        { id: 4, username: 'mangales-snacks', name: 'Mangale Snacks Owner', role: 'owner', shopId: 'mangales-snacks' },
-        { id: 5, username: 'tea-coffee', name: 'Tea & Coffee Owner', role: 'owner', shopId: 'tea-coffee' },
-        { id: 6, username: 'rohit-vadewale', name: 'Rohit Vadewale Owner', role: 'owner', shopId: 'rohit-vadewale' },
+        { id: 4, username: 'mangales-snacks', name: 'Mangale Snacks Owner', role: 'vendor', shopId: 'mangales-snacks' },
+        { id: 5, username: 'tea-coffee', name: 'Tea & Coffee Owner', role: 'vendor', shopId: 'tea-coffee' },
+        { id: 6, username: 'rohit-vadewale', name: 'Rohit Vadewale Owner', role: 'vendor', shopId: 'rohit-vadewale' },
       ]);
     } finally {
       setIsLoading(false);
@@ -101,7 +101,7 @@ export const UsersModule = () => {
             >
               <option value="ALL">ALL ROLES</option>
               <option value="student">STUDENTS</option>
-              <option value="owner">SHOP MANAGERS</option>
+              <option value="vendor">SHOP MANAGERS</option>
               <option value="admin">SUPER ADMINS</option>
               <option value="guest">GUESTS</option>
             </select>
@@ -135,7 +135,7 @@ export const UsersModule = () => {
                         {user.name}
                       </td>
                       <td>
-                        <span className={`status-pill ${user.role === 'admin' ? 'cancelled' : user.role === 'owner' ? 'preparing' : 'ready'}`}>
+                        <span className={`status-pill ${user.role === 'admin' ? 'cancelled' : user.role === 'vendor' ? 'preparing' : 'ready'}`}>
                           {user.role ? user.role.toUpperCase() : 'STUDENT'}
                         </span>
                       </td>

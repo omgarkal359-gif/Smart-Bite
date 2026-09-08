@@ -93,17 +93,21 @@ export async function createVendor(req, res, next) {
           updated_at: new Date().toISOString()
         }).catch((sbErr) => console.warn("Supabase stalls insert notice:", sbErr.message));
 
-        await supabase.from('users').upsert({
-          id: `usr-${stallId}`,
-          username: email,
-          email: email,
-          name: ownerName || name,
-          password: hashedPassword,
-          role: cleanRole,
-          shop_id: stallId,
-          shopId: stallId,
-          account_status: 'ACTIVE'
-        }).catch(() => {});
+        // Create auth user so vendor can log in
+        try {
+          const { data: authUser, error: authErr } = await supabase.auth.admin.createUser({
+            email: email,
+            password: password || `SmartBite_${Date.now()}`,
+            email_confirm: true,
+            app_metadata: { role: cleanRole || 'vendor', shopId: stallId },
+            user_metadata: { full_name: ownerName || name }
+          });
+          if (authErr && !authErr.message?.includes('already been registered')) {
+            console.warn('Auth user creation notice:', authErr.message);
+          }
+        } catch (e) {
+          console.warn('Auth user creation notice:', e.message);
+        }
       } catch (sbErr) {
         console.warn("Supabase vendor insert notice:", sbErr.message);
       }
