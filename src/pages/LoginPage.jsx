@@ -267,7 +267,7 @@ const LoginPage = () => {
             {/* University Canteen Pill Tag */}
             <GridBeam
               className="sb-badge-pill"
-              colorVariant="orange"
+              colorVariant="red"
               active={true}
               breathe={true}
               duration={3.0}
@@ -308,7 +308,7 @@ const LoginPage = () => {
             <div className="sb-highlights-grid">
               <GridBeam
                 className="sb-hl-card"
-                colorVariant="orange"
+                colorVariant="red"
                 active={true}
                 breathe={true}
                 duration={3.5}
@@ -327,7 +327,7 @@ const LoginPage = () => {
 
               <GridBeam
                 className="sb-hl-card"
-                colorVariant="orange"
+                colorVariant="red"
                 active={true}
                 breathe={true}
                 duration={3.5}
@@ -366,7 +366,7 @@ const LoginPage = () => {
               className="sb-glass-card-compact"
               role="region"
               aria-label="Student Portal Sign-In"
-              colorVariant="orange"
+              colorVariant="red"
               active={true}
               breathe={true}
               duration={4.0}

@@ -2,18 +2,19 @@ import React, { useEffect, useRef, forwardRef } from 'react';
 import { cn } from '../../lib/utils';
 
 export const PALETTES = {
-  orange: ['#FF5722', '#F97316', '#FF6D00', '#FF7043', '#FF8A65'],
-  colorful: ['#FF5722', '#F97316', '#FF6D00', '#FF7043', '#FF8A65'],
-  sunset: ['#FF5722', '#F97316', '#FF6D00', '#FF7043', '#FF8A65'],
-  ocean: ['#FF5722', '#F97316', '#FF6D00', '#FF7043', '#FF8A65'],
-  mono: ['#FF5722', '#F97316', '#FF6D00', '#FF7043', '#FF8A65'],
+  red: ['#E4002B', '#FF1E43', '#FFFFFF', '#DC2626', '#FF4D6D'],
+  colorful: ['#E4002B', '#FF1E43', '#FFFFFF', '#DC2626', '#FF4D6D'],
+  sunset: ['#E4002B', '#FF1E43', '#FFFFFF', '#DC2626', '#FF4D6D'],
+  ocean: ['#E4002B', '#FF1E43', '#FFFFFF', '#DC2626', '#FF4D6D'],
+  orange: ['#E4002B', '#FF1E43', '#FFFFFF', '#DC2626', '#FF4D6D'],
+  mono: ['#FFFFFF', '#E4002B', '#F8FAFC', '#94A3B8'],
 };
 
 /**
  * Headless hook to render animated light beams strictly along the rounded border perimeter.
  */
 export function useGridBeam({
-  colorVariant = 'orange',
+  colorVariant = 'red',
   theme = 'dark',
   active = true,
   breathe = true,
@@ -211,7 +212,7 @@ export function GridBeamContent({ children, className, style, ...props }) {
 export function GridBeam({
   children,
   className,
-  colorVariant = "orange",
+  colorVariant = "red",
   theme = "dark",
   active = true,
   breathe = true,

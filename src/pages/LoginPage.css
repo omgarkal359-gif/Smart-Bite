@@ -1,19 +1,19 @@
 /* ══════════════════════════════════════════════════════════════════════════
-   SMART-BITE ENTERPRISE LOGIN PAGE STYLES (Vanguard UI Architect)
-   Theme: Deep Charcoal OLED Black (#05060A) + Flame Red/Orange (#FF3B00) + Gold (#F59E0B)
+   SMART-BITE ENTERPRISE LOGIN PAGE STYLES
+   Theme: Pure Pitch Black (#000000) + Enterprise Red (#E4002B / #FF1E43) + Crisp White (#FFFFFF)
    ══════════════════════════════════════════════════════════════════════════ */
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
 
 :root {
-  --sb-primary:        #FF3B00;
-  --sb-primary-bright: #FF5722;
-  --sb-gold:           #F59E0B;
-  --sb-mint:           #10B981;
-  --sb-bg-dark:        #05060A;
+  --sb-primary:        #E4002B;
+  --sb-primary-bright: #FF1E43;
+  --sb-gold:           #FF4D6D;
+  --sb-mint:           #22C55E;
+  --sb-bg-dark:        #000000;
   
-  --sb-glass-surface:  rgba(15, 18, 28, 0.82);
-  --sb-glass-border:   rgba(255, 255, 255, 0.12);
-  --sb-glass-inner-bg: rgba(255, 255, 255, 0.035);
+  --sb-glass-surface:  rgba(10, 10, 15, 0.92);
+  --sb-glass-border:   rgba(255, 255, 255, 0.14);
+  --sb-glass-inner-bg: rgba(255, 255, 255, 0.04);
   
   --sb-txt-hi:         #FFFFFF;
   --sb-txt-md:         #94A3B8;
@@ -57,13 +57,13 @@
 .sb-orb-left {
   top: 15%; left: -12%;
   width: 48vw; height: 48vw;
-  background: radial-gradient(circle, rgba(255, 59, 0, 0.18) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(228, 0, 43, 0.22) 0%, transparent 70%);
 }
 
 .sb-orb-right {
   bottom: -12%; right: -12%;
   width: 42vw; height: 42vw;
-  background: radial-gradient(circle, rgba(245, 158, 11, 0.15) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(255, 30, 67, 0.18) 0%, transparent 70%);
 }
 
 /* Viewport Wrapper & Split Grid */
@@ -93,8 +93,8 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: rgba(255, 59, 0, 0.12);
-  border: 1px solid rgba(255, 59, 0, 0.28);
+  background: rgba(228, 0, 43, 0.14);
+  border: 1px solid rgba(228, 0, 43, 0.35);
   padding: 6px 14px;
   border-radius: 999px;
   width: fit-content;
@@ -108,7 +108,7 @@
   font-size: 0.76rem;
   font-weight: 800;
   letter-spacing: 0.1em;
-  color: #FF8A65;
+  color: #FFFFFF;
   text-transform: uppercase;
 }
 
@@ -123,7 +123,7 @@
 }
 
 .sb-gradient-text {
-  background: linear-gradient(135deg, #FF5722 0%, #F59E0B 100%);
+  background: linear-gradient(135deg, #FF1E43 0%, #FFFFFF 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -145,7 +145,7 @@
 .sb-btn-hero-signin {
   padding: 10px 22px;
   font-size: 0.88rem;
-  box-shadow: 0 4px 20px rgba(255, 87, 34, 0.35);
+  box-shadow: 0 4px 20px rgba(228, 0, 43, 0.4);
 }
 
 /* Highlights Grid */
