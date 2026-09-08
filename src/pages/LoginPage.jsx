@@ -10,6 +10,7 @@ import { GoogleIcon } from '../components/icons/GoogleIcon';
 import { api } from '../api';
 import { addAuditLog } from '../utils/logger';
 import { GridBeam } from '../components/ui/grid-beam';
+import { SolarBackground } from '../components/ui/SolarBackground';
 import './LoginPage.css';
 
 const LoginPage = () => {
@@ -252,6 +253,9 @@ const LoginPage = () => {
 
   return (
     <main className="sb-root">
+      {/* 3D Solar Particle Swarm Animation Background */}
+      <SolarBackground />
+
       {/* Ambient Canvas Glows */}
       <div className="sb-bg-canvas-glows" aria-hidden="true">
         <div className="sb-glow-orb sb-orb-left" />
