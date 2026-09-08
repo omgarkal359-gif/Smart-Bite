@@ -14,3 +14,7 @@ api/database.sqlite
 *.sqlite
 api/check_orders.js
 scratch/
+
+# Supabase CLI local state
+supabase/.temp/
+supabase/.branches/

@@ -441,97 +441,90 @@ export const api = {
       try {
         return await serverFetch('/onboarding');
       } catch (_e) {
-        return { invites: [], fieldCatalog: DEFAULT_FIELD_CATALOG };
+        // Supabase-first fallback: admin RLS grants read on vendor_invites.
+        const { data } = await supabase.from('vendor_invites').select('*').order('created_at', { ascending: false });
+        return { invites: data || [], fieldCatalog: DEFAULT_FIELD_CATALOG };
       }
     },
     createInvite: async (payload) => {
       try {
         return await serverFetch('/onboarding/invite', { method: 'POST', body: JSON.stringify(payload) });
       } catch (_e) {
-        const token = 'inv-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6);
+        // Supabase-first fallback: insert the invite directly (admin RLS).
+        // Email delivery lives in the server layer, so emailed is false here.
+        const token = (crypto?.randomUUID?.() || `inv-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
+        const { error } = await supabase.from('vendor_invites').insert({
+          token,
+          contact_email: (payload.email || '').trim().toLowerCase(),
+          invitee_name: payload.inviteeName || null,
+          required_fields: Array.isArray(payload.fields) ? payload.fields : [],
+          status: 'sent'
+        });
+        if (error) throw new Error(error.message);
         return { inviteLink: `${window.location.origin}/onboard/${token}`, emailed: false };
       }
     },
     manualCreate: async (payload) => {
+      // Provisioning a vendor requires creating a Supabase Auth user, which
+      // needs the service-role key and can ONLY happen server-side. Use the
+      // Edge Function (Supabase-first) and fall back to the Express trust layer
+      // if it is deployed. Never fabricate a password client-side — a password
+      // that was never registered in Auth cannot be used to log in.
+      const { data: fnData, error: fnErr } = await supabase.functions.invoke('provision-vendor', { body: payload });
+      if (!fnErr && fnData?.success) {
+        try {
+          addAuditLog({
+            level: 'INFO', category: 'Vendors',
+            message: `Vendor '${fnData.email}' provisioned (stall: ${fnData.stallId})`,
+            userEmail: fnData.email
+          });
+        } catch (_a) {}
+        return fnData; // { email, stallId, tempPassword }
+      }
+
+      // Edge Function unavailable → try the Express trust layer (if deployed).
+      const serverMsg = fnData?.message || fnErr?.message;
       try {
         return await serverFetch('/onboarding/manual', { method: 'POST', body: JSON.stringify(payload) });
       } catch (_e) {
-        // Fallback: direct client-side Supabase vendor provisioning when backend server is offline
-        const email = (payload.email || '').trim();
-        const data = payload.data || {};
-        const shopName = data.business_name || data.full_name || email.split('@')[0] || 'Campus Stall';
-        const stallId = shopName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || `stall-${Date.now()}`;
-        const tempPassword = `Sb-${Math.random().toString(36).substr(2, 6)}`;
-
-        // 1. Upsert stall in Supabase
-        await supabase.from('stalls').upsert({
-          id: stallId,
-          name: shopName,
-          category: data.category || 'Main',
-          description: `Operating hours: ${data.operating_hours || '9 AM - 9 PM'}`,
-          is_online: true,
-          rating: 4.5,
-          img: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=500'
-        });
-
-        // 2. Upsert profile in Supabase
-        await supabase.from('accounts').upsert({
-          email: email,
-          full_name: data.full_name || shopName,
-          role: 'vendor',
-          shop_id: stallId,
-          account_status: 'ACTIVE'
-        });
-
-        // 3. Upsert vendor record in Supabase
-        await supabase.from('vendors').upsert({
-          stall_id: stallId,
-          business_name: shopName,
-          owner_name: data.full_name || shopName,
-          contact_email: email,
-          vendor_status: 'ACTIVE',
-          fssai: data.fssai || null
-        }, { onConflict: 'stall_id' });
-
-        // 3. Store vendor KYC & bank details in local storage cache
-        try {
-          const records = JSON.parse(localStorage.getItem('sgu_vendor_records') || '{}');
-          records[stallId] = {
-            stallId,
-            email,
-            phone: data.mobile || '',
-            bank: {
-              accountHolder: data.account_holder || '',
-              accountNumber: data.account_number || '',
-              ifsc: data.ifsc || '',
-              upiId: data.upi_id || ''
-            },
-            compliance: {
-              fssai: data.fssai || '',
-              pan: data.pan || '',
-              gstin: data.gstin || ''
-            }
-          };
-          localStorage.setItem('sgu_vendor_records', JSON.stringify(records));
-        } catch (_err) {}
-
-        try {
-          addAuditLog({
-            level: 'INFO',
-            category: 'Vendors',
-            message: `Vendor '${email}' (${shopName}) registered successfully (FSSAI: ${data.fssai || 'N/A'}, PAN: ${data.pan || 'N/A'})`,
-            userEmail: email
-          });
-        } catch (_a) {}
-
-        return { email, tempPassword, stallId };
+        throw new Error(serverMsg || 'Vendor provisioning is unavailable. Deploy the "provision-vendor" Edge Function.');
       }
     },
     savePayout: (payload) => serverFetch('/onboarding/payout', { method: 'POST', body: JSON.stringify(payload) }).catch(() => ({ success: true })),
     getInvite: (token) => serverFetch(`/onboarding/${token}`).catch(() => ({ invite: null })),
     submit: (token, data) => serverFetch(`/onboarding/${token}/submit`, { method: 'POST', body: JSON.stringify({ data }) }),
-    approve: (id, stallId) => serverFetch(`/onboarding/${id}/approve`, { method: 'POST', body: JSON.stringify({ stallId }) }),
-    reject: (id, reason) => serverFetch(`/onboarding/${id}/reject`, { method: 'POST', body: JSON.stringify({ reason }) })
+    approve: async (id, stallId) => {
+      try {
+        return await serverFetch(`/onboarding/${id}/approve`, { method: 'POST', body: JSON.stringify({ stallId }) });
+      } catch (_e) {
+        // Supabase-first fallback: read the submitted invite (admin RLS), then
+        // provision the login through the Edge Function (service role).
+        const { data: inv, error } = await supabase.from('vendor_invites').select('*').eq('id', id).maybeSingle();
+        if (error) throw new Error(error.message);
+        if (!inv) throw new Error('Invite not found.');
+        if (inv.status !== 'submitted') throw new Error('Invite must be submitted before approval.');
+
+        const data = { ...(inv.submitted_data || {}) };
+        if (!data.full_name && inv.invitee_name) data.full_name = inv.invitee_name;
+        const res = await api.onboarding.manualCreate({ email: inv.contact_email, data, stallId });
+
+        await supabase.from('vendor_invites')
+          .update({ status: 'approved', stall_id: res.stallId, updated_at: new Date().toISOString() })
+          .eq('id', id);
+        return res; // { email, stallId, tempPassword }
+      }
+    },
+    reject: async (id, reason) => {
+      try {
+        return await serverFetch(`/onboarding/${id}/reject`, { method: 'POST', body: JSON.stringify({ reason }) });
+      } catch (_e) {
+        const { error } = await supabase.from('vendor_invites')
+          .update({ status: 'rejected', reject_reason: (reason || '').slice(0, 500), updated_at: new Date().toISOString() })
+          .eq('id', id);
+        if (error) throw new Error(error.message);
+        return { success: true };
+      }
+    }
   }
 };
 
