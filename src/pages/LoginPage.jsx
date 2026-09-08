@@ -321,11 +321,10 @@ const LoginPage = () => {
               colorVariant="colorful"
               active={true}
               breathe={true}
-              duration={3.4}
+              duration={4.0}
               strength={1}
               borderRadius={24}
-              rows={2}
-              cols={2}
+              beamCount={4}
             >
 
               {/* Card Header */}

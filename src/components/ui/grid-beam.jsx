@@ -2,25 +2,24 @@ import React, { useEffect, useRef, forwardRef } from 'react';
 import { cn } from '../../lib/utils';
 
 export const PALETTES = {
-  colorful: ['#3b82f6', '#8b5cf6', '#ec4899', '#10b981', '#f59e0b'],
-  ocean: ['#06b6d4', '#0284c7', '#3b82f6', '#6366f1'],
-  sunset: ['#f97316', '#f43f5e', '#ef4444', '#f59e0b'],
-  mono: ['#ffffff', '#e2e8f0', '#94a3b8', '#64748b'],
+  colorful: ['#E4002B', '#FF4D6D', '#F59E0B', '#3B82F6', '#8B5CF6'],
+  ocean: ['#06B6D4', '#0284C7', '#3B82F6', '#6366F1'],
+  sunset: ['#F97316', '#F43F5E', '#EF4444', '#F59E0B'],
+  mono: ['#FFFFFF', '#E2E8F0', '#94A3B8', '#64748B'],
 };
 
 /**
- * Headless hook to render animated light beams traveling along grid paths / borders on a canvas.
+ * Headless hook to render animated light beams strictly along the rounded border perimeter.
  */
 export function useGridBeam({
-  rows = 1,
-  cols = 1,
   colorVariant = 'colorful',
   theme = 'dark',
   active = true,
   breathe = true,
-  duration = 3.4,
+  duration = 4.0,
   strength = 1,
-  borderRadius = 12,
+  borderRadius = 24,
+  beamCount = 4,
 } = {}) {
   const canvasRef = useRef(null);
 
@@ -34,44 +33,6 @@ export function useGridBeam({
     let startTime = null;
 
     const palette = PALETTES[colorVariant] || PALETTES.colorful;
-    const numBeams = Math.max(4, (rows + cols) * 2);
-    let beams = [];
-
-    const resetBeams = (width, height) => {
-      beams = [];
-      const gridW = width / Math.max(1, cols);
-      const gridH = height / Math.max(1, rows);
-
-      for (let i = 0; i < numBeams; i++) {
-        const isHorizontal = Math.random() > 0.5;
-        const row = Math.floor(Math.random() * (rows + 1));
-        const col = Math.floor(Math.random() * (cols + 1));
-
-        const startX = isHorizontal ? 0 : col * gridW;
-        const startY = isHorizontal ? row * gridH : 0;
-        const endX = isHorizontal ? width : col * gridW;
-        const endY = isHorizontal ? row * gridH : height;
-
-        const color = palette[i % palette.length];
-        const speed = (0.25 + Math.random() * 0.45) * (3.5 / Math.max(0.5, duration));
-        const length = 70 + Math.random() * 90;
-
-        beams.push({
-          x: startX,
-          y: startY,
-          startX,
-          startY,
-          endX,
-          endY,
-          isHorizontal,
-          progress: Math.random(),
-          speed,
-          length,
-          color,
-          width: 2.2 + Math.random() * 1.5,
-        });
-      }
-    };
 
     const handleResize = () => {
       const parent = canvas.parentElement;
@@ -81,7 +42,6 @@ export function useGridBeam({
       canvas.width = rect.width * dpr;
       canvas.height = rect.height * dpr;
       ctx.scale(dpr, dpr);
-      resetBeams(rect.width, rect.height);
     };
 
     handleResize();
@@ -102,80 +62,79 @@ export function useGridBeam({
 
       ctx.clearRect(0, 0, width, height);
 
-      if (!active) {
+      if (!active || width === 0 || height === 0) {
         animId = requestAnimationFrame(render);
         return;
       }
 
       const breathOpacity = breathe
-        ? 0.7 + Math.sin(elapsed * (2.5 / Math.max(0.5, duration))) * 0.3
+        ? 0.75 + Math.sin(elapsed * (2.5 / Math.max(0.5, duration))) * 0.25
         : 1;
 
-      // Render traveling light beams
-      beams.forEach((b) => {
-        b.progress += (b.speed / 60);
-        if (b.progress > 1) {
-          b.progress = 0;
-          b.color = palette[Math.floor(Math.random() * palette.length)];
-        }
+      const r = Math.min(borderRadius, width / 2, height / 2);
+      const perimeter = 2 * (width + height - 4 * r) + 2 * Math.PI * r;
+      if (perimeter <= 0) return;
 
-        const currX = b.startX + (b.endX - b.startX) * b.progress;
-        const currY = b.startY + (b.endY - b.startY) * b.progress;
-
-        const tailX = b.isHorizontal ? currX - b.length : currX;
-        const tailY = b.isHorizontal ? currY : currY - b.length;
-
-        const grad = ctx.createLinearGradient(tailX, tailY, currX, currY);
-        grad.addColorStop(0, 'rgba(255, 255, 255, 0)');
-        grad.addColorStop(0.65, b.color);
-        grad.addColorStop(1, '#ffffff');
-
-        ctx.save();
-        ctx.globalAlpha = breathOpacity * strength;
-        ctx.shadowBlur = 14 * strength;
-        ctx.shadowColor = b.color;
-        ctx.strokeStyle = grad;
-        ctx.lineWidth = b.width;
-        ctx.lineCap = 'round';
-
-        ctx.beginPath();
-        ctx.moveTo(tailX, tailY);
-        ctx.lineTo(currX, currY);
-        ctx.stroke();
-
-        ctx.fillStyle = '#ffffff';
-        ctx.beginPath();
-        ctx.arc(currX, currY, b.width, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.restore();
-      });
-
-      // Perimeter glowing beam
-      const borderProgress = (elapsed / Math.max(0.5, duration)) % 1;
-      const totalPerimeter = (width + height) * 2;
-      const dist = borderProgress * totalPerimeter;
-
-      let bx = 0, by = 0;
-      if (dist < width) {
-        bx = dist; by = 0;
-      } else if (dist < width + height) {
-        bx = width; by = dist - width;
-      } else if (dist < 2 * width + height) {
-        bx = width - (dist - (width + height)); by = height;
+      // Construct rounded rectangle path along border
+      const path = new Path2D();
+      if (ctx.roundRect) {
+        path.roundRect(1, 1, width - 2, height - 2, r);
       } else {
-        bx = 0; by = height - (dist - (2 * width + height));
+        path.moveTo(r + 1, 1);
+        path.lineTo(width - r - 1, 1);
+        path.arcTo(width - 1, 1, width - 1, r + 1, r);
+        path.lineTo(width - 1, height - r - 1);
+        path.arcTo(width - 1, height - 1, width - r - 1, height - 1, r);
+        path.lineTo(r + 1, height - 1);
+        path.arcTo(1, height - 1, 1, height - r - 1, r);
+        path.lineTo(1, r + 1);
+        path.arcTo(1, 1, r + 1, 1, r);
+        path.closePath();
       }
 
+      const beamLength = Math.max(50, perimeter * 0.18);
+      const gapLength = perimeter - beamLength;
+
+      // Draw subtle ambient border track
       ctx.save();
-      ctx.globalAlpha = breathOpacity * 0.95 * strength;
-      ctx.shadowBlur = 18 * strength;
-      ctx.shadowColor = palette[0];
-      ctx.fillStyle = palette[0];
-      ctx.beginPath();
-      ctx.arc(bx, by, 3.5, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.globalAlpha = 0.15 * strength;
+      ctx.strokeStyle = palette[0];
+      ctx.lineWidth = 1.5;
+      ctx.stroke(path);
       ctx.restore();
+
+      // Render parallel traveling border beams
+      for (let i = 0; i < beamCount; i++) {
+        const speed = (perimeter / Math.max(1, duration)) * (i % 2 === 0 ? 1 : 0.85);
+        const offset = (i / beamCount) * perimeter + (elapsed * speed);
+        const color = palette[i % palette.length];
+
+        // Pass 1: Outer glow
+        ctx.save();
+        ctx.globalAlpha = breathOpacity * 0.85 * strength;
+        ctx.shadowBlur = 14 * strength;
+        ctx.shadowColor = color;
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2.5;
+        ctx.setLineDash([beamLength, gapLength]);
+        ctx.lineDashOffset = -offset;
+        ctx.lineCap = 'round';
+        ctx.stroke(path);
+        ctx.restore();
+
+        // Pass 2: Intense inner core beam
+        ctx.save();
+        ctx.globalAlpha = breathOpacity * 0.95 * strength;
+        ctx.shadowBlur = 6 * strength;
+        ctx.shadowColor = '#ffffff';
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1.2;
+        ctx.setLineDash([beamLength * 0.4, gapLength + beamLength * 0.6]);
+        ctx.lineDashOffset = -offset - (beamLength * 0.3);
+        ctx.lineCap = 'round';
+        ctx.stroke(path);
+        ctx.restore();
+      }
 
       animId = requestAnimationFrame(render);
     };
@@ -186,16 +145,16 @@ export function useGridBeam({
       if (animId) cancelAnimationFrame(animId);
       resizeObserver.disconnect();
     };
-  }, [rows, cols, colorVariant, theme, active, breathe, duration, strength, borderRadius]);
+  }, [colorVariant, theme, active, breathe, duration, strength, borderRadius, beamCount]);
 
-  return { canvasRef, rows, cols };
+  return { canvasRef };
 }
 
 /**
  * GridBeamCanvas - Canvas element overlay
  */
 export const GridBeamCanvas = forwardRef(function GridBeamCanvas(
-  { className, style, borderRadius = 12, ...props },
+  { className, style, borderRadius = 24, ...props },
   ref
 ) {
   return (
@@ -209,24 +168,15 @@ export const GridBeamCanvas = forwardRef(function GridBeamCanvas(
 });
 
 /**
- * GridBeamDividers - SVG grid line dividers
+ * GridBeamDividers - Optional subtle perimeter border outline
  */
-export function GridBeamDividers({ cols = 1, rows = 1, className }) {
+export function GridBeamDividers({ borderRadius = 24, className }) {
   return (
     <div className={cn("absolute inset-0 pointer-events-none z-0 overflow-hidden", className)}>
-      <svg className="w-full h-full opacity-15 stroke-current text-white/40" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <pattern
-            id="grid-beam-pattern"
-            width={`${100 / Math.max(1, cols)}%`}
-            height={`${100 / Math.max(1, rows)}%`}
-            patternUnits="userSpaceOnUse"
-          >
-            <path d="M 100 0 L 0 0 0 100" fill="none" stroke="currentColor" strokeWidth="1" />
-          </pattern>
-        </defs>
-        <rect width="100%" height="100%" fill="url(#grid-beam-pattern)" />
-      </svg>
+      <div
+        className="w-full h-full border border-white/10"
+        style={{ borderRadius: `${borderRadius}px` }}
+      />
     </div>
   );
 }
@@ -248,21 +198,18 @@ export function GridBeamContent({ children, className, ...props }) {
 export function GridBeam({
   children,
   className,
-  rows = 1,
-  cols = 1,
   colorVariant = "colorful",
   theme = "dark",
   active = true,
   breathe = true,
-  duration = 3.4,
+  duration = 4.0,
   strength = 1,
-  borderRadius = 16,
+  borderRadius = 24,
+  beamCount = 4,
   style,
   ...props
 }) {
   const { canvasRef } = useGridBeam({
-    rows,
-    cols,
     colorVariant,
     theme,
     active,
@@ -270,6 +217,7 @@ export function GridBeam({
     duration,
     strength,
     borderRadius,
+    beamCount,
   });
 
   return (
@@ -278,7 +226,7 @@ export function GridBeam({
       style={{ borderRadius: `${borderRadius}px`, ...style }}
       {...props}
     >
-      <GridBeamDividers cols={cols} rows={rows} />
+      <GridBeamDividers borderRadius={borderRadius} />
       <GridBeamCanvas ref={canvasRef} borderRadius={borderRadius} />
       <GridBeamContent>{children}</GridBeamContent>
     </div>
