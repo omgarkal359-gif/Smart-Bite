@@ -1,16 +1,14 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
-  IconUser, IconLoader2, IconBuildingStore, IconLock, IconMail, IconArrowRight,
-  IconSchool, IconClock, IconBell, IconBolt, IconShieldCheck, IconToolsKitchen2, IconMailCheck
+  IconUser, IconLoader2, IconBuildingStore, IconLock, IconMail,
+  IconSchool, IconClock, IconBell, IconBolt, IconShieldCheck,
+  IconToolsKitchen2, IconMailCheck, IconArrowRight
 } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
-import { setStoredUser, getStoredUser, clearStoredUser, ADMIN_EMAILS, isAdminEmail } from '../utils/auth';
-import { GoogleIcon } from '../components/icons/GoogleIcon';
+import { setStoredUser, clearStoredUser, isAdminEmail } from '../utils/auth';
 import { api } from '../api';
 import { addAuditLog } from '../utils/logger';
-import { GridBeam } from '../components/ui/grid-beam';
-import { SolarBackground } from '../components/ui/SolarBackground';
 import './LoginPage.css';
 
 const LoginPage = () => {
@@ -19,7 +17,6 @@ const LoginPage = () => {
   const [errorMsg, setErrorMsg] = useState('');
   const [showStaffLogin, setShowStaffLogin] = useState(false);
 
-  /* Staff / Vendor state */
   const [staffId, setStaffId] = useState('');
   const [staffPwd, setStaffPwd] = useState('');
 
@@ -69,13 +66,11 @@ const LoginPage = () => {
     }, 1200);
   }, [redirectByRole]);
 
-  /* ── Supabase Google OAuth Handler ── */
   const handleGoogleLogin = async () => {
     setIsLoading(true);
     setErrorMsg('');
     localStorage.setItem('sgu_google_oauth_started', 'true');
 
-    // Safety timeout: reset loading if window didn't unload within 6s
     const timeoutId = setTimeout(() => {
       if (localStorage.getItem('sgu_google_oauth_started') === 'true') {
         localStorage.removeItem('sgu_google_oauth_started');
@@ -89,84 +84,51 @@ const LoginPage = () => {
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/login`,
-          queryParams: {
-            prompt: 'select_account',
-            access_type: 'offline' // Shows all logged-in Google accounts on device
-          }
+          queryParams: { prompt: 'select_account', access_type: 'offline' }
         }
       });
       if (error) {
         clearTimeout(timeoutId);
         localStorage.removeItem('sgu_google_oauth_started');
-        console.error("Login failed:", error.message);
-        setErrorMsg(error.message || "Login failed. Please try again.");
+        setErrorMsg(error.message || 'Login failed. Please try again.');
         setIsLoading(false);
       }
     } catch (err) {
       clearTimeout(timeoutId);
       localStorage.removeItem('sgu_google_oauth_started');
-      console.error("Login failed:", err.message);
-      setErrorMsg(err.message || "Login failed. Please try again.");
+      setErrorMsg(err.message || 'Login failed. Please try again.');
       setIsLoading(false);
     }
   };
 
-  /* ── Staff / Vendor login ── */
   const handleStaffLogin = async (e) => {
     e.preventDefault();
     const idInput = staffId.trim();
     const pwd = staffPwd.trim();
-    if (!idInput || !pwd) {
-      setErrorMsg('Please enter your email and password.');
-      return;
-    }
+    if (!idInput || !pwd) { setErrorMsg('Please enter your email and password.'); return; }
     setIsLoading(true);
     setErrorMsg('');
     try {
-      // Role is assigned server-side from the DB user record. Never guessed on the client.
       const resData = await api.login(idInput, pwd);
-
       if (resData?.success && resData?.user) {
         let userRole = resData.user.role;
-        if (isAdminEmail(idInput)) {
-          userRole = 'admin';
-        }
+        if (isAdminEmail(idInput)) userRole = 'admin';
         finish(userRole, resData.user.name, resData.user.username, resData.user.shopId, resData.token);
       } else {
-        try {
-          addAuditLog({
-            level: 'SECURITY',
-            category: 'Auth',
-            message: `Failed login attempt for user "${idInput}"`
-          });
-        } catch (e) {}
+        try { addAuditLog({ level: 'SECURITY', category: 'Auth', message: `Failed login attempt for user "${idInput}"` }); } catch (e) {}
         const rawMsg = resData?.message;
-        const displayMsg = typeof rawMsg === 'string' && rawMsg.trim() && rawMsg !== '{}'
-          ? rawMsg
-          : 'Invalid login credentials. Please check your email and password.';
-        setErrorMsg(displayMsg);
+        setErrorMsg(typeof rawMsg === 'string' && rawMsg.trim() && rawMsg !== '{}' ? rawMsg : 'Invalid credentials. Please check your email and password.');
         setIsLoading(false);
       }
     } catch (err) {
-      try {
-        addAuditLog({
-          level: 'SECURITY',
-          category: 'Auth',
-          message: `Failed login attempt for user "${idInput}"`
-        });
-      } catch (e) {}
+      try { addAuditLog({ level: 'SECURITY', category: 'Auth', message: `Failed login attempt for user "${idInput}"` }); } catch (e) {}
       const rawMsg = err?.message;
-      const displayMsg = typeof rawMsg === 'string' && rawMsg.trim() && rawMsg !== '{}'
-        ? rawMsg
-        : 'Login failed. Please check your credentials and try again.';
-      setErrorMsg(displayMsg);
+      setErrorMsg(typeof rawMsg === 'string' && rawMsg.trim() && rawMsg !== '{}' ? rawMsg : 'Login failed. Please check your credentials and try again.');
       setIsLoading(false);
     }
   };
 
-  /* ── OAuth Session listener ── */
   useEffect(() => {
-    // 1. Check URL for OAuth errors or cancellation
     const urlParams = new URLSearchParams(window.location.search);
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
     const oauthError = urlParams.get('error') || hashParams.get('error') || urlParams.get('error_description');
@@ -178,7 +140,6 @@ const LoginPage = () => {
       window.history.replaceState({}, document.title, window.location.pathname);
     }
 
-    // 2. Window focus listener to detect when user exits / closes Google account picker
     const handleWindowFocus = () => {
       const oauthStarted = localStorage.getItem('sgu_google_oauth_started');
       if (oauthStarted === 'true') {
@@ -201,23 +162,16 @@ const LoginPage = () => {
         const userEmail = (session.user.email || '').toLowerCase().trim();
         const meta = session.user.user_metadata || {};
 
-        // Fetch DB profile to get authoritative role and shop_id
         let profile = null;
         try {
           const { data: p } = await supabase.from('accounts').select('*').eq('id', session.user.id).single();
           profile = p;
         } catch (_e) {}
 
-        // Resolve role: DB profile role -> metadata role -> isAdminEmail check -> default student
         let role = profile?.role || session.user.app_metadata?.role || meta.role;
-        if (isAdminEmail(userEmail)) {
-          role = 'admin';
-        }
-        if (!role) {
-          role = 'student';
-        }
+        if (isAdminEmail(userEmail)) role = 'admin';
+        if (!role) role = 'student';
 
-        // Domain & Access Guard
         const isAllowedDomain = (email, r) => {
           if (!email) return false;
           if (r === 'admin' || r === 'vendor') return true;
@@ -226,7 +180,7 @@ const LoginPage = () => {
         };
 
         if (!isAllowedDomain(userEmail, role)) {
-          setErrorMsg("Access Restricted: Only authorized accounts and @sguk.ac.in email addresses are allowed.");
+          setErrorMsg('Access Restricted: Only authorized accounts and @sguk.ac.in email addresses are allowed.');
           await supabase.auth.signOut();
           clearStoredUser();
           setIsLoading(false);
@@ -237,10 +191,7 @@ const LoginPage = () => {
         const id = userEmail || session.user.phone || session.user.id;
         const shopId = profile?.shop_id || meta.shopId || null;
 
-        try {
-          await api.loginGoogle(id, name).catch(() => null);
-        } catch (_e) {}
-
+        try { await api.loginGoogle(id, name).catch(() => null); } catch (_e) {}
         finish(role, name, id, shopId, session.access_token);
       }
     });
@@ -253,149 +204,92 @@ const LoginPage = () => {
 
   return (
     <main className="sb-root">
-      {/* 3D Solar Particle Swarm Animation Background */}
-      <SolarBackground />
-
-      {/* Ambient Canvas Glows */}
-      <div className="sb-bg-canvas-glows" aria-hidden="true">
-        <div className="sb-glow-orb sb-orb-left" />
-        <div className="sb-glow-orb sb-orb-right" />
-      </div>
-
       <div className="sb-viewport-wrapper">
         <div className="sb-split-grid">
 
-          {/* LEFT COLUMN: HERO SECTION */}
-          <main className="sb-left-hero">
+          {/* LEFT: HERO */}
+          <section className="sb-left-hero">
 
-            {/* University Canteen Pill Tag */}
-            <GridBeam
-              className="sb-badge-pill"
-              colorVariant="red"
-              active={true}
-              breathe={true}
-              duration={7.0}
-              strength={1}
-              borderRadius={999}
-              beamCount={2}
-            >
-              <IconSchool size={16} className="sb-badge-pill-icon" />
+            {/* Rectangular eyebrow tag with amber left-border */}
+            <div className="sb-badge-pill">
+              <IconSchool size={14} className="sb-badge-pill-icon" />
               <span className="sb-badge-pill-text">SGU Smart-Bite</span>
-            </GridBeam>
+            </div>
 
-            {/* Hero Headline */}
             <h1 className="sb-hero-title">
-              Skip Canteen Queues. <br />
+              Skip Canteen Queues.<br />
               <span className="sb-gradient-text">Enjoy Hot Fresh Food.</span>
             </h1>
 
-            {/* High-Energy Subtitle */}
             <p className="sb-hero-subtitle">
-              Order right from your phone between lectures! Freshly prepared, sizzling hot, and ready for pickup before you even reach the food court.
+              Order from the SGU canteen right from your phone between lectures —
+              freshly prepared, picked up on time, no waiting in line.
             </p>
 
-            {/* Sign In Action Button below subtitle */}
+            {/* Mobile-only scroll CTA */}
             <div className="sb-hero-cta-wrap">
-              <button
-                type="button"
-                onClick={scrollToCard}
-                className="sb-btn-top-signin sb-btn-hero-signin"
-                aria-label="Scroll to Sign In"
-              >
-                <IconUser size={16} />
+              <button type="button" onClick={scrollToCard} className="sb-btn-hero-signin" aria-label="Scroll to Sign In">
+                <IconUser size={15} />
                 <span>Sign In</span>
-                <IconArrowRight size={14} className="sb-btn-top-arrow" />
               </button>
             </div>
 
-            {/* Quick Feature Highlights */}
+            {/* Feature list: stacked rows */}
             <div className="sb-highlights-grid">
-              <GridBeam
-                className="sb-hl-card"
-                colorVariant="red"
-                active={true}
-                breathe={true}
-                duration={8.0}
-                strength={1}
-                borderRadius={18}
-                beamCount={3}
-              >
+              <div className="sb-hl-card">
                 <div className="sb-hl-icon-box">
-                  <IconClock size={20} />
+                  <IconClock size={18} />
                 </div>
                 <div className="sb-hl-text-wrap">
-                  <div className="sb-hl-title">Order in under 2 mins</div>
-                  <div className="sb-hl-desc">Instant 1-tap checkout</div>
+                  <div className="sb-hl-title">Order in under 2 minutes</div>
+                  <div className="sb-hl-desc">1-tap checkout, no account setup</div>
                 </div>
-              </GridBeam>
+              </div>
 
-              <GridBeam
-                className="sb-hl-card"
-                colorVariant="red"
-                active={true}
-                breathe={true}
-                duration={8.0}
-                strength={1}
-                borderRadius={18}
-                beamCount={3}
-              >
-                <div className="sb-hl-icon-box gold">
-                  <IconBell size={20} />
+              <div className="sb-hl-card">
+                <div className="sb-hl-icon-box teal">
+                  <IconBell size={18} />
                 </div>
                 <div className="sb-hl-text-wrap">
-                  <div className="sb-hl-title">Instant Pickup Alerts</div>
-                  <div className="sb-hl-desc">Get notified when ready</div>
+                  <div className="sb-hl-title">Pickup alerts when ready</div>
+                  <div className="sb-hl-desc">Get notified before you leave class</div>
                 </div>
-              </GridBeam>
+              </div>
             </div>
 
-            {/* Canteen Perks Footer Row */}
+            {/* Perks footer row */}
             <div className="sb-perks-row">
               <div className="sb-perk-item">
-                <IconBolt size={16} /> Ready When You Arrive
+                <IconBolt size={15} /> Ready when you arrive
               </div>
-              <div className="sb-perk-item green">
-                <IconShieldCheck size={16} /> Secure Payment Method
+              <div className="sb-perk-item teal">
+                <IconShieldCheck size={15} /> Secure payment
               </div>
               <div className="sb-perk-item">
-                <IconToolsKitchen2 size={16} /> Freshly Prepared
+                <IconToolsKitchen2 size={15} /> Freshly prepared
               </div>
             </div>
 
-          </main>
+          </section>
 
-          {/* RIGHT COLUMN: FROSTED GLASS SIGN-IN CARD WITH GRIDBEAM GLOW */}
+          {/* RIGHT: LOGIN CARD */}
           <aside className="sb-right-card-wrapper" ref={cardRef}>
-            <GridBeam
-              className="sb-glass-card-compact"
-              role="region"
-              aria-label="Student Portal Sign-In"
-              colorVariant="red"
-              active={true}
-              breathe={true}
-              duration={9.0}
-              strength={1}
-              borderRadius={24}
-              beamCount={4}
-            >
+            <div className="sb-glass-card-compact" role="region" aria-label="Student Portal Sign-In">
 
-              {/* Card Header */}
               <div className="sb-card-brand-header">
                 <div className="sb-brand-icon-circle">
-                  <IconToolsKitchen2 size={28} />
+                  <IconToolsKitchen2 size={20} />
                 </div>
-                <h2 className="sb-card-title">Login to Smart Bite</h2>
-                <p className="sb-card-subtext">Sign in to order food & track orders</p>
+                <h2 className="sb-card-title">Sign in to Smart Bite</h2>
+                <p className="sb-card-subtext">Order food at SGU canteen</p>
               </div>
 
-              {/* Error Banner */}
               {errorMsg && (
                 <div className="sb-error-banner" role="alert" aria-live="assertive">
-                  {typeof errorMsg === 'string' && errorMsg !== '{}' ? errorMsg : 'Invalid login credentials. Please check your email and password.'}
+                  {typeof errorMsg === 'string' && errorMsg !== '{}' ? errorMsg : 'Invalid login credentials.'}
                 </div>
               )}
 
-              {/* Google Sign-In Button with Arrow Disk */}
               <div className="sb-cta-area">
                 <button
                   type="button"
@@ -404,64 +298,65 @@ const LoginPage = () => {
                   className="sb-btn-google-glass"
                   aria-label="Sign in with Google"
                 >
-                  <div className="sb-btn-left">
-                    <svg className="sb-google-svg" viewBox="0 0 24 24">
-                      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
-                      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
-                    </svg>
-                    <span>{isLoading ? 'Connecting...' : 'Sign in with Google'}</span>
-                  </div>
-                  <div className="sb-btn-icon-disk">
-                    {isLoading ? <IconLoader2 size={18} className="sb-spin" /> : <IconArrowRight size={18} />}
-                  </div>
+                  {isLoading ? (
+                    <IconLoader2 size={18} className="sb-spin" />
+                  ) : (
+                    <div className="sb-btn-left">
+                      <svg className="sb-google-svg" viewBox="0 0 24 24">
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+                      </svg>
+                      <span>{isSuccess ? 'Signing in...' : 'Continue with Google'}</span>
+                    </div>
+                  )}
                 </button>
               </div>
 
-              {/* Verified Access Tag */}
+              {/* Teal left-border access indicator */}
               <div className="sb-security-tag">
-                <IconShieldCheck size={16} />
-                <span>Verified SGU Student Access</span>
+                <IconShieldCheck size={14} />
+                <span>Verified SGU student access</span>
               </div>
 
-              {/* Card Footer Note */}
               <div className="sb-card-footer-note">
-                <IconMailCheck size={15} />
-                <span>Please sign in with your <strong>authorized university email ID</strong>.</span>
+                <IconMailCheck size={14} />
+                <span>
+                  Sign in with your <strong>authorized university email</strong> to access the canteen portal.
+                </span>
               </div>
 
-              {/* Hidden Staff / Vendor Access */}
+              {/* Staff / Vendor hidden access */}
               <div className="sb-staff-section">
                 {!showStaffLogin && (
                   <button
                     type="button"
-                    className="sb-staff-icon-btn"
                     onDoubleClick={() => setShowStaffLogin(true)}
                     title="Staff access (double-click)"
                     aria-label="Staff access"
                     style={{
                       background: 'transparent', border: 'none', cursor: 'pointer',
-                      color: 'rgba(148,163,184,0.55)', padding: 6, margin: '4px auto 0',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center'
+                      color: 'rgba(148,163,184,0.4)', padding: 4,
+                      display: 'flex', alignItems: 'center'
                     }}
                   >
-                    <IconBuildingStore size={16} />
+                    <IconBuildingStore size={14} />
                   </button>
                 )}
 
                 {showStaffLogin && (
                   <form onSubmit={handleStaffLogin} className="sb-staff-form">
                     <div className="sb-field">
-                      <label className="sb-field-label" htmlFor="staff-id">Email ID or Username</label>
+                      <label className="sb-field-label" htmlFor="staff-id">Email or Username</label>
                       <div className="sb-field-wrap">
-                        <IconMail className="sb-field-icon" size={17} />
+                        <IconMail className="sb-field-icon" size={15} />
                         <input
                           id="staff-id"
                           type="text"
                           value={staffId}
                           onChange={(e) => setStaffId(e.target.value)}
-                          placeholder="e.g. vendor@sgu.edu or admin"
+                          placeholder="vendor@sgu.edu or admin"
                           className="sb-field-input"
                         />
                       </div>
@@ -470,7 +365,7 @@ const LoginPage = () => {
                     <div className="sb-field">
                       <label className="sb-field-label" htmlFor="staff-pwd">Password</label>
                       <div className="sb-field-wrap">
-                        <IconLock className="sb-field-icon" size={17} />
+                        <IconLock className="sb-field-icon" size={15} />
                         <input
                           id="staff-pwd"
                           type="password"
@@ -484,20 +379,21 @@ const LoginPage = () => {
 
                     <button type="submit" disabled={isLoading} className="sb-btn-primary">
                       <span>Sign in</span>
-                      <IconArrowRight size={17} />
+                      <IconArrowRight size={15} />
                     </button>
+
                     <button
                       type="button"
                       onClick={() => { setShowStaffLogin(false); setStaffId(''); setStaffPwd(''); setErrorMsg(''); }}
-                      style={{ background: 'none', border: 'none', color: 'var(--text-muted, #94a3b8)', fontSize: '0.75rem', cursor: 'pointer', marginTop: 4 }}
+                      style={{ background: 'none', border: 'none', color: 'var(--sb-txt-lo)', fontSize: '0.73rem', cursor: 'pointer', marginTop: 8, display: 'block' }}
                     >
-                      ← Back to student sign-in
+                      Back to student sign-in
                     </button>
                   </form>
                 )}
               </div>
 
-            </GridBeam>
+            </div>
           </aside>
 
         </div>
