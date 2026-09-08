@@ -269,13 +269,13 @@ const LoginPage = () => {
               beamCount={2}
             >
               <IconSchool size={16} className="sb-badge-pill-icon" />
-              <span className="sb-badge-pill-text">SGU Campus Canteen</span>
+              <span className="sb-badge-pill-text">SGU Smart-Bite</span>
             </GridBeam>
 
             {/* Hero Headline */}
             <h1 className="sb-hero-title">
               Skip Canteen Queues. <br />
-              <span className="sb-gradient-text">Enjoy Hot Fresh Food.</span> 🍕🔥
+              <span className="sb-gradient-text">Enjoy Hot Fresh Food.</span>
             </h1>
 
             {/* High-Energy Subtitle */}
