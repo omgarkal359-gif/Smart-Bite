@@ -19,7 +19,7 @@ const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || '';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 try {
-  const { data, error } = await supabase.from('users').select('count', { count: 'exact', head: true });
+  const { data, error } = await supabase.from('accounts').select('count', { count: 'exact', head: true });
   if (error) {
     console.log('Supabase JS Client error:', error.message);
   } else {

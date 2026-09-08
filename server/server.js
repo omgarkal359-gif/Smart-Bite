@@ -103,7 +103,7 @@ io.on('connection', (socket) => {
     if (room.startsWith('vendor-')) {
       const targetStallId = room.replace('vendor-', '');
       const user = socket.user;
-      if (user && (user.role === 'admin' || (user.role === 'owner' && user.shopId === targetStallId))) {
+      if (user && (user.role === 'admin' || ((user.role === 'vendor' || user.role === 'owner') && user.shopId === targetStallId))) {
         socket.join(room);
         logger.info(`Authorized socket ${socket.id} joined ${room}`);
       } else {
@@ -128,7 +128,7 @@ io.on('connection', (socket) => {
         if (user.role === 'admin' || userEmail === orderOwner) {
           socket.join(room);
           logger.info(`Authorized socket ${socket.id} joined ${room}`);
-        } else if (user.role === 'owner') {
+        } else if (user.role === 'vendor' || user.role === 'owner') {
           const items = await db.all('SELECT stallId FROM order_items WHERE orderId = ?', [orderId]);
           const belongsToStall = items.some(i => i.stallId === user.shopId);
           if (belongsToStall) {

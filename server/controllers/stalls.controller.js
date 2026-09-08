@@ -13,7 +13,7 @@ export async function updateStallStatus(req, res, next) {
   const { id } = req.params;
   const { online, waitTime, busyMode } = req.body;
   try {
-    if (req.user?.role === 'owner' && req.user?.shopId !== id) {
+    if ((req.user?.role === 'vendor' || req.user?.role === 'owner') && req.user?.shopId !== id) {
       return res.status(403).json({ success: false, message: 'Access Denied: You are only authorized to manage your assigned stall.' });
     }
 
@@ -61,7 +61,7 @@ export async function addStallMenuItem(req, res, next) {
   const { id } = req.params;
   const { name, price, isVeg, category, stock, img } = req.body;
   try {
-    if (req.user?.role === 'owner' && req.user?.shopId !== id) {
+    if ((req.user?.role === 'vendor' || req.user?.role === 'owner') && req.user?.shopId !== id) {
       return res.status(403).json({ success: false, message: 'Access Denied: You are only authorized to manage menu items for your assigned stall.' });
     }
 
