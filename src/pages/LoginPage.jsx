@@ -8,6 +8,7 @@ import { setStoredUser, getStoredUser, clearStoredUser, ADMIN_EMAILS, isAdminEma
 import { GoogleIcon } from '../components/icons/GoogleIcon';
 import { api } from '../api';
 import { addAuditLog } from '../utils/logger';
+import { GridBeam } from '../components/ui/grid-beam';
 import './LoginPage.css';
 
 const LoginPage = () => {
@@ -226,7 +227,19 @@ const LoginPage = () => {
     <main className="sb-root">
       <div className="sb-bg-accent" aria-hidden="true" />
 
-      <div className="sb-card sb-card--centered" role="region" aria-label="SmartBite authentication">
+      <GridBeam
+        className="sb-card sb-card--centered"
+        role="region"
+        aria-label="SmartBite authentication"
+        colorVariant="colorful"
+        active={true}
+        breathe={true}
+        duration={3.4}
+        strength={1}
+        borderRadius={24}
+        rows={2}
+        cols={2}
+      >
         {/* Top Icon */}
         <div className="sb-profile-avatar-wrap">
           <div className="sb-profile-avatar-circle">
@@ -320,7 +333,7 @@ const LoginPage = () => {
             </form>
           )}
         </div>
-      </div>
+      </GridBeam>
     </main>
   );
 };
