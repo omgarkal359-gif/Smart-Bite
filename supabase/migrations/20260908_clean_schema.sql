@@ -585,6 +585,8 @@ END $$;
 DELETE FROM public.order_status_history;
 DELETE FROM public.order_items;
 DELETE FROM public.orders;
+DELETE FROM public.menu_items;
+DELETE FROM public.menu_categories;
 DELETE FROM public.vendor_invites;
 DELETE FROM public.vendors;
 
