@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GlassCard } from '../components/ui/GlassCard';
-import { Clock, Search, Flame, Star } from 'lucide-react';
+import { Clock, Search, Flame, Star, ChevronRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { SHOPS, searchFoodItems } from '../data/foodCourtDB';
 import { api, socket } from '../api';
@@ -349,7 +349,7 @@ const ShopDirectory = () => {
                       initial={{ opacity: 0, y: 15 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.04, type: 'spring', stiffness: 100, damping: 15 }}
-                      whileHover={isOnline ? { scale: 1.01 } : {}}
+                      whileHover={isOnline ? { y: -4 } : {}}
                       className="shop-card-wrapper"
                     >
                       <GlassCard 
@@ -375,8 +375,8 @@ const ShopDirectory = () => {
                         <div className="shop-card-right">
                           <div className="shop-header-row">
                             <h3 className="shop-name-v21">{shop.name}</h3>
-                            <span className="rating-v21 flex items-center gap-1">
-                              <Star size={11} fill="#D97706" color="#D97706" /> {shop.rating || '4.5'}
+                            <span className="rating-v21">
+                              <Star size={12} fill="#D97706" color="#D97706" /> {shop.rating || '4.5'}
                             </span>
                           </div>
                           <p className="shop-category-v21">{shop.category}</p>
@@ -387,10 +387,16 @@ const ShopDirectory = () => {
                               {isOnline ? 'Online' : 'Offline'}
                             </span>
                             
-                            {shop.busyMode && isOnline && (
+                            {shop.busyMode && isOnline ? (
                               <span className="busy-pill">
-                                <Clock size={11} /> +{shop.waitTime}m wait
+                                <Clock size={12} /> +{shop.waitTime}m wait
                               </span>
+                            ) : (
+                              isOnline && (
+                                <span className="explore-cta">
+                                  Explore <ChevronRight size={14} />
+                                </span>
+                              )
                             )}
                           </div>
                         </div>
