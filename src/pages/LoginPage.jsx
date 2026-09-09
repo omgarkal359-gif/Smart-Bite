@@ -42,7 +42,7 @@ const LoginPage = () => {
 
   const redirectByRole = useCallback((role, shopId) => {
     if (role === 'student' || role === 'guest') navigate('/student');
-    else if (role === 'vendor') navigate(`/vendor/${shopId}`);
+    else if (role === 'vendor') navigate(shopId ? `/vendor/${shopId}` : '/vendor');
     else if (role === 'admin') navigate('/admin');
   }, [navigate]);
 

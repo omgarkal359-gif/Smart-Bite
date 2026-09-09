@@ -138,7 +138,7 @@ export const api = {
     }
     let profile = null;
     try {
-      const { data: p } = await supabase.from('accounts').select('*').eq('id', data.user.id).single();
+      const { data: p } = await supabase.from('accounts').select('*').eq('id', data.user.id).maybeSingle();
       profile = p;
     } catch (_e) {}
 
@@ -150,16 +150,29 @@ export const api = {
       role = 'student';
     }
 
+    let shopId = profile?.shop_id || data.user.user_metadata?.shopId || null;
+    if (role === 'vendor' && !shopId) {
+      try {
+        const { data: stall } = await supabase.from('stalls').select('id').or(`vendor_id.eq.${data.user.id},owner_id.eq.${data.user.id}`).maybeSingle();
+        if (stall) shopId = stall.id;
+      } catch (_e) {}
+    }
+
     return {
       success: true,
       token: data.session?.access_token,
       user: {
+        id: data.user.id,
         username: email,
         name: profile?.full_name || data.user.user_metadata?.full_name || email.split('@')[0],
         role,
-        shopId: profile?.shop_id || data.user.user_metadata?.shopId || null
+        shopId
       }
     };
+  },
+
+  async loginStaff(username, password) {
+    return this.login(username, password);
   },
 
   async register(username, name, password) {
