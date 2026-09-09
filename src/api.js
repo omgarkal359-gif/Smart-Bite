@@ -132,14 +132,24 @@ export const api = {
   // ── Auth ───────────────────────────────────────────────────────────────
   async login(username, password) {
     const email = (username || '').trim().toLowerCase();
+    // 1. Primary Authentication: Verify email and password via Supabase Auth
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error || !data?.user) {
-      return { success: false, message: error?.message || 'Invalid credentials.' };
+      return { success: false, message: error?.message || 'Invalid email or password.' };
     }
+
+    const userId = data.user.id;
+
+    // 2. Query Supabase database for profile (accounts / profiles)
     let profile = null;
     try {
-      const { data: p } = await supabase.from('accounts').select('*').eq('id', data.user.id).maybeSingle();
-      profile = p;
+      const { data: p } = await supabase.from('accounts').select('*').eq('id', userId).maybeSingle();
+      if (p) {
+        profile = p;
+      } else {
+        const { data: prof } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle();
+        if (prof) profile = prof;
+      }
     } catch (_e) {}
 
     let role = profile?.role || data.user.app_metadata?.role || data.user.user_metadata?.role;
@@ -153,7 +163,11 @@ export const api = {
     let shopId = profile?.shop_id || data.user.user_metadata?.shopId || null;
     if (role === 'vendor' && !shopId) {
       try {
-        const { data: stall } = await supabase.from('stalls').select('id').or(`vendor_id.eq.${data.user.id},owner_id.eq.${data.user.id}`).maybeSingle();
+        const { data: stall } = await supabase
+          .from('stalls')
+          .select('id')
+          .or(`vendor_id.eq.${userId},owner_id.eq.${userId}`)
+          .maybeSingle();
         if (stall) shopId = stall.id;
       } catch (_e) {}
     }
@@ -162,9 +176,9 @@ export const api = {
       success: true,
       token: data.session?.access_token,
       user: {
-        id: data.user.id,
+        id: userId,
         username: email,
-        name: profile?.full_name || data.user.user_metadata?.full_name || email.split('@')[0],
+        name: profile?.full_name || profile?.name || data.user.user_metadata?.full_name || email.split('@')[0],
         role,
         shopId
       }
@@ -172,7 +186,19 @@ export const api = {
   },
 
   async loginStaff(username, password) {
-    return this.login(username, password);
+    const res = await this.login(username, password);
+    if (!res.success) return res;
+
+    // Strict Role Gate: Ensure account is a verified Vendor or Admin in Supabase
+    if (res.user.role !== 'vendor' && res.user.role !== 'admin') {
+      await supabase.auth.signOut();
+      return {
+        success: false,
+        message: 'Access Denied: Account is not registered as a Vendor or Admin in Supabase.'
+      };
+    }
+
+    return res;
   },
 
   async register(username, name, password) {
