@@ -244,7 +244,7 @@ const ShopDirectory = () => {
           <>
             {/* Hero Slideshow Banner */}
             {isLoading ? (
-              <div className="skeleton" style={{ width: '100%', height: '180px', borderRadius: '20px', marginBottom: '24px' }} />
+              <div className="skeleton hero-skeleton-banner" style={{ width: '100%', borderRadius: '20px', marginBottom: '24px' }} />
             ) : (
               <div style={{ position: 'relative', marginBottom: '24px' }}>
                 <div 

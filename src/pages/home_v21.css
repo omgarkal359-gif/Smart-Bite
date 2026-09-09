@@ -294,8 +294,21 @@
   100% { background-position: 200% 0; }
 }
 
+.hero-skeleton-banner {
+  height: 180px;
+}
+
 /* Responsive Desktop Overrides */
 @media (min-width: 768px) {
+  .hero-slideshow-wrapper,
+  .hero-skeleton-banner {
+    height: 240px;
+  }
+
+  .hero-parallax-content {
+    padding: 24px;
+  }
+
   .shop-bento-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -311,6 +324,15 @@
 }
 
 @media (min-width: 1024px) {
+  .hero-slideshow-wrapper,
+  .hero-skeleton-banner {
+    height: 300px;
+  }
+
+  .hero-parallax-content {
+    padding: 28px;
+  }
+
   .shop-bento-grid {
     grid-template-columns: repeat(3, 1fr);
   }
