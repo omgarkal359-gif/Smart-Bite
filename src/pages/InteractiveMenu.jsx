@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Leaf, Flame, Pizza, Coffee, Sandwich, WifiOff, Utensils } from 'lucide-react';
-import { CheckoutDrawer } from '../components/ui/CheckoutDrawer';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCart } from '../context/CartContext';
 import { api, socket } from '../api';
@@ -395,28 +394,6 @@ const InteractiveMenu = () => {
           )}
         </AnimatePresence>
       </main>
-
-      {/* KFC Style Floating Bottom Cart Bar — hidden when shop is closed */}
-      {isOnline && totalItems > 0 && (
-        <motion.div
-          className="floating-cart-v21 shadow-2xl"
-          initial={{ y: 100 }}
-          animate={{ y: 0 }}
-          exit={{ y: 100 }}
-        >
-          <div className="cart-summary-v21">
-            <span className="cart-total">
-              {totalItems} item{totalItems > 1 ? 's' : ''} added
-            </span>
-          </div>
-          <button 
-            className="checkout-btn-v21 tap-effect shadow-md" 
-            onClick={() => setIsCheckoutOpen(true)}
-          >
-            Checkout
-          </button>
-        </motion.div>
-      )}
 
     </div>
   );
