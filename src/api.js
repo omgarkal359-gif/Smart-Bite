@@ -56,10 +56,13 @@ function mapStall(s) {
 
 function mapMenuItem(m) {
   if (!m) return m;
+  const portionSuffix = m.portion && m.portion !== 'Standard' && !m.name.includes(`(${m.portion})`) ? ` (${m.portion})` : '';
   return {
     id: m.id,
     stallId: m.stall_id,
-    name: m.name,
+    name: `${m.name}${portionSuffix}`,
+    rawName: m.name,
+    portion: m.portion || 'Standard',
     price: Number(m.price) || 0,
     isVeg: !!m.is_veg,
     category: m.category,
