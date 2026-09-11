@@ -431,52 +431,43 @@ const VendorDashboard = () => {
     <div className={`vendor-kds-container page-transition ${isPowerSaver ? 'power-saver' : ''}`} style={{ flexDirection: 'row', height: '100vh', overflow: 'hidden' }}>
       
       {/* SIDEBAR */}
-      <aside className="w-20 md:w-64 bg-slate-900 border-r border-slate-800 flex flex-col py-6 px-4 shadow-2xl shrink-0 h-full overflow-y-auto z-[100] transition-all duration-300">
-        <div className="flex flex-col items-center md:items-start gap-2 mb-10 w-full">
-          <div className="w-12 h-12 bg-red-600 rounded-xl flex items-center justify-center shadow-lg mb-2 shrink-0">
-            <Utensils size={24} className="text-white" />
-          </div>
-          <h2 className="text-white font-black text-xl tracking-wider hidden md:block m-0">SMARTBITE</h2>
-          <span className="text-slate-400 text-[10px] font-bold uppercase hidden md:block">Vendor System</span>
+      <aside className="w-24 bg-[#E4002B] flex flex-col py-8 px-2 shadow-2xl shrink-0 h-full overflow-y-auto z-[100] items-center">
+        {/* Logo Icon */}
+        <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center shadow-sm mb-12 shrink-0">
+          <Utensils size={24} className="text-white" />
         </div>
         
-        <div className="flex flex-col gap-4 w-full flex-1">
-          <motion.button 
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className={`elite-ctrl-btn !w-full !justify-start md:!justify-start !justify-center ${isBusyMode ? 'busy' : 'active'}`} 
+        <div className="flex flex-col gap-10 w-full items-center flex-1">
+          <button 
+            className="flex flex-col items-center justify-center gap-2 cursor-pointer border-none bg-transparent hover:scale-110 transition-transform w-full p-0"
             onClick={handleToggleBusyMode}
-            style={{ padding: '14px 16px', borderRadius: '12px' }}
           >
-            <Clock size={18} className="shrink-0" /> <span className="hidden md:inline font-bold text-sm ml-2">{isBusyMode ? 'BUSY' : 'NORMAL'}</span>
-          </motion.button>
+            <Clock size={32} color={isBusyMode ? '#F59E0B' : '#4ADE80'} />
+            <span className="font-black text-xs tracking-wider" style={{ color: isBusyMode ? '#F59E0B' : '#4ADE80' }}>
+              {isBusyMode ? 'BUSY' : 'NORMAL'}
+            </span>
+          </button>
 
-          <motion.button 
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="elite-ctrl-btn management !w-full !justify-start md:!justify-start !justify-center" 
+          <button 
+            className="flex flex-col items-center justify-center gap-2 cursor-pointer border-none bg-transparent hover:scale-110 transition-transform w-full p-0 opacity-90 hover:opacity-100"
             onClick={() => { setActiveSidebarTab('menu'); setIsSidebarOpen(true); }}
-            style={{ padding: '14px 16px', borderRadius: '12px' }}
           >
-            <Settings size={18} className="shrink-0" /> <span className="hidden md:inline font-bold text-sm ml-2">MENU</span>
-          </motion.button>
+            <Settings size={32} className="text-white" />
+            <span className="text-white font-bold text-xs tracking-wider">MENU</span>
+          </button>
 
-          <motion.button 
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="elite-ctrl-btn management !w-full !justify-start md:!justify-start !justify-center" 
+          <button 
+            className="flex flex-col items-center justify-center gap-2 cursor-pointer border-none bg-transparent hover:scale-110 transition-transform w-full p-0 opacity-90 hover:opacity-100"
             onClick={() => { setActiveSidebarTab('history'); setIsSidebarOpen(true); }}
-            style={{ padding: '14px 16px', borderRadius: '12px' }}
           >
-            <History size={18} className="shrink-0" /> <span className="hidden md:inline font-bold text-sm ml-2">HISTORY</span>
-          </motion.button>
+            <History size={32} className="text-white" />
+            <span className="text-white font-bold text-xs tracking-wider">HISTORY</span>
+          </button>
         </div>
 
-        <div className="mt-auto w-full pt-6">
-          <motion.button 
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="elite-ctrl-btn exit !w-full !justify-start md:!justify-start !justify-center" 
+        <div className="mt-auto w-full pt-8 pb-4 flex justify-center">
+          <button 
+            className="flex flex-col items-center justify-center gap-2 cursor-pointer border-none bg-transparent hover:scale-110 transition-transform w-full p-0 opacity-90 hover:opacity-100"
             onClick={async () => {
               clearStoredUser();
               try {
@@ -484,10 +475,10 @@ const VendorDashboard = () => {
               } catch (_e) {}
               navigate('/login', { replace: true });
             }}
-            style={{ padding: '14px 16px', borderRadius: '12px' }}
           >
-            <LogOut size={18} className="shrink-0" /> <span className="hidden md:inline font-bold text-sm ml-2">LOGOUT</span>
-          </motion.button>
+            <LogOut size={32} className="text-white" />
+            <span className="text-white font-bold text-xs tracking-wider">LOGOUT</span>
+          </button>
         </div>
       </aside>
 
