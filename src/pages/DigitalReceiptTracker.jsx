@@ -45,7 +45,12 @@ const DigitalReceiptTracker = () => {
         // Enrich items from localStorage if API didn't return them
         try {
           const savedOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
-          const localMatch = Array.isArray(savedOrders) ? savedOrders.find(o => String(o.id) === String(orderId)) : null;
+          const localMatch = Array.isArray(savedOrders) ? savedOrders.find(o =>
+            String(o.id) === String(orderId) ||
+            String(o.orderId) === String(orderId) ||
+            String(o.orderNumber) === String(orderId) ||
+            String(o.order_number) === String(orderId)
+          ) : null;
           if (!foundOrder && localMatch) {
             foundOrder = localMatch;
           } else if (foundOrder && localMatch) {
@@ -53,10 +58,24 @@ const DigitalReceiptTracker = () => {
               foundOrder.items = localMatch.items;
             }
           }
+          // If still no items, try reading cart backup
+          if (foundOrder && (!foundOrder.items || foundOrder.items.length === 0)) {
+            const cartBackup = JSON.parse(localStorage.getItem(`sgu_cart_backup_${orderId}`) || 'null');
+            if (cartBackup && Array.isArray(cartBackup) && cartBackup.length > 0) {
+              foundOrder.items = cartBackup;
+            }
+          }
         } catch (_e) {}
 
         if (foundOrder) {
-          setOrder(foundOrder);
+          // Use functional updater to preserve items already loaded from a previous cycle
+          setOrder(prev => {
+            const merged = { ...foundOrder };
+            if (prev && prev.items && prev.items.length > 0 && (!merged.items || merged.items.length === 0)) {
+              merged.items = prev.items;
+            }
+            return merged;
+          });
           setIsAccessDenied(false);
 
           // Fetch vendor (name + FSSAI) for the receipt.

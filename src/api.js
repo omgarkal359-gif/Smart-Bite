@@ -575,10 +575,15 @@ export const api = {
     // Guarantee local storage persistence immediately
     try {
       saveLocalOrder(orderResult);
+      // Also save direct cart backup keyed by orderId for tracker fallback
+      if (items && items.length > 0) {
+        localStorage.setItem(`sgu_cart_backup_${orderId}`, JSON.stringify(items));
+      }
     } catch (_e) {}
 
     return { success: true, order: orderResult, paymentId: orderId };
   },
+
 
   // ── Payments (MOCK until the real gateway is wired) ──────────────────────
   async getPaymentStatus(_paymentId) {
