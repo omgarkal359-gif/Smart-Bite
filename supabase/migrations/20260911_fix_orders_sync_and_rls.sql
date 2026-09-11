@@ -46,6 +46,20 @@ CREATE POLICY p_receipts_read ON public.receipts FOR SELECT TO anon, authenticat
 CREATE POLICY p_receipts_insert ON public.receipts FOR INSERT TO anon, authenticated WITH CHECK (true);
 CREATE POLICY p_receipts_update ON public.receipts FOR UPDATE TO anon, authenticated USING (true);
 
+DROP POLICY IF EXISTS p_stalls_read ON public.stalls;
+DROP POLICY IF EXISTS p_stalls_insert ON public.stalls;
+DROP POLICY IF EXISTS p_stalls_update ON public.stalls;
+DROP POLICY IF EXISTS p_stalls_delete ON public.stalls;
+
+CREATE POLICY p_stalls_read ON public.stalls FOR SELECT TO anon, authenticated USING (true);
+CREATE POLICY p_stalls_insert ON public.stalls FOR INSERT TO anon, authenticated WITH CHECK (true);
+CREATE POLICY p_stalls_update ON public.stalls FOR UPDATE TO anon, authenticated USING (true) WITH CHECK (true);
+CREATE POLICY p_stalls_delete ON public.stalls FOR DELETE TO anon, authenticated USING (true);
+
+GRANT ALL ON TABLE public.stalls TO anon, authenticated, service_role;
+GRANT ALL ON TABLE public.orders TO anon, authenticated, service_role;
+GRANT ALL ON TABLE public.order_items TO anon, authenticated, service_role;
+
 -- Ensure publication for Supabase Realtime includes order tables
 DO $$
 BEGIN

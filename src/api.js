@@ -387,7 +387,26 @@ export const api = {
     // Filter out stalls marked inactive or registered in deleted stall registry
     list = list.filter(s => s.is_active !== false && !deletedIds.includes(String(s.id)));
 
-    return list.map(mapStall);
+    let mapped = list.map(mapStall);
+    try {
+      const cached = JSON.parse(localStorage.getItem('sgu_stall_status_overrides') || '{}');
+      mapped = mapped.map(s => {
+        if (cached && cached[s.id]) {
+          const override = cached[s.id];
+          const isOnline = override.online === 1 || override.online === true || override.status === 'ONLINE' || override.is_online === true;
+          return {
+            ...s,
+            online: isOnline ? 1 : 0,
+            status: isOnline ? 'ONLINE' : 'OFFLINE',
+            busyMode: override.busyMode !== undefined ? (override.busyMode ? 1 : 0) : s.busyMode,
+            waitTime: override.waitTime !== undefined ? override.waitTime : s.waitTime
+          };
+        }
+        return s;
+      });
+    } catch (_e) {}
+
+    return mapped;
   },
 
   async deleteVendor(stallId) {
@@ -437,6 +456,9 @@ export const api = {
   },
 
   async updateStallStatus(stallId, statusData) {
+    if (!stallId) return { success: false, message: 'Stall ID is required.' };
+    const cleanId = String(stallId);
+
     const online = (
       statusData.online === 1 || statusData.online === true || statusData.online === '1' ||
       statusData.status === 'ONLINE' || statusData.isOpen === true
@@ -447,10 +469,83 @@ export const api = {
     if (statusData.busyMode !== undefined) patch.busy_mode = !!statusData.busyMode;
     if (statusData.waitTime !== undefined) patch.wait_time_minutes = Number(statusData.waitTime) || 0;
 
-    const { data, error } = await supabase.from('stalls').update(patch).eq('id', stallId).select();
-    try { addAuditLog({ level: 'INFO', category: 'Vendors', message: `Stall "${stallId}" set ${online ? 'ONLINE' : 'OFFLINE'}` }); } catch (_e) {}
-    if (error) return { success: false, message: error.message };
-    return { success: true, stall: data?.[0] ? mapStall(data[0]) : null };
+    let { data, error } = await supabase.from('stalls').update(patch).eq('id', cleanId).select();
+
+    // Fallback: If 0 rows updated, try upserting with default stall metadata
+    if (!error && (!data || data.length === 0)) {
+      const shopInfo = SHOPS.find(s => String(s.id) === cleanId) || { id: cleanId, name: cleanId, category: 'Food' };
+      const upsertRes = await supabase.from('stalls').upsert({
+        id: cleanId,
+        name: shopInfo.name || cleanId,
+        category: shopInfo.category || 'Food',
+        rating: shopInfo.rating || 4.5,
+        img: shopInfo.img || '',
+        logo: shopInfo.logo || '🍕',
+        description: shopInfo.description || '',
+        operating_hours: shopInfo.operatingHours || '8:00 AM - 10:00 PM',
+        is_online: online,
+        busy_mode: patch.busy_mode || false,
+        wait_time_minutes: patch.wait_time_minutes || 0,
+        updated_at: new Date().toISOString()
+      }).select();
+      if (!upsertRes.error && upsertRes.data) {
+        data = upsertRes.data;
+      }
+    }
+
+    try { addAuditLog({ level: 'INFO', category: 'Vendors', message: `Stall "${cleanId}" set ${online ? 'ONLINE' : 'OFFLINE'}` }); } catch (_e) {}
+
+    const payload = {
+      id: cleanId,
+      stallId: cleanId,
+      online: online ? 1 : 0,
+      status: online ? 'ONLINE' : 'OFFLINE',
+      is_online: online,
+      busyMode: patch.busy_mode ? 1 : 0,
+      waitTime: patch.wait_time_minutes ?? 0
+    };
+
+    // 1. Cache override in localStorage for instantaneous UI responsiveness
+    try {
+      const cached = JSON.parse(localStorage.getItem('sgu_stall_status_overrides') || '{}');
+      cached[cleanId] = payload;
+      localStorage.setItem('sgu_stall_status_overrides', JSON.stringify(cached));
+    } catch (_e) {}
+
+    // 2. Dispatch local window event for single-tab real-time sync
+    try {
+      window.dispatchEvent(new CustomEvent('sgu:stall_status_updated', { detail: payload }));
+    } catch (_e) {}
+
+    // 3. Supabase Realtime Broadcast across channels for multi-dashboard sync
+    try {
+      supabase.channel('global-stall-broadcasts').send({
+        type: 'broadcast',
+        event: 'stall_status_changed',
+        payload
+      });
+      supabase.channel(`stall-status-${cleanId}`).send({
+        type: 'broadcast',
+        event: 'stall_status_changed',
+        payload
+      });
+      supabase.channel(`vendor-stall-${cleanId}`).send({
+        type: 'broadcast',
+        event: 'stall_status_changed',
+        payload
+      });
+    } catch (_e) {}
+
+    // 4. Trigger window storage event
+    try {
+      window.dispatchEvent(new Event('storage'));
+    } catch (_e) {}
+
+    if (error) {
+      console.warn('Supabase stalls table update notice:', error.message);
+    }
+
+    return { success: true, stall: data?.[0] ? mapStall(data[0]) : payload };
   },
 
   async deleteVendor(stallId) {

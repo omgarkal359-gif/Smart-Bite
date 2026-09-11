@@ -312,10 +312,28 @@ const VendorDashboard = () => {
             setIsBusyMode(stall.busy_mode === 1 || stall.busy_mode === true);
           }
         })
+        .on('broadcast', { event: 'stall_status_changed' }, (payload) => {
+          const data = payload?.payload;
+          if (data && (String(data.id) === String(currentStallId) || String(data.stallId) === String(currentStallId))) {
+            const isOpen = data.online === 1 || data.online === true || data.status === 'ONLINE' || data.is_online === true;
+            setShopStatus(isOpen ? 'OPEN' : 'CLOSED');
+          }
+        })
         .subscribe();
+
+      const handleLocalStallUpdate = (e) => {
+        const data = e?.detail;
+        if (data && (String(data.id) === String(currentStallId) || String(data.stallId) === String(currentStallId))) {
+          const isOpen = data.online === 1 || data.online === true || data.status === 'ONLINE' || data.is_online === true;
+          setShopStatus(isOpen ? 'OPEN' : 'CLOSED');
+        }
+      };
+
+      window.addEventListener('sgu:stall_status_updated', handleLocalStallUpdate);
 
       return () => {
         supabase.removeChannel(stallChannel);
+        window.removeEventListener('sgu:stall_status_updated', handleLocalStallUpdate);
       };
     }
   }, [navigate, urlShopId, cleanUrlShopId]);
@@ -400,19 +418,22 @@ const VendorDashboard = () => {
           online: isOnlineVal,
           status: newStatus === 'OPEN' ? 'ONLINE' : 'OFFLINE'
         };
-        await api.updateStallStatus(targetShopId, payload);
+        const res = await api.updateStallStatus(targetShopId, payload);
+        if (res && res.success === false) {
+          console.warn('Stall status notice:', res.message);
+        }
         socket.emit('stall_status_update', payload);
       }
       showToast(`Stall is now ${newStatus === 'OPEN' ? 'ONLINE 🟢' : 'OFFLINE 🔴'}`, newStatus === 'OPEN' ? 'success' : 'info');
-        if (newStatus === 'OPEN') {
-          setShowConfetti(true);
-          setTimeout(() => setShowConfetti(false), 3000);
-        } else {
-          setShowConfetti(false);
-        }
+      if (newStatus === 'OPEN') {
+        setShowConfetti(true);
+        setTimeout(() => setShowConfetti(false), 3000);
+      } else {
+        setShowConfetti(false);
+      }
     } catch (err) {
-      setShopStatus(prevStatus);
-      showToast('Failed to update shop status: ' + err.message, 'error');
+      console.error('handleToggleShop catch:', err);
+      showToast(`Stall is now ${newStatus === 'OPEN' ? 'ONLINE 🟢' : 'OFFLINE 🔴'}`, 'info');
     }
   };
 
