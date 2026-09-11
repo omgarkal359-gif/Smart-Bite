@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { GlassCard } from '../components/ui/GlassCard';
 import { Button } from '../components/ui/Button';
-import { ArrowLeft, QrCode, CheckCircle, Clock, ChefHat, BellRing, Download, Mail, ShoppingBag, ShieldAlert, XCircle } from 'lucide-react';
+import { ArrowLeft, QrCode, CheckCircle, Clock, ChefHat, BellRing, Download, ShoppingBag, ShieldAlert, XCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api, socket } from '../api';
 import { supabase } from '../supabaseClient';
@@ -23,7 +23,6 @@ const DigitalReceiptTracker = () => {
   const [order, setOrder] = useState(null);
   const [vendor, setVendor] = useState(null);
   const [toastMsg, setToastMsg] = useState('');
-  const [emailInput, setEmailInput] = useState('');
   const [isAccessDenied, setIsAccessDenied] = useState(false);
 
   useEffect(() => {
@@ -33,27 +32,42 @@ const DigitalReceiptTracker = () => {
         const currentUserId = (savedUser.username || savedUser.id || '').trim().toLowerCase();
         const currentUserRole = (savedUser.role || 'student').trim().toLowerCase();
 
-        const foundOrder = await api.getOrder(orderId);
+        let foundOrder = await api.getOrder(orderId);
         
         // Security Ownership Guard: Prevent viewing other students' orders by changing order link ID
-        const orderOwner = (foundOrder.customerId || foundOrder.customerid || '').trim().toLowerCase();
+        const orderOwner = (foundOrder?.customerId || foundOrder?.customerid || '').trim().toLowerCase();
         if ((currentUserRole === 'student' || currentUserRole === 'guest') && currentUserId && orderOwner && orderOwner !== currentUserId) {
           setIsAccessDenied(true);
           setOrder(null);
           return;
         }
 
-        setOrder(foundOrder);
-        setIsAccessDenied(false);
+        // Enrich items from localStorage if API didn't return them
+        try {
+          const savedOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
+          const localMatch = Array.isArray(savedOrders) ? savedOrders.find(o => String(o.id) === String(orderId)) : null;
+          if (!foundOrder && localMatch) {
+            foundOrder = localMatch;
+          } else if (foundOrder && localMatch) {
+            if ((!foundOrder.items || foundOrder.items.length === 0) && localMatch.items && localMatch.items.length > 0) {
+              foundOrder.items = localMatch.items;
+            }
+          }
+        } catch (_e) {}
 
-        // Fetch vendor (name + FSSAI) for the receipt.
-        const stallId = foundOrder.stallId || foundOrder.items?.[0]?.stallId;
-        if (stallId) {
-          api.getVendorByStall(stallId).then(v => { if (v) setVendor(v); }).catch(() => {});
-        }
+        if (foundOrder) {
+          setOrder(foundOrder);
+          setIsAccessDenied(false);
 
-        if (foundOrder && foundOrder.status) {
-          applyNewStatus(foundOrder.status);
+          // Fetch vendor (name + FSSAI) for the receipt.
+          const stallId = foundOrder.stallId || foundOrder.items?.[0]?.stallId;
+          if (stallId) {
+            api.getVendorByStall(stallId).then(v => { if (v) setVendor(v); }).catch(() => {});
+          }
+
+          if (foundOrder.status) {
+            applyNewStatus(foundOrder.status);
+          }
         }
       } catch (err) {
         console.error('Failed to load order tracker:', err);
@@ -74,6 +88,9 @@ const DigitalReceiptTracker = () => {
 
       setOrder(prev => {
         const updated = prev ? { ...prev, status: newStatus } : { id: orderId, status: newStatus };
+        if (prev?.items && (!updated.items || updated.items.length === 0)) {
+          updated.items = prev.items;
+        }
         
         try {
           const savedOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
@@ -140,46 +157,57 @@ const DigitalReceiptTracker = () => {
     return '';
   }, [order]);
 
-  const handleSendCustomEmail = async () => {
-    if (!emailInput) {
-      setToastMsg('Please enter a valid email address.');
-      setTimeout(() => setToastMsg(''), 3000);
-      return;
-    }
-    if (!emailInput.includes('@')) {
-      setToastMsg('Please type a valid email containing @.');
-      setTimeout(() => setToastMsg(''), 3000);
-      return;
+  const orderItemsList = useMemo(() => {
+    if (!order) return [];
+    let items = order.items;
+
+    // If missing or empty on order object, try reading from localStorage
+    if (!items || (Array.isArray(items) && items.length === 0)) {
+      try {
+        const savedOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
+        const local = Array.isArray(savedOrders) ? savedOrders.find(o => String(o.id) === String(orderId || order.id)) : null;
+        if (local && local.items) {
+          items = local.items;
+        }
+      } catch (_e) {}
     }
 
-    try {
-      await api.resendReceipt(orderId, emailInput);
-      setToastMsg(`Digital receipt successfully sent to ${emailInput}!`);
-      setEmailInput('');
-    } catch (err) {
-      console.error('Failed to send receipt:', err);
-      setToastMsg('Failed to send receipt. Please try again.');
+    if (typeof items === 'string') {
+      try {
+        const parsed = JSON.parse(items);
+        if (Array.isArray(parsed)) items = parsed;
+        else items = items.split(',').map(s => {
+          const match = s.trim().match(/^(\d+)x?\s*(.+)$/i);
+          return match ? { quantity: Number(match[1]), name: match[2].trim() } : { quantity: 1, name: s.trim() };
+        });
+      } catch (_e) {
+        items = items.split(',').map(s => {
+          const match = s.trim().match(/^(\d+)x?\s*(.+)$/i);
+          return match ? { quantity: Number(match[1]), name: match[2].trim() } : { quantity: 1, name: s.trim() };
+        });
+      }
     }
-    setTimeout(() => {
-      setToastMsg('');
-    }, 4000);
-  };
 
-  const handleResend = async () => {
-    if (!order) return;
-    try {
-      await api.resendReceipt(orderId);
-      const isEmail = order.customerId?.includes('@');
-      const method = isEmail ? 'Email' : 'SMS';
-      setToastMsg(`Digital receipt successfully resent to ${order.customerId} via ${method}!`);
-    } catch (err) {
-      console.error('Failed to resend receipt:', err);
-      setToastMsg('Failed to resend receipt. Please try again.');
+    if (Array.isArray(items) && items.length > 0) {
+      return items.map(it => ({
+        name: it.name || it.itemName || it.title || 'Food Item',
+        quantity: Number(it.quantity || it.qty) || 1,
+        price: it.price != null ? Number(it.price) : null
+      }));
     }
-    setTimeout(() => {
-      setToastMsg('');
-    }, 4000);
-  };
+
+    // Fallback: If no items breakdown exists but order has a total, provide a clear order line
+    if (order.total) {
+      const stallTitle = vendor?.name || order.stallName || order.stall_name || 'Food Court';
+      return [{
+        name: `${stallTitle} Item`,
+        quantity: 1,
+        price: Number(order.total)
+      }];
+    }
+
+    return [];
+  }, [order, orderId, vendor]);
 
   const handleDownloadPDF = async () => {
     if (!order) return;
@@ -709,8 +737,21 @@ const DigitalReceiptTracker = () => {
                   This order has been permanently cancelled by the vendor.
                 </p>
                 <div className="order-summary-v21" style={{ opacity: 0.8 }}>
-                  <p className="font-bold text-sm mb-2" style={{ textDecoration: 'line-through' }}>{itemsText}</p>
-                  <p className="font-black text-lg" style={{ color: '#94A3B8' }}>Total: ₹{order.total}</p>
+                  <div className="receipt-items-list">
+                    {orderItemsList.map((item, idx) => (
+                      <div key={idx} className="receipt-item-row">
+                        <div className="receipt-item-left">
+                          <span className="receipt-item-qty">{item.quantity}x</span>
+                          <span className="receipt-item-name" style={{ textDecoration: 'line-through' }}>{item.name}</span>
+                        </div>
+                        <span className="receipt-item-price" style={{ textDecoration: 'line-through' }}>
+                          {item.price != null ? `₹${(Number(item.price) || 0) * (item.quantity || 1)}` : `₹${order.total}`}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="receipt-divider-dashed" />
+                  <p className="font-black text-lg m-0" style={{ color: '#94A3B8' }}>Total: ₹{order.total}</p>
                 </div>
               </div>
             </GlassCard>
@@ -735,8 +776,25 @@ const DigitalReceiptTracker = () => {
 
                 {order && (
                   <div className="order-summary-v21">
-                    <p className="font-bold text-sm mb-2">{itemsText}</p>
-                    <p className="font-black text-lg">Total: ₹{order.total}</p>
+                    <div className="receipt-items-list">
+                      {orderItemsList.map((item, idx) => (
+                        <div key={idx} className="receipt-item-row">
+                          <div className="receipt-item-left">
+                            <span className="receipt-item-qty">{item.quantity}x</span>
+                            <span className="receipt-item-name">{item.name}</span>
+                          </div>
+                          <span className="receipt-item-price">
+                            {item.price != null ? `₹${(Number(item.price) || 0) * (item.quantity || 1)}` : `₹${order.total}`}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="receipt-divider-dashed" />
+
+                    <div className="receipt-total-row">
+                      <p className="font-black text-lg m-0">Total: ₹{order.total}</p>
+                    </div>
                   </div>
                 )}
 
@@ -788,7 +846,7 @@ const DigitalReceiptTracker = () => {
 
                 {order && (
                   <>
-                    <motion.div className="ready-actions-v21 mt-6" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}>
+                    <motion.div className="ready-actions-v21" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}>
                       <button
                         className="btn-pdf-v21"
                         onClick={() => {
@@ -802,17 +860,6 @@ const DigitalReceiptTracker = () => {
                       <button className="btn-pdf-v21" onClick={handleDownloadPDF} style={{ cursor: 'pointer' }}>
                         <Download size={20} /> Download Receipt
                       </button>
-                      <button className="btn-email-v21" onClick={handleResend} style={{ cursor: 'pointer' }}>
-                        <Mail size={20} /> Resend Receipt
-                      </button>
-                    </motion.div>
-
-                    <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="email-receipt-section">
-                      <h4 className="email-receipt-title">Send Receipt to Email</h4>
-                      <div className="email-input-wrapper">
-                        <input type="email" placeholder="Enter your email address" value={emailInput} onChange={(e) => setEmailInput(e.target.value)} className="email-input-field" />
-                        <button onClick={handleSendCustomEmail} className="btn-send-email tap-effect"><Mail size={16} /> Send</button>
-                      </div>
                     </motion.div>
                   </>
                 )}

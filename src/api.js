@@ -72,14 +72,27 @@ function mapMenuItem(m) {
 
 function mapOrder(o) {
   if (!o) return o;
-  const items = (o.order_items || []).map(it => ({
-    id: it.menu_item_id ?? it.id,
-    name: it.name,
-    price: Number(it.unit_price) || 0,
-    quantity: it.quantity,
-    stallId: it.stall_id,
-    stallName: it.stall_name
-  }));
+  let items = [];
+  if (Array.isArray(o.order_items) && o.order_items.length > 0) {
+    items = o.order_items.map(it => ({
+      id: it.menu_item_id ?? it.id,
+      name: it.name,
+      price: Number(it.unit_price) || 0,
+      quantity: it.quantity,
+      stallId: it.stall_id,
+      stallName: it.stall_name
+    }));
+  } else if (Array.isArray(o.items) && o.items.length > 0) {
+    items = o.items;
+  } else if (typeof o.items === 'string' && o.items.trim()) {
+    try {
+      const parsed = JSON.parse(o.items);
+      items = Array.isArray(parsed) ? parsed : [{ name: o.items, quantity: 1, price: Number(o.total) || 0 }];
+    } catch (_e) {
+      items = [{ name: o.items, quantity: 1, price: Number(o.total) || 0 }];
+    }
+  }
+
   return {
     id: o.id,
     orderNumber: o.order_number,

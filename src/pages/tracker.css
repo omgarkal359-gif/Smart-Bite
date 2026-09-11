@@ -52,6 +52,68 @@
   margin-bottom: 24px;
 }
 
+.receipt-items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.receipt-item-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+}
+
+.receipt-item-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+
+.receipt-item-qty {
+  font-size: 0.75rem;
+  font-weight: 800;
+  background: rgba(228, 0, 43, 0.08);
+  color: #E4002B;
+  padding: 2px 7px;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.receipt-item-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #1E293B;
+  word-break: break-word;
+  line-height: 1.35;
+}
+
+.receipt-item-price {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #334155;
+  flex-shrink: 0;
+}
+
+.receipt-divider-dashed {
+  width: 100%;
+  height: 1px;
+  border-top: 1px dashed rgba(0, 0, 0, 0.12);
+  margin: 12px 0 10px;
+}
+
+.receipt-total-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+}
+
 .qr-wrapper-v21 {
   background: var(--bg-soft-gray);
   padding: 16px;
@@ -142,6 +204,7 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+  margin-top: 32px;
 }
 
 .btn-pdf-v21 {
