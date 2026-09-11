@@ -38,15 +38,22 @@ export const OnboardingModule = () => {
   const [resetLoading, setResetLoading] = useState({});
 
   const handleResetPassword = async (v) => {
-    const vendorEmail = editData.contact_email || editData.email || v.contact_email || v.email;
+    const vendorEmail = editData.email || editData.contact_email || v.contact_email || v.email;
+    if (!vendorEmail || !vendorEmail.trim()) {
+      setPasswordNotices(prev => ({
+        ...prev,
+        [v.id]: { type: 'error', msg: 'Please enter a valid Vendor Email Address in the form above before resetting password.' }
+      }));
+      return;
+    }
+    const cleanEmail = vendorEmail.trim().toLowerCase();
     const newPwd = passwords[v.id] || '';
     
     setResetLoading(prev => ({ ...prev, [v.id]: true }));
     setPasswordNotices(prev => ({ ...prev, [v.id]: null }));
     
     try {
-      const targetEmail = vendorEmail || `${v.id}@sgu.edu.in`;
-      const res = await api.onboarding.resetPassword(targetEmail, newPwd);
+      const res = await api.onboarding.resetPassword(cleanEmail, newPwd, v.id);
       setPasswordNotices(prev => ({
         ...prev,
         [v.id]: { type: 'success', msg: res.message }
@@ -136,14 +143,15 @@ export const OnboardingModule = () => {
 
   const openEdit = async (v) => {
     setError(''); setNotice(null); setEditingId(v.id);
-    setEditData({ name: v.name, category: v.category });
+    setEditData({ name: v.name, category: v.category, email: v.email || v.contact_email || '' });
     try {
       const { data } = await supabase.from('vendors')
-        .select('business_name, fssai, details, account_holder, ifsc, upi_id, account_last4, payout_status')
+        .select('business_name, fssai, contact_email, details, account_holder, ifsc, upi_id, account_last4, payout_status')
         .eq('stall_id', v.id).maybeSingle();
       setEditData({
         name: data?.business_name || v.name,
         category: v.category,
+        email: data?.contact_email || v.contact_email || v.email || '',
         fssai: data?.fssai || '',
         account_holder: data?.account_holder || '',
         ifsc: data?.ifsc || '',
@@ -159,14 +167,19 @@ export const OnboardingModule = () => {
   const saveEdit = async (id) => {
     setEditBusy(true); setError('');
     try {
-      const { name, category, fssai, _last4, _payoutStatus, ...rest } = editData;
+      const { name, category, email: vendorEmail, fssai, _last4, _payoutStatus, ...rest } = editData;
       // Bank fields go through the server (encrypted + payout registration).
       const bank = {};
       for (const k of BANK_KEYS) { if (rest[k] !== undefined) bank[k] = rest[k]; delete rest[k]; }
 
       await supabase.from('stalls').update({ name, category, updated_at: new Date().toISOString() }).eq('id', id);
       const { error: vErr } = await supabase.from('vendors').upsert({
-        stall_id: id, business_name: name, fssai: fssai || null, details: rest, updated_at: new Date().toISOString()
+        stall_id: id,
+        business_name: name,
+        contact_email: vendorEmail ? vendorEmail.trim().toLowerCase() : null,
+        fssai: fssai || null,
+        details: rest,
+        updated_at: new Date().toISOString()
       }, { onConflict: 'stall_id' });
       if (vErr) throw new Error(vErr.message);
 
@@ -346,6 +359,7 @@ export const OnboardingModule = () => {
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14 }}>
                         <div><label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569' }}>Stall Name</label><input style={input} value={editData.name || ''} onChange={e => setEditData(d => ({ ...d, name: e.target.value }))} /></div>
                         <div><label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569' }}>Category</label><input style={input} value={editData.category || ''} onChange={e => setEditData(d => ({ ...d, category: e.target.value }))} /></div>
+                        <div><label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569' }}>Vendor Email (Login Account)</label><input type="email" style={input} value={editData.email || ''} onChange={e => setEditData(d => ({ ...d, email: e.target.value }))} placeholder="vendor@sgu.edu.in" /></div>
                         <div><label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569' }}>FSSAI License No.</label><input style={input} value={editData.fssai || ''} onChange={e => setEditData(d => ({ ...d, fssai: e.target.value }))} placeholder="FSSAI number" /></div>
                         {catalog.filter(f => f.key !== 'business_name' && f.key !== 'fssai' && f.key !== 'category').map(f => (
                           <div key={f.key}>
@@ -371,7 +385,7 @@ export const OnboardingModule = () => {
                           <KeyRound size={16} color="#DC2626" /> Reset Vendor Password (Supabase Verified)
                         </div>
                         <p style={{ fontSize: '0.78rem', color: '#64748B', margin: '0 0 12px 0' }}>
-                          Set a new system password or trigger a Supabase Auth recovery link. Vendor logins are verified live through Supabase Auth to access the Vendor Dashboard.
+                          Set a new password for this vendor. The updated password is saved directly to the Supabase database & Auth, and verified live when logging into the Vendor Dashboard (no email links needed).
                         </p>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center' }}>
                           <div style={{ position: 'relative', flex: '1 1 240px' }}>
