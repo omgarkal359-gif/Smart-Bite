@@ -21,7 +21,37 @@ const LoginPage = () => {
   const [staffId, setStaffId] = useState('');
   const [staffPwd, setStaffPwd] = useState('');
 
+  // Mobile multi-step view: 'welcome' (Get Started screen) vs 'login' (Sign-in form)
+  const [mobileStep, setMobileStep] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('view') === 'login' || localStorage.getItem('sgu_google_oauth_started') === 'true') {
+        return 'login';
+      }
+    }
+    return 'welcome';
+  });
+
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const handlePopState = (e) => {
+      if (e.state?.step === 'login' || new URLSearchParams(window.location.search).get('view') === 'login') {
+        setMobileStep('login');
+      } else {
+        setMobileStep('welcome');
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  const handleGetStarted = () => {
+    setMobileStep('login');
+    try {
+      window.history.pushState({ step: 'login' }, '', `${window.location.pathname}?view=login`);
+    } catch (_e) {}
+  };
 
   // Make body & html transparent so background image is 100% visible
   useEffect(() => {
@@ -203,19 +233,54 @@ const LoginPage = () => {
       {/* Portal: renders background image directly on document.body */}
       {ReactDOM.createPortal(
         <>
-          <img
-            src="/login-bg.jpg"
-            alt="SGU Canteen Background"
-            className="sb-bg-image"
-            aria-hidden="true"
-          />
+          <picture className="sb-bg-picture">
+            <source media="(max-width: 768px)" srcSet="/login-bg-mobile.jpg" />
+            <img
+              src="/login-bg.jpg"
+              alt="SGU Canteen Background"
+              className="sb-bg-image"
+              aria-hidden="true"
+            />
+          </picture>
           <div className="sb-bg-overlay" aria-hidden="true" />
         </>,
         document.body
       )}
 
       <main className="sb-root">
-        <div className="sb-viewport-wrapper">
+        {/* Mobile Welcome / Onboarding Screen (Only active on mobile when mobileStep === 'welcome') */}
+        <section
+          className={`sb-mobile-welcome ${mobileStep === 'welcome' ? 'active' : ''}`}
+          aria-label="Welcome to Smart Bite"
+        >
+          <div className="sb-mobile-welcome-bottom">
+            <h1 className="sb-mobile-title">
+              Make Your Time Count:<br />
+              <span className="sb-hero-accent-red">Eat, Don’t Wait.</span>
+            </h1>
+
+            <p className="sb-mobile-desc">
+              Order right from your phone between lectures! Freshly prepared, sizzling hot, and ready for pickup before you even reach the food court.
+            </p>
+
+            <div className="sb-mobile-dots" aria-hidden="true">
+              <span className="sb-dot active" />
+              <span className="sb-dot" />
+              <span className="sb-dot" />
+            </div>
+
+            <button
+              type="button"
+              onClick={handleGetStarted}
+              className="sb-btn-get-started"
+              aria-label="Get Started"
+            >
+              Get Started
+            </button>
+          </div>
+        </section>
+
+        <div className={`sb-viewport-wrapper ${mobileStep === 'login' ? 'mobile-show-login' : ''}`}>
 
           {/* LEFT: HERO */}
           <section className="sb-left-hero">

@@ -51,6 +51,15 @@
 }
 
 /* ── Background Image ───────────────────────────────────────────────────── */
+.sb-bg-picture {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+}
+
 .sb-bg-image {
   position: fixed;
   inset: 0;
@@ -62,6 +71,12 @@
   pointer-events: none;
   filter: none !important;
   opacity: 1 !important;
+}
+
+@media (max-width: 768px) {
+  .sb-bg-image {
+    object-position: center center;
+  }
 }
 
 /* Background overlay: gives rich contrast while showing the food art */
@@ -572,8 +587,13 @@
 .sb-spin { animation: sb-spin-kf 0.85s linear infinite; }
 @keyframes sb-spin-kf { to { transform: rotate(360deg); } }
 
+/* ── Mobile Welcome Screen (Hidden by default on Desktop) ────────────────── */
+.sb-mobile-welcome {
+  display: none;
+}
+
 /* ── Responsive ─────────────────────────────────────────────────────────── */
-@media (max-width: 980px) {
+@media (max-width: 980px) and (min-width: 769px) {
   .sb-viewport-wrapper {
     grid-template-columns: 1fr;
     gap: 40px;
@@ -592,29 +612,175 @@
   }
 }
 
-@media (max-width: 600px) {
+@media (max-width: 768px) {
   .sb-root {
-    padding: 24px 14px;
-  }
-  .sb-hero-title {
-    font-size: 2.1rem;
-  }
-  .sb-highlights-grid {
+    padding: 0;
+    min-height: 100dvh;
+    display: flex;
     flex-direction: column;
-    align-items: stretch;
-    gap: 12px;
+    justify-content: flex-end;
   }
-  .sb-hl-card {
-    max-width: 100%;
+
+  /* When on welcome step */
+  .sb-mobile-welcome.active {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    min-height: 100dvh;
     width: 100%;
+    position: relative;
+    z-index: 10;
+    box-sizing: border-box;
   }
-  .sb-glass-card-compact {
-    padding: 28px 18px 22px;
-  }
-  .sb-perks-row {
+
+  /* Gradient overlay for welcome screen: transparent at top, darkening down to black */
+  .sb-mobile-welcome-bottom {
+    width: 100%;
+    padding: 64px 24px calc(36px + env(safe-area-inset-bottom, 0px));
+    box-sizing: border-box;
+    text-align: center;
+    display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 8px;
+    background: linear-gradient(
+      to bottom,
+      rgba(10, 10, 10, 0) 0%,
+      rgba(10, 10, 10, 0.42) 20%,
+      rgba(10, 10, 10, 0.86) 50%,
+      #0A0A0A 85%
+    );
+  }
+
+  .sb-mobile-title {
+    font-family: var(--sb-font-body);
+    font-size: 1.88rem;
+    font-weight: 800;
+    color: #FFFFFF;
+    line-height: 1.22;
+    margin: 0 0 14px 0;
+    letter-spacing: -0.025em;
+  }
+
+  .sb-mobile-desc {
+    font-size: 0.92rem;
+    line-height: 1.55;
+    color: #94A3B8;
+    max-width: 320px;
+    margin: 0 auto;
+  }
+
+  /* Dots indicator matching reference image */
+  .sb-mobile-dots {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin: 22px 0 26px;
+  }
+
+  .sb-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.28);
+    transition: all 0.25s ease;
+  }
+
+  .sb-dot.active {
+    width: 20px;
+    height: 6px;
+    border-radius: 3px;
+    background: #EF4444;
+  }
+
+  /* Big Red Get Started Button */
+  .sb-btn-get-started {
+    width: 100%;
+    max-width: 350px;
+    height: 52px;
+    background: #EF4444;
+    color: #FFFFFF;
+    border: none;
+    border-radius: 9999px;
+    font-size: 1.05rem;
+    font-weight: 700;
+    font-family: var(--sb-font-body);
+    cursor: pointer;
+    box-shadow: 0 8px 24px rgba(239, 68, 68, 0.45);
+    transition: transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .sb-btn-get-started:hover {
+    background: #DC2626;
+  }
+
+  .sb-btn-get-started:active {
+    transform: scale(0.98);
+    background: #B91C1C;
+  }
+
+  /* When on mobile welcome screen, hide the login viewport wrapper */
+  .sb-viewport-wrapper:not(.mobile-show-login) {
+    display: none !important;
+  }
+
+  /* When on mobile login screen (mobile-show-login) */
+  .sb-viewport-wrapper.mobile-show-login {
+    display: flex !important;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 100dvh;
+    padding: 32px 18px calc(32px + env(safe-area-inset-bottom, 0px));
+    box-sizing: border-box;
+  }
+
+  .sb-viewport-wrapper.mobile-show-login .sb-left-hero {
+    display: none !important;
+  }
+
+  .sb-viewport-wrapper.mobile-show-login .sb-right-card-wrapper {
+    display: flex !important;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    max-width: 440px;
+  }
+
+  .sb-glass-card-compact {
+    padding: 28px 16px 20px;
+  }
+
+  /* Perks Row: display sideways (horizontal row) instead of stacked */
+  .sb-perks-row {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    width: 100% !important;
+    gap: 4px !important;
+    flex-wrap: nowrap !important;
+    margin-top: 16px !important;
+    padding-top: 14px !important;
+    border-top: 1px solid var(--sb-border) !important;
+  }
+
+  .sb-perk-item {
+    font-size: clamp(0.64rem, 2.3vw, 0.72rem) !important;
+    gap: 4px !important;
+    white-space: nowrap !important;
+    display: inline-flex !important;
+    align-items: center !important;
+  }
+
+  .sb-perk-item svg {
+    width: 13px !important;
+    height: 13px !important;
+    flex-shrink: 0 !important;
   }
 }
 
