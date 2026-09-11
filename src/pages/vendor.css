@@ -24,9 +24,7 @@
    VENDOR SIDEBAR — hover-to-expand
    ============================================= */
 .vendor-sidebar {
-  position: fixed;
-  top: 0;
-  left: 0;
+  position: relative;
   width: 76px;
   height: 100vh;
   background: #FFEBD3;
@@ -38,6 +36,7 @@
   overflow: hidden;
   box-shadow: 4px 0 24px rgba(0, 0, 0, 0.15);
   transition: width 320ms cubic-bezier(0.4, 0, 0.2, 1);
+  flex-shrink: 0;
 }
 
 .vendor-sidebar:hover {
@@ -46,14 +45,7 @@
 
 /* Main content offset */
 .vendor-main-content {
-  margin-left: 76px;
-  transition: margin-left 320ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-@media (min-width: 1025px) {
-  .vendor-sidebar:hover ~ .vendor-main-content {
-    margin-left: 220px;
-  }
+  /* margin removed since sidebar now uses flex layout */
 }
 
 /* Logo */
@@ -185,9 +177,6 @@
   .vs-label {
     display: none;
   }
-  .vendor-main-content {
-    margin-left: 64px;
-  }
 }
 
 /* Mobile (≤ 768px) — thin icon bar */
@@ -222,9 +211,6 @@
   .vs-label {
     display: none;
   }
-  .vendor-main-content {
-    margin-left: 56px;
-  }
 }
 
 /* Very small phones (≤ 480px) */
@@ -250,9 +236,6 @@
   .vs-icon svg {
     width: 18px;
     height: 18px;
-  }
-  .vendor-main-content {
-    margin-left: 48px;
   }
 }
 
