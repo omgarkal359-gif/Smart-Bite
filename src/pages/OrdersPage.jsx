@@ -4,13 +4,16 @@ import { motion } from 'framer-motion';
 import { Clock, CheckCircle, ShoppingBag, X } from 'lucide-react';
 import { GlassCard } from '../components/ui/GlassCard';
 import { api, socket, formatRelativeTime } from '../api';
-import { getStoredUser } from '../utils/auth';
+import { getStoredUser, isUserOrder, getLocalOrders } from '../utils/auth';
 import { supabase } from '../supabaseClient';
 import './home_v21.css';
 
 const OrdersPage = () => {
   const navigate = useNavigate();
-  const [orders, setOrders] = React.useState([]);
+  const [orders, setOrders] = React.useState(() => {
+    const userData = getStoredUser() || {};
+    return getLocalOrders(userData);
+  });
 
   React.useEffect(() => {
     const userData = getStoredUser() || {};
@@ -19,19 +22,49 @@ const OrdersPage = () => {
     async function fetchOrders() {
       try {
         const liveOrders = await api.getStudentOrders(customerId);
-        setOrders(liveOrders);
-        localStorage.setItem('sgu_orders', JSON.stringify(liveOrders));
+        const localOrders = getLocalOrders();
+
+        const orderMap = new Map();
+        // 1. Add all saved local orders
+        if (Array.isArray(localOrders)) {
+          localOrders.forEach(o => {
+            if (o && (o.id || o.orderId)) {
+              orderMap.set(String(o.id || o.orderId), o);
+            }
+          });
+        }
+
+        // 2. Overlay live orders
+        if (Array.isArray(liveOrders) && liveOrders.length > 0) {
+          liveOrders.forEach(o => {
+            if (o && (o.id || o.orderId)) {
+              const id = String(o.id || o.orderId);
+              const existing = orderMap.get(id);
+              orderMap.set(id, { ...existing, ...o });
+            }
+          });
+        }
+
+        const allMerged = Array.from(orderMap.values());
+        const filtered = allMerged.filter(o => isUserOrder(o, userData));
+        filtered.sort((a, b) => {
+          const timeA = new Date(a.timestamp || a.created_at || 0).getTime();
+          const timeB = new Date(b.timestamp || b.created_at || 0).getTime();
+          return timeB - timeA;
+        });
+
+        setOrders(filtered);
+
+        // Never wipe local orders if backend is temporarily empty
+        if (allMerged.length > 0) {
+          try {
+            localStorage.setItem('sgu_orders', JSON.stringify(allMerged));
+          } catch (_e) {}
+        }
       } catch (err) {
-        console.error('Failed to fetch student orders:', err);
-        // Fallback to localStorage strictly filtered by customerId
-        const savedOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
-        const cleanId = (customerId || '').toString().trim().toLowerCase();
-        const userOrders = Array.isArray(savedOrders) ? savedOrders.filter(o => {
-          const oCustId = (o.customerId || o.customer_id || o.customerid || '').toString().trim().toLowerCase();
-          const oCustName = (o.customerName || o.customer_name || '').toString().trim().toLowerCase();
-          return cleanId && (oCustId === cleanId || oCustName === cleanId);
-        }) : [];
-        setOrders(userOrders);
+        console.warn('Failed to fetch student orders:', err);
+        const fallback = getLocalOrders(userData);
+        setOrders(fallback);
       }
     }
 
@@ -46,10 +79,16 @@ const OrdersPage = () => {
       if (!targetId || !nextStatus) return;
 
       setOrders(prev => {
-        return prev.map(order => String(order.id) === String(targetId) ? {
+        const updated = prev.map(order => String(order.id) === String(targetId) ? {
           ...order,
           status: nextStatus
         } : order);
+        try {
+          const allSaved = getLocalOrders();
+          const newAll = allSaved.map(o => String(o.id) === String(targetId) ? { ...o, status: nextStatus } : o);
+          localStorage.setItem('sgu_orders', JSON.stringify(newAll));
+        } catch (_e) {}
+        return updated;
       });
     };
 
@@ -61,7 +100,7 @@ const OrdersPage = () => {
         const targetId = payload?.payload?.orderId || payload?.orderId || payload?.payload?.id;
         const nextStatus = payload?.payload?.status || payload?.status;
         if (targetId && nextStatus) {
-          setOrders(prev => prev.map(o => String(o.id) === String(targetId) ? { ...o, status: nextStatus } : o));
+          handleStatusUpdate({ id: targetId, status: nextStatus });
         }
       })
       .subscribe();
@@ -71,13 +110,13 @@ const OrdersPage = () => {
         const targetId = payload?.payload?.orderId || payload?.orderId || payload?.payload?.id;
         const nextStatus = payload?.payload?.status || payload?.status;
         if (targetId && nextStatus) {
-          setOrders(prev => prev.map(o => String(o.id) === String(targetId) ? { ...o, status: nextStatus } : o));
+          handleStatusUpdate({ id: targetId, status: nextStatus });
         }
       })
       .subscribe();
 
-    // Fast polling fallback (every 2 seconds)
-    const interval = setInterval(fetchOrders, 2000);
+    // Polling fallback every 3 seconds
+    const interval = setInterval(fetchOrders, 3000);
 
     return () => {
       socket.off('order_status_update', handleStatusUpdate);

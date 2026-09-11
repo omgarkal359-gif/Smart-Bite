@@ -4,10 +4,25 @@
   padding-bottom: 40px;
 }
 
+.tracker-container-v21 .glass-header {
+  max-width: 440px;
+  margin: 10px auto 16px auto;
+  box-sizing: border-box;
+}
+
 .tracker-main-v21 {
-  padding: 20px;
-  max-width: 400px;
+  padding: 16px 20px 40px;
+  max-width: 440px;
   margin: 0 auto;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.tracker-cards-grid-v21 {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
 }
 
 .receipt-card-v21 {
@@ -18,6 +33,9 @@
   flex-direction: column;
   align-items: center;
   border: 1px solid var(--glass-border);
+  width: 100%;
+  box-sizing: border-box;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
 }
 
 .qr-section-v21 {
@@ -296,4 +314,39 @@
   gap: 6px;
   border: none;
   flex-shrink: 0; /* prevents button from shrinking or warping */
+}
+
+/* Laptop & Desktop Responsive Layout (Side-by-Side Cards) */
+@media (min-width: 768px) {
+  .tracker-container-v21 .glass-header {
+    max-width: 960px;
+    margin: 16px auto 24px auto;
+  }
+
+  .tracker-main-v21 {
+    max-width: 960px;
+    padding: 24px 24px 60px;
+  }
+
+  .tracker-cards-grid-v21 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 28px;
+    align-items: start;
+  }
+}
+
+@media (min-width: 1024px) {
+  .tracker-container-v21 .glass-header {
+    max-width: 1020px;
+  }
+
+  .tracker-main-v21 {
+    max-width: 1020px;
+    padding: 32px 24px 80px;
+  }
+
+  .tracker-cards-grid-v21 {
+    gap: 36px;
+  }
 }

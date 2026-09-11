@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Trash2, Plus, Minus, ArrowRight, ShoppingBag, ChevronLeft, Loader2, Check, ExternalLink } from 'lucide-react';
 import { api } from '../api';
 import { getFoodItemImage } from '../utils/imageHelper';
-import { getStoredUser } from '../utils/auth';
+import { getStoredUser, isUserOrder, getLocalOrders, saveLocalOrder } from '../utils/auth';
 import './pages.css';
 import './cart.css';
 
@@ -27,31 +27,28 @@ const CartPage = () => {
 
     api.getStudentOrders(customerId)
       .then(orders => {
-        const localOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
-        const merged = [...(orders || [])];
+        const localOrders = getLocalOrders();
+        const orderMap = new Map();
         if (Array.isArray(localOrders)) {
-          localOrders.forEach(localOrder => {
-            const orderObj = localOrder.order || localOrder;
-            if (orderObj && orderObj.id && !merged.find(o => o.id === orderObj.id)) {
-              const oCustId = (orderObj.customerId || orderObj.customer_id || orderObj.customerid || '').toString().trim().toLowerCase();
-              const oCustName = (orderObj.customerName || orderObj.customer_name || '').toString().trim().toLowerCase();
-              if (customerId && (oCustId === customerId || oCustName === customerId)) {
-                merged.push(orderObj);
-              }
+          localOrders.forEach(o => {
+            if (o && (o.id || o.orderId)) orderMap.set(String(o.id || o.orderId), o);
+          });
+        }
+        if (Array.isArray(orders)) {
+          orders.forEach(o => {
+            if (o && (o.id || o.orderId)) {
+              const id = String(o.id || o.orderId);
+              orderMap.set(id, { ...orderMap.get(id), ...o });
             }
           });
         }
+        const merged = Array.from(orderMap.values()).filter(o => isUserOrder(o, userData));
         merged.sort((a, b) => new Date(b.created_at || b.timestamp || 0) - new Date(a.created_at || a.timestamp || 0));
         setRecentOrders(merged);
       })
       .catch(err => {
         console.error('Failed to load orders for cart page:', err);
-        const localOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
-        const userOrders = Array.isArray(localOrders) ? localOrders.filter(o => {
-          const oCustId = (o.customerId || o.customer_id || o.customerid || '').toString().trim().toLowerCase();
-          const oCustName = (o.customerName || o.customer_name || '').toString().trim().toLowerCase();
-          return customerId && (oCustId === customerId || oCustName === customerId);
-        }) : [];
+        const userOrders = getLocalOrders(userData);
         setRecentOrders(userOrders);
       });
   }, []);
@@ -89,9 +86,8 @@ const CartPage = () => {
             showToast('🎉 Order placed successfully! Live tracking ticket generated.', 'success');
             
             // Clear cart, update local storage, navigate to order tracking page
-            const existingOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
             const completedOrder = { ...actualOrder, status: 'placed', paymentStatus: 'success' };
-            localStorage.setItem('sgu_orders', JSON.stringify([completedOrder, ...existingOrders.filter(o => o.id !== orderId)]));
+            saveLocalOrder(completedOrder);
             
             setTimeout(() => {
               setIsCheckingOut(false);
@@ -121,9 +117,11 @@ const CartPage = () => {
     const idempotencyKey = `IDEM-${orderId}-${Math.floor(Math.random() * 1000000)}`;
 
     const userData = getStoredUser() || {};
+    const customerEmail = userData.email || (userData.id && String(userData.id).includes('@') ? String(userData.id).toLowerCase() : null);
     const orderPayload = {
       customerName: userData.name || 'Guest User',
       customerId: userData.id || '9876543210',
+      customerEmail,
       type: diningMode === 'dine_in' ? 'Dine-In' : 'Takeaway',
       payment: 'Online UPI',
       total: totalPrice,

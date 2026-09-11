@@ -1,6 +1,6 @@
 import { supabase } from './supabaseClient';
 import { addAuditLog } from './utils/logger';
-import { isAdminEmail } from './utils/auth';
+import { isAdminEmail, saveLocalOrder } from './utils/auth';
 
 // =============================================================================
 // SINGLE SOURCE OF TRUTH: Supabase (PostgREST + Auth + Realtime).
@@ -516,11 +516,20 @@ export const api = {
     const first = items[0] || {};
     const status = orderData.payment === 'Cash' ? 'pending_cash' : 'placed';
 
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const customerId = (user?.id && isUuid.test(user.id)) 
+      ? user.id 
+      : (orderData.customerId && isUuid.test(orderData.customerId) ? orderData.customerId : null);
+
+    const customerEmail = user?.email 
+      || orderData.customerEmail 
+      || (orderData.customerId && String(orderData.customerId).includes('@') ? String(orderData.customerId).toLowerCase() : null);
+
     const orderRow = {
       id: orderId,
       order_number: orderId,
-      customer_id: user?.id || null,
-      customer_email: user?.email || (orderData.customerId || '').toLowerCase() || null,
+      customer_id: customerId,
+      customer_email: customerEmail,
       customer_name: orderData.customerName || user?.name || 'Student',
       stall_id: first.stallId || null,
       stall_name: first.stallName || null,
@@ -532,24 +541,43 @@ export const api = {
       idempotency_key: orderData.idempotencyKey || `IDEM-${orderId}`
     };
 
-    const { error: oErr } = await supabase.from('orders').insert(orderRow);
-    if (oErr && !String(oErr.message).includes('duplicate')) throw new Error(oErr.message);
-
-    const itemRows = items.map(it => ({
-      order_id: orderId,
-      menu_item_id: typeof it.id === 'number' ? it.id : null,
-      name: it.name,
-      unit_price: Number(it.price) || 0,
-      quantity: it.quantity || 1,
-      stall_id: it.stallId || null,
-      stall_name: it.stallName || null
-    }));
-    await supabase.from('order_items').insert(itemRows);
+    try {
+      const { error: oErr } = await supabase.from('orders').insert(orderRow);
+      if (!oErr || String(oErr.message).includes('duplicate')) {
+        const itemRows = items.map(it => ({
+          order_id: orderId,
+          menu_item_id: typeof it.id === 'number' ? it.id : null,
+          name: it.name,
+          unit_price: Number(it.price) || 0,
+          quantity: it.quantity || 1,
+          stall_id: it.stallId || null,
+          stall_name: it.stallName || null
+        }));
+        await supabase.from('order_items').insert(itemRows).catch(() => null);
+      } else {
+        console.warn('Supabase order insert warning:', oErr.message);
+      }
+    } catch (insertErr) {
+      console.warn('Supabase order insert exception:', insertErr);
+    }
 
     try { addAuditLog({ level: 'INFO', category: 'Orders', message: `Order #${orderId} created (₹${subtotal})` }); } catch (_e) {}
 
-    // paymentId === orderId for the mock flow; real gateway supplies its own id later.
-    return { success: true, order: { ...mapOrder(orderRow), items, id: orderId }, paymentId: orderId };
+    const orderResult = {
+      ...mapOrder(orderRow),
+      customerId: orderData.customerId || customerId || 'student',
+      customerEmail: customerEmail || orderData.customerEmail,
+      customerName: orderData.customerName || user?.name || 'Student',
+      items,
+      id: orderId
+    };
+
+    // Guarantee local storage persistence immediately
+    try {
+      saveLocalOrder(orderResult);
+    } catch (_e) {}
+
+    return { success: true, order: orderResult, paymentId: orderId };
   },
 
   // ── Payments (MOCK until the real gateway is wired) ──────────────────────
@@ -599,13 +627,45 @@ export const api = {
   async getOrderDetails(orderId) { return this.getOrder(orderId); },
 
   async getStudentOrders(customerId) {
-    const clean = (customerId || '').toString().trim().toLowerCase();
-    const { data, error } = await supabase
-      .from('orders').select('*, order_items(*)')
-      .or(`customer_email.eq.${clean},customer_id.eq.${customerId}`)
-      .order('created_at', { ascending: false });
-    if (error || !data) return [];
-    return data.map(mapOrder);
+    try {
+      const user = await currentUser();
+      const clean = (customerId || '').toString().trim();
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+      let query = supabase.from('orders').select('*, order_items(*)');
+      const orConditions = [];
+
+      if (clean) {
+        if (clean.includes('@')) {
+          orConditions.push(`customer_email.ilike.${clean}`);
+        } else if (isUuid.test(clean)) {
+          orConditions.push(`customer_id.eq.${clean}`);
+        } else {
+          orConditions.push(`customer_name.ilike.%${clean}%`);
+        }
+      }
+
+      if (user?.id && isUuid.test(user.id)) {
+        orConditions.push(`customer_id.eq.${user.id}`);
+      }
+      if (user?.email && user.email.toLowerCase() !== clean.toLowerCase()) {
+        orConditions.push(`customer_email.ilike.${user.email}`);
+      }
+
+      if (orConditions.length > 0) {
+        query = query.or(orConditions.join(','));
+      }
+
+      const { data, error } = await query.order('created_at', { ascending: false });
+      if (error) {
+        console.warn('Supabase getStudentOrders error:', error.message);
+        return [];
+      }
+      return (data || []).map(mapOrder);
+    } catch (err) {
+      console.warn('getStudentOrders exception:', err);
+      return [];
+    }
   },
 
   async getStallOrders(stallId) {

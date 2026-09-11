@@ -727,7 +727,7 @@ const DigitalReceiptTracker = () => {
           transition={{ type: "spring", stiffness: 100, damping: 15 }}
         >
           {order?.status === 'cancelled' ? (
-            <GlassCard className="receipt-card-v21 shadow-md">
+            <GlassCard className="receipt-card-v21 shadow-md" style={{ maxWidth: 480, margin: '0 auto' }}>
               <div style={{ padding: '40px 20px', textAlign: 'center' }}>
                 <div style={{ display: 'inline-flex', background: '#FEE2E2', padding: '24px', borderRadius: '50%', marginBottom: '24px', boxShadow: '0 10px 25px rgba(239, 68, 68, 0.2)' }}>
                   <XCircle size={64} color="#EF4444" strokeWidth={2.5} />
@@ -756,7 +756,7 @@ const DigitalReceiptTracker = () => {
               </div>
             </GlassCard>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20, alignItems: 'start' }}>
+            <div className="tracker-cards-grid-v21">
 
               {/* ── LEFT: QR + payment + items ── */}
               <GlassCard className="receipt-card-v21 shadow-md">
@@ -799,7 +799,7 @@ const DigitalReceiptTracker = () => {
                 )}
 
                 {order && (
-                  <div style={{ marginTop: 16, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, textAlign: 'left', background: '#FFF5F5', border: '1px solid rgba(228,0,43,0.08)', borderRadius: 14, padding: 14 }}>
+                  <div style={{ marginTop: 16, width: '100%', boxSizing: 'border-box', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, textAlign: 'left', background: '#FFF5F5', border: '1px solid rgba(228,0,43,0.08)', borderRadius: 14, padding: 14 }}>
                     <div>
                       <div style={{ color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase', fontSize: '0.66rem' }}>Payment ID</div>
                       <div style={{ fontWeight: 700, wordBreak: 'break-all', fontSize: '0.8rem' }}>{order.id}</div>
@@ -822,7 +822,7 @@ const DigitalReceiptTracker = () => {
 
               {/* ── RIGHT: order status + actions ── */}
               <GlassCard className="receipt-card-v21 shadow-md">
-                <h3 style={{ fontFamily: 'var(--font-heading)', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 18px', color: 'var(--text-dark)' }}>Order Status</h3>
+                <h3 style={{ fontFamily: 'var(--font-heading)', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 18px', color: 'var(--text-dark)', textAlign: 'center', width: '100%' }}>Order Status</h3>
 
                 <div className="timeline-v21">
                   {STATUS_STEPS.map((step, index) => {

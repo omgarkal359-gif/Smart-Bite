@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import { useCart } from '../../context/CartContext';
 import { api } from '../../api';
-import { getStoredUser } from '../../utils/auth';
+import { getStoredUser, saveLocalOrder } from '../../utils/auth';
 import './checkout.css';
 
 export const CheckoutDrawer = ({ isOpen, onClose, cart, inventory, onComplete }) => {
@@ -106,9 +106,8 @@ export const CheckoutDrawer = ({ isOpen, onClose, cart, inventory, onComplete })
             triggerConfetti();
             showToast('🎉 Order placed successfully! Live tracking ticket generated.', 'success');
 
-            const existingOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
             const completedOrder = { ...actualOrder, status: 'placed', paymentStatus: 'success' };
-            localStorage.setItem('sgu_orders', JSON.stringify([completedOrder, ...existingOrders.filter(o => o.id !== orderId)]));
+            saveLocalOrder(completedOrder);
 
             setTimeout(() => {
               clearCart();
@@ -161,9 +160,11 @@ export const CheckoutDrawer = ({ isOpen, onClose, cart, inventory, onComplete })
       const idempotencyKey = `IDEM-${orderId}-${Math.floor(Math.random() * 1000000)}`;
 
       const userData = getStoredUser() || {};
+      const customerEmail = userData.email || (userData.id && String(userData.id).includes('@') ? String(userData.id).toLowerCase() : null);
       const orderPayload = {
         customerName: userData.name || 'Guest User',
         customerId: userData.id || '9876543210',
+        customerEmail,
         type: diningMode === 'dine_in' ? 'Dine-In' : 'Takeaway',
         payment: 'Online UPI',
         total: totalCartValue,

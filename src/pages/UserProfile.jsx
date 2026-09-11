@@ -5,7 +5,7 @@ import { Button } from '../components/ui/Button';
 import { LogOut, User, ShoppingBag, ArrowRight, ExternalLink, ShieldCheck } from 'lucide-react';
 import { api, formatRelativeTime } from '../api';
 import { supabase } from '../supabaseClient';
-import { getStoredUser, setStoredUser, clearStoredUser } from '../utils/auth';
+import { getStoredUser, setStoredUser, clearStoredUser, isUserOrder, getLocalOrders } from '../utils/auth';
 import './pages.css';
 import './profile.css';
 
@@ -46,28 +46,35 @@ const UserProfile = () => {
         const customerId = (parsed?.id || parsed?.username || 'student').toString().trim().toLowerCase();
 
         try {
-          const orders = await api.getStudentOrders(customerId);
+          const liveOrders = await api.getStudentOrders(customerId);
+          const localOrders = getLocalOrders();
+          const orderMap = new Map();
+
+          if (Array.isArray(localOrders)) {
+            localOrders.forEach(o => {
+              if (o && (o.id || o.orderId)) orderMap.set(String(o.id || o.orderId), o);
+            });
+          }
+
+          if (Array.isArray(liveOrders)) {
+            liveOrders.forEach(o => {
+              if (o && (o.id || o.orderId)) {
+                const id = String(o.id || o.orderId);
+                orderMap.set(id, { ...orderMap.get(id), ...o });
+              }
+            });
+          }
+
+          const merged = Array.from(orderMap.values()).filter(o => isUserOrder(o, parsed));
+          merged.sort((a, b) => new Date(b.created_at || b.timestamp || 0) - new Date(a.created_at || a.timestamp || 0));
+
           if (isMounted) {
-            const validOrders = Array.isArray(orders) ? orders : [];
-            setRecentOrders(validOrders);
-            try {
-              localStorage.setItem('sgu_orders', JSON.stringify(validOrders));
-            } catch (_err) {}
+            setRecentOrders(merged.slice(0, 3));
           }
         } catch (_err) {
           if (isMounted) {
-            try {
-              const savedOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
-              const cleanId = customerId.toLowerCase();
-              const userOrders = Array.isArray(savedOrders) ? savedOrders.filter(o => {
-                const oCustId = (o.customerId || o.customer_id || o.customerid || '').toString().trim().toLowerCase();
-                const oCustName = (o.customerName || o.customer_name || '').toString().trim().toLowerCase();
-                return cleanId && (oCustId === cleanId || oCustName === cleanId);
-              }) : [];
-              setRecentOrders(userOrders);
-            } catch (_e) {
-              setRecentOrders([]);
-            }
+            const userOrders = getLocalOrders(parsed);
+            setRecentOrders(userOrders.slice(0, 3));
           }
         }
       } catch (globalErr) {
