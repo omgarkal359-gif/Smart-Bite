@@ -531,10 +531,9 @@ const VendorDashboard = () => {
                   <span>CLOSED</span>
                 </div>
                 <motion.div 
-                  layout
-                  transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                  animate={{ x: shopStatus === 'CLOSED' ? 56 : 0 }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 25 }}
                   className="switch-knob"
-                  style={{ x: shopStatus === 'CLOSED' ? 56 : 0 }}
                 >
                   {shopStatus}
                 </motion.div>
