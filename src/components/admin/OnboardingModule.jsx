@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Mail, Check, X, RefreshCw, Copy, Store, Power, UserPlus, Link2, Pencil, Save, KeyRound, Eye, EyeOff, ShieldCheck } from 'lucide-react';
+import { Mail, Check, X, RefreshCw, Copy, Store, Power, UserPlus, Link2, Pencil, Save, KeyRound, Eye, EyeOff, ShieldCheck, Trash2 } from 'lucide-react';
 import { api, DEFAULT_FIELD_CATALOG } from '../../api';
 import { supabase } from '../../supabaseClient';
 
@@ -133,6 +133,30 @@ export const OnboardingModule = () => {
     const nextOnline = !(v.online === 1);
     setVendors(prev => prev.map(x => x.id === v.id ? { ...x, online: nextOnline ? 1 : 0 } : x));
     try { await api.updateStallStatus(v.id, { online: nextOnline ? 1 : 0 }); } catch (err) { setError(err.message); load(); }
+  };
+
+  const [deletingId, setDeletingId] = useState(null);
+
+  const handleDeleteVendor = async (v) => {
+    const warningMsg = `⚠️ WARNING: Do you really want to delete the vendor "${v.name}"?\n\nThis will permanently delete the vendor, stall, and login accounts from the database and dashboard.`;
+    if (!window.confirm(warningMsg)) {
+      return;
+    }
+
+    setDeletingId(v.id);
+    setError('');
+    setNotice(null);
+
+    try {
+      await api.deleteVendor(v.id);
+      setVendors(prev => prev.filter(x => x.id !== v.id));
+      if (editingId === v.id) setEditingId(null);
+      setNotice({ type: 'deleted', name: v.name });
+    } catch (err) {
+      setError(err.message || 'Failed to delete vendor from database.');
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   // ── edit an existing vendor (FSSAI + bank + details) ──
@@ -325,6 +349,11 @@ export const OnboardingModule = () => {
           <div style={{ fontSize: '0.82rem', marginTop: 8, wordBreak: 'break-all' }}><code>{notice.link}</code></div>
         </div>
       )}
+      {notice?.type === 'deleted' && (
+        <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', color: '#991B1B', padding: '14px 18px', borderRadius: 14, marginBottom: 20, fontSize: '0.9rem', fontWeight: 700 }}>
+          ✓ Vendor "{notice.name}" has been permanently deleted from the database and dashboard.
+        </div>
+      )}
 
       {/* ── TAB: existing vendors ── */}
       {tab === 'existing' && (
@@ -352,6 +381,9 @@ export const OnboardingModule = () => {
                     </button>
                     <button onClick={() => toggleVendor(v)} title={v.online === 1 ? 'Take offline' : 'Bring online'} style={v.online === 1 ? iconBtnDanger : iconBtnSuccess}>
                       <Power size={16} />
+                    </button>
+                    <button onClick={() => handleDeleteVendor(v)} disabled={deletingId === v.id} title={`Delete ${v.name} permanently`} style={iconBtnDanger}>
+                      <Trash2 size={16} />
                     </button>
                   </div>
 

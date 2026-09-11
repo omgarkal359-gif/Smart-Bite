@@ -363,6 +363,65 @@ export const api = {
     return { success: true, stall: data?.[0] ? mapStall(data[0]) : null };
   },
 
+  async deleteVendor(stallId) {
+    if (!stallId) throw new Error('Stall ID is required.');
+
+    // 1. Find vendor email if present
+    let vendorEmail = null;
+    try {
+      const { data: vRec } = await supabase.from('vendors').select('contact_email, id').eq('stall_id', stallId).maybeSingle();
+      if (vRec?.contact_email) vendorEmail = vRec.contact_email;
+    } catch (_e) {}
+
+    // 2. Delete from stalls table
+    try {
+      await supabase.from('stalls').delete().eq('id', stallId);
+    } catch (_e) {}
+
+    // 3. Delete from vendors table
+    try {
+      await supabase.from('vendors').delete().eq('stall_id', stallId);
+      if (vendorEmail) {
+        await supabase.from('vendors').delete().ilike('contact_email', vendorEmail);
+      }
+    } catch (_e) {}
+
+    // 4. Delete from accounts table
+    try {
+      await supabase.from('accounts').delete().eq('shop_id', stallId);
+      if (vendorEmail) {
+        await supabase.from('accounts').delete().ilike('email', vendorEmail);
+      }
+    } catch (_e) {}
+
+    // 5. Delete from vendor_invites table
+    try {
+      await supabase.from('vendor_invites').delete().eq('stall_id', stallId);
+      if (vendorEmail) {
+        await supabase.from('vendor_invites').delete().ilike('contact_email', vendorEmail);
+      }
+    } catch (_e) {}
+
+    // 6. Delete from local credentials store
+    try {
+      const stored = JSON.parse(localStorage.getItem('sgu_vendor_credentials') || '{}');
+      if (stored[String(stallId).toLowerCase()]) delete stored[String(stallId).toLowerCase()];
+      if (vendorEmail && stored[vendorEmail.toLowerCase()]) delete stored[vendorEmail.toLowerCase()];
+      localStorage.setItem('sgu_vendor_credentials', JSON.stringify(stored));
+    } catch (_e) {}
+
+    // 7. Audit log entry
+    try {
+      addAuditLog({
+        level: 'WARNING',
+        category: 'Vendors',
+        message: `Vendor stall "${stallId}" deleted permanently from database by admin.`
+      });
+    } catch (_e) {}
+
+    return { success: true, message: `Vendor "${stallId}" deleted successfully.` };
+  },
+
   // ── Menu ───────────────────────────────────────────────────────────────
   async getVendorByStall(stallId) {
     if (!stallId) return null;
