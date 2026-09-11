@@ -87,6 +87,9 @@ const DigitalReceiptTracker = () => {
           if (foundOrder.status) {
             applyNewStatus(foundOrder.status);
           }
+
+          // Ensure receipt is persisted to Supabase 'receipts' table
+          api.saveReceipt(foundOrder).catch(() => {});
         }
       } catch (err) {
         console.error('Failed to load order tracker:', err);

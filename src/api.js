@@ -669,7 +669,78 @@ export const api = {
       }
     } catch (_e) {}
 
+    // Automatically store receipt in Supabase 'receipts' table without delay
+    this.saveReceipt(orderResult).catch(() => null);
+
     return { success: true, order: orderResult, paymentId: orderId };
+  },
+
+  // ── Receipts Table Integration ──────────────────────────────────────────
+  async saveReceipt(orderData) {
+    if (!orderData || !orderData.id) return null;
+    const orderId = orderData.id;
+    const items = orderData.items || [];
+    const first = (Array.isArray(items) && items[0]) || {};
+    const itemsSummary = Array.isArray(items) && items.length > 0
+      ? items.map(i => `${i.quantity || 1}x ${i.name}`).join(', ')
+      : (typeof items === 'string' ? items : '');
+
+    const receiptRow = {
+      receipt_number: `RCP-${orderId}`,
+      order_id: orderId,
+      customer_id: orderData.customerId || orderData.customer_id || null,
+      customer_name: orderData.customerName || orderData.customer_name || 'Student',
+      customer_email: orderData.customerEmail || orderData.customer_email || null,
+      stall_id: orderData.stallId || orderData.stall_id || first.stallId || null,
+      stall_name: orderData.stallName || orderData.stall_name || first.stallName || 'SGU Food Court',
+      subtotal: Number(orderData.subtotal || orderData.total || 0),
+      tax_amount: Number(orderData.tax || 0),
+      total: Number(orderData.total || 0),
+      payment_method: orderData.payment || orderData.payment_method || 'Online UPI',
+      payment_id: String(orderData.paymentId || orderData.payment_id || orderId),
+      items: Array.isArray(items) ? items : [],
+      items_summary: itemsSummary,
+      receipt_url: `/receipt/${orderId}`,
+      status: orderData.status || 'placed',
+      created_at: new Date().toISOString()
+    };
+
+    try {
+      const { data, error } = await supabase
+        .from('receipts')
+        .upsert(receiptRow, { onConflict: 'order_id' })
+        .select()
+        .maybeSingle();
+
+      if (error) {
+        // Fallback: try insert
+        const { data: d2 } = await supabase.from('receipts').insert(receiptRow).select().maybeSingle();
+        return d2 || receiptRow;
+      }
+      return data || receiptRow;
+    } catch (_e) {
+      return receiptRow;
+    }
+  },
+
+  async getReceipts(customerId) {
+    try {
+      let query = supabase.from('receipts').select('*').order('created_at', { ascending: false });
+      if (customerId) {
+        query = query.eq('customer_id', customerId);
+      }
+      const { data, error } = await query;
+      if (!error && data) return data;
+    } catch (_e) {}
+    return [];
+  },
+
+  async getReceipt(orderId) {
+    try {
+      const { data } = await supabase.from('receipts').select('*').eq('order_id', orderId).maybeSingle();
+      if (data) return data;
+    } catch (_e) {}
+    return null;
   },
 
 
@@ -819,6 +890,11 @@ export const api = {
         created_at: new Date().toISOString()
       });
     } catch (_hErr) {}
+
+    // Update status in receipts table as well
+    try {
+      await supabase.from('receipts').update({ status }).eq('order_id', orderId);
+    } catch (_rErr) {}
 
     try { 
       addAuditLog({ 
