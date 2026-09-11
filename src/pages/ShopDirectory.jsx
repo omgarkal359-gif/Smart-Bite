@@ -70,7 +70,7 @@ const ShopDirectory = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [query, setQuery] = useState('');
-  const [stalls, setStalls] = useState(MOCK_SHOPS);
+  const [stalls, setStalls] = useState([]);
   const [slides] = useState(MOST_ORDERED_SLIDES);
   const carouselRef = useRef(null);
 
@@ -109,8 +109,8 @@ const ShopDirectory = () => {
           setStalls(data);
         }
       } catch (err) {
-        console.error('Failed to load stalls:', err);
-        setStalls(MOCK_SHOPS);
+        console.error('Failed to load stalls from Supabase:', err);
+        setStalls([]);
       } finally {
         setIsLoading(false);
       }

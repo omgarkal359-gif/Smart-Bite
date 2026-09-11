@@ -10,7 +10,7 @@ import { SHOPS } from '../../data/foodCourtDB';
 export const OrdersVendorsModule = () => {
   const [activeTab, setActiveTab] = useState('orders'); // 'orders' | 'vendors'
   const [orders, setOrders] = useState([]);
-  const [stalls, setStalls] = useState(SHOPS);
+  const [stalls, setStalls] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStall, setSelectedStall] = useState('ALL');
   const [selectedStatus, setSelectedStatus] = useState('ALL');
