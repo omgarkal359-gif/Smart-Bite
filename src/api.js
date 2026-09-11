@@ -626,7 +626,25 @@ export const api = {
     const { data, error } = await supabase
       .from('orders').select('*, order_items(*)').eq('id', orderId).maybeSingle();
     if (error || !data) return null;
-    return mapOrder(data);
+    const mapped = mapOrder(data);
+    // If the join returned no items, try fetching order_items directly
+    if (!mapped.items || mapped.items.length === 0) {
+      try {
+        const { data: itemRows } = await supabase
+          .from('order_items').select('*').eq('order_id', orderId);
+        if (Array.isArray(itemRows) && itemRows.length > 0) {
+          mapped.items = itemRows.map(it => ({
+            id: it.menu_item_id ?? it.id,
+            name: it.name,
+            price: Number(it.unit_price) || 0,
+            quantity: it.quantity,
+            stallId: it.stall_id,
+            stallName: it.stall_name
+          }));
+        }
+      } catch (_e) {}
+    }
+    return mapped;
   },
 
   async getOrderDetails(orderId) { return this.getOrder(orderId); },

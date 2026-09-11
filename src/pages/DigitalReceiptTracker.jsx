@@ -217,9 +217,8 @@ const DigitalReceiptTracker = () => {
 
     // Fallback: If no items breakdown exists but order has a total, provide a clear order line
     if (order.total) {
-      const stallTitle = vendor?.name || order.stallName || order.stall_name || 'Food Court';
       return [{
-        name: `${stallTitle} Item`,
+        name: 'Ordered Items',
         quantity: 1,
         price: Number(order.total)
       }];
