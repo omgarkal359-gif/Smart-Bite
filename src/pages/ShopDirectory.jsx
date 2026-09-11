@@ -226,14 +226,7 @@ const ShopDirectory = () => {
   return (
     <div className="directory-container page-transition">
       <main className="shop-main-content">
-        {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-          <div>
-            <span style={{ fontSize: '0.8rem', fontWeight: '800', color: '#FF3B00', textTransform: 'uppercase', letterSpacing: '0.06em' }}>CAMPUS FOOD COURT</span>
-            <h2 style={{ fontSize: '1.5rem', fontWeight: '900', color: '#0F172A', margin: 0, fontFamily: "'Outfit', sans-serif" }}>SmartBite Stalls</h2>
-          </div>
-        </div>
-        
+
         {/* Search Bar */}
         {isLoading ? (
           <div className="skeleton" style={{ width: '100%', height: '54px', borderRadius: '16px', marginBottom: '20px' }} />
