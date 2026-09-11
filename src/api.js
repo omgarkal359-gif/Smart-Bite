@@ -685,6 +685,9 @@ export const api = {
       ? items.map(i => `${i.quantity || 1}x ${i.name}`).join(', ')
       : (typeof items === 'string' ? items : '');
 
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const rawPayId = String(orderData.paymentId || orderData.payment_id || orderId);
+
     const receiptRow = {
       receipt_number: `RCP-${orderId}`,
       order_id: orderId,
@@ -697,7 +700,8 @@ export const api = {
       tax_amount: Number(orderData.tax || 0),
       total: Number(orderData.total || 0),
       payment_method: orderData.payment || orderData.payment_method || 'Online UPI',
-      payment_id: String(orderData.paymentId || orderData.payment_id || orderId),
+      payment_id: isUuid.test(rawPayId) ? rawPayId : null,
+      payment_reference: rawPayId,
       items: Array.isArray(items) ? items : [],
       items_summary: itemsSummary,
       receipt_url: `/receipt/${orderId}`,
