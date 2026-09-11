@@ -59,7 +59,7 @@ const VendorDashboard = () => {
   const [isPowerSaver, setIsPowerSaver] = useState(false);
   const [isBusyMode, setIsBusyMode] = useState(false);
   const [heartbeat, setHeartbeat] = useState(true);
-  const [shopStatus, setShopStatus] = useState('OPEN'); // OPEN | CLOSED
+  const [shopStatus, setShopStatus] = useState('CLOSED'); // OPEN | CLOSED
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [activeSidebarTab, setActiveSidebarTab] = useState('menu'); // 'menu' | 'history'
   const { shopId: urlShopId } = useParams();
@@ -271,8 +271,8 @@ const VendorDashboard = () => {
         .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'stalls', filter: `id=eq.${currentStallId}` }, (payload) => {
           const stall = payload.new;
           if (stall) {
-            setShopStatus(stall.online === 1 || stall.online === true ? 'OPEN' : 'CLOSED');
-            setIsBusyMode(stall.busyMode === 1 || stall.busyMode === true);
+            setShopStatus(stall.is_online === 1 || stall.is_online === true ? 'OPEN' : 'CLOSED');
+            setIsBusyMode(stall.busy_mode === 1 || stall.busy_mode === true);
           }
         })
         .subscribe();

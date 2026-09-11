@@ -122,9 +122,20 @@ const ShopDirectory = () => {
       .channel('directory-stalls')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'stalls' }, (payload) => {
         if (payload.eventType === 'UPDATE' && payload.new) {
-          setStalls(prev => prev.map(s => String(s.id) === String(payload.new.id) ? { ...s, ...payload.new } : s));
+          setStalls(prev => prev.map(s => String(s.id) === String(payload.new.id) ? { 
+            ...s, 
+            ...payload.new, 
+            online: payload.new.is_online !== false && payload.new.is_online !== null && payload.new.is_online !== undefined ? 1 : 0,
+            busyMode: payload.new.busy_mode,
+            waitTime: payload.new.wait_time_minutes
+          } : s));
         } else if (payload.eventType === 'INSERT' && payload.new) {
-          setStalls(prev => [...prev, payload.new]);
+          setStalls(prev => [...prev, { 
+            ...payload.new, 
+            online: payload.new.is_online !== false && payload.new.is_online !== null && payload.new.is_online !== undefined ? 1 : 0,
+            busyMode: payload.new.busy_mode,
+            waitTime: payload.new.wait_time_minutes
+          }]);
         }
       })
       .subscribe();
