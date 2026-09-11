@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Leaf, Flame, Pizza, Coffee, Sandwich, WifiOff, Utensils } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';

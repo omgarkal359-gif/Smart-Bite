@@ -3,7 +3,8 @@ import ReactDOM from 'react-dom';
 import {
   IconLoader2, IconBuildingStore, IconLock, IconMail,
   IconBolt, IconShieldCheck, IconToolsKitchen2, IconMailCheck, IconArrowRight,
-  IconSchool, IconClock, IconBell
+  IconSchool, IconClock, IconBell, IconX, IconCheck, IconAlertTriangle,
+  IconUser, IconEye, IconEyeOff, IconCircleCheck, IconBrandGoogle
 } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
@@ -13,6 +14,9 @@ import { addAuditLog } from '../utils/logger';
 import './LoginPage.css';
 
 const LoginPage = () => {
+  /* modal */
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -34,6 +38,15 @@ const LoginPage = () => {
 
   const navigate = useNavigate();
 
+  /* ── Keyboard shortcut to close Privacy Modal on Escape ── */
+  useEffect(() => {
+    if (!showPrivacyModal) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') setShowPrivacyModal(false);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showPrivacyModal]);
   useEffect(() => {
     const handlePopState = (e) => {
       if (e.state?.step === 'login' || new URLSearchParams(window.location.search).get('view') === 'login') {
@@ -434,6 +447,17 @@ const LoginPage = () => {
                 )}
               </div>
 
+              {/* Privacy Policy Link */}
+              <div className="sb-privacy-footer" style={{ marginTop: 14, textCenter: 'center' }}>
+                <button
+                  type="button"
+                  className="sb-privacy-link"
+                  onClick={() => setShowPrivacyModal(true)}
+                >
+                  Privacy and Policy
+                </button>
+              </div>
+
               {/* Perks / Trust footer row */}
               <div className="sb-perks-row">
                 <div className="sb-perk-item">
@@ -453,6 +477,149 @@ const LoginPage = () => {
             </div>
           </aside>
         </div>
+
+      {/* ══ PRIVACY POLICY & USER TERMS MODAL ══ */}
+      {showPrivacyModal && (
+        <div
+          className="sb-privacy-overlay"
+          onClick={() => setShowPrivacyModal(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="privacy-modal-title"
+        >
+          <div
+            className="sb-privacy-card"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="sb-privacy-header">
+              <div className="sb-privacy-title-wrap">
+                <div className="sb-privacy-icon-badge">
+                  <IconShieldCheck size={24} strokeWidth={2} />
+                </div>
+                <div>
+                  <h2 id="privacy-modal-title" className="sb-privacy-title">
+                    Privacy Policy & User Terms
+                  </h2>
+                  <p className="sb-privacy-subtitle">SGU Smart-Bite Enterprise Campus Ecosystem</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="sb-privacy-close-btn"
+                onClick={() => setShowPrivacyModal(false)}
+                aria-label="Close Privacy Policy"
+              >
+                <IconX size={20} strokeWidth={2} />
+              </button>
+            </div>
+
+            <div className="sb-privacy-body">
+              {/* Section 1 */}
+              <section className="sb-privacy-section">
+                <h3 className="sb-privacy-sec-title">
+                  <span className="sb-sec-num">Section 1</span> Privacy Policy
+                </h3>
+                <div className="sb-privacy-grid">
+                  <div className="sb-privacy-item">
+                    <span className="sb-privacy-item-label">Data Collected</span>
+                    <p className="sb-privacy-item-text">
+                      The platform collects your institutional email address (<code>@sguk.ac.in</code>), full name, college roll number, order history, and payment status flags.
+                    </p>
+                  </div>
+                  <div className="sb-privacy-item">
+                    <span className="sb-privacy-item-label">Data Usage</span>
+                    <p className="sb-privacy-item-text">
+                      Your personal data is used solely for order processing, queue management, transactional notifications, and account verification within the campus food court ecosystem.
+                    </p>
+                  </div>
+                  <div className="sb-privacy-item">
+                    <span className="sb-privacy-item-label">Data Sharing</span>
+                    <p className="sb-privacy-item-text">
+                      Personal information is never sold or shared with external third parties. It is strictly accessible only to authorized cafeteria vendors (for order fulfillment) and system administrators.
+                    </p>
+                  </div>
+                  <div className="sb-privacy-item">
+                    <span className="sb-privacy-item-label">Payment Security</span>
+                    <p className="sb-privacy-item-text">
+                      The platform does not store financial credentials (such as UPI IDs, debit/credit card numbers, or passwords). All transactions are processed securely through bank-grade payment gateways.
+                    </p>
+                  </div>
+                </div>
+              </section>
+
+              {/* Section 2 */}
+              <section className="sb-privacy-section">
+                <h3 className="sb-privacy-sec-title">
+                  <span className="sb-sec-num">Section 2</span> Student Code of Conduct (Do's and Don'ts)
+                </h3>
+
+                <div className="sb-conduct-block sb-conduct-dos">
+                  <h4 className="sb-conduct-heading sb-conduct-heading--do">
+                    <IconCheck size={18} strokeWidth={2.5} /> DO'S (Student Responsibilities)
+                  </h4>
+                  <ul className="sb-conduct-list">
+                    <li>
+                      <strong>Use Official Email:</strong> Always sign in using your official institutional email account (<code>@sguk.ac.in</code>).
+                    </li>
+                    <li>
+                      <strong>Track Order Status:</strong> Monitor live updates on your dashboard and pick up your food promptly once the status updates to "Ready for Pickup" to keep the queue moving.
+                    </li>
+                    <li>
+                      <strong>Verify Token Numbers:</strong> Present your digital order token to the vendor counter when collecting your meal to ensure correct order distribution.
+                    </li>
+                    <li>
+                      <strong>Report Technical Issues:</strong> Immediately inform the administration or submit a bug report if you notice payment discrepancies or system glitches.
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="sb-conduct-block sb-conduct-donts">
+                  <h4 className="sb-conduct-heading sb-conduct-heading--dont">
+                    <IconX size={18} strokeWidth={2.5} /> DON'TS (Strictly Prohibited Actions)
+                  </h4>
+                  <ul className="sb-conduct-list">
+                    <li>
+                      <strong>No Account Sharing:</strong> Do not share your login credentials or account access with other students.
+                    </li>
+                    <li>
+                      <strong>No Fake or Unclaimed Orders:</strong> Creating dummy orders or failing to collect placed orders is prohibited, as it causes food waste and financial loss to vendors.
+                    </li>
+                    <li>
+                      <strong>No System Manipulation:</strong> Do not attempt to reverse-engineer, exploit API endpoints, or use automated scripts to place bulk orders or bypass queue systems.
+                    </li>
+                    <li>
+                      <strong>No Unauthorized Domain Access:</strong> Attempting to sign in using non-institutional personal emails (e.g., standard <code>@gmail.com</code> accounts) will result in automated account suspension.
+                    </li>
+                  </ul>
+                </div>
+              </section>
+
+              {/* Section 3 */}
+              <section className="sb-privacy-section">
+                <h3 className="sb-privacy-sec-title">
+                  <span className="sb-sec-num">Section 3</span> Disciplinary Action
+                </h3>
+                <div className="sb-disciplinary-box">
+                  <IconAlertTriangle size={20} className="sb-disc-icon" />
+                  <p className="sb-disciplinary-text">
+                    Failure to comply with these rules—especially fraudulent transactions, unauthorized system access, or deliberate abuse of cafeteria vendors—may result in the temporary or permanent suspension of your SmartBite account, along with escalation to the institutional disciplinary committee.
+                  </p>
+                </div>
+              </section>
+            </div>
+
+            <div className="sb-privacy-card-footer">
+              <button
+                type="button"
+                className="sb-btn-primary sb-btn-privacy-ack"
+                onClick={() => setShowPrivacyModal(false)}
+              >
+                Close & Return to Login
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       </main>
     </>
   );
