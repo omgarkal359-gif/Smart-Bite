@@ -26,6 +26,29 @@ const DigitalReceiptTracker = () => {
   const [isAccessDenied, setIsAccessDenied] = useState(false);
 
   useEffect(() => {
+    const applyNewStatus = (newStatus) => {
+      if (!newStatus) return;
+      const lower = String(newStatus).trim().toLowerCase();
+      if (lower === 'placed' || lower === 'pending' || lower === 'pending_cash') setCurrentStep(0);
+      else if (lower === 'preparing' || lower === 'prep' || lower === 'in preparation') setCurrentStep(1);
+      else if (lower === 'ready' || lower === 'completed') setCurrentStep(2);
+
+      setOrder(prev => {
+        const updated = prev ? { ...prev, status: newStatus } : { id: orderId, status: newStatus };
+        if (prev?.items && (!updated.items || updated.items.length === 0)) {
+          updated.items = prev.items;
+        }
+        
+        try {
+          const savedOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
+          const newOrdersList = savedOrders.map(o => String(o.id) === String(orderId) ? { ...o, status: newStatus } : o);
+          localStorage.setItem('sgu_orders', JSON.stringify(newOrdersList));
+        } catch (_err) {}
+
+        return updated;
+      });
+    };
+
     async function loadOrder() {
       try {
         const savedUser = getStoredUser() || {};
@@ -68,7 +91,6 @@ const DigitalReceiptTracker = () => {
         } catch (_e) {}
 
         if (foundOrder) {
-          // Use functional updater to preserve items already loaded from a previous cycle
           setOrder(prev => {
             const merged = { ...foundOrder };
             if (prev && prev.items && prev.items.length > 0 && (!merged.items || merged.items.length === 0)) {
@@ -78,7 +100,6 @@ const DigitalReceiptTracker = () => {
           });
           setIsAccessDenied(false);
 
-          // Fetch vendor (name + FSSAI) for the receipt.
           const stallId = foundOrder.stallId || foundOrder.items?.[0]?.stallId;
           if (stallId) {
             api.getVendorByStall(stallId).then(v => { if (v) setVendor(v); }).catch(() => {});
@@ -88,7 +109,6 @@ const DigitalReceiptTracker = () => {
             applyNewStatus(foundOrder.status);
           }
 
-          // Ensure receipt is persisted to Supabase 'receipts' table
           api.saveReceipt(foundOrder).catch(() => {});
         }
       } catch (err) {
@@ -101,32 +121,7 @@ const DigitalReceiptTracker = () => {
 
     loadOrder();
 
-    const applyNewStatus = (newStatus) => {
-      if (!newStatus) return;
-      const lower = String(newStatus).trim().toLowerCase();
-      if (lower === 'placed' || lower === 'pending' || lower === 'pending_cash') setCurrentStep(0);
-      else if (lower === 'preparing') setCurrentStep(1);
-      else if (lower === 'ready' || lower === 'completed') setCurrentStep(2);
-
-      setOrder(prev => {
-        const updated = prev ? { ...prev, status: newStatus } : { id: orderId, status: newStatus };
-        if (prev?.items && (!updated.items || updated.items.length === 0)) {
-          updated.items = prev.items;
-        }
-        
-        try {
-          const savedOrders = JSON.parse(localStorage.getItem('sgu_orders') || '[]');
-          const newOrdersList = savedOrders.map(o => String(o.id) === String(orderId) ? { ...o, status: newStatus } : o);
-          localStorage.setItem('sgu_orders', JSON.stringify(newOrdersList));
-        } catch (_err) {
-          // localStorage parse or quota error ignored safely
-        }
-
-        return updated;
-      });
-    };
-
-    // Listen to real-time socket events for this order status
+    // Listen to real-time socket & DOM window events for this order status
     socket.emit('join', `order-${orderId}`);
 
     const handleSocketUpdate = (data) => {
@@ -136,7 +131,16 @@ const DigitalReceiptTracker = () => {
       }
     };
 
+    const handleWindowUpdate = (e) => {
+      const data = e?.detail;
+      const targetId = data?.id || data?.orderId;
+      if (targetId && String(targetId) === String(orderId) && data.status) {
+        applyNewStatus(data.status);
+      }
+    };
+
     socket.on('order_status_update', handleSocketUpdate);
+    window.addEventListener('sgu:order_updated', handleWindowUpdate);
 
     // Setup Supabase Realtime Broadcast & Postgres Database Listener
     const channel = supabase.channel(`student_sync_${orderId}`)
@@ -165,6 +169,7 @@ const DigitalReceiptTracker = () => {
 
     return () => {
       socket.off('order_status_update', handleSocketUpdate);
+      window.removeEventListener('sgu:order_updated', handleWindowUpdate);
       supabase.removeChannel(channel);
       supabase.removeChannel(globalChannel);
       clearInterval(interval);

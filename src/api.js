@@ -950,6 +950,11 @@ export const api = {
           payload
         });
       }
+      supabase.channel(`student_sync_${orderId}`).send({
+        type: 'broadcast',
+        event: 'order_status_update',
+        payload
+      });
       supabase.channel('admin-orders-module').send({
         type: 'broadcast',
         event: 'order_updated',
