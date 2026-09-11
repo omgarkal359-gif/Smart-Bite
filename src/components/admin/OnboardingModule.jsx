@@ -195,22 +195,69 @@ export const OnboardingModule = () => {
     setEditBusy(true); setError('');
     try {
       const { name, category, email: vendorEmail, fssai, _last4, _payoutStatus, ...rest } = editData;
+      const cleanEmail = vendorEmail ? vendorEmail.trim().toLowerCase() : null;
+
       // Bank fields go through the server (encrypted + payout registration).
       const bank = {};
       for (const k of BANK_KEYS) { if (rest[k] !== undefined) bank[k] = rest[k]; delete rest[k]; }
 
+      // 1. Update stall name & category in Supabase stalls table
       await supabase.from('stalls').update({ name, category, updated_at: new Date().toISOString() }).eq('id', id);
+
+      // 2. Read existing vendor details from Supabase to preserve system_password
+      const { data: existingV } = await supabase.from('vendors').select('*').eq('stall_id', id).maybeSingle();
+      const existingDetails = existingV?.details || {};
+
+      const updatedDetails = {
+        ...existingDetails,
+        ...(rest || {}),
+        email: cleanEmail
+      };
+
+      if (passwords[id]) {
+        updatedDetails.system_password = passwords[id].trim();
+      }
+
+      // 3. Save/Upsert into Supabase vendors table
       const { error: vErr } = await supabase.from('vendors').upsert({
         stall_id: id,
         business_name: name,
-        contact_email: vendorEmail ? vendorEmail.trim().toLowerCase() : null,
+        contact_email: cleanEmail,
         fssai: fssai || null,
-        details: rest,
+        details: updatedDetails,
         updated_at: new Date().toISOString()
       }, { onConflict: 'stall_id' });
       if (vErr) throw new Error(vErr.message);
 
-      // Only call payout endpoint if bank info was entered/changed.
+      // 4. Upsert into Supabase accounts table so login locates shop_id instantly
+      if (cleanEmail) {
+        try {
+          const { data: existingAcc } = await supabase.from('accounts').select('id').eq('email', cleanEmail).maybeSingle();
+          if (existingAcc) {
+            await supabase.from('accounts').update({
+              role: 'vendor',
+              shop_id: id,
+              updated_at: new Date().toISOString()
+            }).eq('id', existingAcc.id);
+          } else {
+            await supabase.from('accounts').insert({
+              email: cleanEmail,
+              role: 'vendor',
+              shop_id: id,
+              updated_at: new Date().toISOString()
+            });
+          }
+        } catch (_e) {}
+      }
+
+      // 5. If new password was entered, invoke resetPassword to update Auth & DB
+      if (passwords[id] && cleanEmail) {
+        try {
+          await api.onboarding.resetPassword(cleanEmail, passwords[id], id);
+        } catch (_e) {}
+      }
+
+      // 6. Call payout endpoint if bank info was entered/changed.
       if (bank.account_number || bank.upi_id || bank.account_holder || bank.ifsc) {
         await api.onboarding.savePayout({ stallId: id, ...bank, name });
       }
