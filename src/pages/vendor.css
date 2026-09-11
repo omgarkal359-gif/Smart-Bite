@@ -306,6 +306,8 @@
   border: 2px solid rgba(255, 255, 255, 0.2);
   transition: background 0.4s ease, border-color 0.4s ease;
   overflow: hidden;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .premium-switch.closed {
@@ -313,32 +315,50 @@
   border-color: rgba(255, 255, 255, 0.1);
 }
 
+/* Knob — pure CSS transform, no Framer Motion */
 .switch-knob {
-  width: 56px;
+  position: absolute;
+  left: 4px;
+  top: 50%;
+  width: 54px;
   height: 36px;
+  margin-top: -18px;
   background: var(--white);
   border-radius: 18px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: 'Oswald', sans-serif;
-  font-weight: 700;
-  font-size: 0.75rem;
   z-index: 2;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  will-change: transform;
+  transition: transform 350ms cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
 }
 
-.switch-label {
+/* Text labels — fixed positions, opacity transitions */
+.switch-text {
   position: absolute;
-  width: 100%;
+  top: 0;
+  bottom: 0;
   display: flex;
-  justify-content: space-between;
-  padding: 0 16px;
-  font-size: 0.7rem;
-  font-weight: 800;
-  color: rgba(255, 255, 255, 0.6);
-  pointer-events: none;
+  align-items: center;
   font-family: 'Oswald', sans-serif;
+  font-weight: 700;
+  font-size: 0.7rem;
+  letter-spacing: 0.03em;
+  z-index: 3;
+  pointer-events: none;
+  color: rgba(255, 255, 255, 0.7);
+  transition: color 250ms ease;
+}
+
+.switch-text.active {
+  color: #1e293b;
+}
+
+.switch-text-open {
+  left: 14px;
+}
+
+.switch-text-closed {
+  right: 10px;
 }
 
 /* Watermark Overlay */

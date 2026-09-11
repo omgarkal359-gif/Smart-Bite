@@ -528,17 +528,12 @@ const VendorDashboard = () => {
                 className={`premium-switch ${shopStatus === 'CLOSED' ? 'closed' : ''}`}
                 onClick={handleToggleShop}
               >
-                <div className="switch-label">
-                  <span>OPEN</span>
-                  <span>CLOSED</span>
-                </div>
-                <motion.div 
-                  animate={{ x: shopStatus === 'CLOSED' ? 56 : 0 }}
-                  transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                <span className={`switch-text switch-text-open ${shopStatus === 'OPEN' ? 'active' : ''}`}>OPEN</span>
+                <span className={`switch-text switch-text-closed ${shopStatus === 'CLOSED' ? 'active' : ''}`}>CLOSED</span>
+                <div 
                   className="switch-knob"
-                >
-                  {shopStatus}
-                </motion.div>
+                  style={{ transform: shopStatus === 'CLOSED' ? 'translateX(calc(100% - 4px))' : 'translateX(0)' }}
+                />
               </div>
             </div>
           </div>
