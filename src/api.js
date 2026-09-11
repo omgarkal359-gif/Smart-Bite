@@ -628,6 +628,17 @@ export const api = {
           stall_name: it.stallName || null
         }));
         await supabase.from('order_items').insert(itemRows).catch(() => null);
+
+        // Record initial status history in order_status_history table
+        try {
+          await supabase.from('order_status_history').insert({
+            order_id: orderId,
+            previous_status: null,
+            new_status: status,
+            changed_by: customerEmail || user?.email || 'student',
+            created_at: new Date().toISOString()
+          });
+        } catch (_hErr) {}
       } else {
         console.warn('Supabase order insert warning:', oErr.message);
       }
@@ -774,6 +785,12 @@ export const api = {
   },
 
   async updateOrderStatus(orderId, status, userEmail = null) {
+    let prevStatus = null;
+    try {
+      const { data: existingOrd } = await supabase.from('orders').select('status').eq('id', orderId).maybeSingle();
+      if (existingOrd) prevStatus = existingOrd.status;
+    } catch (_e) {}
+
     const { data, error } = await supabase
       .from('orders').update({ status, updated_at: new Date().toISOString() }).eq('id', orderId).select();
     
@@ -789,6 +806,17 @@ export const api = {
     }
     if (!email) email = 'system@sgu.edu';
 
+    // Record status transition in order_status_history table
+    try {
+      await supabase.from('order_status_history').insert({
+        order_id: orderId,
+        previous_status: prevStatus,
+        new_status: status,
+        changed_by: email,
+        created_at: new Date().toISOString()
+      });
+    } catch (_hErr) {}
+
     try { 
       addAuditLog({ 
         level: 'INFO', 
@@ -800,6 +828,17 @@ export const api = {
 
     if (error) return { success: false, message: error.message };
     return { success: true, order: data?.[0] ? mapOrder(data[0]) : null };
+  },
+
+  async getOrderStatusHistory(orderId) {
+    if (!orderId) return [];
+    const { data, error } = await supabase
+      .from('order_status_history')
+      .select('*')
+      .eq('order_id', orderId)
+      .order('created_at', { ascending: true });
+    if (error || !data) return [];
+    return data;
   },
 
   // ── Admin ────────────────────────────────────────────────────────────────
