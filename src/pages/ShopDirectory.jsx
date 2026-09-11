@@ -105,7 +105,7 @@ const ShopDirectory = () => {
     const loadStalls = async () => {
       try {
         const data = await api.getStalls();
-        if (data && data.length > 0) {
+        if (Array.isArray(data)) {
           setStalls(data);
         }
       } catch (err) {
@@ -136,6 +136,8 @@ const ShopDirectory = () => {
             busyMode: payload.new.busy_mode,
             waitTime: payload.new.wait_time_minutes
           }]);
+        } else if (payload.eventType === 'DELETE' && payload.old) {
+          setStalls(prev => prev.filter(s => String(s.id) !== String(payload.old.id)));
         }
       })
       .subscribe();
@@ -160,7 +162,7 @@ const ShopDirectory = () => {
     window.addEventListener('sgu:stall_status_updated', handleCustomStallUpdate);
     window.addEventListener('storage', loadStalls);
 
-    // Subscribe to Supabase broadcast event for real-time stall updates
+    // Subscribe to Supabase broadcast event for real-time stall updates & deletions
     const broadcastChannel = supabase
       .channel('global-stall-broadcasts')
       .on('broadcast', { event: 'stall_status_changed' }, (payload) => {
@@ -168,6 +170,12 @@ const ShopDirectory = () => {
         const targetId = data?.id || data?.stallId;
         if (targetId) {
           setStalls(prev => prev.map(s => String(s.id) === String(targetId) ? { ...s, ...data } : s));
+        }
+      })
+      .on('broadcast', { event: 'stall_deleted' }, (payload) => {
+        const deletedId = payload?.payload?.id;
+        if (deletedId) {
+          setStalls(prev => prev.filter(s => String(s.id) !== String(deletedId)));
         }
       })
       .subscribe();

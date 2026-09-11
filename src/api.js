@@ -359,6 +359,56 @@ export const api = {
     return data.map(mapStall);
   },
 
+  async deleteVendor(stallId) {
+    if (!stallId) throw new Error('Stall ID is required.');
+
+    // 1. Delete associated menu items
+    try {
+      await supabase.from('menu_items').delete().eq('stall_id', stallId);
+    } catch (_e) {}
+
+    // 2. Delete vendor records
+    try {
+      await supabase.from('vendors').delete().eq('stall_id', stallId);
+    } catch (_e) {}
+
+    // 3. Delete accounts records linked to this stall
+    try {
+      await supabase.from('accounts').delete().eq('shop_id', stallId);
+    } catch (_e) {}
+
+    // 4. Delete vendor invites linked to this stall
+    try {
+      await supabase.from('vendor_invites').delete().eq('stall_id', stallId);
+    } catch (_e) {}
+
+    // 5. Delete stall record itself from Supabase
+    const { error } = await supabase.from('stalls').delete().eq('id', stallId);
+    if (error) {
+      console.error('Failed to delete stall from Supabase:', error);
+      throw new Error(error.message || 'Failed to delete vendor stall from database.');
+    }
+
+    // 6. Clean up local storage credentials
+    try {
+      const stored = JSON.parse(localStorage.getItem('sgu_vendor_credentials') || '{}');
+      delete stored[stallId];
+      delete stored[String(stallId).toLowerCase()];
+      localStorage.setItem('sgu_vendor_credentials', JSON.stringify(stored));
+    } catch (_e) {}
+
+    // 7. Broadcast real-time deletion event
+    try {
+      supabase.channel('global-stall-broadcasts').send({
+        type: 'broadcast',
+        event: 'stall_deleted',
+        payload: { id: stallId }
+      });
+    } catch (_e) {}
+
+    return { success: true, message: 'Vendor permanently deleted from database and dashboard.' };
+  },
+
   async updateStallStatus(stallId, statusData) {
     const online = (
       statusData.online === 1 || statusData.online === true || statusData.online === '1' ||

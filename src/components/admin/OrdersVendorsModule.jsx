@@ -83,6 +83,12 @@ export const OrdersVendorsModule = () => {
           setStalls(prev => prev.map(s => String(s.id) === String(targetId) ? { ...s, online: isOnline ? 1 : 0, status: isOnline ? 'ONLINE' : 'OFFLINE' } : s));
         }
       })
+      .on('broadcast', { event: 'stall_deleted' }, (payload) => {
+        const deletedId = payload?.payload?.id;
+        if (deletedId) {
+          setStalls(prev => prev.filter(s => String(s.id) !== String(deletedId)));
+        }
+      })
       .subscribe();
 
     // 3. Auto-polling loop (every 3 seconds) for instant sync across serverless cold starts

@@ -136,13 +136,14 @@ export const OnboardingModule = () => {
   };
 
   const [deletingId, setDeletingId] = useState(null);
+  const [vendorToDelete, setVendorToDelete] = useState(null);
 
-  const handleDeleteVendor = async (v) => {
-    const warningMsg = `⚠️ WARNING: Do you really want to delete the vendor "${v.name}"?\n\nThis will permanently delete the vendor, stall, and login accounts from the database and dashboard.`;
-    if (!window.confirm(warningMsg)) {
-      return;
-    }
+  const handleDeleteVendor = (v) => {
+    setVendorToDelete(v);
+  };
 
+  const confirmDeleteVendor = async (v) => {
+    if (!v || !v.id) return;
     setDeletingId(v.id);
     setError('');
     setNotice(null);
@@ -152,6 +153,7 @@ export const OnboardingModule = () => {
       setVendors(prev => prev.filter(x => x.id !== v.id));
       if (editingId === v.id) setEditingId(null);
       setNotice({ type: 'deleted', name: v.name });
+      setVendorToDelete(null);
     } catch (err) {
       setError(err.message || 'Failed to delete vendor from database.');
     } finally {
@@ -590,6 +592,91 @@ export const OnboardingModule = () => {
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Centered Custom Warning Modal for Vendor Deletion */}
+      {vendorToDelete && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 99999,
+          backgroundColor: 'rgba(15, 23, 42, 0.75)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '20px'
+        }}>
+          <div style={{
+            background: '#1E1A29',
+            color: '#FFFFFF',
+            borderRadius: '20px',
+            padding: '28px 32px',
+            maxWidth: '520px',
+            width: '100%',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.1)',
+            textAlign: 'left',
+            fontFamily: "'Outfit', 'Inter', system-ui, sans-serif"
+          }}>
+            <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#CBD5E1', marginBottom: '14px', letterSpacing: '0.01em' }}>
+              {window.location.host || 'smart-bite-rosy.vercel.app'} says
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '1.05rem', fontWeight: 700, color: '#F8FAFC', marginBottom: '16px', lineHeight: '1.4' }}>
+              <span style={{ fontSize: '1.2rem', marginTop: '1px' }}>⚠️</span>
+              <span>WARNING: Do you really want to delete the vendor "{vendorToDelete.name}"?</span>
+            </div>
+
+            <p style={{ color: '#94A3B8', fontSize: '0.92rem', lineHeight: '1.5', margin: '0 0 26px 0' }}>
+              This will permanently delete the vendor, stall, and login accounts from the database and dashboard.
+            </p>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+              <button
+                type="button"
+                onClick={() => confirmDeleteVendor(vendorToDelete)}
+                disabled={deletingId === vendorToDelete.id}
+                style={{
+                  background: '#E9D5FF',
+                  color: '#3B0764',
+                  border: '2px solid #D8B4FE',
+                  borderRadius: '999px',
+                  padding: '10px 28px',
+                  fontSize: '0.9rem',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  boxShadow: '0 0 16px rgba(216, 180, 254, 0.4)',
+                  transition: 'all 0.2s ease',
+                  opacity: deletingId === vendorToDelete.id ? 0.7 : 1
+                }}
+              >
+                {deletingId === vendorToDelete.id ? 'Deleting…' : 'OK'}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setVendorToDelete(null)}
+                disabled={deletingId === vendorToDelete.id}
+                style={{
+                  background: '#4C3B6E',
+                  color: '#FFFFFF',
+                  border: 'none',
+                  borderRadius: '999px',
+                  padding: '10px 24px',
+                  fontSize: '0.9rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
