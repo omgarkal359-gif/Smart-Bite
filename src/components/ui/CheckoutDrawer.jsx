@@ -175,8 +175,8 @@ export const CheckoutDrawer = ({ isOpen, onClose, cart, inventory, onComplete })
           name: item.name,
           price: item.price,
           quantity: item.quantity,
-          stallId: item.stallId || item.stallid,
-          stallName: item.stallName || item.stallname
+          stallId: item.stallId || item.stallid || item.stall_id || item.shopId || item.shop_id,
+          stallName: item.stallName || item.stallname || item.stall_name || item.shopName || item.shop_name
         }))
       };
 

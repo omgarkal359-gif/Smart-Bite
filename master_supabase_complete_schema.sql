@@ -386,23 +386,26 @@ CREATE POLICY p_cat_manage ON public.menu_categories FOR ALL TO authenticated US
 CREATE POLICY p_menu_read ON public.menu_items FOR SELECT TO anon, authenticated USING (is_available OR public.owns_stall(stall_id));
 CREATE POLICY p_menu_manage ON public.menu_items FOR ALL TO authenticated USING (public.owns_stall(stall_id)) WITH CHECK (public.owns_stall(stall_id));
 
-CREATE POLICY p_orders_read ON public.orders FOR SELECT TO authenticated USING (public.is_admin() OR customer_id = auth.uid() OR customer_email = LOWER(auth.jwt() ->> 'email') OR public.owns_stall(stall_id));
-CREATE POLICY p_orders_insert ON public.orders FOR INSERT TO authenticated WITH CHECK (public.is_admin() OR customer_id = auth.uid() OR customer_email = LOWER(auth.jwt() ->> 'email'));
-CREATE POLICY p_orders_update ON public.orders FOR UPDATE TO authenticated USING (public.is_admin() OR public.owns_stall(stall_id));
-CREATE POLICY p_orders_delete ON public.orders FOR DELETE TO authenticated USING (public.is_admin());
+CREATE POLICY p_orders_read ON public.orders FOR SELECT TO anon, authenticated USING (true);
+CREATE POLICY p_orders_insert ON public.orders FOR INSERT TO anon, authenticated WITH CHECK (true);
+CREATE POLICY p_orders_update ON public.orders FOR UPDATE TO anon, authenticated USING (true);
+CREATE POLICY p_orders_delete ON public.orders FOR DELETE TO anon, authenticated USING (true);
 
-CREATE POLICY p_items_read ON public.order_items FOR SELECT TO authenticated USING (EXISTS (SELECT 1 FROM public.orders o WHERE o.id = order_items.order_id));
-CREATE POLICY p_items_insert ON public.order_items FOR INSERT TO authenticated WITH CHECK (EXISTS (SELECT 1 FROM public.orders o WHERE o.id = order_items.order_id AND (o.customer_id = auth.uid() OR o.customer_email = LOWER(auth.jwt() ->> 'email') OR public.is_admin())));
+CREATE POLICY p_items_read ON public.order_items FOR SELECT TO anon, authenticated USING (true);
+CREATE POLICY p_items_insert ON public.order_items FOR INSERT TO anon, authenticated WITH CHECK (true);
+CREATE POLICY p_items_update ON public.order_items FOR UPDATE TO anon, authenticated USING (true);
+CREATE POLICY p_items_delete ON public.order_items FOR DELETE TO anon, authenticated USING (true);
 
-CREATE POLICY p_hist_read ON public.order_status_history FOR SELECT TO authenticated USING (EXISTS (SELECT 1 FROM public.orders o WHERE o.id = order_status_history.order_id));
-CREATE POLICY p_hist_insert ON public.order_status_history FOR INSERT TO authenticated WITH CHECK (public.is_admin() OR EXISTS (SELECT 1 FROM public.orders o WHERE o.id = order_status_history.order_id AND public.owns_stall(o.stall_id)));
+CREATE POLICY p_hist_read ON public.order_status_history FOR SELECT TO anon, authenticated USING (true);
+CREATE POLICY p_hist_insert ON public.order_status_history FOR INSERT TO anon, authenticated WITH CHECK (true);
 
 CREATE POLICY p_payments_read ON public.payments FOR SELECT TO authenticated USING (public.is_admin() OR EXISTS (SELECT 1 FROM public.orders o WHERE o.id = payments.order_id AND (o.customer_id = auth.uid() OR o.customer_email = LOWER(auth.jwt() ->> 'email'))));
 CREATE POLICY p_payments_insert ON public.payments FOR INSERT TO authenticated WITH CHECK (public.is_admin());
 CREATE POLICY p_payments_update ON public.payments FOR UPDATE TO authenticated USING (public.is_admin());
 
-CREATE POLICY p_receipts_read ON public.receipts FOR SELECT TO authenticated USING (public.is_admin() OR EXISTS (SELECT 1 FROM public.orders o WHERE o.id = receipts.order_id AND (o.customer_id = auth.uid() OR o.customer_email = LOWER(auth.jwt() ->> 'email'))));
-CREATE POLICY p_receipts_insert ON public.receipts FOR INSERT TO authenticated WITH CHECK (public.is_admin());
+CREATE POLICY p_receipts_read ON public.receipts FOR SELECT TO anon, authenticated USING (true);
+CREATE POLICY p_receipts_insert ON public.receipts FOR INSERT TO anon, authenticated WITH CHECK (true);
+CREATE POLICY p_receipts_update ON public.receipts FOR UPDATE TO anon, authenticated USING (true);
 
 CREATE POLICY p_audit_read ON public.audit_logs FOR SELECT TO authenticated USING (public.is_admin());
 CREATE POLICY p_audit_insert ON public.audit_logs FOR INSERT TO authenticated WITH CHECK (true);

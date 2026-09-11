@@ -64,13 +64,22 @@ export const OrdersVendorsModule = () => {
         }
       })
       .on('broadcast', { event: 'new_order' }, (payload) => {
-        if (payload.payload && payload.payload.id) {
-          setOrders(prev => [payload.payload, ...prev.filter(o => o.id !== payload.payload.id)]);
+        const ord = payload.order || payload.payload || payload;
+        if (ord && ord.id) {
+          setOrders(prev => [ord, ...prev.filter(o => o.id !== ord.id)]);
+        }
+      })
+      .on('broadcast', { event: 'order_new' }, (payload) => {
+        const ord = payload.order || payload.payload || payload;
+        if (ord && ord.id) {
+          setOrders(prev => [ord, ...prev.filter(o => o.id !== ord.id)]);
         }
       })
       .on('broadcast', { event: 'order_updated' }, (payload) => {
-        if (payload.payload && payload.payload.id) {
-          setOrders(prev => prev.map(o => o.id === payload.payload.id ? { ...o, ...payload.payload } : o));
+        const data = payload.payload || payload;
+        if (data && (data.id || data.orderId)) {
+          const targetId = data.id || data.orderId;
+          setOrders(prev => prev.map(o => String(o.id) === String(targetId) ? { ...o, ...data } : o));
         }
       })
       .on('broadcast', { event: 'stall_status_changed' }, (payload) => {

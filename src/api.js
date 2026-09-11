@@ -602,14 +602,17 @@ export const api = {
       || orderData.customerEmail 
       || (orderData.customerId && String(orderData.customerId).includes('@') ? String(orderData.customerId).toLowerCase() : null);
 
+    const targetStallId = first.stallId || first.stall_id || first.shopId || first.shop_id || orderData.stallId || orderData.shopId || null;
+    const targetStallName = first.stallName || first.stall_name || first.shopName || first.shop_name || orderData.stallName || orderData.shopName || null;
+
     const orderRow = {
       id: orderId,
       order_number: orderId,
       customer_id: customerId,
       customer_email: customerEmail,
       customer_name: orderData.customerName || user?.name || 'Student',
-      stall_id: first.stallId || null,
-      stall_name: first.stallName || null,
+      stall_id: targetStallId,
+      stall_name: targetStallName,
       status,
       payment_method: orderData.payment || 'Online UPI',
       payment_status: 'pending',
@@ -627,8 +630,8 @@ export const api = {
           name: it.name,
           unit_price: Number(it.price) || 0,
           quantity: it.quantity || 1,
-          stall_id: it.stallId || null,
-          stall_name: it.stallName || null
+          stall_id: it.stallId || it.stall_id || targetStallId,
+          stall_name: it.stallName || it.stall_name || targetStallName
         }));
         await supabase.from('order_items').insert(itemRows).catch(() => null);
 
@@ -656,9 +659,35 @@ export const api = {
       customerId: orderData.customerId || customerId || 'student',
       customerEmail: customerEmail || orderData.customerEmail,
       customerName: orderData.customerName || user?.name || 'Student',
+      stallId: targetStallId,
+      stallName: targetStallName,
       items,
       id: orderId
     };
+
+    // Broadcast Realtime events to vendor, admin, and global channels
+    try {
+      if (targetStallId) {
+        supabase.channel(`vendor_sync_${targetStallId}`).send({
+          type: 'broadcast',
+          event: 'order_new',
+          payload: { order: orderResult }
+        });
+      }
+      supabase.channel('admin-orders-module').send({
+        type: 'broadcast',
+        event: 'new_order',
+        payload: orderResult
+      });
+      supabase.channel('global-orders-broadcast').send({
+        type: 'broadcast',
+        event: 'order_new',
+        payload: orderResult
+      });
+      window.dispatchEvent(new CustomEvent('sgu:new_order', { detail: orderResult }));
+    } catch (_bcErr) {
+      console.warn('Realtime broadcast exception:', _bcErr);
+    }
 
     // Guarantee local storage persistence immediately
     try {
@@ -909,8 +938,33 @@ export const api = {
       }); 
     } catch (_e) {}
 
+    const updatedMapped = data?.[0] ? mapOrder(data[0]) : null;
+    const targetStallId = updatedMapped?.stallId;
+
+    try {
+      const payload = { id: orderId, orderId, status, stallId: targetStallId };
+      if (targetStallId) {
+        supabase.channel(`vendor_sync_${targetStallId}`).send({
+          type: 'broadcast',
+          event: 'order_status_update',
+          payload
+        });
+      }
+      supabase.channel('admin-orders-module').send({
+        type: 'broadcast',
+        event: 'order_updated',
+        payload
+      });
+      supabase.channel('global-orders-broadcast').send({
+        type: 'broadcast',
+        event: 'order_status_update',
+        payload
+      });
+      window.dispatchEvent(new CustomEvent('sgu:order_updated', { detail: payload }));
+    } catch (_bcErr) {}
+
     if (error) return { success: false, message: error.message };
-    return { success: true, order: data?.[0] ? mapOrder(data[0]) : null };
+    return { success: true, order: updatedMapped };
   },
 
   async getOrderStatusHistory(orderId) {

@@ -81,7 +81,7 @@ const VendorDashboard = () => {
       
       const allOrders = [...(dbOrders || [])];
       localOrders.forEach(localOrder => {
-        if (!allOrders.find(o => o.id === localOrder.id)) {
+        if (!allOrders.find(o => String(o.id) === String(localOrder.id))) {
           allOrders.push(localOrder);
         }
       });
@@ -89,11 +89,17 @@ const VendorDashboard = () => {
       
       const active = allOrders.filter(order => order.status !== 'completed' && order.status !== 'ready' && order.status !== 'cancelled').map(order => ({
         ...order,
+        customerName: order.customerName || order.customer_name || 'Student',
+        payment: order.payment || order.payment_method || 'Online UPI',
+        type: order.type || order.order_type || 'Dine-In',
         items: formatOrderItems(order.items)
       }));
 
       const done = allOrders.filter(order => order.status === 'completed' || order.status === 'ready' || order.status === 'cancelled').map(order => ({
         ...order,
+        customerName: order.customerName || order.customer_name || 'Student',
+        payment: order.payment || order.payment_method || 'Online UPI',
+        type: order.type || order.order_type || 'Dine-In',
         items: formatOrderItems(order.items)
       }));
 
@@ -112,14 +118,27 @@ const VendorDashboard = () => {
     // Join room for this vendor
     socket.emit('join', `vendor-${targetShopId}`);
 
-    const handleNewOrder = (newOrder) => {
+    const handleNewOrder = async (newOrder) => {
+      if (!newOrder || !newOrder.id) return;
+      let fullOrder = newOrder;
+      if (!fullOrder.items || (Array.isArray(fullOrder.items) && fullOrder.items.length === 0)) {
+        try {
+          const fetched = await api.getOrder(newOrder.id);
+          if (fetched) fullOrder = fetched;
+        } catch (_e) {}
+      }
+
+      const formatted = {
+        ...fullOrder,
+        customerName: fullOrder.customerName || fullOrder.customer_name || 'Student',
+        payment: fullOrder.payment || fullOrder.payment_method || 'Online UPI',
+        total: Number(fullOrder.total) || 0,
+        type: fullOrder.type || fullOrder.order_type || 'Dine-In',
+        items: formatOrderItems(fullOrder.items)
+      };
+
       setTickets(prev => {
-        if (prev.some(t => t.id === newOrder.id)) return prev;
-        // Format item split
-        const formatted = {
-          ...newOrder,
-          items: formatOrderItems(newOrder.items)
-        };
+        if (prev.some(t => String(t.id) === String(formatted.id))) return prev;
         return [formatted, ...prev];
       });
     };
@@ -136,10 +155,13 @@ const VendorDashboard = () => {
             ...updatedOrder,
             id: targetId,
             status: nextStatus,
+            customerName: updatedOrder.customerName || updatedOrder.customer_name || 'Student',
+            payment: updatedOrder.payment || updatedOrder.payment_method || 'Online UPI',
+            type: updatedOrder.type || updatedOrder.order_type || 'Dine-In',
             items: formatOrderItems(updatedOrder.items)
           };
           if (prev.some(t => String(t.id) === String(targetId))) {
-            return prev.map(t => String(t.id) === String(targetId) ? formatted : t);
+            return prev.map(t => String(t.id) === String(targetId) ? { ...t, ...formatted, status: nextStatus } : t);
           }
           return [formatted, ...prev];
         });
@@ -155,6 +177,9 @@ const VendorDashboard = () => {
             ...updatedOrder,
             id: targetId,
             status: nextStatus,
+            customerName: updatedOrder.customerName || updatedOrder.customer_name || 'Student',
+            payment: updatedOrder.payment || updatedOrder.payment_method || 'Online UPI',
+            type: updatedOrder.type || updatedOrder.order_type || 'Dine-In',
             items: formatOrderItems(updatedOrder.items)
           };
           return [formatted, ...prev];
@@ -173,27 +198,33 @@ const VendorDashboard = () => {
            handleNewOrder(newOrd);
            // Persist to local storage to survive refreshes
            const existing = JSON.parse(localStorage.getItem(`sgu_vendor_orders_${targetShopId}`) || '[]');
-           if (!existing.find(o => o.id === newOrd.id)) {
+           if (!existing.find(o => String(o.id) === String(newOrd.id))) {
              localStorage.setItem(`sgu_vendor_orders_${targetShopId}`, JSON.stringify([newOrd, ...existing]));
            }
+        }
+      })
+      .on('broadcast', { event: 'order_status_update' }, (payload) => {
+        const data = payload?.payload || payload;
+        if (data && (data.id || data.orderId)) {
+          handleStatusUpdate(data);
         }
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
         if (payload.eventType === 'INSERT' && payload.new) {
           const newOrd = payload.new;
           const ordStallId = newOrd.stall_id || newOrd.stallId || newOrd.shop_id || newOrd.shopId;
-          if (ordStallId && String(ordStallId) === String(targetShopId)) {
+          if (ordStallId && String(ordStallId).toLowerCase().trim() === String(targetShopId).toLowerCase().trim()) {
             handleNewOrder(newOrd);
             // Persist to local storage to survive refreshes
             const existing = JSON.parse(localStorage.getItem(`sgu_vendor_orders_${targetShopId}`) || '[]');
-            if (!existing.find(o => o.id === newOrd.id)) {
+            if (!existing.find(o => String(o.id) === String(newOrd.id))) {
               localStorage.setItem(`sgu_vendor_orders_${targetShopId}`, JSON.stringify([newOrd, ...existing]));
             }
           }
         } else if (payload.eventType === 'UPDATE' && payload.new) {
           const updatedOrd = payload.new;
           const ordStallId = updatedOrd.stall_id || updatedOrd.stallId || updatedOrd.shop_id || updatedOrd.shopId;
-          if (ordStallId && String(ordStallId) === String(targetShopId)) {
+          if (!ordStallId || String(ordStallId).toLowerCase().trim() === String(targetShopId).toLowerCase().trim()) {
             handleStatusUpdate(updatedOrd);
           }
         }

@@ -249,7 +249,12 @@ const InteractiveMenu = () => {
 
   const handleAddToCartClick = (item) => {
     if (item.stock > 0 && isOnline) {
-      addToCart(item);
+      const itemWithStall = {
+        ...item,
+        stallId: item.stallId || shopId,
+        stallName: item.stallName || stallInfo?.name || shopId
+      };
+      addToCart(itemWithStall);
     }
   };
 

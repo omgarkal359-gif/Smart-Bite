@@ -94,24 +94,24 @@ const OrdersPage = () => {
 
     socket.on('order_status_update', handleStatusUpdate);
 
-    // Also subscribe to Supabase broadcast channel for this student
-    const studentListCh = supabase.channel(`student_orders_${customerId}`)
+    // Also subscribe to Supabase broadcast channel and postgres_changes
+    const globalChannel = supabase.channel('global-orders-broadcast')
       .on('broadcast', { event: 'order_status_update' }, (payload) => {
-        const targetId = payload?.payload?.orderId || payload?.orderId || payload?.payload?.id;
-        const nextStatus = payload?.payload?.status || payload?.status;
+        const data = payload?.payload || payload;
+        const targetId = data?.orderId || data?.id;
+        const nextStatus = data?.status;
         if (targetId && nextStatus) {
           handleStatusUpdate({ id: targetId, status: nextStatus });
         }
       })
-      .subscribe();
-
-    const globalChannel = supabase.channel('global_orders_status')
-      .on('broadcast', { event: 'order_status_update' }, (payload) => {
-        const targetId = payload?.payload?.orderId || payload?.orderId || payload?.payload?.id;
-        const nextStatus = payload?.payload?.status || payload?.status;
-        if (targetId && nextStatus) {
-          handleStatusUpdate({ id: targetId, status: nextStatus });
+      .on('broadcast', { event: 'order_new' }, (payload) => {
+        const data = payload?.order || payload?.payload || payload;
+        if (data && data.id) {
+          fetchOrders();
         }
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
+        fetchOrders();
       })
       .subscribe();
 
@@ -120,7 +120,6 @@ const OrdersPage = () => {
 
     return () => {
       socket.off('order_status_update', handleStatusUpdate);
-      supabase.removeChannel(studentListCh);
       supabase.removeChannel(globalChannel);
       clearInterval(interval);
     };
