@@ -530,10 +530,10 @@ const VendorDashboard = () => {
               >
                 <span className={`switch-text switch-text-open ${shopStatus === 'OPEN' ? 'active' : ''}`}>OPEN</span>
                 <span className={`switch-text switch-text-closed ${shopStatus === 'CLOSED' ? 'active' : ''}`}>CLOSED</span>
-                <div 
-                  className="switch-knob"
-                  style={{ transform: shopStatus === 'CLOSED' ? 'translateX(calc(100% - 4px))' : 'translateX(0)' }}
-                />
+                  <div 
+                    className="switch-knob"
+                    style={{ transform: shopStatus === 'CLOSED' ? 'translateX(58px)' : 'translateX(0)' }}
+                  />
               </div>
             </div>
           </div>

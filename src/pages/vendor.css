@@ -337,11 +337,13 @@
   position: absolute;
   top: 0;
   bottom: 0;
+  width: 54px;
   display: flex;
   align-items: center;
+  justify-content: center;
   font-family: 'Oswald', sans-serif;
   font-weight: 700;
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   letter-spacing: 0.03em;
   z-index: 3;
   pointer-events: none;
@@ -354,11 +356,11 @@
 }
 
 .switch-text-open {
-  left: 14px;
+  left: 4px;
 }
 
 .switch-text-closed {
-  right: 10px;
+  right: 4px;
 }
 
 /* Watermark Overlay */
