@@ -149,10 +149,11 @@ const DigitalReceiptTracker = () => {
       })
       .subscribe();
 
-    const globalChannel = supabase.channel('global_orders_status')
+    const globalChannel = supabase.channel('global-orders-broadcast')
       .on('broadcast', { event: 'order_status_update' }, (payload) => {
-        const targetId = payload?.payload?.orderId || payload?.orderId || payload?.payload?.id;
-        const status = payload?.payload?.status || payload?.status;
+        const data = payload?.payload || payload;
+        const targetId = data?.orderId || data?.id;
+        const status = data?.status;
         if (targetId && String(targetId) === String(orderId) && status) {
           applyNewStatus(status);
         }

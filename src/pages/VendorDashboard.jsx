@@ -79,12 +79,17 @@ const VendorDashboard = () => {
       const dbOrders = await api.getStallOrders(targetShopId);
       const localOrders = JSON.parse(localStorage.getItem(`sgu_vendor_orders_${targetShopId}`) || '[]');
       
-      const allOrders = [...(dbOrders || [])];
-      localOrders.forEach(localOrder => {
-        if (!allOrders.find(o => String(o.id) === String(localOrder.id))) {
-          allOrders.push(localOrder);
+      const orderMap = new Map();
+      (dbOrders || []).forEach(o => {
+        if (o && o.id) orderMap.set(String(o.id), o);
+      });
+      (localOrders || []).forEach(o => {
+        if (o && o.id && !orderMap.has(String(o.id))) {
+          orderMap.set(String(o.id), o);
         }
       });
+
+      const allOrders = Array.from(orderMap.values());
       allOrders.sort((a, b) => new Date(b.timestamp || b.created_at || 0) - new Date(a.timestamp || a.created_at || 0));
       
       const active = allOrders.filter(order => order.status !== 'completed' && order.status !== 'ready' && order.status !== 'cancelled').map(order => ({
@@ -433,25 +438,36 @@ const VendorDashboard = () => {
   const handleUpdateStatus = async (id, newStatus) => {
     const vendorUser = getStoredUser();
     const vendorEmail = vendorUser?.username || vendorUser?.email || 'vendor@sgu.edu';
+    
+    // Update local state immediately for instant feedback
+    if (newStatus === 'completed' || newStatus === 'ready' || newStatus === 'cancelled') {
+      const ticket = tickets.find(t => String(t.id) === String(id)) || completedTickets.find(t => String(t.id) === String(id));
+      setTickets(prev => prev.filter(t => String(t.id) !== String(id)));
+      if (ticket) {
+        setCompletedTickets(prev => {
+          const updatedItem = { ...ticket, status: newStatus, timestamp: new Date().toISOString() };
+          if (prev.some(t => String(t.id) === String(id))) {
+            return prev.map(t => String(t.id) === String(id) ? updatedItem : t);
+          }
+          return [updatedItem, ...prev];
+        });
+      }
+    } else {
+      setTickets(prev => prev.map(t => String(t.id) === String(id) ? { ...t, status: newStatus } : t));
+    }
+
+    // Persist updated status to vendor local storage immediately
+    if (targetShopId) {
+      try {
+        const existing = JSON.parse(localStorage.getItem(`sgu_vendor_orders_${targetShopId}`) || '[]');
+        const updatedLocal = existing.map(o => String(o.id) === String(id) ? { ...o, status: newStatus } : o);
+        localStorage.setItem(`sgu_vendor_orders_${targetShopId}`, JSON.stringify(updatedLocal));
+      } catch (_e) {}
+    }
+
     try {
       await api.updateOrderStatus(id, newStatus, vendorEmail);
-      
       showToast(`Order #${id} updated to ${newStatus.toUpperCase()} ⚡`, 'success');
-
-      if (newStatus === 'completed' || newStatus === 'ready' || newStatus === 'cancelled') {
-        setTickets(prev => prev.filter(t => String(t.id) !== String(id)));
-        const ticket = tickets.find(t => String(t.id) === String(id));
-        if (ticket) {
-          setCompletedTickets(prev => {
-            if (prev.some(t => String(t.id) === String(id))) {
-              return prev.map(t => String(t.id) === String(id) ? { ...t, status: newStatus } : t);
-            }
-            return [{ ...ticket, status: newStatus, timestamp: new Date().toISOString() }, ...prev];
-          });
-        }
-      } else {
-        setTickets(prev => prev.map(t => String(t.id) === String(id) ? { ...t, status: newStatus } : t));
-      }
     } catch (err) {
       showToast('Failed to update order status: ' + err.message, 'error');
     }
@@ -719,28 +735,46 @@ const VendorDashboard = () => {
                         </div>
 
                         {(!['ready', 'completed', 'cancelled'].includes(ticket.status)) && (
-                          <div className="flex gap-3 w-full" data-ticket-id={ticket.id}>
+                          <div className="flex gap-3 w-full mt-3" style={{ height: '54px' }} data-ticket-id={ticket.id}>
                             <button 
                               disabled={ticket.status === 'preparing'}
-                              className={`flex-1 flex items-center justify-center gap-2 py-4 px-4 rounded-xl font-black text-[13px] uppercase tracking-wider cursor-pointer transition-all border border-solid ${
+                              className={`flex-1 flex items-center justify-center gap-2 rounded-full font-black text-base uppercase tracking-wider cursor-pointer transition-all border-0 shadow-md ${
                                 ticket.status === 'preparing' 
-                                  ? 'bg-slate-200 text-slate-500 border-slate-300 cursor-not-allowed shadow-inner' 
-                                  : 'vendor-btn-preparing hover:scale-[1.03] active:scale-[0.97]'
+                                  ? 'bg-slate-300 text-slate-500 cursor-not-allowed opacity-80' 
+                                  : 'hover:scale-[1.03] active:scale-[0.97]'
                               }`}
-                              style={ticket.status !== 'preparing' ? { backgroundColor: '#f59e0b', color: 'white', borderColor: '#d97706' } : {}}
+                              style={{
+                                height: '54px',
+                                padding: '12px 20px',
+                                fontSize: '1.05rem',
+                                fontWeight: 900,
+                                borderRadius: '999px',
+                                backgroundColor: ticket.status === 'preparing' ? '#94A3B8' : '#EF4444',
+                                color: '#FFFFFF',
+                                boxShadow: ticket.status === 'preparing' ? 'none' : '0 4px 14px rgba(239, 68, 68, 0.4)'
+                              }}
                               onClick={() => handleUpdateStatus(ticket.id, 'preparing')}
                             >
-                              <Clock size={16} className={ticket.status === 'preparing' ? 'text-slate-500' : 'text-current'} />
-                              Preparing
+                              <Clock size={20} className="text-white" />
+                              {ticket.status === 'preparing' ? 'IN PREPARATION' : 'PREPARING'}
                             </button>
 
                             <button 
-                              className="flex-1 flex items-center justify-center gap-2 py-4 px-4 rounded-xl font-black text-[13px] uppercase tracking-wider cursor-pointer transition-all border border-solid vendor-btn-ready hover:scale-[1.03] active:scale-[0.97]"
-                              style={{ backgroundColor: '#059669', color: 'white', borderColor: '#047857' }}
+                              className="flex-1 flex items-center justify-center gap-2 rounded-full font-black text-base uppercase tracking-wider cursor-pointer transition-all border-0 shadow-md hover:scale-[1.03] active:scale-[0.97]"
+                              style={{
+                                height: '54px',
+                                padding: '12px 20px',
+                                fontSize: '1.05rem',
+                                fontWeight: 900,
+                                borderRadius: '999px',
+                                backgroundColor: '#22C55E',
+                                color: '#FFFFFF',
+                                boxShadow: '0 4px 14px rgba(34, 197, 94, 0.4)'
+                              }}
                               onClick={() => handleUpdateStatus(ticket.id, 'ready')}
                             >
-                              <CheckCircle size={16} className="text-current" />
-                              Ready
+                              <CheckCircle size={20} className="text-white" />
+                              READY
                             </button>
                           </div>
                         )}
