@@ -430,60 +430,62 @@ const VendorDashboard = () => {
   return (
     <div className={`vendor-kds-container page-transition ${isPowerSaver ? 'power-saver' : ''}`} style={{ flexDirection: 'row', height: '100vh', overflow: 'hidden' }}>
       
-      {/* SIDEBAR */}
-      <aside className="w-24 bg-[#E4002B] flex flex-col py-8 px-2 shadow-2xl shrink-0 h-full overflow-y-auto z-[100] items-center">
-        {/* Logo Icon */}
-        <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center shadow-sm mb-12 shrink-0">
-          <Utensils size={24} className="text-white" />
+      {/* SIDEBAR — hover-to-expand, floats over content */}
+      <aside className="vendor-sidebar">
+        {/* Logo */}
+        <div className="vs-logo">
+          <Utensils size={22} className="text-white" />
         </div>
-        
-        <div className="flex flex-col gap-10 w-full items-center flex-1">
-          <button 
-            className="flex flex-col items-center justify-center gap-2 cursor-pointer border-none bg-transparent hover:scale-110 transition-transform w-full p-0"
+
+        {/* Nav items */}
+        <nav className="vs-nav">
+          <button
+            className={`vs-item ${!isBusyMode ? 'vs-active' : ''}`}
             onClick={handleToggleBusyMode}
           >
-            <Clock size={32} color={isBusyMode ? '#F59E0B' : '#4ADE80'} />
-            <span className="font-black text-xs tracking-wider" style={{ color: isBusyMode ? '#F59E0B' : '#4ADE80' }}>
+            <span className="vs-icon">
+              <Clock size={22} color={isBusyMode ? '#F59E0B' : '#4ADE80'} />
+            </span>
+            <span className="vs-label" style={{ color: isBusyMode ? '#F59E0B' : '#4ADE80' }}>
               {isBusyMode ? 'BUSY' : 'NORMAL'}
             </span>
           </button>
 
-          <button 
-            className="flex flex-col items-center justify-center gap-2 cursor-pointer border-none bg-transparent hover:scale-110 transition-transform w-full p-0 opacity-90 hover:opacity-100"
+          <button
+            className="vs-item"
             onClick={() => { setActiveSidebarTab('menu'); setIsSidebarOpen(true); }}
           >
-            <Settings size={32} className="text-white" />
-            <span className="text-white font-bold text-xs tracking-wider">MENU</span>
+            <span className="vs-icon"><Settings size={22} /></span>
+            <span className="vs-label">MENU</span>
           </button>
 
-          <button 
-            className="flex flex-col items-center justify-center gap-2 cursor-pointer border-none bg-transparent hover:scale-110 transition-transform w-full p-0 opacity-90 hover:opacity-100"
+          <button
+            className="vs-item"
             onClick={() => { setActiveSidebarTab('history'); setIsSidebarOpen(true); }}
           >
-            <History size={32} className="text-white" />
-            <span className="text-white font-bold text-xs tracking-wider">HISTORY</span>
+            <span className="vs-icon"><History size={22} /></span>
+            <span className="vs-label">HISTORY</span>
           </button>
-        </div>
+        </nav>
 
-        <div className="mt-auto w-full pt-8 pb-4 flex justify-center">
-          <button 
-            className="flex flex-col items-center justify-center gap-2 cursor-pointer border-none bg-transparent hover:scale-110 transition-transform w-full p-0 opacity-90 hover:opacity-100"
+        {/* Logout pinned to bottom */}
+        <div className="vs-bottom">
+          <button
+            className="vs-item"
             onClick={async () => {
               clearStoredUser();
-              try {
-                await supabase.auth.signOut();
-              } catch (_e) {}
+              try { await supabase.auth.signOut(); } catch (_e) {}
               navigate('/login', { replace: true });
             }}
           >
-            <LogOut size={32} className="text-white" />
-            <span className="text-white font-bold text-xs tracking-wider">LOGOUT</span>
+            <span className="vs-icon"><LogOut size={22} /></span>
+            <span className="vs-label">LOGOUT</span>
           </button>
         </div>
       </aside>
 
       {/* MAIN CONTENT WRAPPER */}
-      <div className="flex-1 flex flex-col min-w-0 h-full relative" style={{ overflow: 'hidden' }}>
+      <div className="vendor-main-content flex-1 flex flex-col min-w-0 h-full relative" style={{ overflow: 'hidden' }}>
         
         {/* Confetti Effect inside main wrapper so it doesn't overlay sidebar unnecessarily, or keep it global */}
         <AnimatePresence>
