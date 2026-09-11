@@ -494,14 +494,15 @@ const VendorDashboard = () => {
                   key={i}
                   initial={{ scale: 0, x: 0, y: 0 }}
                   animate={{ 
-                    scale: [0, 1, 0], 
-                    x: (Math.random() - 0.5) * 1000, 
-                    y: (Math.random() - 0.5) * 1000,
+                    scale: [0, 1.5, 0], 
+                    x: (Math.random() - 0.5) * 800, 
+                    y: (Math.random() - 0.5) * 800,
                     rotate: Math.random() * 360
                   }}
+                  transition={{ duration: 2.5, ease: "easeOut" }}
                   className="text-4xl absolute"
                 >
-                  {['🍕', '🍔', '🍟', '✨', '🔥'][Math.floor(Math.random() * 5)]}
+                  {['🍕', '🍔', '🍟', '🌮', '🍗', '🥗'][Math.floor(Math.random() * 6)]}
                 </motion.span>
               ))}
             </div>
@@ -509,7 +510,7 @@ const VendorDashboard = () => {
         </AnimatePresence>
 
         <header className={`kds-header shadow-lg ${shopStatus === 'CLOSED' ? 'closed' : ''}`} style={{ flexShrink: 0 }}>
-          <div className="kds-header-left flex items-center gap-8 w-full justify-between md:justify-start">
+          <div className="kds-header-left flex items-center gap-8 w-full justify-between">
             <div className="flex flex-col">
               <h1 className="heading-2 text-white text-2xl md:text-3xl" style={{ margin: 0 }}>{currentShop?.name || 'Vendor Dashboard'}</h1>
               <div className="heartbeat-monitor mt-1" style={{ padding: '4px 12px' }}>
