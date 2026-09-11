@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Mail, Check, X, RefreshCw, Copy, Store, Power, UserPlus, Link2, Pencil, Save, KeyRound, Eye, EyeOff, ShieldCheck, Trash2 } from 'lucide-react';
-import { api, DEFAULT_FIELD_CATALOG } from '../../api';
+import { api, DEFAULT_FIELD_CATALOG, getDeletedStallIds } from '../../api';
 import { supabase } from '../../supabaseClient';
 
 const GROUP_LABELS = {
@@ -366,7 +366,9 @@ export const OnboardingModule = () => {
           </div>
           {loading ? <p style={{ color: '#64748B', fontSize: 14 }}>Loading vendors list…</p> : (vendors.length === 0 ? <p style={{ color: '#64748B', fontSize: 14 }}>No vendors onboarded yet.</p> : (
             <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {vendors.map(v => (
+              {vendors
+                .filter(v => !getDeletedStallIds().includes(String(v.id)))
+                .map(v => (
                 <div key={v.id} style={{ border: '1px solid #E2E8F0', borderRadius: 16, overflow: 'hidden', background: '#FFFFFF', transition: 'all 0.2s ease', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
                   <div style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 16 }}>
                     <div style={{ width: 46, height: 46, borderRadius: 14, background: 'linear-gradient(135deg, #FFF5F3, #FFEBE6)', border: '1px solid #FFD0C7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, color: '#FF3B00' }}>{v.logo || <Store size={22} />}</div>

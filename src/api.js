@@ -127,6 +127,29 @@ async function serverFetch(path, options = {}) {
   return json;
 }
 
+export function getDeletedStallIds() {
+  try {
+    const raw = localStorage.getItem('sgu_deleted_stalls') || sessionStorage.getItem('sgu_deleted_stalls') || '[]';
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (_e) {
+    return [];
+  }
+}
+
+export function addDeletedStallId(stallId) {
+  if (!stallId) return;
+  const clean = String(stallId);
+  try {
+    const list = getDeletedStallIds();
+    if (!list.includes(clean)) {
+      list.push(clean);
+      localStorage.setItem('sgu_deleted_stalls', JSON.stringify(list));
+      sessionStorage.setItem('sgu_deleted_stalls', JSON.stringify(list));
+    }
+  } catch (_e) {}
+}
+
 async function currentUser() {
   try {
     const { data } = await supabase.auth.getUser();
@@ -354,55 +377,56 @@ export const api = {
 
   // ── Stalls ─────────────────────────────────────────────────────────────
   async getStalls() {
+    const deletedIds = getDeletedStallIds();
     const { data, error } = await supabase.from('stalls').select('*').order('name');
-    if (error || !data) return [];
-    return data.map(mapStall);
+    let list = (error || !data) ? [] : data;
+
+    // Filter out stalls marked inactive or registered in deleted stall registry
+    list = list.filter(s => s.is_active !== false && !deletedIds.includes(String(s.id)));
+
+    return list.map(mapStall);
   },
 
   async deleteVendor(stallId) {
     if (!stallId) throw new Error('Stall ID is required.');
+    const cleanId = String(stallId);
 
-    // 1. Delete associated menu items
+    // 1. Instantly register in deleted stalls registry
+    addDeletedStallId(cleanId);
+
+    // 2. Perform DB deletions across tables
+    try { await supabase.from('menu_items').delete().eq('stall_id', cleanId); } catch (_e) {}
+    try { await supabase.from('vendors').delete().eq('stall_id', cleanId); } catch (_e) {}
+    try { await supabase.from('accounts').delete().eq('shop_id', cleanId); } catch (_e) {}
+    try { await supabase.from('vendor_invites').delete().eq('stall_id', cleanId); } catch (_e) {}
+
+    // Hard delete from stalls
+    try { await supabase.from('stalls').delete().eq('id', cleanId); } catch (_e) {}
+
+    // Soft delete / inactive fallback on stalls
     try {
-      await supabase.from('menu_items').delete().eq('stall_id', stallId);
+      await supabase.from('stalls').update({ is_active: false, is_online: false, updated_at: new Date().toISOString() }).eq('id', cleanId);
     } catch (_e) {}
 
-    // 2. Delete vendor records
+    // Edge function delete fallback
     try {
-      await supabase.from('vendors').delete().eq('stall_id', stallId);
+      await supabase.functions.invoke('delete-vendor', { body: { stallId: cleanId } });
     } catch (_e) {}
 
-    // 3. Delete accounts records linked to this stall
-    try {
-      await supabase.from('accounts').delete().eq('shop_id', stallId);
-    } catch (_e) {}
-
-    // 4. Delete vendor invites linked to this stall
-    try {
-      await supabase.from('vendor_invites').delete().eq('stall_id', stallId);
-    } catch (_e) {}
-
-    // 5. Delete stall record itself from Supabase
-    const { error } = await supabase.from('stalls').delete().eq('id', stallId);
-    if (error) {
-      console.error('Failed to delete stall from Supabase:', error);
-      throw new Error(error.message || 'Failed to delete vendor stall from database.');
-    }
-
-    // 6. Clean up local storage credentials
+    // 3. Clean up local credentials
     try {
       const stored = JSON.parse(localStorage.getItem('sgu_vendor_credentials') || '{}');
-      delete stored[stallId];
-      delete stored[String(stallId).toLowerCase()];
+      delete stored[cleanId];
+      delete stored[cleanId.toLowerCase()];
       localStorage.setItem('sgu_vendor_credentials', JSON.stringify(stored));
     } catch (_e) {}
 
-    // 7. Broadcast real-time deletion event
+    // 4. Broadcast real-time deletion event
     try {
       supabase.channel('global-stall-broadcasts').send({
         type: 'broadcast',
         event: 'stall_deleted',
-        payload: { id: stallId }
+        payload: { id: cleanId }
       });
     } catch (_e) {}
 

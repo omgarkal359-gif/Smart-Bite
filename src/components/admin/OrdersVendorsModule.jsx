@@ -3,7 +3,7 @@ import {
   ShoppingBag, Store, Search, Filter, RefreshCw, 
   CheckCircle, AlertTriangle, Clock, Banknote, Smartphone, ShieldAlert, Utensils
 } from 'lucide-react';
-import { api } from '../../api';
+import { api, getDeletedStallIds } from '../../api';
 import { supabase } from '../../supabaseClient';
 import { SHOPS } from '../../data/foodCourtDB';
 
@@ -118,7 +118,9 @@ export const OrdersVendorsModule = () => {
         api.getStalls()
       ]);
       setOrders(orderQueue || []);
-      if (stallList && stallList.length) setStalls(stallList);
+      if (stallList && stallList.length) {
+        setStalls(stallList.filter(s => !getDeletedStallIds().includes(String(s.id))));
+      }
     } catch (err) {
       console.error('Failed to load admin orders & stalls:', err);
     } finally {

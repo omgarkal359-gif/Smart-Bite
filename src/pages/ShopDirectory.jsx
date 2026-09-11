@@ -4,7 +4,7 @@ import { GlassCard } from '../components/ui/GlassCard';
 import { Clock, Search, Flame, Star, ChevronRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { SHOPS } from '../data/foodCourtDB';
-import { api, socket } from '../api';
+import { api, socket, getDeletedStallIds } from '../api';
 import { supabase } from '../supabaseClient';
 import './pages.css';
 import './home_v21.css';
@@ -384,7 +384,9 @@ const ShopDirectory = () => {
                   </motion.div>
                 ))
               ) : (
-                stalls.map((shop, index) => {
+                stalls
+                  .filter(shop => !getDeletedStallIds().includes(String(shop.id)))
+                  .map((shop, index) => {
                   const isOnline = Boolean(
                     shop.online !== 0 &&
                     shop.online !== false &&
