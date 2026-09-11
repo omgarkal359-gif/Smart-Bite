@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Flame, Coffee } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { GlassCard } from '../components/ui/GlassCard';
-import { searchFoodItems } from '../data/foodCourtDB';
 import { useDebounce } from '../hooks/useDebounce';
+import { supabase } from '../supabaseClient';
 import { getFoodItemImage, PLACEHOLDER_IMAGE } from '../utils/imageHelper';
 import './home_v21.css';
 
@@ -12,6 +12,49 @@ const SearchPage = () => {
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const debouncedQuery = useDebounce(query, 300);
+  const [results, setResults] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    if (!debouncedQuery || !debouncedQuery.trim()) {
+      setResults([]);
+      return;
+    }
+    const q = debouncedQuery.trim().toLowerCase();
+
+    async function searchSupabase() {
+      setLoading(true);
+      try {
+        const { data } = await supabase
+          .from('menu_items')
+          .select('*, stalls(name)')
+          .or(`name.ilike.%${q}%,category.ilike.%${q}%`)
+          .limit(30);
+
+        if (active && data) {
+          const formatted = data.map(item => ({
+            id: item.id,
+            name: item.name,
+            category: item.category,
+            price: item.price,
+            stallId: item.stall_id,
+            stallName: item.stalls?.name || item.stall_id,
+            img: item.img,
+            isVeg: item.is_veg
+          }));
+          setResults(formatted);
+        }
+      } catch (_e) {
+        if (active) setResults([]);
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+
+    searchSupabase();
+    return () => { active = false; };
+  }, [debouncedQuery]);
 
   return (
     <div className="directory-container page-transition">
@@ -50,12 +93,10 @@ const SearchPage = () => {
               </GlassCard>
             </div>
           </div>
-        ) : (() => {
-          const results = searchFoodItems(debouncedQuery).slice(0, 20);
-          return (
+        ) : (
           <div className="flex flex-col gap-4">
             <h3 className="section-title-home text-gray-500 mb-2" style={{ fontSize: '1rem' }}>
-              {results.length} result{results.length !== 1 ? 's' : ''} found
+              {loading ? 'Searching live Supabase menu…' : `${results.length} result${results.length !== 1 ? 's' : ''} found`}
             </h3>
             {results.map((item, index) => (
               <motion.div 
@@ -93,8 +134,7 @@ const SearchPage = () => {
               </motion.div>
             ))}
           </div>
-          );
-        })()}
+        )}
       </main>
     </div>
   );

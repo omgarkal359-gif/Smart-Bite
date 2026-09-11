@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { GlassCard } from '../components/ui/GlassCard';
 import { Clock, Search, Flame, Star, ChevronRight } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { SHOPS, searchFoodItems } from '../data/foodCourtDB';
+import { SHOPS } from '../data/foodCourtDB';
 import { api, socket } from '../api';
 import { supabase } from '../supabaseClient';
 import './pages.css';
@@ -184,9 +184,55 @@ const ShopDirectory = () => {
     };
   }, []);
 
+  const [searchResults, setSearchResults] = useState([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    if (!query || !query.trim()) {
+      setSearchResults([]);
+      return;
+    }
+    const q = query.trim().toLowerCase();
+    async function doSearch() {
+      setSearchLoading(true);
+      try {
+        const { data } = await supabase
+          .from('menu_items')
+          .select('*, stalls(name)')
+          .or(`name.ilike.%${q}%,category.ilike.%${q}%`)
+          .limit(20);
+
+        if (active && data) {
+          setSearchResults(data.map(item => ({
+            id: item.id,
+            name: item.name,
+            category: item.category,
+            price: item.price,
+            stallId: item.stall_id,
+            stallName: item.stalls?.name || item.stall_id
+          })));
+        }
+      } catch (_e) {
+        if (active) setSearchResults([]);
+      } finally {
+        if (active) setSearchLoading(false);
+      }
+    }
+    doSearch();
+    return () => { active = false; };
+  }, [query]);
+
   return (
-    <div className="directory-container page-transition" style={{ paddingBottom: 110 }}>
-      <main className="shop-main-content pt-2">
+    <div className="directory-container page-transition">
+      <main className="shop-main-content">
+        {/* Header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+          <div>
+            <span style={{ fontSize: '0.8rem', fontWeight: '800', color: '#FF3B00', textTransform: 'uppercase', letterSpacing: '0.06em' }}>CAMPUS FOOD COURT</span>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: '900', color: '#0F172A', margin: 0, fontFamily: "'Outfit', sans-serif" }}>SmartBite Stalls</h2>
+          </div>
+        </div>
         
         {/* Search Bar */}
         {isLoading ? (
@@ -219,38 +265,33 @@ const ShopDirectory = () => {
         )}
 
         {query ? (
-          (() => {
-            const results = searchFoodItems(query).slice(0, 20);
-            return (
-              <div className="flex flex-col gap-3 mb-8">
-                <h3 className="section-title-home text-gray-500 mb-2" style={{ fontSize: '0.95rem', fontWeight: 700 }}>
-                  {results.length} result{results.length !== 1 ? 's' : ''} found
-                </h3>
-                {results.map((item, index) => (
-                  <motion.div 
-                    key={item.id} 
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.04 }}
-                  >
-                    <GlassCard 
-                      className="shop-card-v21 tap-effect shadow-sm"
-                      onClick={() => navigate(`/student/shop/${item.stallId}?highlight=${item.id}&category=${encodeURIComponent(item.category)}`)}
-                      style={{ cursor: 'pointer', padding: '14px', background: '#FFFFFF', borderRadius: 16, border: '1px solid #E2E8F0' }}
-                    >
-                      <div className="shop-card-right" style={{ width: '100%' }}>
-                        <div className="shop-header-row">
-                          <h4 className="shop-name-v21" style={{ color: '#0F172A', fontSize: '1rem', fontWeight: 800 }}>{item.name}</h4>
-                          <span style={{ fontWeight: 900, fontSize: '1rem', color: '#E4002B' }}>₹{item.price}</span>
-                        </div>
-                        <p className="shop-category-v21" style={{ color: '#64748B', fontSize: '0.8rem', marginTop: 2 }}>{item.stallName} · {item.category}</p>
-                      </div>
-                    </GlassCard>
-                  </motion.div>
-                ))}
-              </div>
-            );
-          })()
+          <div className="flex flex-col gap-3 mb-8">
+            <h3 className="section-title-home text-gray-500 mb-2" style={{ fontSize: '0.95rem', fontWeight: 700 }}>
+              {searchLoading ? 'Searching live Supabase menu…' : `${searchResults.length} result${searchResults.length !== 1 ? 's' : ''} found`}
+            </h3>
+            {searchResults.map((item, index) => (
+              <motion.div 
+                key={item.id} 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.04 }}
+              >
+                <GlassCard 
+                  className="shop-card-v21 tap-effect shadow-sm"
+                  onClick={() => navigate(`/student/shop/${item.stallId}?highlight=${item.id}&category=${encodeURIComponent(item.category)}`)}
+                  style={{ cursor: 'pointer', padding: '14px', background: '#FFFFFF', borderRadius: 16, border: '1px solid #E2E8F0' }}
+                >
+                  <div className="shop-card-right" style={{ width: '100%' }}>
+                    <div className="shop-header-row">
+                      <h4 className="shop-name-v21" style={{ color: '#0F172A', fontSize: '1rem', fontWeight: 800 }}>{item.name}</h4>
+                      <span style={{ fontWeight: 900, fontSize: '1rem', color: '#E4002B' }}>₹{item.price}</span>
+                    </div>
+                    <p className="shop-category-v21" style={{ color: '#64748B', fontSize: '0.8rem', marginTop: 2 }}>{item.stallName} · {item.category}</p>
+                  </div>
+                </GlassCard>
+              </motion.div>
+            ))}
+          </div>
         ) : (
           <>
             {/* Hero Slideshow Banner */}

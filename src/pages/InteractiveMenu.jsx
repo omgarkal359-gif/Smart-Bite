@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useCart } from '../context/CartContext';
 import { api, socket } from '../api';
 import { supabase } from '../supabaseClient';
-import { getItemsByStall, SHOPS, ALL_FOOD_ITEMS } from '../data/foodCourtDB';
+import { SHOPS } from '../data/foodCourtDB';
 import { getFoodItemImage } from '../utils/imageHelper';
 import './pages.css';
 import './menu_v21.css';
@@ -48,32 +48,10 @@ const InteractiveMenu = () => {
 
   const { cart, addToCart, removeFromCart, clearCart, totalItems, isCheckoutOpen, setIsCheckoutOpen } = useCart();
 
-  // Initial state derived synchronously from foodCourtDB
-  const initialItems = useMemo(() => {
-    const items = getItemsByStall(shopId);
-    return (items && items.length > 0) ? items : ALL_FOOD_ITEMS.slice(0, 20);
-  }, [shopId]);
-
-  const initialStall = useMemo(() => {
-    const found = SHOPS.find(s => s.id === shopId);
-    if (found) return found;
-    return { id: shopId, name: shopId ? shopId.replace(/-/g, ' ').toUpperCase() : 'SHOP MENU', category: 'Food Court Stall' };
-  }, [shopId]);
-
-  const [inventory, setInventory] = useState(initialItems);
-  const [stallInfo, setStallInfo] = useState(initialStall);
+  const [inventory, setInventory] = useState([]);
+  const [stallInfo, setStallInfo] = useState({ id: shopId, name: shopId ? shopId.replace(/-/g, ' ').toUpperCase() : 'SHOP MENU', category: 'Food Court Stall' });
   const [imgErrors, setImgErrors] = useState({});
-  const [isLoading, setIsLoading] = useState(false);
-
-  // Sync inventory if shopId changes
-  useEffect(() => {
-    const items = getItemsByStall(shopId);
-    if (items && items.length > 0) {
-      setInventory(items);
-    }
-    const found = SHOPS.find(s => s.id === shopId);
-    if (found) setStallInfo(found);
-  }, [shopId]);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Derive CATEGORIES dynamically from current inventory
   const CATEGORIES = useMemo(() => {
@@ -83,25 +61,34 @@ const InteractiveMenu = () => {
   }, [inventory]);
 
   // Determine active category
-  const [activeCategory, setActiveCategory] = useState(() => {
-    const decodedTarget = targetCategory ? decodeURIComponent(targetCategory) : null;
-    const initialCats = initialItems.map(i => i.category).filter(Boolean);
-    const unique = [...new Set(initialCats)];
-    if (decodedTarget && unique.includes(decodedTarget)) return decodedTarget;
-    return unique[0] || 'All Items';
-  });
+  const [activeCategory, setActiveCategory] = useState('All Items');
+
+  useEffect(() => {
+    if (CATEGORIES.length > 0) {
+      const decodedTarget = targetCategory ? decodeURIComponent(targetCategory) : null;
+      if (decodedTarget && CATEGORIES.includes(decodedTarget)) {
+        setActiveCategory(decodedTarget);
+      } else if (!CATEGORIES.includes(activeCategory)) {
+        setActiveCategory(CATEGORIES[0]);
+      }
+    }
+  }, [CATEGORIES, targetCategory]);
 
   // Load latest data asynchronously from API/Supabase
   useEffect(() => {
     let isMounted = true;
     async function loadStallMenu() {
+      setIsLoading(true);
       try {
         const items = await api.getStallMenu(shopId);
-        if (isMounted && items && Array.isArray(items) && items.length > 0) {
-          setInventory(items);
+        if (isMounted) {
+          setInventory(Array.isArray(items) ? items : []);
         }
       } catch (err) {
         console.error('Async menu load error:', err);
+        if (isMounted) setInventory([]);
+      } finally {
+        if (isMounted) setIsLoading(false);
       }
 
       try {
