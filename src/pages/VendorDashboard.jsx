@@ -428,95 +428,55 @@ const VendorDashboard = () => {
   }, [tickets]);
 
   return (
-    <div className={`vendor-kds-container page-transition ${isPowerSaver ? 'power-saver' : ''}`}>
-      {/* Confetti Effect */}
-      <AnimatePresence>
-        {showConfetti && (
-          <div className="fixed inset-0 pointer-events-none z-[1000] flex items-center justify-center">
-            {[...Array(20)].map((_, i) => (
-              <motion.span
-                key={i}
-                initial={{ scale: 0, x: 0, y: 0 }}
-                animate={{ 
-                  scale: [0, 1, 0], 
-                  x: (Math.random() - 0.5) * 1000, 
-                  y: (Math.random() - 0.5) * 1000,
-                  rotate: Math.random() * 360
-                }}
-                className="text-4xl absolute"
-              >
-                {['🍕', '🍔', '🍟', '✨', '🔥'][Math.floor(Math.random() * 5)]}
-              </motion.span>
-            ))}
+    <div className={`vendor-kds-container page-transition ${isPowerSaver ? 'power-saver' : ''}`} style={{ flexDirection: 'row', height: '100vh', overflow: 'hidden' }}>
+      
+      {/* SIDEBAR */}
+      <aside className="w-20 md:w-64 bg-slate-900 border-r border-slate-800 flex flex-col py-6 px-4 shadow-2xl shrink-0 h-full overflow-y-auto z-[100] transition-all duration-300">
+        <div className="flex flex-col items-center md:items-start gap-2 mb-10 w-full">
+          <div className="w-12 h-12 bg-red-600 rounded-xl flex items-center justify-center shadow-lg mb-2 shrink-0">
+            <Utensils size={24} className="text-white" />
           </div>
-        )}
-      </AnimatePresence>
-
-      <header className={`kds-header shadow-lg ${shopStatus === 'CLOSED' ? 'closed' : ''}`}>
-        <div className="kds-header-left flex items-center gap-8">
-          <div className="flex flex-col">
-            <h1 className="heading-2 text-white text-3xl" style={{ margin: 0 }}>{currentShop?.name || 'Vendor Dashboard'}</h1>
-            <div className="heartbeat-monitor mt-1" style={{ padding: '4px 12px' }}>
-              <Activity size={14} color={heartbeat ? '#22C55E' : '#94A3B8'} className={heartbeat ? 'pulse' : ''} />
-              <span className="text-white opacity-80 text-[10px] uppercase font-black tracking-widest">Live Operations</span>
-              {user && <span className="text-white opacity-60 text-[10px] font-semibold ml-2">· {user.name}</span>}
-            </div>
-          </div>
-
-          {/* Premium Status Toggle */}
-          <div className="status-toggle-container">
-            <div 
-              className={`premium-switch ${shopStatus === 'CLOSED' ? 'closed' : ''}`}
-              onClick={handleToggleShop}
-            >
-              <div className="switch-label">
-                <span>OPEN</span>
-                <span>CLOSED</span>
-              </div>
-              <motion.div 
-                layout
-                transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                className="switch-knob"
-                style={{ x: shopStatus === 'CLOSED' ? 56 : 0 }}
-              >
-                {shopStatus}
-              </motion.div>
-            </div>
-          </div>
+          <h2 className="text-white font-black text-xl tracking-wider hidden md:block m-0">SMARTBITE</h2>
+          <span className="text-slate-400 text-[10px] font-bold uppercase hidden md:block">Vendor System</span>
         </div>
         
-        <div className="kds-controls flex items-center gap-2 flex-wrap">
+        <div className="flex flex-col gap-4 w-full flex-1">
           <motion.button 
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className={`elite-ctrl-btn ${isBusyMode ? 'busy' : 'active'}`} 
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className={`elite-ctrl-btn !w-full !justify-start md:!justify-start !justify-center ${isBusyMode ? 'busy' : 'active'}`} 
             onClick={handleToggleBusyMode}
+            style={{ padding: '14px 16px', borderRadius: '12px' }}
           >
-            <Clock size={16} /> <span>{isBusyMode ? 'BUSY' : 'NORMAL'}</span>
+            <Clock size={18} className="shrink-0" /> <span className="hidden md:inline font-bold text-sm ml-2">{isBusyMode ? 'BUSY' : 'NORMAL'}</span>
           </motion.button>
 
           <motion.button 
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="elite-ctrl-btn management" 
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className="elite-ctrl-btn management !w-full !justify-start md:!justify-start !justify-center" 
             onClick={() => { setActiveSidebarTab('menu'); setIsSidebarOpen(true); }}
+            style={{ padding: '14px 16px', borderRadius: '12px' }}
           >
-            <Settings size={16} /> <span>MENU</span>
+            <Settings size={18} className="shrink-0" /> <span className="hidden md:inline font-bold text-sm ml-2">MENU</span>
           </motion.button>
 
           <motion.button 
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="elite-ctrl-btn management" 
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className="elite-ctrl-btn management !w-full !justify-start md:!justify-start !justify-center" 
             onClick={() => { setActiveSidebarTab('history'); setIsSidebarOpen(true); }}
+            style={{ padding: '14px 16px', borderRadius: '12px' }}
           >
-            <History size={16} /> <span>HISTORY</span>
+            <History size={18} className="shrink-0" /> <span className="hidden md:inline font-bold text-sm ml-2">HISTORY</span>
           </motion.button>
+        </div>
 
+        <div className="mt-auto w-full pt-6">
           <motion.button 
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="elite-ctrl-btn exit" 
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className="elite-ctrl-btn exit !w-full !justify-start md:!justify-start !justify-center" 
             onClick={async () => {
               clearStoredUser();
               try {
@@ -524,20 +484,80 @@ const VendorDashboard = () => {
               } catch (_e) {}
               navigate('/login', { replace: true });
             }}
+            style={{ padding: '14px 16px', borderRadius: '12px' }}
           >
-            <LogOut size={16} /> <span>LOGOUT</span>
+            <LogOut size={18} className="shrink-0" /> <span className="hidden md:inline font-bold text-sm ml-2">LOGOUT</span>
           </motion.button>
-
         </div>
-      </header>
+      </aside>
 
-      <main className="kds-main relative">
-        {/* Closed Watermark */}
-        <div className={`closed-watermark ${shopStatus === 'CLOSED' ? 'visible' : ''}`}>
-          <div className="watermark-text">SHOP CLOSED</div>
-        </div>
+      {/* MAIN CONTENT WRAPPER */}
+      <div className="flex-1 flex flex-col min-w-0 h-full relative" style={{ overflow: 'hidden' }}>
+        
+        {/* Confetti Effect inside main wrapper so it doesn't overlay sidebar unnecessarily, or keep it global */}
+        <AnimatePresence>
+          {showConfetti && (
+            <div className="absolute inset-0 pointer-events-none z-[1000] flex items-center justify-center">
+              {[...Array(20)].map((_, i) => (
+                <motion.span
+                  key={i}
+                  initial={{ scale: 0, x: 0, y: 0 }}
+                  animate={{ 
+                    scale: [0, 1, 0], 
+                    x: (Math.random() - 0.5) * 1000, 
+                    y: (Math.random() - 0.5) * 1000,
+                    rotate: Math.random() * 360
+                  }}
+                  className="text-4xl absolute"
+                >
+                  {['🍕', '🍔', '🍟', '✨', '🔥'][Math.floor(Math.random() * 5)]}
+                </motion.span>
+              ))}
+            </div>
+          )}
+        </AnimatePresence>
 
-        {/* Admin Command Dashboard */}
+        <header className={`kds-header shadow-lg ${shopStatus === 'CLOSED' ? 'closed' : ''}`} style={{ flexShrink: 0 }}>
+          <div className="kds-header-left flex items-center gap-8 w-full justify-between md:justify-start">
+            <div className="flex flex-col">
+              <h1 className="heading-2 text-white text-2xl md:text-3xl" style={{ margin: 0 }}>{currentShop?.name || 'Vendor Dashboard'}</h1>
+              <div className="heartbeat-monitor mt-1" style={{ padding: '4px 12px' }}>
+                <Activity size={14} color={heartbeat ? '#22C55E' : '#94A3B8'} className={heartbeat ? 'pulse' : ''} />
+                <span className="text-white opacity-80 text-[10px] uppercase font-black tracking-widest">Live Operations</span>
+                {user && <span className="text-white opacity-60 text-[10px] font-semibold ml-2">· {user.name}</span>}
+              </div>
+            </div>
+
+            {/* Premium Status Toggle */}
+            <div className="status-toggle-container">
+              <div 
+                className={`premium-switch ${shopStatus === 'CLOSED' ? 'closed' : ''}`}
+                onClick={handleToggleShop}
+              >
+                <div className="switch-label">
+                  <span>OPEN</span>
+                  <span>CLOSED</span>
+                </div>
+                <motion.div 
+                  layout
+                  transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                  className="switch-knob"
+                  style={{ x: shopStatus === 'CLOSED' ? 56 : 0 }}
+                >
+                  {shopStatus}
+                </motion.div>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <main className="kds-main relative flex-1 overflow-y-auto" style={{ padding: '16px' }}>
+          {/* Closed Watermark */}
+          <div className={`closed-watermark ${shopStatus === 'CLOSED' ? 'visible' : ''}`}>
+            <div className="watermark-text">SHOP CLOSED</div>
+          </div>
+
+          {/* Admin Command Dashboard */}
         <div className="command-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="elite-card command-card">
             <div className="flex justify-between items-start">
@@ -798,6 +818,7 @@ const VendorDashboard = () => {
           </>
         )}
       </AnimatePresence>
+      </div>
     </div>
   );
 };
