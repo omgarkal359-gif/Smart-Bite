@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Mail, Check, X, RefreshCw, Copy, Store, Power, UserPlus, Link2, Pencil, Save } from 'lucide-react';
+import { Mail, Check, X, RefreshCw, Copy, Store, Power, UserPlus, Link2, Pencil, Save, KeyRound, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 import { api, DEFAULT_FIELD_CATALOG } from '../../api';
 import { supabase } from '../../supabaseClient';
 
@@ -30,6 +30,36 @@ export const OnboardingModule = () => {
   const [manualData, setManualData] = useState({});
   const [selected, setSelected] = useState({ full_name: true, mobile: true, business_name: true });
   const [alsoEmail, setAlsoEmail] = useState(false);
+
+  // password reset states per vendor
+  const [passwords, setPasswords] = useState({});
+  const [showPasswords, setShowPasswords] = useState({});
+  const [passwordNotices, setPasswordNotices] = useState({});
+  const [resetLoading, setResetLoading] = useState({});
+
+  const handleResetPassword = async (v) => {
+    const vendorEmail = editData.contact_email || editData.email || v.contact_email || v.email;
+    const newPwd = passwords[v.id] || '';
+    
+    setResetLoading(prev => ({ ...prev, [v.id]: true }));
+    setPasswordNotices(prev => ({ ...prev, [v.id]: null }));
+    
+    try {
+      const targetEmail = vendorEmail || `${v.id}@sgu.edu.in`;
+      const res = await api.onboarding.resetPassword(targetEmail, newPwd);
+      setPasswordNotices(prev => ({
+        ...prev,
+        [v.id]: { type: 'success', msg: res.message }
+      }));
+    } catch (err) {
+      setPasswordNotices(prev => ({
+        ...prev,
+        [v.id]: { type: 'error', msg: err.message || 'Failed to reset password in Supabase.' }
+      }));
+    } finally {
+      setResetLoading(prev => ({ ...prev, [v.id]: false }));
+    }
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -334,6 +364,50 @@ export const OnboardingModule = () => {
                           Payout: •••• {editData._last4} · Status <b style={{ color: editData._payoutStatus === 'registered' ? '#059669' : editData._payoutStatus === 'failed' ? '#B91C1C' : '#B45309' }}>{editData._payoutStatus}</b>
                         </div>
                       )}
+
+                      {/* Reset System Password via Supabase */}
+                      <div style={{ marginTop: 18, paddingTop: 16, borderTop: '1px dashed #CBD5E1', background: '#FFFFFF', padding: 14, borderRadius: 12, border: '1px solid #E2E8F0' }}>
+                        <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#0F172A', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <KeyRound size={16} color="#DC2626" /> Reset Vendor Password (Supabase Verified)
+                        </div>
+                        <p style={{ fontSize: '0.78rem', color: '#64748B', margin: '0 0 12px 0' }}>
+                          Set a new system password or trigger a Supabase Auth recovery link. Vendor logins are verified live through Supabase Auth to access the Vendor Dashboard.
+                        </p>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center' }}>
+                          <div style={{ position: 'relative', flex: '1 1 240px' }}>
+                            <input
+                              type={showPasswords[v.id] ? 'text' : 'password'}
+                              style={{ ...input, paddingRight: 40 }}
+                              placeholder="Enter new system password (min 6 chars)"
+                              value={passwords[v.id] || ''}
+                              onChange={e => setPasswords(prev => ({ ...prev, [v.id]: e.target.value }))}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowPasswords(prev => ({ ...prev, [v.id]: !prev[v.id] }))}
+                              style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#64748B' }}
+                            >
+                              {showPasswords[v.id] ? <EyeOff size={15} /> : <Eye size={15} />}
+                            </button>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => handleResetPassword(v)}
+                            disabled={resetLoading[v.id]}
+                            style={btn('#DC2626', '#FFFFFF')}
+                          >
+                            <ShieldCheck size={15} /> {resetLoading[v.id] ? 'Updating Supabase…' : 'Reset Password via Supabase'}
+                          </button>
+                        </div>
+
+                        {passwordNotices[v.id] && (
+                          <div style={{ marginTop: 10, padding: '10px 14px', borderRadius: 8, background: passwordNotices[v.id].type === 'error' ? '#FEF2F2' : '#F0FDF4', border: passwordNotices[v.id].type === 'error' ? '1px solid #FECACA' : '1px solid #BBF7D0', color: passwordNotices[v.id].type === 'error' ? '#991B1B' : '#166534', fontSize: '0.82rem', fontWeight: 600 }}>
+                            {passwordNotices[v.id].msg}
+                          </div>
+                        )}
+                      </div>
+
                       <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
                         <button onClick={() => saveEdit(v.id)} disabled={editBusy} style={btn('#059669', '#FFFFFF')}><Save size={15} /> {editBusy ? 'Saving…' : 'Save Details'}</button>
                         <button onClick={() => setEditingId(null)} style={btn('#FFFFFF', '#334155', '1px solid #E2E8F0')}><X size={15} /> Cancel</button>

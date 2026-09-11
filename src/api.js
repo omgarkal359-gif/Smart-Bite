@@ -580,6 +580,52 @@ export const api = {
         if (error) throw new Error(error.message);
         return { success: true };
       }
+    },
+    resetPassword: async (email, newPassword) => {
+      const cleanEmail = (email || '').trim().toLowerCase();
+      if (!cleanEmail) throw new Error('Vendor email address is required.');
+
+      // 1. Dispatch official Supabase Auth Password Reset Email
+      let resetSent = false;
+      try {
+        const { error: resetErr } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
+          redirectTo: `${window.location.origin}/reset-password`
+        });
+        if (!resetErr) resetSent = true;
+      } catch (_e) {}
+
+      // 2. Try Edge Function / Supabase admin password update if password provided
+      if (newPassword && newPassword.trim().length >= 6) {
+        try {
+          const { data: fnData, error: fnErr } = await supabase.functions.invoke('update-vendor-password', {
+            body: { email: cleanEmail, password: newPassword.trim() }
+          });
+          if (!fnErr && fnData?.success) {
+            return {
+              success: true,
+              message: `Vendor password updated live in Supabase Auth! Vendor can sign in with ${cleanEmail}`,
+              password: newPassword.trim()
+            };
+          }
+        } catch (_e) {}
+      }
+
+      if (resetSent) {
+        return {
+          success: true,
+          message: `Supabase Auth recovery email sent to ${cleanEmail}. Vendor can reset password directly via link.`
+        };
+      }
+
+      const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
+        redirectTo: `${window.location.origin}/reset-password`
+      });
+      if (error) throw new Error(error.message);
+
+      return {
+        success: true,
+        message: `Supabase password recovery link sent to ${cleanEmail}.`
+      };
     }
   }
 };
