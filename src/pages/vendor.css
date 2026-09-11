@@ -47,6 +47,13 @@
 /* Main content offset */
 .vendor-main-content {
   margin-left: 76px;
+  transition: margin-left 320ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@media (min-width: 1025px) {
+  .vendor-sidebar:hover ~ .vendor-main-content {
+    margin-left: 220px;
+  }
 }
 
 /* Logo */
@@ -257,13 +264,7 @@
   align-items: center;
   border-bottom: 4px solid var(--accent-amber);
   z-index: 100;
-  transition: padding-left 320ms cubic-bezier(0.4, 0, 0.2, 1), background 0.5s ease, filter 0.5s ease;
-}
-
-@media (min-width: 1025px) {
-  .vendor-sidebar:hover ~ .vendor-main-content .kds-header {
-    padding-left: 176px;
-  }
+  transition: background 0.5s ease, filter 0.5s ease;
 }
 
 .kds-header.closed {
