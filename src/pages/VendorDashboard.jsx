@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { GlassCard } from '../components/ui/GlassCard';
 import { Button } from '../components/ui/Button';
 import { Clock, Volume2, Power, LogOut, CheckCircle, Banknote, Activity, Smartphone, Utensils, ShoppingBag, Settings, Menu, RefreshCw, X, TrendingUp, Hash, CreditCard, Star, History, User, Flame } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { MenuEditor } from '../components/vendor/MenuEditor';
 import { SHOPS } from '../data/foodCourtDB';
 import { api, socket, formatRelativeTime } from '../api';
@@ -54,6 +54,7 @@ const formatOrderItems = (rawItems) => {
 
 const VendorDashboard = () => {
   const navigate = useNavigate();
+  const prefersReducedMotion = useReducedMotion();
   const [tickets, setTickets] = useState([]);
   const [completedTickets, setCompletedTickets] = useState([]);
   const [isPowerSaver, setIsPowerSaver] = useState(false);
@@ -367,10 +368,12 @@ const VendorDashboard = () => {
         socket.emit('stall_status_update', payload);
       }
       showToast(`Stall is now ${newStatus === 'OPEN' ? 'ONLINE 🟢' : 'OFFLINE 🔴'}`, newStatus === 'OPEN' ? 'success' : 'info');
-      if (newStatus === 'OPEN') {
-        setShowConfetti(true);
-        setTimeout(() => setShowConfetti(false), 3000);
-      }
+        if (newStatus === 'OPEN') {
+          setShowConfetti(true);
+          setTimeout(() => setShowConfetti(false), 3000);
+        } else {
+          setShowConfetti(false);
+        }
     } catch (err) {
       setShopStatus(prevStatus);
       showToast('Failed to update shop status: ' + err.message, 'error');
@@ -487,30 +490,6 @@ const VendorDashboard = () => {
       {/* MAIN CONTENT WRAPPER */}
       <div className="vendor-main-content flex-1 flex flex-col min-w-0 h-full relative" style={{ overflow: 'hidden' }}>
         
-        {/* Confetti Effect inside main wrapper so it doesn't overlay sidebar unnecessarily, or keep it global */}
-        <AnimatePresence>
-          {showConfetti && (
-            <div className="absolute inset-0 pointer-events-none z-[1000] flex items-center justify-center">
-              {[...Array(20)].map((_, i) => (
-                <motion.span
-                  key={i}
-                  initial={{ scale: 0, x: 0, y: 0 }}
-                  animate={{ 
-                    scale: [0, 1.5, 0], 
-                    x: (Math.random() - 0.5) * 800, 
-                    y: (Math.random() - 0.5) * 800,
-                    rotate: Math.random() * 360
-                  }}
-                  transition={{ duration: 2.5, ease: "easeOut" }}
-                  className="text-4xl absolute"
-                >
-                  {['🍕', '🍔', '🍟', '🌮', '🍗', '🥗'][Math.floor(Math.random() * 6)]}
-                </motion.span>
-              ))}
-            </div>
-          )}
-        </AnimatePresence>
-
         <header className={`kds-header shadow-lg ${shopStatus === 'CLOSED' ? 'closed' : ''}`} style={{ flexShrink: 0 }}>
           <div className="kds-header-left flex items-center gap-8 w-full justify-between">
             <div className="flex flex-col">
@@ -522,8 +501,8 @@ const VendorDashboard = () => {
               </div>
             </div>
 
-            {/* Premium Status Toggle */}
-            <div className="status-toggle-container">
+            {/* Premium Status Toggle & Food Pop Animation */}
+            <div className="status-toggle-container relative">
               <div 
                 className={`premium-switch ${shopStatus === 'CLOSED' ? 'closed' : ''}`}
                 onClick={handleToggleShop}
@@ -535,6 +514,45 @@ const VendorDashboard = () => {
                     style={{ transform: shopStatus === 'CLOSED' ? 'translateX(58px)' : 'translateX(0)' }}
                   />
               </div>
+
+              {/* Food Pop Animation Layer */}
+              <AnimatePresence>
+                {showConfetti && !prefersReducedMotion && (
+                  <div className="absolute inset-0 pointer-events-none z-0 flex items-center justify-center">
+                    {[
+                      { emoji: '🍕', x: 70, y: -35, rotate: 15 },
+                      { emoji: '🍔', x: 85, y: 0, rotate: -10 },
+                      { emoji: '🍟', x: -70, y: -35, rotate: -20 },
+                      { emoji: '🥤', x: 70, y: 35, rotate: 10 },
+                      { emoji: '🍩', x: -85, y: 0, rotate: 20 },
+                      { emoji: '🌮', x: -70, y: 35, rotate: -15 },
+                    ].map((item, i) => (
+                      <motion.span
+                        key={i}
+                        aria-hidden="true"
+                        initial={{ scale: 0, x: 0, y: 0, opacity: 0 }}
+                        animate={{ 
+                          scale: [0, 1.15, 1, 0.9],
+                          opacity: [0, 1, 1, 0],
+                          x: [0, item.x * 0.8, item.x, item.x * 1.1],
+                          y: [0, item.y * 0.8, item.y, item.y * 1.1 - 10],
+                          rotate: [0, item.rotate, item.rotate * 1.5]
+                        }}
+                        transition={{ 
+                          duration: 0.9, 
+                          ease: [0.22, 1, 0.36, 1],
+                          times: [0, 0.4, 0.7, 1],
+                          delay: i * 0.06
+                        }}
+                        className="text-xl absolute drop-shadow-md"
+                        style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.15))' }}
+                      >
+                        {item.emoji}
+                      </motion.span>
+                    ))}
+                  </div>
+                )}
+              </AnimatePresence>
             </div>
           </div>
         </header>
