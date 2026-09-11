@@ -54,6 +54,7 @@ export const OnboardingModule = () => {
     
     try {
       const res = await api.onboarding.resetPassword(cleanEmail, newPwd, v.id);
+      setVendors(prev => prev.map(x => x.id === v.id ? { ...x, contact_email: cleanEmail, email: cleanEmail } : x));
       setPasswordNotices(prev => ({
         ...prev,
         [v.id]: { type: 'success', msg: res.message }

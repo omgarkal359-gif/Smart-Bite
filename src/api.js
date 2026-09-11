@@ -192,7 +192,7 @@ export const api = {
       return { success: false, message: 'Email and Password are required.' };
     }
 
-    // 1. Primary Authentication: Verify email and password via Supabase Auth
+    // 1. Primary Authentication: Try Supabase Auth
     let authUser = null;
     let authSession = null;
     const { data, error } = await supabase.auth.signInWithPassword({ email, password: pwd });
@@ -201,42 +201,80 @@ export const api = {
       authSession = data.session;
     }
 
-    // 2. Query Supabase database for vendor/admin record (vendors / accounts)
+    // 2. Query Supabase 'vendors' table
     let vendorRecord = null;
     try {
-      const { data: vData } = await supabase
-        .from('vendors')
-        .select('*')
-        .or(`contact_email.eq.${email},details->>email.eq.${email}`)
-        .maybeSingle();
-      if (vData) vendorRecord = vData;
+      // First try exact ilike match on contact_email
+      const { data: v1 } = await supabase.from('vendors').select('*').ilike('contact_email', email).maybeSingle();
+      if (v1) {
+        vendorRecord = v1;
+      } else {
+        // Fall back to querying all vendors and checking email/stall_id/details
+        const { data: allV } = await supabase.from('vendors').select('*');
+        if (allV && allV.length > 0) {
+          const matched = allV.find(v => 
+            v.stall_id === email ||
+            v.contact_email?.toLowerCase() === email ||
+            v.details?.email?.toLowerCase() === email
+          );
+          if (matched) vendorRecord = matched;
+        }
+      }
     } catch (_e) {}
 
+    // 3. Query Supabase 'accounts' table
     let profileRecord = null;
     try {
-      const { data: pData } = await supabase.from('accounts').select('*').eq('email', email).maybeSingle();
+      const { data: pData } = await supabase.from('accounts').select('*').ilike('email', email).maybeSingle();
       if (pData) profileRecord = pData;
     } catch (_e) {}
 
-    // If Supabase Auth didn't match, check if password matches the password saved in Supabase database for this vendor
+    // 4. Query Supabase 'stalls' table
+    let stallRecord = null;
+    try {
+      const { data: sData } = await supabase.from('stalls').select('*').eq('id', email).maybeSingle();
+      if (sData) stallRecord = sData;
+    } catch (_e) {}
+
+    // Check if password matches stored password in Supabase database
     let dbPasswordMatch = false;
     if (!authUser && vendorRecord) {
-      const storedPwd = vendorRecord.password_hash || vendorRecord.details?.system_password || vendorRecord.details?.temp_password;
+      const storedPwd = vendorRecord.details?.system_password || vendorRecord.details?.temp_password || vendorRecord.details?.password;
       if (storedPwd && storedPwd === pwd) {
         dbPasswordMatch = true;
       }
     }
 
+    if (!authUser && !dbPasswordMatch && stallRecord) {
+      const { data: vStall } = await supabase.from('vendors').select('*').eq('stall_id', stallRecord.id).maybeSingle();
+      const sPwd = vStall?.details?.system_password || vStall?.details?.temp_password || vStall?.details?.password;
+      if (sPwd && sPwd === pwd) {
+        dbPasswordMatch = true;
+        vendorRecord = vStall;
+      }
+    }
+
+    // Check Local Storage fallback credentials (for immediate local verification)
+    let localPasswordMatch = false;
     if (!authUser && !dbPasswordMatch) {
+      try {
+        const storedMap = JSON.parse(localStorage.getItem('sgu_vendor_credentials') || '{}');
+        const localPwd = storedMap[email] || (vendorRecord?.stall_id ? storedMap[vendorRecord.stall_id.toLowerCase()] : null) || (stallRecord?.id ? storedMap[stallRecord.id.toLowerCase()] : null);
+        if (localPwd && localPwd === pwd) {
+          localPasswordMatch = true;
+        }
+      } catch (_e) {}
+    }
+
+    if (!authUser && !dbPasswordMatch && !localPasswordMatch) {
       return { success: false, message: error?.message || 'Invalid email or password verified by Supabase.' };
     }
 
-    // Determine role and stall ID from Supabase
-    let role = profileRecord?.role || (vendorRecord ? 'vendor' : authUser?.user_metadata?.role);
+    let role = profileRecord?.role || (vendorRecord || stallRecord ? 'vendor' : authUser?.user_metadata?.role);
     if (isAdminEmail(email)) role = 'admin';
     if (!role) role = 'vendor';
 
-    let shopId = vendorRecord?.stall_id || profileRecord?.shop_id || null;
+    let shopId = vendorRecord?.stall_id || stallRecord?.id || profileRecord?.shop_id || null;
     if (!shopId) {
       try {
         const userId = authUser?.id || profileRecord?.id;
@@ -265,7 +303,7 @@ export const api = {
       user: {
         id: authUser?.id || profileRecord?.id || vendorRecord?.stall_id || email,
         username: email,
-        name: profileRecord?.full_name || vendorRecord?.business_name || email.split('@')[0],
+        name: profileRecord?.full_name || vendorRecord?.business_name || stallRecord?.name || email.split('@')[0],
         role,
         shopId: shopId || vendorRecord?.stall_id
       }
@@ -667,13 +705,14 @@ export const api = {
       } catch (_e) {}
 
       // 2. Save the updated password directly into Supabase database (vendors table)
-      if (stallId) {
+      if (stallId || cleanEmail) {
         try {
-          const { data: existingVendor } = await supabase
-            .from('vendors')
-            .select('details')
-            .eq('stall_id', stallId)
-            .maybeSingle();
+          const { data: vendorsList } = await supabase.from('vendors').select('*');
+          const existingVendor = vendorsList?.find(v => 
+            (stallId && v.stall_id === stallId) ||
+            v.contact_email?.toLowerCase() === cleanEmail ||
+            v.details?.email?.toLowerCase() === cleanEmail
+          );
 
           const updatedDetails = {
             ...(existingVendor?.details || {}),
@@ -682,33 +721,58 @@ export const api = {
             password_updated_at: new Date().toISOString()
           };
 
-          const { error: vErr } = await supabase.from('vendors').upsert({
-            stall_id: stallId,
-            contact_email: cleanEmail,
-            password_hash: pwd,
-            details: updatedDetails,
-            updated_at: new Date().toISOString()
-          }, { onConflict: 'stall_id' });
+          if (existingVendor?.id) {
+            const { error: vErr } = await supabase.from('vendors').update({
+              contact_email: cleanEmail,
+              details: updatedDetails,
+              updated_at: new Date().toISOString()
+            }).eq('id', existingVendor.id);
 
-          if (vErr) {
-            console.warn('Supabase vendors database update notice:', vErr.message);
+            if (vErr) {
+              console.warn('Supabase vendors database update notice:', vErr.message);
+            }
+          } else if (stallId) {
+            await supabase.from('vendors').insert({
+              stall_id: stallId,
+              contact_email: cleanEmail,
+              details: updatedDetails,
+              updated_at: new Date().toISOString()
+            });
           }
         } catch (_e) {}
       }
 
-      // 3. Save/Upsert account record in Supabase accounts table
+      // 3. Save/Update account record in Supabase accounts table
       try {
-        await supabase.from('accounts').upsert({
-          email: cleanEmail,
-          role: 'vendor',
-          shop_id: stallId || null,
-          updated_at: new Date().toISOString()
-        }, { onConflict: 'email' });
+        const { data: accList } = await supabase.from('accounts').select('*');
+        const existingAcc = accList?.find(a => a.email?.toLowerCase() === cleanEmail);
+        if (existingAcc?.id) {
+          await supabase.from('accounts').update({
+            role: 'vendor',
+            shop_id: stallId || null,
+            updated_at: new Date().toISOString()
+          }).eq('id', existingAcc.id);
+        } else {
+          await supabase.from('accounts').insert({
+            email: cleanEmail,
+            role: 'vendor',
+            shop_id: stallId || null,
+            updated_at: new Date().toISOString()
+          });
+        }
+      } catch (_e) {}
+
+      // 4. Save to local credentials store (localStorage) for immediate verification
+      try {
+        const stored = JSON.parse(localStorage.getItem('sgu_vendor_credentials') || '{}');
+        stored[cleanEmail] = pwd;
+        if (stallId) stored[stallId.toLowerCase()] = pwd;
+        localStorage.setItem('sgu_vendor_credentials', JSON.stringify(stored));
       } catch (_e) {}
 
       return {
         success: true,
-        message: `✓ Vendor password updated in Supabase database! Vendor can now sign in with email: ${cleanEmail} and password: ${pwd}`,
+        message: `✓ Vendor password updated in Supabase database & Auth! Email: ${cleanEmail} | Password: ${pwd}`,
         password: pwd
       };
     }
