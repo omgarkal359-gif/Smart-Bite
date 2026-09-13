@@ -1294,15 +1294,23 @@ select.floating-input {
     padding: 14px;
   }
 
+  .command-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+  }
+
+  /* Mobile: Vertical Order Cards Layout */
   .kds-ticket-scroll {
+    display: flex !important;
     flex-direction: column !important;
     overflow-x: hidden !important;
-    overflow-y: auto !important; /* Fixed: Allow vertical scrolling */
+    overflow-y: visible !important;
     gap: 16px !important;
     padding: 8px 4px 40px 4px !important;
     scroll-snap-type: none !important;
     touch-action: pan-y !important;
     -webkit-overflow-scrolling: touch !important;
+    width: 100% !important;
   }
 
   .kds-ticket {
@@ -1342,6 +1350,7 @@ select.floating-input {
     background-color: #166534 !important;
     border-color: #14532d !important;
   }
+
   .kds-ticket:hover {
     transform: none;
   }
@@ -1351,7 +1360,7 @@ select.floating-input {
   }
 
   .ticket-id {
-    font-size: 1.1rem !important;
+    font-size: 1.25rem !important;
   }
 
   .ticket-badges {
@@ -1406,6 +1415,28 @@ select.floating-input {
   }
 }
 
+/* Laptop / Desktop (≥ 769px) Horizontal Order Cards Layout */
+@media (min-width: 769px) {
+  .kds-ticket-scroll {
+    display: flex !important;
+    flex-direction: row !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    gap: 24px !important;
+    padding: 12px 6px 30px 6px !important;
+    align-items: stretch !important;
+    width: 100% !important;
+  }
+
+  .kds-ticket {
+    width: 360px !important;
+    min-width: 340px !important;
+    max-width: 380px !important;
+    flex-shrink: 0 !important;
+    margin-bottom: 0 !important;
+  }
+}
+
 /* Small phones (≤ 480px) */
 @media (max-width: 480px) {
   .kds-header {
@@ -1418,12 +1449,12 @@ select.floating-input {
   }
 
   .command-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
   }
 
   .command-value {
-    font-size: 1.5rem;
+    font-size: 1.35rem !important;
   }
 
   .kds-controls {

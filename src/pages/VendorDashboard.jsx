@@ -681,7 +681,7 @@ const VendorDashboard = () => {
             <Utensils size={20} className="text-red-500" />
             Kitchen Queue ({activeTickets.length})
           </h3>
-          <div className="kds-ticket-scroll" style={{ marginTop: 0, padding: '0 0 40px 0' }}>
+          <div className="kds-ticket-scroll">
               <AnimatePresence>
                 {activeTickets.length === 0 ? (
                   <motion.div 
