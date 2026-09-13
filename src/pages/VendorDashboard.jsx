@@ -631,8 +631,7 @@ const VendorDashboard = () => {
             <div className="watermark-text">SHOP CLOSED</div>
           </div>
 
-          {/* Admin Command Dashboard */}
-        <div className="command-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
+        <div className="command-grid">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="elite-card command-card">
             <div className="flex justify-between items-start">
               <span className="command-label">Today&apos;s Orders</span>
