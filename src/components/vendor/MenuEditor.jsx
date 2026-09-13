@@ -108,27 +108,29 @@ export const MenuEditor = ({ shopId }) => {
 
   return (
     <div className="menu-editor-container">
-      <div className="flex justify-between items-center mb-5 flex-wrap gap-3">
+      <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
         <div className="flex items-center gap-2">
-          <span className="text-xs font-black text-slate-500 uppercase tracking-wider">Active Items ({items.length})</span>
+          <span className="text-sm font-black text-slate-500 uppercase tracking-wider">Active Items ({items.length})</span>
         </div>
         <motion.button 
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full font-extrabold text-[11px] uppercase tracking-wider transition-all shadow-sm"
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.97 }}
+          className="inline-flex items-center gap-2.5 px-7 py-3.5 rounded-full font-black text-sm lg:text-base uppercase transition-all shadow-md"
           onClick={() => setIsAdding(!isAdding)}
           style={{ 
             backgroundColor: isAdding ? '#334155' : '#dc2626', 
             color: '#ffffff',
             border: 'none', 
             cursor: 'pointer',
-            boxShadow: isAdding ? 'none' : '0 4px 12px rgba(220, 38, 38, 0.3)',
+            boxShadow: isAdding ? 'none' : '0 6px 18px rgba(220, 38, 38, 0.35)',
             whiteSpace: 'nowrap',
-            lineHeight: 1
+            lineHeight: 1.2
           }}
         >
-          {isAdding ? <X size={14} strokeWidth={2.5} /> : <Plus size={14} strokeWidth={2.5} />}
-          <span style={{ letterSpacing: '0.04em' }}>{isAdding ? 'CANCEL' : 'ADD NEW ITEM'}</span>
+          {isAdding ? <X size={18} strokeWidth={2.5} /> : <Plus size={18} strokeWidth={2.5} />}
+          <span style={{ letterSpacing: '0.04em', wordSpacing: '0.15em' }}>
+            {isAdding ? 'CANCEL' : 'ADD NEW ITEM'}
+          </span>
         </motion.button>
       </div>
 
