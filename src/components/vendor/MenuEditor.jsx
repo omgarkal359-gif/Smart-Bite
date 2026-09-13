@@ -113,24 +113,28 @@ export const MenuEditor = ({ shopId }) => {
           <span className="text-sm font-black text-slate-500 uppercase tracking-wider">Active Items ({items.length})</span>
         </div>
         <motion.button 
-          whileHover={{ scale: 1.03 }}
-          whileTap={{ scale: 0.97 }}
-          className="inline-flex items-center gap-2.5 px-7 py-3.5 rounded-full font-black text-sm lg:text-base uppercase transition-all shadow-md"
+          whileHover={{ scale: 1.04 }}
+          whileTap={{ scale: 0.96 }}
+          className="inline-flex items-center justify-center gap-2.5 transition-all"
           onClick={() => setIsAdding(!isAdding)}
           style={{ 
             backgroundColor: isAdding ? '#334155' : '#dc2626', 
             color: '#ffffff',
             border: 'none', 
             cursor: 'pointer',
-            boxShadow: isAdding ? 'none' : '0 6px 18px rgba(220, 38, 38, 0.35)',
+            boxShadow: isAdding ? 'none' : '0 8px 22px rgba(220, 38, 38, 0.4)',
             whiteSpace: 'nowrap',
-            lineHeight: 1.2
+            height: '48px',
+            padding: '0 32px',
+            borderRadius: '24px',
+            fontSize: '0.875rem',
+            fontWeight: 800,
+            letterSpacing: '0.05em',
+            textTransform: 'uppercase'
           }}
         >
-          {isAdding ? <X size={18} strokeWidth={2.5} /> : <Plus size={18} strokeWidth={2.5} />}
-          <span style={{ letterSpacing: '0.04em', wordSpacing: '0.15em' }}>
-            {isAdding ? 'CANCEL' : 'ADD NEW ITEM'}
-          </span>
+          {isAdding ? <X size={18} strokeWidth={3} /> : <Plus size={18} strokeWidth={3} />}
+          <span>{isAdding ? 'CANCEL' : 'ADD NEW ITEM'}</span>
         </motion.button>
       </div>
 
