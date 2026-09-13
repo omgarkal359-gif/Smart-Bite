@@ -720,26 +720,51 @@ select.floating-input {
   background: #FEF2F2;
 }
 
-/* Category Sections */
+/* Category Sections & Header */
 .category-section {
   position: relative;
+  margin-bottom: 24px;
 }
 
-.category-section::before {
-  content: '';
-  position: absolute;
-  left: -20px;
-  top: 0;
-  bottom: 0;
-  width: 4px;
-  background: var(--primary-navy);
-  border-radius: 0 4px 4px 0;
-  opacity: 0;
-  transition: opacity 0.3s ease;
+.category-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 16px;
+  margin-bottom: 16px;
 }
 
-.category-section:hover::before {
-  opacity: 1;
+.category-title {
+  font-family: 'Oswald', sans-serif;
+  font-size: 1.25rem !important;
+  font-weight: 800 !important;
+  color: #EF4444 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0 !important;
+  white-space: nowrap;
+}
+
+.title-separator {
+  flex: 1;
+  height: 1px;
+  background: #E2E8F0;
+}
+
+.item-count {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #94A3B8;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+}
+
+.items-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 /* Fix for stretched containers in sidebar */

@@ -108,23 +108,26 @@ export const MenuEditor = ({ shopId }) => {
 
   return (
     <div className="menu-editor-container">
-      <div className="flex justify-between items-center mb-10 mt-6">
-        <h2 className="text-4xl font-black uppercase" style={{ color: '#0f172a', fontFamily: 'Oswald, sans-serif', margin: 0, letterSpacing: '0.05em' }}>CATALOG EDITOR</h2>
+      <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-extrabold text-slate-500 uppercase tracking-wider">Active Menu Items ({items.length})</span>
+        </div>
         <motion.button 
-          whileHover={{ scale: 1.04 }}
-          whileTap={{ scale: 0.96 }}
-          className="flex items-center gap-4 px-10 py-5 rounded-3xl font-black text-base lg:text-lg uppercase tracking-[0.15em] transition-all"
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.97 }}
+          className="flex items-center gap-2.5 px-6 py-3.5 rounded-full font-black text-xs lg:text-sm uppercase tracking-wider transition-all shadow-md"
           onClick={() => setIsAdding(!isAdding)}
           style={{ 
-            backgroundColor: isAdding ? '#1e293b' : '#dc2626', 
+            backgroundColor: isAdding ? '#334155' : '#dc2626', 
             color: '#ffffff',
             border: 'none', 
             cursor: 'pointer',
-            boxShadow: isAdding ? 'none' : '0 8px 20px rgba(220, 38, 38, 0.3)'
+            boxShadow: isAdding ? 'none' : '0 6px 18px rgba(220, 38, 38, 0.35)',
+            whiteSpace: 'nowrap'
           }}
         >
-          {isAdding ? <X size={24} strokeWidth={3} /> : <Plus size={24} strokeWidth={3} />}
-          {isAdding ? 'CANCEL' : 'ADD NEW ITEM'}
+          {isAdding ? <X size={18} strokeWidth={2.5} /> : <Plus size={18} strokeWidth={2.5} />}
+          <span style={{ letterSpacing: '0.06em' }}>{isAdding ? 'CANCEL' : 'ADD NEW ITEM'}</span>
         </motion.button>
       </div>
 

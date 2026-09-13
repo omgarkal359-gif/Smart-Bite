@@ -835,10 +835,21 @@ const VendorDashboard = () => {
               transition={{ type: 'spring', damping: 30, stiffness: 300 }}
               className="management-sidebar open shadow-2xl"
             >
-              <div className="flex justify-between items-center mb-8 mt-2">
-                <h2 className="text-4xl font-bold uppercase" style={{ color: '#0f172a', fontFamily: 'Oswald, sans-serif', margin: 0, letterSpacing: '0.05em' }}>OPERATIONS</h2>
-                <button className="p-3 hover:bg-slate-200 rounded-full transition-colors" style={{ color: '#0f172a', border: 'none', background: 'transparent', cursor: 'pointer' }} onClick={() => setIsSidebarOpen(false)}>
-                  <X size={32} strokeWidth={2.5} />
+              <div className="flex justify-between items-center pb-4 mb-6 border-b border-slate-200">
+                <div className="flex flex-col">
+                  <h2 className="text-2xl lg:text-3xl font-black uppercase tracking-wide" style={{ color: '#0f172a', fontFamily: 'Oswald, sans-serif', margin: 0 }}>
+                    {activeSidebarTab === 'menu' ? 'CATALOG EDITOR' : 'ORDER HISTORY'}
+                  </h2>
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-0.5">
+                    {activeSidebarTab === 'menu' ? 'Manage Menu & Pricing' : 'Completed Receipts'}
+                  </span>
+                </div>
+                <button 
+                  className="p-2.5 hover:bg-slate-100 rounded-full transition-all text-slate-700 hover:text-slate-900 border-0 bg-transparent cursor-pointer flex items-center justify-center" 
+                  onClick={() => setIsSidebarOpen(false)}
+                  title="Close Sidebar"
+                >
+                  <X size={26} strokeWidth={2.5} />
                 </button>
               </div>
               
