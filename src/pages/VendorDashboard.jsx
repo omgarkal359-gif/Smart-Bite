@@ -709,8 +709,13 @@ const VendorDashboard = () => {
                     >
                       <div className="ticket-header">
                         <div className="flex flex-col">
-                          <span className="ticket-id text-2xl">{ticket.id}</span>
-                          <span className="text-[10px] font-black text-navy-400 uppercase tracking-widest">{ticket.customerName || 'Standard Order'}</span>
+                          <span className="ticket-id text-2xl font-black">{ticket.id}</span>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <User size={13} className="text-indigo-600 inline-block" />
+                            <span className="text-xs font-black text-slate-700 uppercase tracking-wide">
+                              {ticket.customerName || ticket.customer_name || ticket.customerEmail || 'Student'}
+                            </span>
+                          </div>
                         </div>
                         <span className="ticket-time text-red-500 font-black uppercase text-xs tracking-tighter">{ticket.time}</span>
                       </div>
@@ -868,8 +873,9 @@ const VendorDashboard = () => {
                             {new Date(order.timestamp || order.created_at || new Date()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </span>
                         </div>
-                        <div className="text-[11px] font-black text-slate-500 uppercase tracking-widest mt-1 mb-2">
-                          {order.customer_name || order.customerName || 'Standard Order'}
+                        <div className="text-xs font-black text-indigo-700 uppercase tracking-wider flex items-center gap-1.5 mt-1 mb-2">
+                          <User size={13} className="text-indigo-600 inline-block" />
+                          <span>{order.customer_name || order.customerName || order.customer_email || 'Student'}</span>
                         </div>
                         
                         <p className="text-xs font-semibold text-slate-600 my-1">

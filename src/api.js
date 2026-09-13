@@ -157,10 +157,17 @@ async function currentUser() {
   try {
     const { data } = await supabase.auth.getUser();
     if (data?.user) {
+      let fullName = data.user.user_metadata?.full_name || data.user.user_metadata?.name;
+      if (!fullName || fullName === 'Student' || fullName === 'Guest User') {
+        try {
+          const { data: prof } = await supabase.from('accounts').select('full_name').eq('id', data.user.id).maybeSingle();
+          if (prof?.full_name) fullName = prof.full_name;
+        } catch (_e) {}
+      }
       return {
         id: data.user.id,
         email: (data.user.email || '').toLowerCase(),
-        name: data.user.user_metadata?.full_name || data.user.user_metadata?.name || (data.user.email || '').split('@')[0]
+        name: fullName || (data.user.email || '').split('@')[0]
       };
     }
   } catch (_e) {}
