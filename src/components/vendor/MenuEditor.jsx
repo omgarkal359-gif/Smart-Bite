@@ -195,9 +195,9 @@ export const MenuEditor = ({ shopId }) => {
 
   return (
     <div className="w-full space-y-5 font-sans text-slate-800">
-      {/* 1. Control Toolbar (Clear Spacing & Typography) */}
-      <div className="bg-white p-4 sm:p-4.5 rounded-2xl border border-slate-200 shadow-xs flex flex-wrap items-center justify-between gap-3.5">
-        <div className="flex items-center gap-3.5 flex-wrap">
+      {/* 1. Control Toolbar (Shifted Right with Inset Padding) */}
+      <div className="bg-white px-5 sm:px-6 py-4 sm:py-4.5 rounded-2xl border border-slate-200 shadow-xs flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-4 flex-wrap pl-1 sm:pl-2">
           <span className="text-xs sm:text-sm font-black text-slate-900 uppercase tracking-wider whitespace-nowrap">
             ACTIVE MENU ITEMS ({items.length})
           </span>
@@ -220,7 +220,7 @@ export const MenuEditor = ({ shopId }) => {
           whileTap={{ scale: 0.98 }}
           type="button"
           onClick={() => setIsAdding(!isAdding)}
-          className={`inline-flex items-center justify-center gap-2 px-4.5 h-11 rounded-xl text-xs font-black transition-all border-0 cursor-pointer tracking-wider uppercase shadow-xs shrink-0 ${
+          className={`inline-flex items-center justify-center gap-2 px-5 h-11 rounded-xl text-xs font-black transition-all border-0 cursor-pointer tracking-wider uppercase shadow-xs shrink-0 ${
             isAdding ? 'bg-slate-700 text-white' : 'bg-red-600 hover:bg-red-700 text-white'
           }`}
         >
