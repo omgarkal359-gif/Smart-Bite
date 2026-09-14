@@ -772,9 +772,9 @@ const VendorDashboard = () => {
                                 height: '46px',
                                 padding: '8px 10px',
                                 borderRadius: '999px',
-                                backgroundColor: ticket.status === 'preparing' ? '#F59E0B' : '#EF4444',
+                                backgroundColor: ticket.status === 'preparing' ? '#94A3B8' : '#EF4444',
                                 color: '#FFFFFF',
-                                boxShadow: ticket.status === 'preparing' ? '0 4px 12px rgba(245, 158, 11, 0.4)' : '0 4px 12px rgba(239, 68, 68, 0.4)'
+                                boxShadow: ticket.status === 'preparing' ? 'none' : '0 4px 12px rgba(239, 68, 68, 0.4)'
                               }}
                               onClick={() => handleUpdateStatus(ticket.id, 'preparing')}
                             >
