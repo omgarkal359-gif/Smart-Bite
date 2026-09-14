@@ -255,7 +255,24 @@ export const MenuApprovalsModule = () => {
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value)}
             className="shrink-0 px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none cursor-pointer"
-            style={{ padding: '10px 14px', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', fontSize: '12px', fontWeight: 700, color: '#334155', cursor: 'pointer', flexShrink: 0 }}
+            style={{ 
+              padding: '10px 36px 10px 14px', 
+              backgroundColor: '#f8fafc', 
+              border: '1px solid #e2e8f0', 
+              borderRadius: '12px', 
+              fontSize: '12px', 
+              fontWeight: 700, 
+              color: '#334155', 
+              cursor: 'pointer', 
+              flexShrink: 0,
+              appearance: 'none',
+              WebkitAppearance: 'none',
+              MozAppearance: 'none',
+              backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
+              backgroundRepeat: 'no-repeat',
+              backgroundPosition: 'right 12px center',
+              backgroundSize: '14px 14px'
+            }}
           >
             <option value="ALL">All Types</option>
             <option value="CREATE">CREATE (Add)</option>

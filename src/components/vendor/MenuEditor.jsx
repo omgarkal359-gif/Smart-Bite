@@ -337,7 +337,19 @@ export const MenuEditor = ({ shopId }) => {
                 className="floating-input appearance-none bg-white border border-slate-200 p-2.5 rounded-xl w-full text-xs font-medium"
                 value={newItem.category}
                 onChange={(e) => setNewItem({...newItem, category: e.target.value})}
-                style={{ padding: '12px 14px', borderRadius: '12px', border: '1px solid #cbd5e1', fontSize: '13px' }}
+                style={{ 
+                  padding: '12px 36px 12px 14px', 
+                  borderRadius: '12px', 
+                  border: '1px solid #cbd5e1', 
+                  fontSize: '13px',
+                  appearance: 'none',
+                  WebkitAppearance: 'none',
+                  MozAppearance: 'none',
+                  backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
+                  backgroundRepeat: 'no-repeat',
+                  backgroundPosition: 'right 12px center',
+                  backgroundSize: '14px 14px'
+                }}
               >
                 {categories.map(c => <option key={c} value={c}>{c}</option>)}
                 <option value="__CUSTOM__">+ Add Custom Category...</option>
@@ -560,7 +572,20 @@ export const MenuEditor = ({ shopId }) => {
                       <div className="floating-label-group" style={{ margin: 0, height: '100%' }}>
                         <select 
                           className="floating-input bg-white border border-slate-200 rounded-xl"
-                          style={{ height: '100%' }}
+                          style={{ 
+                            height: '100%',
+                            padding: '12px 36px 12px 14px', 
+                            borderRadius: '12px', 
+                            border: '1px solid #cbd5e1', 
+                            fontSize: '13px',
+                            appearance: 'none',
+                            WebkitAppearance: 'none',
+                            MozAppearance: 'none',
+                            backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
+                            backgroundRepeat: 'no-repeat',
+                            backgroundPosition: 'right 12px center',
+                            backgroundSize: '14px 14px'
+                          }}
                           value={editingItem.category}
                           onChange={(e) => setEditingItem({...editingItem, category: e.target.value})}
                         >
