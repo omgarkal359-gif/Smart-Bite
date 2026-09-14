@@ -700,7 +700,7 @@ const VendorDashboard = () => {
                       initial={{ opacity: 0, scale: 0.8, x: 50 }}
                       animate={{ opacity: 1, scale: 1, x: 0 }}
                       exit={{ opacity: 0, scale: 0.8, y: -50 }}
-                      className="elite-card kds-ticket"
+                      className="elite-card kds-ticket overflow-hidden"
                       style={{
                         borderColor: ticket.status === 'placed' ? '#F87171' : 
                                      ticket.status === 'preparing' ? '#FBBF24' : '#4ADE80'
@@ -760,46 +760,42 @@ const VendorDashboard = () => {
                         </div>
 
                         {(!['ready', 'completed', 'cancelled'].includes(ticket.status)) && (
-                          <div className="flex gap-3 w-full mt-3" style={{ height: '54px' }} data-ticket-id={ticket.id}>
+                          <div className="grid grid-cols-2 gap-2.5 w-full mt-3 min-w-0" data-ticket-id={ticket.id}>
                             <button 
                               disabled={ticket.status === 'preparing'}
-                              className={`flex-1 flex items-center justify-center gap-2 rounded-full font-black text-base uppercase tracking-wider cursor-pointer transition-all border-0 shadow-md ${
+                              className={`flex items-center justify-center gap-1.5 rounded-full font-extrabold text-xs sm:text-sm uppercase tracking-wider transition-all border-0 shadow-md min-w-0 ${
                                 ticket.status === 'preparing' 
-                                  ? 'bg-slate-300 text-slate-500 cursor-not-allowed opacity-80' 
-                                  : 'hover:scale-[1.03] active:scale-[0.97]'
+                                  ? 'cursor-default opacity-95' 
+                                  : 'cursor-pointer hover:scale-[1.02] active:scale-[0.98]'
                               }`}
                               style={{
-                                height: '54px',
-                                padding: '12px 20px',
-                                fontSize: '1.05rem',
-                                fontWeight: 900,
+                                height: '46px',
+                                padding: '8px 10px',
                                 borderRadius: '999px',
-                                backgroundColor: ticket.status === 'preparing' ? '#94A3B8' : '#EF4444',
+                                backgroundColor: ticket.status === 'preparing' ? '#F59E0B' : '#EF4444',
                                 color: '#FFFFFF',
-                                boxShadow: ticket.status === 'preparing' ? 'none' : '0 4px 14px rgba(239, 68, 68, 0.4)'
+                                boxShadow: ticket.status === 'preparing' ? '0 4px 12px rgba(245, 158, 11, 0.4)' : '0 4px 12px rgba(239, 68, 68, 0.4)'
                               }}
                               onClick={() => handleUpdateStatus(ticket.id, 'preparing')}
                             >
-                              <Clock size={20} className="text-white" />
-                              {ticket.status === 'preparing' ? 'IN PREPARATION' : 'PREPARING'}
+                              <Clock size={16} className="text-white shrink-0" />
+                              <span className="truncate">PREPARING</span>
                             </button>
 
                             <button 
-                              className="flex-1 flex items-center justify-center gap-2 rounded-full font-black text-base uppercase tracking-wider cursor-pointer transition-all border-0 shadow-md hover:scale-[1.03] active:scale-[0.97]"
+                              className="flex items-center justify-center gap-1.5 rounded-full font-extrabold text-xs sm:text-sm uppercase tracking-wider cursor-pointer transition-all border-0 shadow-md hover:scale-[1.02] active:scale-[0.98] min-w-0"
                               style={{
-                                height: '54px',
-                                padding: '12px 20px',
-                                fontSize: '1.05rem',
-                                fontWeight: 900,
+                                height: '46px',
+                                padding: '8px 10px',
                                 borderRadius: '999px',
                                 backgroundColor: '#22C55E',
                                 color: '#FFFFFF',
-                                boxShadow: '0 4px 14px rgba(34, 197, 94, 0.4)'
+                                boxShadow: '0 4px 12px rgba(34, 197, 94, 0.4)'
                               }}
                               onClick={() => handleUpdateStatus(ticket.id, 'ready')}
                             >
-                              <CheckCircle size={20} className="text-white" />
-                              READY
+                              <CheckCircle size={16} className="text-white shrink-0" />
+                              <span className="truncate">READY</span>
                             </button>
                           </div>
                         )}
