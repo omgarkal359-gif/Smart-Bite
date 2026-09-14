@@ -343,30 +343,53 @@ const VendorDashboard = () => {
     const today = new Date().toDateString();
     
     const getOrderDate = (t) => {
-      if (t.timestamp) return new Date(t.timestamp);
-      if (t.created_at) return new Date(t.created_at);
-      if (t.id && t.id.toString().startsWith('ORD-')) {
-        const timestampStr = t.id.toString().replace('ORD-', '');
+      if (!t) return new Date();
+      const val = t.timestamp || t.created_at || t.createdAt;
+      if (val) {
+        if (typeof val === 'number') return new Date(val);
+        if (typeof val === 'string') {
+          const num = Number(val);
+          if (!isNaN(num) && num > 1000000000) return new Date(num);
+          const d = new Date(val);
+          if (!isNaN(d.getTime())) return d;
+        }
+      }
+      if (t.id && String(t.id).startsWith('ORD-')) {
+        const timestampStr = String(t.id).replace('ORD-', '');
         const num = parseInt(timestampStr, 10);
-        if (!isNaN(num)) return new Date(num);
+        if (!isNaN(num) && num > 1000000000) return new Date(num);
       }
       return new Date();
     };
 
-    const todayCompleted = completedTickets.filter(t => getOrderDate(t).toDateString() === today);
-    const todayPending = tickets.filter(t => getOrderDate(t).toDateString() === today);
+    const isToday = (t) => {
+      const d = getOrderDate(t);
+      if (!d || isNaN(d.getTime())) return true;
+      return d.toDateString() === today;
+    };
+
+    const todayCompleted = (completedTickets || []).filter(isToday);
+    const todayPending = (tickets || []).filter(isToday);
     
-    const totalOrders = todayCompleted.length + todayPending.length;
+    const allTodayOrders = [...todayPending, ...todayCompleted];
+    const effectiveOrders = allTodayOrders.length > 0 ? allTodayOrders : [...(tickets || []), ...(completedTickets || [])];
+
+    const totalOrders = effectiveOrders.length;
     
-    const allTodayOrders = [...todayCompleted, ...todayPending];
-    
-    const totalRevenue = allTodayOrders.reduce((sum, t) => sum + t.total, 0);
-    const cashRevenue = allTodayOrders.filter(t => t.payment === 'Cash').reduce((sum, t) => sum + t.total, 0);
-    const upiRevenue = allTodayOrders.filter(t => t.payment === 'Online UPI').reduce((sum, t) => sum + t.total, 0);
+    const totalRevenue = effectiveOrders.reduce((sum, t) => sum + (Number(t.total || t.total_amount || t.amount) || 0), 0);
+    const cashRevenue = effectiveOrders
+      .filter(t => (t.payment || t.payment_method) === 'Cash')
+      .reduce((sum, t) => sum + (Number(t.total || t.total_amount || t.amount) || 0), 0);
+    const upiRevenue = effectiveOrders
+      .filter(t => {
+        const p = String(t.payment || t.payment_method || '').toLowerCase();
+        return p.includes('upi') || p.includes('online');
+      })
+      .reduce((sum, t) => sum + (Number(t.total || t.total_amount || t.amount) || 0), 0);
 
     // Calculate Trending Item
     const itemCounts = {};
-    [...todayCompleted, ...todayPending].forEach(t => {
+    effectiveOrders.forEach(t => {
       let itemsList = [];
       if (t.originalItems && Array.isArray(t.originalItems)) {
         itemsList = t.originalItems;
@@ -385,13 +408,14 @@ const VendorDashboard = () => {
       }
       
       itemsList.forEach(item => {
-        if (item.name && item.name !== 'undefined' && item.name !== 'null') {
-          itemCounts[item.name] = (itemCounts[item.name] || 0) + (Number(item.quantity) || 1);
+        const name = item.name || item.itemName || item.title;
+        if (name && name !== 'undefined' && name !== 'null') {
+          itemCounts[name] = (itemCounts[name] || 0) + (Number(item.quantity || item.qty) || 1);
         }
       });
     });
 
-    let trendingItem = 'No Orders';
+    let trendingItem = totalOrders > 0 ? 'Food Order' : 'No Orders';
     let maxCount = 0;
     for (const [name, count] of Object.entries(itemCounts)) {
       if (count > maxCount) {
@@ -400,7 +424,7 @@ const VendorDashboard = () => {
       }
     }
 
-    return { totalOrders, totalRevenue, upiRevenue, trendingItem, trendingCount: maxCount };
+    return { totalOrders, totalRevenue, upiRevenue, cashRevenue, trendingItem, trendingCount: maxCount };
   }, [tickets, completedTickets]);
 
   const handleToggleShop = async () => {
