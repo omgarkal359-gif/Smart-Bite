@@ -132,9 +132,9 @@ export const MenuApprovalsModule = () => {
     <div className="p-6 max-w-7xl mx-auto space-y-6">
       {/* Header Banner */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-        <div>
+        <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <span className="p-2 bg-indigo-50 text-indigo-600 rounded-xl">
+            <span className="p-2 bg-indigo-50 text-indigo-600 rounded-xl shrink-0">
               <ShieldCheck size={24} />
             </span>
             <h1 className="text-2xl font-black text-slate-900 tracking-tight">Menu Change Approvals</h1>
@@ -147,52 +147,52 @@ export const MenuApprovalsModule = () => {
         <button 
           onClick={fetchRequests}
           disabled={loading}
-          className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-all border-none cursor-pointer text-sm"
+          className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-all border-none cursor-pointer text-sm shrink-0"
         >
           <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
-          Refresh
+          <span>Refresh</span>
         </button>
       </div>
 
       {/* Metrics Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-amber-200 shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-xs font-black uppercase text-amber-600 tracking-wider">Pending Review</p>
-            <h3 className="text-3xl font-black text-slate-900 mt-1">{metrics.pending}</h3>
+        <div className="bg-white p-5 rounded-2xl border border-amber-200 shadow-sm flex items-center justify-between min-w-0">
+          <div className="min-w-0 pr-2">
+            <p className="text-[11px] sm:text-xs font-black uppercase text-amber-600 tracking-wider truncate">Pending Review</p>
+            <h3 className="text-2xl sm:text-3xl font-black text-slate-900 mt-1">{metrics.pending}</h3>
           </div>
-          <div className="p-3 bg-amber-50 text-amber-600 rounded-2xl">
-            <Clock size={28} />
-          </div>
-        </div>
-
-        <div className="bg-white p-5 rounded-2xl border border-emerald-200 shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-xs font-black uppercase text-emerald-600 tracking-wider">Approved Requests</p>
-            <h3 className="text-3xl font-black text-slate-900 mt-1">{metrics.approved}</h3>
-          </div>
-          <div className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl">
-            <CheckCircle2 size={28} />
+          <div className="p-2.5 sm:p-3 bg-amber-50 text-amber-600 rounded-2xl shrink-0">
+            <Clock size={26} />
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-red-200 shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-xs font-black uppercase text-red-600 tracking-wider">Rejected Requests</p>
-            <h3 className="text-3xl font-black text-slate-900 mt-1">{metrics.rejected}</h3>
+        <div className="bg-white p-5 rounded-2xl border border-emerald-200 shadow-sm flex items-center justify-between min-w-0">
+          <div className="min-w-0 pr-2">
+            <p className="text-[11px] sm:text-xs font-black uppercase text-emerald-600 tracking-wider truncate">Approved Requests</p>
+            <h3 className="text-2xl sm:text-3xl font-black text-slate-900 mt-1">{metrics.approved}</h3>
           </div>
-          <div className="p-3 bg-red-50 text-red-600 rounded-2xl">
-            <XCircle size={28} />
+          <div className="p-2.5 sm:p-3 bg-emerald-50 text-emerald-600 rounded-2xl shrink-0">
+            <CheckCircle2 size={26} />
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-xs font-black uppercase text-slate-500 tracking-wider">Total History</p>
-            <h3 className="text-3xl font-black text-slate-900 mt-1">{metrics.total}</h3>
+        <div className="bg-white p-5 rounded-2xl border border-red-200 shadow-sm flex items-center justify-between min-w-0">
+          <div className="min-w-0 pr-2">
+            <p className="text-[11px] sm:text-xs font-black uppercase text-red-600 tracking-wider truncate">Rejected Requests</p>
+            <h3 className="text-2xl sm:text-3xl font-black text-slate-900 mt-1">{metrics.rejected}</h3>
           </div>
-          <div className="p-3 bg-slate-50 text-slate-600 rounded-2xl">
-            <Layers size={28} />
+          <div className="p-2.5 sm:p-3 bg-red-50 text-red-600 rounded-2xl shrink-0">
+            <XCircle size={26} />
+          </div>
+        </div>
+
+        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between min-w-0">
+          <div className="min-w-0 pr-2">
+            <p className="text-[11px] sm:text-xs font-black uppercase text-slate-500 tracking-wider truncate">Total History</p>
+            <h3 className="text-2xl sm:text-3xl font-black text-slate-900 mt-1">{metrics.total}</h3>
+          </div>
+          <div className="p-2.5 sm:p-3 bg-slate-50 text-slate-600 rounded-2xl shrink-0">
+            <Layers size={26} />
           </div>
         </div>
       </div>
@@ -200,20 +200,20 @@ export const MenuApprovalsModule = () => {
       {/* Control Toolbar */}
       <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
         {/* Status Tabs */}
-        <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl w-full md:w-auto overflow-x-auto">
+        <div className="flex items-center gap-1.5 bg-slate-100 p-1.5 rounded-xl w-full md:w-auto overflow-x-auto shrink-0">
           {['PENDING', 'APPROVED', 'REJECTED', 'ALL'].map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-4 py-2 text-xs font-bold rounded-lg transition-all border-none cursor-pointer ${
+              className={`px-3.5 py-2 text-xs font-bold rounded-lg transition-all border-none cursor-pointer whitespace-nowrap inline-flex items-center gap-1.5 ${
                 activeTab === tab 
                   ? 'bg-white text-slate-900 shadow-sm' 
                   : 'text-slate-500 hover:text-slate-800 bg-transparent'
               }`}
             >
-              {tab}
+              <span>{tab}</span>
               {tab === 'PENDING' && metrics.pending > 0 && (
-                <span className="ml-2 px-1.5 py-0.5 text-[10px] bg-amber-500 text-white font-bold rounded-full">
+                <span className="px-1.5 py-0.5 text-[10px] bg-amber-500 text-white font-bold rounded-full leading-none">
                   {metrics.pending}
                 </span>
               )}
@@ -223,7 +223,7 @@ export const MenuApprovalsModule = () => {
 
         {/* Filters & Search */}
         <div className="flex items-center gap-3 w-full md:w-auto">
-          <div className="relative flex-1 md:w-64">
+          <div className="relative flex-1 md:w-64 min-w-0">
             <Search className="absolute left-3 top-2.5 text-slate-400" size={16} />
             <input 
               type="text"
@@ -237,7 +237,7 @@ export const MenuApprovalsModule = () => {
           <select
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value)}
-            className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none"
+            className="shrink-0 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none cursor-pointer"
           >
             <option value="ALL">All Types</option>
             <option value="CREATE">CREATE (Add)</option>
@@ -250,17 +250,17 @@ export const MenuApprovalsModule = () => {
       {/* Requests List Table */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         {loading ? (
-          <div className="p-12 text-center text-slate-500 font-bold">
-            <RefreshCw size={28} className="animate-spin mx-auto mb-2 text-indigo-500" />
-            Loading menu change requests...
+          <div className="p-12 text-center text-slate-500 font-bold flex flex-col items-center justify-center">
+            <RefreshCw size={28} className="animate-spin mb-2 text-indigo-500" />
+            <span>Loading menu change requests...</span>
           </div>
         ) : filteredRequests.length === 0 ? (
-          <div className="p-12 text-center">
-            <div className="w-16 h-16 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto mb-3">
+          <div className="p-12 text-center flex flex-col items-center justify-center">
+            <div className="w-16 h-16 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mb-3 shrink-0">
               <CheckCircle2 size={32} />
             </div>
             <h3 className="text-lg font-bold text-slate-800">No requests found</h3>
-            <p className="text-xs text-slate-500 mt-1">There are no menu approval requests matching your current filter criteria.</p>
+            <p className="text-xs text-slate-500 mt-1 max-w-sm">There are no menu approval requests matching your current filter criteria.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
