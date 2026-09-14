@@ -20,7 +20,7 @@ const FloatingInput = ({ label, ...props }) => (
   </div>
 );
 
-export const MenuEditor = ({ shopId, onClose }) => {
+export const MenuEditor = ({ shopId }) => {
   const { showToast } = useCart();
   const [items, setItems] = useState([]);
   const [requests, setRequests] = useState([]);
@@ -194,35 +194,19 @@ export const MenuEditor = ({ shopId, onClose }) => {
   };
 
   return (
-    <div className="menu-editor-container space-y-4">
-      {/* 1. Catalog Header (Compact & Crisp) */}
-      <div className="flex justify-between items-center pb-3 mb-2 border-b border-slate-200">
-        <div>
-          <h1 className="text-xl font-black text-slate-900 tracking-tight uppercase m-0 leading-none">CATALOG EDITOR</h1>
-          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider m-0 mt-1">MANAGE MENU & PRICING</p>
-        </div>
-        {onClose && (
-          <button 
-            onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors border-none bg-transparent cursor-pointer"
-            title="Close editor"
-          >
-            <X size={20} />
-          </button>
-        )}
-      </div>
-
-      {/* 2. Top Control Bar (Compact Dashboard Toolbar) */}
+    <div className="w-full space-y-4 font-sans text-slate-800">
+      {/* 1. Control Toolbar (Compact & Aligned) */}
       <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3 flex-wrap">
           <span className="text-xs font-black text-slate-800 uppercase tracking-wider">
             ACTIVE MENU ITEMS ({items.length})
           </span>
 
-          {/* Compact Approval Requests Control */}
+          {/* Approval Requests Trigger */}
           <button
+            type="button"
             onClick={() => setShowRequestsDrawer(!showRequestsDrawer)}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200/80 rounded-xl text-xs font-bold transition-all cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200/80 rounded-xl text-xs font-bold transition-all cursor-pointer"
           >
             <Clock size={13} className="text-amber-600" />
             <span>Approval Requests ({pendingRequestsCount} Pending)</span>
@@ -230,12 +214,13 @@ export const MenuEditor = ({ shopId, onClose }) => {
           </button>
         </div>
 
-        {/* Compact Add New Item Button */}
+        {/* Add New Item Button */}
         <motion.button 
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
+          type="button"
           onClick={() => setIsAdding(!isAdding)}
-          className={`inline-flex items-center justify-center gap-1.5 px-4 h-10 rounded-xl text-xs font-bold transition-all border-none cursor-pointer tracking-wide uppercase ${
+          className={`inline-flex items-center justify-center gap-1.5 px-4 h-10 rounded-xl text-xs font-bold transition-all border-0 cursor-pointer tracking-wide uppercase ${
             isAdding ? 'bg-slate-700 text-white' : 'bg-red-600 hover:bg-red-700 text-white shadow-xs'
           }`}
         >
@@ -244,7 +229,7 @@ export const MenuEditor = ({ shopId, onClose }) => {
         </motion.button>
       </div>
 
-      {/* Approval Requests Drawer */}
+      {/* 2. Approval Requests Drawer */}
       <AnimatePresence>
         {showRequestsDrawer && (
           <motion.div
@@ -313,7 +298,7 @@ export const MenuEditor = ({ shopId, onClose }) => {
         )}
       </AnimatePresence>
 
-      {/* Add New Item Form */}
+      {/* 3. Add New Item Form */}
       <AnimatePresence>
         {isAdding && (
           <motion.form 
@@ -387,7 +372,7 @@ export const MenuEditor = ({ shopId, onClose }) => {
               whileHover={{ scale: 1.01 }}
               whileTap={{ scale: 0.99 }}
               type="submit" 
-              className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs transition-all border-none cursor-pointer tracking-wide"
+              className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs transition-all border-0 cursor-pointer tracking-wide"
             >
               Submit Item for Admin Approval
             </motion.button>
@@ -395,7 +380,7 @@ export const MenuEditor = ({ shopId, onClose }) => {
         )}
       </AnimatePresence>
 
-      {/* 4. Menu Categories & High-Density Horizontal Item Cards */}
+      {/* 4. Menu Categories & High-Density Horizontal Cards */}
       <div className="space-y-6">
         {categories.map(cat => {
           const catItems = items.filter(i => i.category === cat);
@@ -409,47 +394,47 @@ export const MenuEditor = ({ shopId, onClose }) => {
                 <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">{catItems.length} ITEMS</span>
               </div>
               
-              {/* 5. High-Density Horizontal Cards Grid */}
+              {/* 5. Horizontal Cards Grid (No overlapping, strict flex alignment) */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                 {catItems.map((item) => (
                   <div 
                     key={item.id} 
-                    className="menu-item-row-card bg-white p-3.5 rounded-2xl border border-slate-200/90 shadow-2xs hover:shadow-xs transition-all flex items-center justify-between gap-3 min-h-[96px]"
+                    className="w-full bg-white p-3 rounded-2xl border border-slate-200 shadow-2xs hover:shadow-xs transition-all flex items-center justify-between gap-3 min-h-[88px]"
                   >
-                    {/* Left: Product Thumbnail + Information */}
-                    <div className="flex items-center gap-3.5 min-w-0 flex-1">
-                      {/* Compact Image Container (72-76px) */}
-                      <div className="relative w-18 h-18 sm:w-20 sm:h-20 rounded-xl overflow-hidden bg-slate-100 shrink-0 border border-slate-100 group">
+                    {/* Left Group: Thumbnail + Text Information */}
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      {/* Product Thumbnail (72px) */}
+                      <div className="relative w-16 h-16 sm:w-18 sm:h-18 rounded-xl overflow-hidden bg-slate-100 shrink-0 border border-slate-100 group">
                         <img src={getFoodItemImage(item)} alt={item.name} className="w-full h-full object-cover" />
                         <div 
                           className="absolute inset-0 bg-slate-900/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white cursor-pointer"
                           onClick={() => setEditingItem({...item})}
                           title="Click to edit details"
                         >
-                          <Edit2 size={15} />
+                          <Edit2 size={14} />
                         </div>
                       </div>
                       
-                      {/* Text Information: Item Name + Category & Price */}
-                      <div className="min-w-0 flex-1">
-                        <h4 className="text-sm sm:text-base font-bold text-slate-900 truncate m-0 leading-tight">
+                      {/* Information Block */}
+                      <div className="flex flex-col gap-0.5 min-w-0 flex-1">
+                        <h4 className="text-sm font-bold text-slate-900 truncate m-0 leading-snug">
                           {item.name}
                         </h4>
-                        <div className="flex items-center gap-1.5 mt-1 text-xs text-slate-500 font-medium">
-                          <span className="text-slate-500">{item.category}</span>
+                        <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
+                          <span>{item.category}</span>
                           <span className="text-slate-300">·</span>
                           <span className="font-extrabold text-slate-900 text-sm">₹{item.price}</span>
                         </div>
                       </div>
                     </div>
 
-                    {/* Right: Actions Group (Stock Toggle + Edit + Delete) */}
-                    <div className="flex items-center gap-2 shrink-0">
+                    {/* Right Group: Operational Toggle + Edit + Delete */}
+                    <div className="flex items-center gap-1.5 shrink-0 ml-auto">
                       {/* Operational Quick Availability Toggle */}
                       <button
                         type="button"
                         onClick={() => handleToggleAvailability(item)}
-                        className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all border-none cursor-pointer flex items-center gap-1.5 ${
+                        className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all border-0 cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
                           item.available 
                             ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100' 
                             : 'bg-red-50 text-red-700 hover:bg-red-100'
@@ -460,22 +445,24 @@ export const MenuEditor = ({ shopId, onClose }) => {
                         <span className="hidden sm:inline">{item.available ? 'In Stock' : 'Out of Stock'}</span>
                       </button>
 
-                      {/* Edit Button (36x36px Click Target) */}
+                      {/* Edit Button (36x36px Target) */}
                       <button
+                        type="button"
                         onClick={() => setEditingItem({...item})}
-                        className="w-9 h-9 flex items-center justify-center text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-colors border border-slate-200 bg-white cursor-pointer"
+                        className="w-8 h-8 flex items-center justify-center text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-colors border border-slate-200 bg-white cursor-pointer"
                         title="Request Structural Edit"
                       >
-                        <Edit2 size={15} />
+                        <Edit2 size={14} />
                       </button>
 
-                      {/* Delete Button (36x36px Click Target) */}
+                      {/* Delete Button (36x36px Target) */}
                       <button 
+                        type="button"
                         onClick={() => handleDeleteRequest(item)}
-                        className="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors border border-slate-200 bg-white cursor-pointer"
+                        className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors border border-slate-200 bg-white cursor-pointer"
                         title="Request Item Deactivation"
                       >
-                        <Trash2 size={15} />
+                        <Trash2 size={14} />
                       </button>
                     </div>
                   </div>
@@ -510,7 +497,7 @@ export const MenuEditor = ({ shopId, onClose }) => {
                   <h2 className="text-lg font-bold text-slate-800 m-0">Edit Item Request</h2>
                   <p className="text-xs text-slate-400 m-0">Edits will be submitted to Admin for approval before publishing live.</p>
                 </div>
-                <button onClick={() => setEditingItem(null)} className="p-2 hover:bg-slate-200 rounded-full transition-colors border-none bg-transparent cursor-pointer flex items-center justify-center text-slate-500 hover:text-slate-800">
+                <button onClick={() => setEditingItem(null)} className="p-2 hover:bg-slate-200 rounded-full transition-colors border-0 bg-transparent cursor-pointer flex items-center justify-center text-slate-500 hover:text-slate-800">
                   <X size={20} strokeWidth={2.5} />
                 </button>
               </div>
@@ -588,7 +575,8 @@ export const MenuEditor = ({ shopId, onClose }) => {
                 
                 {/* Submit Edit Request Button */}
                 <button 
-                  className="w-full text-white font-bold shadow-xs hover:shadow-md transition-all border-none cursor-pointer flex items-center justify-center gap-2 shrink-0"
+                  type="button"
+                  className="w-full text-white font-bold shadow-xs hover:shadow-md transition-all border-0 cursor-pointer flex items-center justify-center gap-2 shrink-0"
                   style={{ 
                     padding: '14px', 
                     borderRadius: '12px', 
