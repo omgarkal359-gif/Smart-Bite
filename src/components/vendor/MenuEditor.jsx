@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { 
-  Plus, X, Upload, Check, Edit2, Trash2, Camera, Loader2, 
-  Clock, CheckCircle2, XCircle, AlertTriangle, ChevronDown, ChevronUp, Eye
+  Plus, X, Check, Edit2, Trash2, Camera, Loader2, 
+  Clock, CheckCircle2, XCircle, ChevronDown, ChevronUp
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '../../api';
@@ -20,7 +20,7 @@ const FloatingInput = ({ label, ...props }) => (
   </div>
 );
 
-export const MenuEditor = ({ shopId }) => {
+export const MenuEditor = ({ shopId, onClose }) => {
   const { showToast } = useCart();
   const [items, setItems] = useState([]);
   const [requests, setRequests] = useState([]);
@@ -94,7 +94,7 @@ export const MenuEditor = ({ shopId }) => {
     try {
       const res = await api.updateMenuAvailability(item.id, newAvailable);
       if (!res.success) throw new Error(res.message);
-      showToast(`Item "${item.name}" set ${newAvailable ? 'AVAILABLE 🟢' : 'OUT OF STOCK 🔴'}`, 'info');
+      showToast(`Item "${item.name}" set ${newAvailable ? 'IN STOCK 🟢' : 'OUT OF STOCK 🔴'}`, 'info');
     } catch (err) {
       showToast('Failed to toggle availability: ' + err.message, 'error');
       loadData();
@@ -194,72 +194,78 @@ export const MenuEditor = ({ shopId }) => {
   };
 
   return (
-    <div className="menu-editor-container space-y-6">
-      {/* Header & Drawer Trigger */}
-      <div className="flex justify-between items-center mb-4 flex-wrap gap-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
-        <div className="flex items-center gap-3">
-          <span className="text-sm font-black text-slate-700 uppercase tracking-wider">
-            Active Menu Items ({items.length})
+    <div className="menu-editor-container space-y-4">
+      {/* 1. Catalog Header (Compact & Crisp) */}
+      <div className="flex justify-between items-center pb-3 mb-2 border-b border-slate-200">
+        <div>
+          <h1 className="text-xl font-black text-slate-900 tracking-tight uppercase m-0 leading-none">CATALOG EDITOR</h1>
+          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider m-0 mt-1">MANAGE MENU & PRICING</p>
+        </div>
+        {onClose && (
+          <button 
+            onClick={onClose}
+            className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors border-none bg-transparent cursor-pointer"
+            title="Close editor"
+          >
+            <X size={20} />
+          </button>
+        )}
+      </div>
+
+      {/* 2. Top Control Bar (Compact Dashboard Toolbar) */}
+      <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
+          <span className="text-xs font-black text-slate-800 uppercase tracking-wider">
+            ACTIVE MENU ITEMS ({items.length})
           </span>
 
+          {/* Compact Approval Requests Control */}
           <button
             onClick={() => setShowRequestsDrawer(!showRequestsDrawer)}
-            className="flex items-center gap-2 px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 rounded-xl text-xs font-bold transition-all cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200/80 rounded-xl text-xs font-bold transition-all cursor-pointer"
           >
-            <Clock size={14} className="text-amber-600" />
+            <Clock size={13} className="text-amber-600" />
             <span>Approval Requests ({pendingRequestsCount} Pending)</span>
-            {showRequestsDrawer ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+            {showRequestsDrawer ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
           </button>
         </div>
 
+        {/* Compact Add New Item Button */}
         <motion.button 
-          whileHover={{ scale: 1.04 }}
-          whileTap={{ scale: 0.96 }}
-          className="inline-flex items-center justify-center gap-2.5 transition-all"
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
           onClick={() => setIsAdding(!isAdding)}
-          style={{ 
-            backgroundColor: isAdding ? '#334155' : '#dc2626', 
-            color: '#ffffff',
-            border: 'none', 
-            cursor: 'pointer',
-            boxShadow: isAdding ? 'none' : '0 8px 22px rgba(220, 38, 38, 0.4)',
-            whiteSpace: 'nowrap',
-            height: '44px',
-            padding: '0 24px',
-            borderRadius: '22px',
-            fontSize: '0.875rem',
-            fontWeight: 800,
-            letterSpacing: '0.05em',
-            textTransform: 'uppercase'
-          }}
+          className={`inline-flex items-center justify-center gap-1.5 px-4 h-10 rounded-xl text-xs font-bold transition-all border-none cursor-pointer tracking-wide uppercase ${
+            isAdding ? 'bg-slate-700 text-white' : 'bg-red-600 hover:bg-red-700 text-white shadow-xs'
+          }`}
         >
-          {isAdding ? <X size={18} strokeWidth={3} /> : <Plus size={18} strokeWidth={3} />}
+          {isAdding ? <X size={15} strokeWidth={2.5} /> : <Plus size={15} strokeWidth={2.5} />}
           <span>{isAdding ? 'CANCEL' : 'ADD NEW ITEM'}</span>
         </motion.button>
       </div>
 
-      {/* Approval Requests Drawer / Panel */}
+      {/* Approval Requests Drawer */}
       <AnimatePresence>
         {showRequestsDrawer && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="bg-amber-50/60 border border-amber-200 rounded-2xl p-5 mb-6 space-y-4 overflow-hidden"
+            className="bg-amber-50/70 border border-amber-200 rounded-2xl p-4 space-y-3 overflow-hidden"
           >
-            <div className="flex justify-between items-center border-b border-amber-200 pb-3">
-              <h3 className="text-sm font-black text-amber-900 uppercase tracking-wider flex items-center gap-2">
-                <Clock size={18} /> Vendor Menu Approval Requests ({requests.length})
+            <div className="flex justify-between items-center border-b border-amber-200/60 pb-2">
+              <h3 className="text-xs font-black text-amber-900 uppercase tracking-wider flex items-center gap-1.5 m-0">
+                <Clock size={15} /> Vendor Menu Approval Requests ({requests.length})
               </h3>
-              <span className="text-xs text-amber-700 font-medium">Structural edits require Super Admin authorization</span>
+              <span className="text-[11px] text-amber-700 font-medium">Structural changes require Super Admin approval</span>
             </div>
 
             {requests.length === 0 ? (
-              <p className="text-xs text-amber-800 italic">No change requests submitted yet.</p>
+              <p className="text-xs text-amber-800 italic m-0">No change requests submitted yet.</p>
             ) : (
-              <div className="space-y-3 max-h-72 overflow-y-auto pr-2">
+              <div className="space-y-2.5 max-h-60 overflow-y-auto pr-1">
                 {requests.map(r => (
-                  <div key={r.id} className="bg-white p-3.5 rounded-xl border border-amber-200 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                  <div key={r.id} className="bg-white p-3 rounded-xl border border-amber-200/80 shadow-2xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                     <div>
                       <div className="flex items-center gap-2">
                         <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${
@@ -278,24 +284,24 @@ export const MenuEditor = ({ shopId }) => {
                       </div>
 
                       {r.status === 'REJECTED' && r.rejectionReason && (
-                        <p className="text-xs text-red-600 font-bold mt-1 bg-red-50 p-2 rounded-lg border border-red-100">
+                        <p className="text-xs text-red-600 font-bold mt-1 bg-red-50 p-1.5 rounded-lg border border-red-100 m-0">
                           Rejection Reason: {r.rejectionReason}
                         </p>
                       )}
                     </div>
 
-                    <div className="flex items-center gap-3">
-                      <span className="text-[11px] text-slate-400">
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-[10px] text-slate-400 font-medium">
                         {new Date(r.createdAt).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                       </span>
-                      <span className={`px-2.5 py-1 rounded-full text-xs font-bold inline-flex items-center gap-1 ${
+                      <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold inline-flex items-center gap-1 ${
                         r.status === 'PENDING' ? 'bg-amber-100 text-amber-800' :
                         r.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-800' :
                         'bg-red-100 text-red-800'
                       }`}>
-                        {r.status === 'PENDING' && <Clock size={12} />}
-                        {r.status === 'APPROVED' && <CheckCircle2 size={12} />}
-                        {r.status === 'REJECTED' && <XCircle size={12} />}
+                        {r.status === 'PENDING' && <Clock size={11} />}
+                        {r.status === 'APPROVED' && <CheckCircle2 size={11} />}
+                        {r.status === 'REJECTED' && <XCircle size={11} />}
                         {r.status}
                       </span>
                     </div>
@@ -311,19 +317,20 @@ export const MenuEditor = ({ shopId }) => {
       <AnimatePresence>
         {isAdding && (
           <motion.form 
-            initial={{ height: 0, opacity: 0, y: -20 }}
+            initial={{ height: 0, opacity: 0, y: -10 }}
             animate={{ height: 'auto', opacity: 1, y: 0 }}
-            exit={{ height: 0, opacity: 0, y: -20 }}
-            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="elite-card overflow-hidden mb-8 p-6 bg-white rounded-3xl border border-slate-200 shadow-md space-y-4"
+            exit={{ height: 0, opacity: 0, y: -10 }}
+            className="overflow-hidden p-5 bg-white rounded-2xl border border-slate-200 shadow-sm space-y-4"
             onSubmit={handleAddItem}
           >
-            <h3 className="heading-2 form-title text-slate-900 text-lg font-bold">Submit New Item Request</h3>
-            <p className="text-xs text-slate-500">Structural menu changes will be submitted to the Admin for approval before appearing live.</p>
+            <div className="border-b border-slate-100 pb-2">
+              <h3 className="text-base font-bold text-slate-900 m-0">Submit New Item Request</h3>
+              <p className="text-xs text-slate-500 m-0 mt-0.5">Structural additions will be submitted to the Admin for approval before publishing live.</p>
+            </div>
 
-            <div className="form-grid grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <FloatingInput 
-                label="Item Name (e.g. Triple Cheese)"
+                label="Item Name (e.g. Single Idli)"
                 value={newItem.name}
                 onChange={(e) => setNewItem({...newItem, name: e.target.value})}
               />
@@ -337,7 +344,7 @@ export const MenuEditor = ({ shopId }) => {
 
             <div className="floating-label-group">
               <select 
-                className="floating-input appearance-none bg-white border border-slate-200 p-3 rounded-xl w-full"
+                className="floating-input appearance-none bg-white border border-slate-200 p-2.5 rounded-xl w-full text-xs font-medium"
                 value={newItem.category}
                 onChange={(e) => setNewItem({...newItem, category: e.target.value})}
               >
@@ -358,29 +365,29 @@ export const MenuEditor = ({ shopId }) => {
               onChange={handleFileChange} 
             />
             <div 
-              className={`drop-zone border-2 border-dashed border-slate-300 rounded-2xl p-6 text-center cursor-pointer hover:border-indigo-500 transition-colors ${isUploading ? 'shimmer' : ''}`}
+              className={`border border-dashed border-slate-300 rounded-xl p-4 text-center cursor-pointer hover:border-indigo-500 transition-colors ${isUploading ? 'shimmer' : ''}`}
               onClick={() => fileInputRef.current.click()}
             >
               {newItem.img ? (
-                <img src={newItem.img} className="preview-image max-h-40 mx-auto rounded-xl object-cover" alt="Preview" />
+                <img src={newItem.img} className="max-h-32 mx-auto rounded-lg object-cover" alt="Preview" />
               ) : isUploading ? (
-                <Loader2 size={40} className="upload-spinner animate-spin mx-auto text-indigo-500" />
+                <Loader2 size={32} className="animate-spin mx-auto text-indigo-500" />
               ) : (
-                <>
-                  <div className="upload-icon-wrapper w-10 h-10 bg-slate-100 text-slate-600 rounded-full flex items-center justify-center mx-auto mb-2">
-                    <Camera size={20} />
+                <div className="flex flex-col items-center">
+                  <div className="w-8 h-8 bg-slate-100 text-slate-600 rounded-full flex items-center justify-center mb-1">
+                    <Camera size={16} />
                   </div>
-                  <p className="upload-text text-xs font-bold text-slate-700">Upload Photo</p>
-                  <p className="upload-hint text-[10px] text-slate-400">TAP TO BROWSE</p>
-                </>
+                  <p className="text-xs font-bold text-slate-700 m-0">Upload Photo</p>
+                  <p className="text-[10px] text-slate-400 m-0">TAP TO BROWSE</p>
+                </div>
               )}
             </div>
 
             <motion.button 
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.99 }}
               type="submit" 
-              className="btn-publish-menu w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-sm transition-all border-none cursor-pointer"
+              className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs transition-all border-none cursor-pointer tracking-wide"
             >
               Submit Item for Admin Approval
             </motion.button>
@@ -388,57 +395,61 @@ export const MenuEditor = ({ shopId }) => {
         )}
       </AnimatePresence>
 
-      {/* Menu Categories & Cards */}
-      <div className="menu-sections flex flex-col gap-8 mt-6">
+      {/* 4. Menu Categories & High-Density Horizontal Item Cards */}
+      <div className="space-y-6">
         {categories.map(cat => {
           const catItems = items.filter(i => i.category === cat);
           if (catItems.length === 0 && !isAdding) return null;
           
           return (
-            <div key={cat} className="category-section">
-              <div className="category-header flex items-center gap-3 mb-4">
-                <h3 className="heading-2 category-title text-xl font-bold text-slate-900">{cat}</h3>
-                <div className="title-separator flex-1 h-px bg-slate-200" />
-                <span className="item-count text-xs font-bold text-slate-400">{catItems.length} Items</span>
+            <div key={cat} className="space-y-3">
+              {/* Category Header */}
+              <div className="flex items-center justify-between border-b border-slate-200 pb-1.5 pt-2">
+                <h2 className="text-base font-black uppercase text-red-600 tracking-tight m-0">{cat}</h2>
+                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">{catItems.length} ITEMS</span>
               </div>
               
-              <div className="items-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {catItems.map((item, index) => (
-                  <motion.div 
-                    layout
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.05 }}
+              {/* 5. High-Density Horizontal Cards Grid */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                {catItems.map((item) => (
+                  <div 
                     key={item.id} 
-                    className="menu-item-card bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between space-y-4 group"
+                    className="menu-item-row-card bg-white p-3.5 rounded-2xl border border-slate-200/90 shadow-2xs hover:shadow-xs transition-all flex items-center justify-between gap-3 min-h-[96px]"
                   >
-                    <div className="flex gap-4 items-start">
-                      <div className="relative w-20 h-20 rounded-xl overflow-hidden bg-slate-100 shrink-0">
+                    {/* Left: Product Thumbnail + Information */}
+                    <div className="flex items-center gap-3.5 min-w-0 flex-1">
+                      {/* Compact Image Container (72-76px) */}
+                      <div className="relative w-18 h-18 sm:w-20 sm:h-20 rounded-xl overflow-hidden bg-slate-100 shrink-0 border border-slate-100 group">
                         <img src={getFoodItemImage(item)} alt={item.name} className="w-full h-full object-cover" />
                         <div 
-                          className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white cursor-pointer"
+                          className="absolute inset-0 bg-slate-900/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white cursor-pointer"
                           onClick={() => setEditingItem({...item})}
+                          title="Click to edit details"
                         >
-                          <Edit2 size={18} />
+                          <Edit2 size={15} />
                         </div>
                       </div>
                       
-                      <div className="flex-1 min-w-0">
-                        <h4 className="item-name text-base font-bold text-slate-900 truncate">{item.name}</h4>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className="text-xs text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md font-medium">{item.category}</span>
-                          <span className="text-base font-black text-slate-900">₹{item.price}</span>
+                      {/* Text Information: Item Name + Category & Price */}
+                      <div className="min-w-0 flex-1">
+                        <h4 className="text-sm sm:text-base font-bold text-slate-900 truncate m-0 leading-tight">
+                          {item.name}
+                        </h4>
+                        <div className="flex items-center gap-1.5 mt-1 text-xs text-slate-500 font-medium">
+                          <span className="text-slate-500">{item.category}</span>
+                          <span className="text-slate-300">·</span>
+                          <span className="font-extrabold text-slate-900 text-sm">₹{item.price}</span>
                         </div>
                       </div>
                     </div>
 
-                    {/* Operational Quick Toggle & Delete Action */}
-                    <div className="flex items-center justify-between pt-3 border-t border-slate-100">
-                      {/* Operational Quick Toggle (Available / Out of Stock) */}
+                    {/* Right: Actions Group (Stock Toggle + Edit + Delete) */}
+                    <div className="flex items-center gap-2 shrink-0">
+                      {/* Operational Quick Availability Toggle */}
                       <button
                         type="button"
                         onClick={() => handleToggleAvailability(item)}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border-none cursor-pointer flex items-center gap-1.5 ${
+                        className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all border-none cursor-pointer flex items-center gap-1.5 ${
                           item.available 
                             ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100' 
                             : 'bg-red-50 text-red-700 hover:bg-red-100'
@@ -446,27 +457,28 @@ export const MenuEditor = ({ shopId }) => {
                         title="Operational Toggle: Instant Live Update + Audit Log"
                       >
                         <span className={`w-2 h-2 rounded-full ${item.available ? 'bg-emerald-500' : 'bg-red-500'}`} />
-                        {item.available ? 'In Stock 🟢' : 'Out of Stock 🔴'}
+                        <span className="hidden sm:inline">{item.available ? 'In Stock' : 'Out of Stock'}</span>
                       </button>
 
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => setEditingItem({...item})}
-                          className="p-2 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-colors border-none cursor-pointer"
-                          title="Request Structural Edit"
-                        >
-                          <Edit2 size={16} />
-                        </button>
-                        <button 
-                          className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors border-none cursor-pointer"
-                          onClick={() => handleDeleteRequest(item)}
-                          title="Request Item Deactivation"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
+                      {/* Edit Button (36x36px Click Target) */}
+                      <button
+                        onClick={() => setEditingItem({...item})}
+                        className="w-9 h-9 flex items-center justify-center text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-colors border border-slate-200 bg-white cursor-pointer"
+                        title="Request Structural Edit"
+                      >
+                        <Edit2 size={15} />
+                      </button>
+
+                      {/* Delete Button (36x36px Click Target) */}
+                      <button 
+                        onClick={() => handleDeleteRequest(item)}
+                        className="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors border border-slate-200 bg-white cursor-pointer"
+                        title="Request Item Deactivation"
+                      >
+                        <Trash2 size={15} />
+                      </button>
                     </div>
-                  </motion.div>
+                  </div>
                 ))}
               </div>
             </div>
@@ -490,32 +502,32 @@ export const MenuEditor = ({ shopId }) => {
                 className="flex justify-between items-center shrink-0"
                 style={{ 
                   background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)', 
-                  padding: '24px 32px', 
+                  padding: '20px 24px', 
                   borderBottom: '1px solid #e2e8f0'
                 }}
               >
                 <div>
-                  <h2 className="text-xl font-bold text-slate-800 m-0">Edit Item Request</h2>
-                  <p className="text-xs text-slate-400">Edits will be submitted to Admin for approval before publishing live.</p>
+                  <h2 className="text-lg font-bold text-slate-800 m-0">Edit Item Request</h2>
+                  <p className="text-xs text-slate-400 m-0">Edits will be submitted to Admin for approval before publishing live.</p>
                 </div>
                 <button onClick={() => setEditingItem(null)} className="p-2 hover:bg-slate-200 rounded-full transition-colors border-none bg-transparent cursor-pointer flex items-center justify-center text-slate-500 hover:text-slate-800">
-                  <X size={22} strokeWidth={2.5} />
+                  <X size={20} strokeWidth={2.5} />
                 </button>
               </div>
               
               {/* Modal Body */}
               <div 
                 className="flex flex-col flex-1 overflow-y-auto min-h-0 bg-white"
-                style={{ padding: '32px', gap: '24px' }}
+                style={{ padding: '24px', gap: '20px' }}
               >
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', flex: 1 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', flex: 1 }}>
                   <FloatingInput 
                     label="Item Name"
                     value={editingItem.name}
                     onChange={(e) => setEditingItem({...editingItem, name: e.target.value})}
                   />
                   
-                  <div style={{ display: 'flex', gap: '20px' }}>
+                  <div style={{ display: 'flex', gap: '16px' }}>
                     <div style={{ flex: 1 }}>
                       <FloatingInput 
                         label="Price (₹)"
@@ -541,28 +553,27 @@ export const MenuEditor = ({ shopId }) => {
                 </div>
 
                 {/* Image Upload Section */}
-                <div style={{ marginTop: '16px', paddingTop: '24px', borderTop: '1px solid #e2e8f0' }}>
-                  <h4 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4" style={{ marginBottom: '16px', marginTop: 0 }}>Item Photo</h4>
+                <div style={{ marginTop: '12px', paddingTop: '20px', borderTop: '1px solid #e2e8f0' }}>
+                  <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3" style={{ margin: '0 0 12px 0' }}>Item Photo</h4>
                   <div 
-                    className={`relative w-full h-48 rounded-2xl overflow-hidden border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all ${isUploading ? 'border-slate-300 bg-slate-50' : 'border-indigo-200 bg-indigo-50 hover:bg-indigo-100 hover:border-indigo-300'}`}
-                    style={{ minHeight: '192px' }}
+                    className={`relative w-full h-40 rounded-2xl overflow-hidden border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all ${isUploading ? 'border-slate-300 bg-slate-50' : 'border-indigo-200 bg-indigo-50 hover:bg-indigo-100 hover:border-indigo-300'}`}
                     onClick={() => editFileInputRef.current.click()}
                   >
                     {editingItem.img ? (
                       <>
                         <img src={editingItem.img} className="absolute inset-0 w-full h-full object-cover" alt="Item preview" />
                         <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
-                          <p className="text-white font-medium flex items-center gap-2"><Camera size={18} /> Change Photo</p>
+                          <p className="text-white text-xs font-medium flex items-center gap-1.5"><Camera size={16} /> Change Photo</p>
                         </div>
                       </>
                     ) : isUploading ? (
-                      <Loader2 size={32} className="text-indigo-500 animate-spin" />
+                      <Loader2 size={28} className="text-indigo-500 animate-spin" />
                     ) : (
                       <>
-                        <div className="w-12 h-12 bg-white rounded-full shadow-sm flex items-center justify-center text-indigo-500 mb-3">
-                          <Camera size={24} />
+                        <div className="w-10 h-10 bg-white rounded-full shadow-xs flex items-center justify-center text-indigo-500 mb-2">
+                          <Camera size={20} />
                         </div>
-                        <p className="text-sm font-medium text-indigo-900" style={{ margin: 0 }}>Upload new photo</p>
+                        <p className="text-xs font-medium text-indigo-900" style={{ margin: 0 }}>Upload new photo</p>
                       </>
                     )}
                   </div>
@@ -577,17 +588,18 @@ export const MenuEditor = ({ shopId }) => {
                 
                 {/* Submit Edit Request Button */}
                 <button 
-                  className="w-full text-white font-bold shadow-md hover:shadow-lg transition-all border-none cursor-pointer flex items-center justify-center gap-2 shrink-0"
+                  className="w-full text-white font-bold shadow-xs hover:shadow-md transition-all border-none cursor-pointer flex items-center justify-center gap-2 shrink-0"
                   style={{ 
-                    padding: '16px', 
+                    padding: '14px', 
                     borderRadius: '12px', 
                     background: 'linear-gradient(135deg, #4f46e5 0%, #4338ca 100%)',
-                    marginTop: '16px'
+                    marginTop: '12px',
+                    fontSize: '13px'
                   }}
                   onClick={handleSaveEdit}
                   disabled={isUploading}
                 >
-                  <Check size={20} />
+                  <Check size={18} />
                   Submit Edit for Admin Approval
                 </button>
               </div>
