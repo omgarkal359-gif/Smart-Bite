@@ -394,75 +394,78 @@ export const MenuEditor = ({ shopId }) => {
                 <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">{catItems.length} ITEMS</span>
               </div>
               
-              {/* 5. Horizontal Cards Grid (No overlapping, strict flex alignment) */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+              {/* 5. Full-Width Single-Column Cards (One Big Card Per Line) */}
+              <div className="flex flex-col gap-3.5 w-full">
                 {catItems.map((item) => (
                   <div 
                     key={item.id} 
-                    className="w-full bg-white p-3 rounded-2xl border border-slate-200 shadow-2xs hover:shadow-xs transition-all flex items-center justify-between gap-3 min-h-[88px]"
+                    className="w-full bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-2xs hover:shadow-xs transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 min-h-[96px]"
                   >
-                    {/* Left Group: Thumbnail + Text Information */}
-                    <div className="flex items-center gap-3 min-w-0 flex-1">
-                      {/* Product Thumbnail (72px) */}
-                      <div className="relative w-16 h-16 sm:w-18 sm:h-18 rounded-xl overflow-hidden bg-slate-100 shrink-0 border border-slate-100 group">
+                    {/* Left Group: Big Thumbnail + Text Information */}
+                    <div className="flex items-center gap-4 min-w-0 flex-1">
+                      {/* Product Thumbnail (80px - 88px) */}
+                      <div className="relative w-20 h-20 sm:w-22 sm:h-22 rounded-2xl overflow-hidden bg-slate-100 shrink-0 border border-slate-200/80 group shadow-xs">
                         <img src={getFoodItemImage(item)} alt={item.name} className="w-full h-full object-cover" />
                         <div 
                           className="absolute inset-0 bg-slate-900/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white cursor-pointer"
                           onClick={() => setEditingItem({...item})}
                           title="Click to edit details"
                         >
-                          <Edit2 size={14} />
+                          <Edit2 size={16} />
                         </div>
                       </div>
                       
                       {/* Information Block */}
-                      <div className="flex flex-col gap-0.5 min-w-0 flex-1">
-                        <h4 className="text-sm font-bold text-slate-900 truncate m-0 leading-snug">
+                      <div className="flex flex-col gap-1 min-w-0 flex-1">
+                        <h4 className="text-base sm:text-lg font-bold text-slate-900 truncate m-0 leading-tight tracking-tight">
                           {item.name}
                         </h4>
-                        <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
-                          <span>{item.category}</span>
-                          <span className="text-slate-300">·</span>
-                          <span className="font-extrabold text-slate-900 text-sm">₹{item.price}</span>
+                        <div className="flex items-center gap-2.5 text-xs sm:text-sm font-medium mt-0.5 flex-wrap">
+                          <span className="px-2.5 py-0.5 bg-slate-100 text-slate-700 font-bold text-xs rounded-lg uppercase tracking-wider border border-slate-200/60">
+                            {item.category}
+                          </span>
+                          <span className="px-2.5 py-0.5 bg-emerald-50 text-emerald-800 font-black text-sm rounded-lg border border-emerald-200/70 inline-flex items-center">
+                            ₹{item.price}
+                          </span>
                         </div>
                       </div>
                     </div>
 
                     {/* Right Group: Operational Toggle + Edit + Delete */}
-                    <div className="flex items-center gap-1.5 shrink-0 ml-auto">
+                    <div className="flex items-center gap-2 sm:gap-2.5 shrink-0 sm:ml-auto w-full sm:w-auto justify-end pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
                       {/* Operational Quick Availability Toggle */}
                       <button
                         type="button"
                         onClick={() => handleToggleAvailability(item)}
-                        className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all border-0 cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+                        className={`px-3.5 py-2 rounded-xl text-xs font-extrabold uppercase tracking-wide transition-all border-0 cursor-pointer flex items-center gap-2 whitespace-nowrap ${
                           item.available 
-                            ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100' 
-                            : 'bg-red-50 text-red-700 hover:bg-red-100'
+                            ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200/60' 
+                            : 'bg-red-50 text-red-700 hover:bg-red-100 border border-red-200/60'
                         }`}
                         title="Operational Toggle: Instant Live Update + Audit Log"
                       >
-                        <span className={`w-2 h-2 rounded-full ${item.available ? 'bg-emerald-500' : 'bg-red-500'}`} />
-                        <span className="hidden sm:inline">{item.available ? 'In Stock' : 'Out of Stock'}</span>
+                        <span className={`w-2.5 h-2.5 rounded-full ${item.available ? 'bg-emerald-500' : 'bg-red-500'}`} />
+                        <span>{item.available ? 'In Stock' : 'Out of Stock'}</span>
                       </button>
 
-                      {/* Edit Button (36x36px Target) */}
+                      {/* Edit Button */}
                       <button
                         type="button"
                         onClick={() => setEditingItem({...item})}
-                        className="w-8 h-8 flex items-center justify-center text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-colors border border-slate-200 bg-white cursor-pointer"
+                        className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center text-slate-700 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-colors border border-slate-200 bg-white cursor-pointer shadow-2xs"
                         title="Request Structural Edit"
                       >
-                        <Edit2 size={14} />
+                        <Edit2 size={16} />
                       </button>
 
-                      {/* Delete Button (36x36px Target) */}
+                      {/* Delete Button */}
                       <button 
                         type="button"
                         onClick={() => handleDeleteRequest(item)}
-                        className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors border border-slate-200 bg-white cursor-pointer"
+                        className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors border border-slate-200 bg-white cursor-pointer shadow-2xs"
                         title="Request Item Deactivation"
                       >
-                        <Trash2 size={14} />
+                        <Trash2 size={16} />
                       </button>
                     </div>
                   </div>
