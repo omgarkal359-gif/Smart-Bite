@@ -129,17 +129,17 @@ export const MenuApprovalsModule = () => {
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
+    <div className="p-6 max-w-7xl mx-auto flex flex-col gap-6" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px', maxWidth: '80rem', margin: '0 auto' }}>
       {/* Header Banner */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm" style={{ padding: '24px', backgroundColor: '#ffffff', borderRadius: '16px', border: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <span className="p-2 bg-indigo-50 text-indigo-600 rounded-xl shrink-0">
+          <div className="flex items-center gap-3" style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '6px' }}>
+            <span className="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl shrink-0" style={{ padding: '10px', backgroundColor: '#eef2ff', color: '#4f46e5', borderRadius: '12px', display: 'inline-flex' }}>
               <ShieldCheck size={24} />
             </span>
-            <h1 className="text-2xl font-black text-slate-900 tracking-tight">Menu Change Approvals</h1>
+            <h1 className="text-2xl font-black text-slate-900 tracking-tight" style={{ fontSize: '24px', fontWeight: 900, color: '#0f172a', margin: 0, letterSpacing: '-0.02em' }}>Menu Change Approvals</h1>
           </div>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-sm text-slate-500 mt-1" style={{ fontSize: '14px', color: '#64748b', margin: '4px 0 0 0', lineHeight: 1.5 }}>
             Review and approve vendor menu modifications, additions, and deactivations before they publish to the live menu.
           </p>
         </div>
@@ -147,7 +147,8 @@ export const MenuApprovalsModule = () => {
         <button 
           onClick={fetchRequests}
           disabled={loading}
-          className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-all border-none cursor-pointer text-sm shrink-0"
+          className="flex items-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-all border-none cursor-pointer text-sm shrink-0"
+          style={{ padding: '10px 18px', backgroundColor: '#f1f5f9', color: '#334155', borderRadius: '12px', fontWeight: 700, fontSize: '14px', border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}
         >
           <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
           <span>Refresh</span>
@@ -155,65 +156,80 @@ export const MenuApprovalsModule = () => {
       </div>
 
       {/* Metrics Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-amber-200 shadow-sm flex items-center justify-between min-w-0">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
+        <div className="bg-white p-5 rounded-2xl border border-amber-200 shadow-sm flex items-center justify-between min-w-0" style={{ padding: '20px', backgroundColor: '#ffffff', borderRadius: '16px', border: '1px solid #fde68a', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
           <div className="min-w-0 pr-2">
-            <p className="text-[11px] sm:text-xs font-black uppercase text-amber-600 tracking-wider truncate">Pending Review</p>
-            <h3 className="text-2xl sm:text-3xl font-black text-slate-900 mt-1">{metrics.pending}</h3>
+            <p className="text-[11px] sm:text-xs font-black uppercase text-amber-600 tracking-wider truncate" style={{ fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', color: '#d97706', letterSpacing: '0.05em', margin: '0 0 6px 0' }}>Pending Review</p>
+            <h3 className="text-2xl sm:text-3xl font-black text-slate-900 mt-1" style={{ fontSize: '28px', fontWeight: 900, color: '#0f172a', margin: 0, lineHeight: 1 }}>{metrics.pending}</h3>
           </div>
-          <div className="p-2.5 sm:p-3 bg-amber-50 text-amber-600 rounded-2xl shrink-0">
+          <div className="p-3 bg-amber-50 text-amber-600 rounded-2xl shrink-0" style={{ padding: '12px', backgroundColor: '#fffbeb', color: '#d97706', borderRadius: '14px', flexShrink: 0, display: 'inline-flex' }}>
             <Clock size={26} />
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-emerald-200 shadow-sm flex items-center justify-between min-w-0">
+        <div className="bg-white p-5 rounded-2xl border border-emerald-200 shadow-sm flex items-center justify-between min-w-0" style={{ padding: '20px', backgroundColor: '#ffffff', borderRadius: '16px', border: '1px solid #a7f3d0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
           <div className="min-w-0 pr-2">
-            <p className="text-[11px] sm:text-xs font-black uppercase text-emerald-600 tracking-wider truncate">Approved Requests</p>
-            <h3 className="text-2xl sm:text-3xl font-black text-slate-900 mt-1">{metrics.approved}</h3>
+            <p className="text-[11px] sm:text-xs font-black uppercase text-emerald-600 tracking-wider truncate" style={{ fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', color: '#059669', letterSpacing: '0.05em', margin: '0 0 6px 0' }}>Approved Requests</p>
+            <h3 className="text-2xl sm:text-3xl font-black text-slate-900 mt-1" style={{ fontSize: '28px', fontWeight: 900, color: '#0f172a', margin: 0, lineHeight: 1 }}>{metrics.approved}</h3>
           </div>
-          <div className="p-2.5 sm:p-3 bg-emerald-50 text-emerald-600 rounded-2xl shrink-0">
+          <div className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl shrink-0" style={{ padding: '12px', backgroundColor: '#ecfdf5', color: '#059669', borderRadius: '14px', flexShrink: 0, display: 'inline-flex' }}>
             <CheckCircle2 size={26} />
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-red-200 shadow-sm flex items-center justify-between min-w-0">
+        <div className="bg-white p-5 rounded-2xl border border-red-200 shadow-sm flex items-center justify-between min-w-0" style={{ padding: '20px', backgroundColor: '#ffffff', borderRadius: '16px', border: '1px solid #fecaca', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
           <div className="min-w-0 pr-2">
-            <p className="text-[11px] sm:text-xs font-black uppercase text-red-600 tracking-wider truncate">Rejected Requests</p>
-            <h3 className="text-2xl sm:text-3xl font-black text-slate-900 mt-1">{metrics.rejected}</h3>
+            <p className="text-[11px] sm:text-xs font-black uppercase text-red-600 tracking-wider truncate" style={{ fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', color: '#dc2626', letterSpacing: '0.05em', margin: '0 0 6px 0' }}>Rejected Requests</p>
+            <h3 className="text-2xl sm:text-3xl font-black text-slate-900 mt-1" style={{ fontSize: '28px', fontWeight: 900, color: '#0f172a', margin: 0, lineHeight: 1 }}>{metrics.rejected}</h3>
           </div>
-          <div className="p-2.5 sm:p-3 bg-red-50 text-red-600 rounded-2xl shrink-0">
+          <div className="p-3 bg-red-50 text-red-600 rounded-2xl shrink-0" style={{ padding: '12px', backgroundColor: '#fef2f2', color: '#dc2626', borderRadius: '14px', flexShrink: 0, display: 'inline-flex' }}>
             <XCircle size={26} />
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between min-w-0">
+        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between min-w-0" style={{ padding: '20px', backgroundColor: '#ffffff', borderRadius: '16px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyBetween: 'space-between', gap: '12px' }}>
           <div className="min-w-0 pr-2">
-            <p className="text-[11px] sm:text-xs font-black uppercase text-slate-500 tracking-wider truncate">Total History</p>
-            <h3 className="text-2xl sm:text-3xl font-black text-slate-900 mt-1">{metrics.total}</h3>
+            <p className="text-[11px] sm:text-xs font-black uppercase text-slate-500 tracking-wider truncate" style={{ fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', color: '#64748b', letterSpacing: '0.05em', margin: '0 0 6px 0' }}>Total History</p>
+            <h3 className="text-2xl sm:text-3xl font-black text-slate-900 mt-1" style={{ fontSize: '28px', fontWeight: 900, color: '#0f172a', margin: 0, lineHeight: 1 }}>{metrics.total}</h3>
           </div>
-          <div className="p-2.5 sm:p-3 bg-slate-50 text-slate-600 rounded-2xl shrink-0">
+          <div className="p-3 bg-slate-50 text-slate-600 rounded-2xl shrink-0" style={{ padding: '12px', backgroundColor: '#f8fafc', color: '#475569', borderRadius: '14px', flexShrink: 0, display: 'inline-flex' }}>
             <Layers size={26} />
           </div>
         </div>
       </div>
 
       {/* Control Toolbar */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
+      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4" style={{ padding: '16px 20px', backgroundColor: '#ffffff', borderRadius: '16px', border: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
         {/* Status Tabs */}
-        <div className="flex items-center gap-1.5 bg-slate-100 p-1.5 rounded-xl w-full md:w-auto overflow-x-auto shrink-0">
+        <div className="flex items-center gap-2 bg-slate-100 p-1.5 rounded-xl overflow-x-auto shrink-0" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px', backgroundColor: '#f1f5f9', borderRadius: '12px' }}>
           {['PENDING', 'APPROVED', 'REJECTED', 'ALL'].map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-3.5 py-2 text-xs font-bold rounded-lg transition-all border-none cursor-pointer whitespace-nowrap inline-flex items-center gap-1.5 ${
+              className={`px-4 py-2 text-xs font-bold rounded-lg transition-all border-none cursor-pointer whitespace-nowrap inline-flex items-center gap-2 ${
                 activeTab === tab 
                   ? 'bg-white text-slate-900 shadow-sm' 
                   : 'text-slate-500 hover:text-slate-800 bg-transparent'
               }`}
+              style={{
+                padding: '8px 16px',
+                borderRadius: '8px',
+                fontSize: '12px',
+                fontWeight: 700,
+                border: 'none',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                backgroundColor: activeTab === tab ? '#ffffff' : 'transparent',
+                color: activeTab === tab ? '#0f172a' : '#64748b',
+                boxShadow: activeTab === tab ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
+              }}
             >
               <span>{tab}</span>
               {tab === 'PENDING' && metrics.pending > 0 && (
-                <span className="px-1.5 py-0.5 text-[10px] bg-amber-500 text-white font-bold rounded-full leading-none">
+                <span className="px-2 py-0.5 text-[10px] bg-amber-500 text-white font-bold rounded-full leading-none" style={{ padding: '2px 8px', backgroundColor: '#f59e0b', color: '#ffffff', fontSize: '10px', fontWeight: 800, borderRadius: '999px', marginLeft: '4px' }}>
                   {metrics.pending}
                 </span>
               )}
@@ -222,22 +238,24 @@ export const MenuApprovalsModule = () => {
         </div>
 
         {/* Filters & Search */}
-        <div className="flex items-center gap-3 w-full md:w-auto">
-          <div className="relative flex-1 md:w-64 min-w-0">
-            <Search className="absolute left-3 top-2.5 text-slate-400" size={16} />
+        <div className="flex items-center gap-3 w-full md:w-auto" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div className="relative flex-1 md:w-64 min-w-0" style={{ position: 'relative', minWidth: '220px' }}>
+            <Search className="absolute left-3 top-3 text-slate-400" size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
             <input 
               type="text"
               placeholder="Search item, stall, submitter..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              style={{ padding: '10px 14px 10px 38px', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', fontSize: '12px', width: '100%', outline: 'none' }}
             />
           </div>
 
           <select
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value)}
-            className="shrink-0 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none cursor-pointer"
+            className="shrink-0 px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none cursor-pointer"
+            style={{ padding: '10px 14px', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', fontSize: '12px', fontWeight: 700, color: '#334155', cursor: 'pointer', flexShrink: 0 }}
           >
             <option value="ALL">All Types</option>
             <option value="CREATE">CREATE (Add)</option>
@@ -248,32 +266,32 @@ export const MenuApprovalsModule = () => {
       </div>
 
       {/* Requests List Table */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden" style={{ backgroundColor: '#ffffff', borderRadius: '16px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
         {loading ? (
-          <div className="p-12 text-center text-slate-500 font-bold flex flex-col items-center justify-center">
-            <RefreshCw size={28} className="animate-spin mb-2 text-indigo-500" />
+          <div className="p-12 text-center text-slate-500 font-bold flex flex-col items-center justify-center" style={{ padding: '48px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+            <RefreshCw size={28} className="animate-spin mb-3 text-indigo-500" />
             <span>Loading menu change requests...</span>
           </div>
         ) : filteredRequests.length === 0 ? (
-          <div className="p-12 text-center flex flex-col items-center justify-center">
-            <div className="w-16 h-16 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mb-3 shrink-0">
+          <div className="p-12 text-center flex flex-col items-center justify-center" style={{ padding: '56px 24px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+            <div className="w-16 h-16 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mb-4 shrink-0" style={{ width: '64px', height: '64px', backgroundColor: '#f1f5f9', color: '#94a3b8', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
               <CheckCircle2 size={32} />
             </div>
-            <h3 className="text-lg font-bold text-slate-800">No requests found</h3>
-            <p className="text-xs text-slate-500 mt-1 max-w-sm">There are no menu approval requests matching your current filter criteria.</p>
+            <h3 className="text-lg font-bold text-slate-800" style={{ fontSize: '18px', fontWeight: 800, color: '#1e293b', margin: '0 0 8px 0' }}>No requests found</h3>
+            <p className="text-xs text-slate-500 max-w-sm" style={{ fontSize: '13px', color: '#64748b', margin: 0, maxWidth: '400px', lineHeight: 1.5 }}>There are no menu approval requests matching your current filter criteria.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+            <table className="w-full text-left border-collapse" style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' }}>
               <thead>
-                <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-black uppercase text-slate-400 tracking-wider">
-                  <th className="p-4">Stall / Vendor</th>
-                  <th className="p-4">Request Type</th>
-                  <th className="p-4">Proposed Menu Item</th>
-                  <th className="p-4">Price</th>
-                  <th className="p-4">Submitted At</th>
-                  <th className="p-4">Status</th>
-                  <th className="p-4 text-right">Actions</th>
+                <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-black uppercase text-slate-400 tracking-wider" style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                  <th className="p-4" style={{ padding: '14px 20px', fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: '#64748b', letterSpacing: '0.05em' }}>Stall / Vendor</th>
+                  <th className="p-4" style={{ padding: '14px 20px', fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: '#64748b', letterSpacing: '0.05em' }}>Request Type</th>
+                  <th className="p-4" style={{ padding: '14px 20px', fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: '#64748b', letterSpacing: '0.05em' }}>Proposed Menu Item</th>
+                  <th className="p-4" style={{ padding: '14px 20px', fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: '#64748b', letterSpacing: '0.05em' }}>Price</th>
+                  <th className="p-4" style={{ padding: '14px 20px', fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: '#64748b', letterSpacing: '0.05em' }}>Submitted At</th>
+                  <th className="p-4" style={{ padding: '14px 20px', fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: '#64748b', letterSpacing: '0.05em' }}>Status</th>
+                  <th className="p-4 text-right" style={{ padding: '14px 20px', fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: '#64748b', letterSpacing: '0.05em', textAlign: 'right' }}>Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-sm">
@@ -282,45 +300,45 @@ export const MenuApprovalsModule = () => {
                   const proposedPrice = r.proposedData?.price !== undefined ? r.proposedData?.price : r.currentData?.price;
 
                   return (
-                    <tr key={r.id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="p-4">
-                        <div className="font-bold text-slate-900">{r.stallName}</div>
-                        <div className="text-xs text-slate-500">{r.submittedBy}</div>
+                    <tr key={r.id} className="hover:bg-slate-50/80 transition-colors" style={{ borderBottom: '1px solid #f1f5f9' }}>
+                      <td className="p-4" style={{ padding: '16px 20px', verticalAlign: 'middle' }}>
+                        <div className="font-bold text-slate-900" style={{ fontWeight: 700, color: '#0f172a' }}>{r.stallName}</div>
+                        <div className="text-xs text-slate-500" style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>{r.submittedBy}</div>
                       </td>
 
-                      <td className="p-4">
+                      <td className="p-4" style={{ padding: '16px 20px', verticalAlign: 'middle' }}>
                         <span className={`px-2.5 py-1 rounded-lg text-xs font-black uppercase tracking-wide inline-flex items-center gap-1 ${
                           r.requestType === 'CREATE' ? 'bg-emerald-100 text-emerald-800' :
                           r.requestType === 'UPDATE' ? 'bg-blue-100 text-blue-800' :
                           'bg-red-100 text-red-800'
-                        }`}>
+                        }`} style={{ padding: '4px 10px', borderRadius: '8px', fontSize: '11px', fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                           {r.requestType}
                         </span>
                       </td>
 
-                      <td className="p-4 font-semibold text-slate-800">
+                      <td className="p-4 font-semibold text-slate-800" style={{ padding: '16px 20px', verticalAlign: 'middle', fontWeight: 600, color: '#1e293b' }}>
                         {proposedName}
                         {r.proposedData?.category && (
-                          <span className="ml-2 text-xs font-medium text-slate-400">({r.proposedData.category})</span>
+                          <span className="ml-2 text-xs font-medium text-slate-400" style={{ marginLeft: '8px', fontSize: '12px', color: '#94a3b8', fontWeight: 500 }}>({r.proposedData.category})</span>
                         )}
                       </td>
 
-                      <td className="p-4 font-bold text-slate-900">
+                      <td className="p-4 font-bold text-slate-900" style={{ padding: '16px 20px', verticalAlign: 'middle', fontWeight: 800, color: '#0f172a' }}>
                         {proposedPrice !== undefined ? `₹${proposedPrice}` : '-'}
                       </td>
 
-                      <td className="p-4 text-xs text-slate-500">
+                      <td className="p-4 text-xs text-slate-500" style={{ padding: '16px 20px', verticalAlign: 'middle', fontSize: '12px', color: '#64748b' }}>
                         {new Date(r.createdAt).toLocaleString('en-IN', {
                           day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
                         })}
                       </td>
 
-                      <td className="p-4">
+                      <td className="p-4" style={{ padding: '16px 20px', verticalAlign: 'middle' }}>
                         <span className={`px-2.5 py-1 rounded-full text-xs font-bold inline-flex items-center gap-1 ${
                           r.status === 'PENDING' ? 'bg-amber-100 text-amber-800' :
                           r.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-800' :
                           'bg-red-100 text-red-800'
-                        }`}>
+                        }`} style={{ padding: '4px 12px', borderRadius: '999px', fontSize: '11px', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                           {r.status === 'PENDING' && <Clock size={12} />}
                           {r.status === 'APPROVED' && <CheckCircle2 size={12} />}
                           {r.status === 'REJECTED' && <XCircle size={12} />}
@@ -328,11 +346,12 @@ export const MenuApprovalsModule = () => {
                         </span>
                       </td>
 
-                      <td className="p-4 text-right">
-                        <div className="flex items-center justify-end gap-2">
+                      <td className="p-4 text-right" style={{ padding: '16px 20px', verticalAlign: 'middle', textAlign: 'right' }}>
+                        <div className="flex items-center justify-end gap-2" style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px' }}>
                           <button
                             onClick={() => setSelectedRequest(r)}
                             className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg text-xs transition-colors border-none cursor-pointer flex items-center gap-1"
+                            style={{ padding: '6px 12px', backgroundColor: '#f1f5f9', color: '#334155', borderRadius: '8px', fontSize: '12px', fontWeight: 700, border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                           >
                             <Eye size={14} /> Review
                           </button>
@@ -343,6 +362,7 @@ export const MenuApprovalsModule = () => {
                                 onClick={() => handleApprove(r.id)}
                                 disabled={actionLoading}
                                 className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs transition-colors border-none cursor-pointer"
+                                style={{ padding: '6px 14px', backgroundColor: '#059669', color: '#ffffff', borderRadius: '8px', fontSize: '12px', fontWeight: 700, border: 'none', cursor: 'pointer' }}
                               >
                                 Approve
                               </button>
@@ -350,6 +370,7 @@ export const MenuApprovalsModule = () => {
                                 onClick={() => setRejectionModalRequest(r)}
                                 disabled={actionLoading}
                                 className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg text-xs transition-colors border-none cursor-pointer"
+                                style={{ padding: '6px 14px', backgroundColor: '#dc2626', color: '#ffffff', borderRadius: '8px', fontSize: '12px', fontWeight: 700, border: 'none', cursor: 'pointer' }}
                               >
                                 Reject
                               </button>
