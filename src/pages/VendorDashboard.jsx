@@ -916,21 +916,21 @@ const VendorDashboard = () => {
                               : ''}
                         </p>
 
-                        <div className="flex justify-between items-center pt-2 border-t border-dashed border-slate-100 mt-1">
-                          <span className="font-bold text-navy-900">₹{order.total}</span>
-                          <div className="flex gap-2 items-center">
-                            <span className="text-[9px] font-black uppercase bg-slate-100 text-slate-600 px-2 py-1 rounded">
+                        <div className="flex justify-between items-center pt-2.5 border-t border-dashed border-slate-200 mt-2">
+                          <span className="font-extrabold text-navy-900 text-sm">₹{order.total}</span>
+                          <div className="flex gap-2 items-center justify-end ml-auto">
+                            <span className="text-[10px] font-black uppercase bg-slate-100 text-slate-600 px-2.5 py-1 rounded-lg">
                               {order.payment}
                             </span>
-                            <span className={`text-[9px] font-black uppercase px-2 py-1 rounded ${
-                              order.status === 'ready' ? 'bg-green-100 text-green-700 font-bold' : 'bg-slate-100 text-slate-500'
+                            <span className={`text-[10px] font-black uppercase px-2.5 py-1 rounded-lg ${
+                              order.status === 'ready' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/80 font-bold' : 'bg-slate-100 text-slate-500'
                             }`}>
                               {order.status === 'ready' ? '✅ READY FOR PICKUP' : order.status}
                             </span>
                             {order.status === 'ready' && (
                               <button 
                                 onClick={() => handleUpdateStatus(order.id, 'completed')}
-                                className="text-[9px] font-black uppercase bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700 transition-colors cursor-pointer border-none"
+                                className="text-[10px] font-black uppercase bg-emerald-600 text-white px-3 py-1 rounded-lg hover:bg-emerald-700 transition-all cursor-pointer border-none shadow-xs whitespace-nowrap"
                               >
                                 Mark Completed
                               </button>
