@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { 
   BarChart3, ShoppingBag, Users, Settings, ShieldAlert, 
   Menu, X, Search, LogOut, ChevronDown, Activity, 
-  LayoutDashboard, Store, AlertTriangle, Radio, Lock, ShieldCheck, Database, RefreshCw, Cpu
+  LayoutDashboard, Store, AlertTriangle, Radio, Lock, ShieldCheck, Database, RefreshCw, Cpu, CheckSquare
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import sguLogo from '../../assets/sgu-logo.jpg';
 import { CmdKSearchModal } from './CmdKSearchModal';
 import { supabase } from '../../supabaseClient';
 import { clearStoredUser } from '../../utils/auth';
+import { api } from '../../api';
 import './admin_dashboard.css';
 
 export const AdminShell = ({ activeModule, setActiveModule, user, children }) => {
@@ -18,6 +19,26 @@ export const AdminShell = ({ activeModule, setActiveModule, user, children }) =>
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isCmdKOpen, setIsCmdKOpen] = useState(false);
   const [realtimeStatus, setRealtimeStatus] = useState('ONLINE'); // ONLINE | RECONNECTING
+  const [pendingMenuCount, setPendingMenuCount] = useState(0);
+
+  useEffect(() => {
+    async function loadPendingCount() {
+      try {
+        const reqs = await api.getAdminMenuRequests('PENDING');
+        setPendingMenuCount(reqs.length);
+      } catch (_e) {}
+    }
+    loadPendingCount();
+
+    const channel = supabase
+      .channel('admin-shell-menu-count')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'menu_change_requests' }, () => {
+        loadPendingCount();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, []);
 
   // Keyboard shortcut listener for Cmd+K / Ctrl+K
   useEffect(() => {
@@ -64,6 +85,7 @@ export const AdminShell = ({ activeModule, setActiveModule, user, children }) =>
     { id: 'overview', label: 'Overview', icon: LayoutDashboard, badge: null },
     { id: 'orders', label: 'Orders & Shops', icon: ShoppingBag, badge: null },
     { id: 'vendors', label: 'Vendors', icon: Store, badge: null },
+    { id: 'menu-approvals', label: 'Menu Approvals', icon: CheckSquare, badge: pendingMenuCount > 0 ? String(pendingMenuCount) : null },
     { id: 'roles', label: 'Roles & Permissions', icon: Lock, badge: null },
     { id: 'security-logs', label: 'Security Logs', icon: ShieldAlert, badge: null },
     { id: 'data-recovery', label: 'Data Recovery', icon: RefreshCw, badge: null },

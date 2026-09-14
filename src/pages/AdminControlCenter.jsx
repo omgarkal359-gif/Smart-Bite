@@ -10,7 +10,7 @@ import { DataRecoveryModule } from '../components/admin/DataRecoveryModule';
 import { BackupsModule } from '../components/admin/BackupsModule';
 import { SystemHealthModule } from '../components/admin/SystemHealthModule';
 import { UserDirectoryModule } from '../components/admin/UserDirectoryModule';
-import { ConfigEmergencyModule } from '../components/admin/ConfigEmergencyModule';
+import { MenuApprovalsModule } from '../components/admin/MenuApprovalsModule';
 import { getStoredUser, setStoredUser, clearStoredUser, isAdminEmail } from '../utils/auth';
 import { supabase } from '../supabaseClient';
 import '../components/admin/admin_dashboard.css';
@@ -66,6 +66,7 @@ const AdminControlCenter = () => {
       {activeModule === 'overview' && <OverviewModule onNavigateModule={setActiveModule} />}
       {activeModule === 'orders' && <OrdersVendorsModule />}
       {activeModule === 'vendors' && <OnboardingModule />}
+      {activeModule === 'menu-approvals' && <MenuApprovalsModule />}
       {activeModule === 'roles' && <RolesModule />}
       {activeModule === 'security-logs' && <SecurityLogsModule />}
       {activeModule === 'data-recovery' && <DataRecoveryModule />}

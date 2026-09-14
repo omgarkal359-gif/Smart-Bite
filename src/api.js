@@ -73,6 +73,28 @@ function mapMenuItem(m) {
   };
 }
 
+function mapMenuChangeRequest(r) {
+  if (!r) return r;
+  return {
+    id: r.id,
+    stallId: r.stall_id,
+    vendorUserId: r.vendor_user_id,
+    menuItemId: r.menu_item_id,
+    requestType: r.request_type,
+    status: r.status,
+    proposedData: r.proposed_data || {},
+    currentData: r.current_data || null,
+    versionAtSubmission: r.version_at_submission,
+    rejectionReason: r.rejection_reason,
+    submittedBy: r.submitted_by,
+    reviewedBy: r.reviewed_by,
+    submittedAt: r.submitted_at,
+    reviewedAt: r.reviewed_at,
+    createdAt: r.created_at,
+    updatedAt: r.updated_at
+  };
+}
+
 function mapOrder(o) {
   if (!o) return o;
   let items = [];
@@ -638,33 +660,162 @@ export const api = {
   },
 
   async addMenuItem(stallId, itemData) {
-    const row = {
-      stall_id: stallId,
-      name: itemData.name,
-      price: Number(itemData.price) || 0,
-      is_veg: itemData.isVeg ?? true,
-      category: itemData.category || 'General',
-      stock: itemData.stock ?? 20,
-      is_available: itemData.available === 0 ? false : true,
-      img: itemData.img || null
-    };
-    const { data, error } = await supabase.from('menu_items').insert(row).select();
-    if (error) return { success: false, message: error.message };
-    return { success: true, item: data?.[0] ? mapMenuItem(data[0]) : null };
+    return this.createMenuAddRequest(stallId, itemData);
   },
 
   async updateMenuItem(itemId, itemData) {
-    const patch = { updated_at: new Date().toISOString() };
-    if (itemData.price !== undefined) patch.price = Number(itemData.price) || 0;
-    if (itemData.stock !== undefined) patch.stock = Number(itemData.stock) || 0;
-    if (itemData.available !== undefined) patch.is_available = !(itemData.available === 0 || itemData.available === false);
-    if (itemData.isVeg !== undefined) patch.is_veg = !!itemData.isVeg;
-    if (itemData.name !== undefined) patch.name = itemData.name;
-    if (itemData.category !== undefined) patch.category = itemData.category;
-    if (itemData.img !== undefined) patch.img = itemData.img || null;
-    const { data, error } = await supabase.from('menu_items').update(patch).eq('id', itemId).select();
+    if (Object.keys(itemData).length === 1 && itemData.available !== undefined) {
+      return this.updateMenuAvailability(itemId, Boolean(itemData.available));
+    }
+    return { success: false, message: 'Structural edits must be submitted via createMenuEditRequest.' };
+  },
+
+  // ── Operational Quick Toggle (Instant Live Update + Audit Log) ───────────
+  async updateMenuAvailability(itemId, isAvailable) {
+    const user = await currentUser();
+    const { data, error } = await supabase
+      .from('menu_items')
+      .update({ is_available: Boolean(isAvailable), updated_at: new Date().toISOString() })
+      .eq('id', itemId)
+      .select();
+
     if (error) return { success: false, message: error.message };
+
+    addAuditLog({
+      level: 'INFO',
+      category: 'Menu',
+      message: `Operational Toggle: Menu Item #${itemId} set ${isAvailable ? 'AVAILABLE' : 'OUT_OF_STOCK'} by ${user?.email || 'vendor'}`
+    });
+
     return { success: true, item: data?.[0] ? mapMenuItem(data[0]) : null };
+  },
+
+  // ── Structural Change Requests (Require Admin Approval) ──────────────────
+  async createMenuAddRequest(stallId, itemData) {
+    const user = await currentUser();
+    const proposed_data = {
+      name: itemData.name,
+      price: Number(itemData.price) || 0,
+      is_veg: itemData.isVeg ?? true,
+      category: itemData.category || 'Main',
+      stock: itemData.stock ?? 20,
+      is_available: true,
+      img: itemData.img || null
+    };
+
+    const { data, error } = await supabase.from('menu_change_requests').insert({
+      stall_id: stallId,
+      request_type: 'CREATE',
+      status: 'PENDING',
+      proposed_data,
+      submitted_by: user?.email || user?.id || 'vendor'
+    }).select();
+
+    if (error) return { success: false, message: error.message };
+    addAuditLog({ level: 'INFO', category: 'Menu', message: `Menu ADD request submitted for "${itemData.name}"` });
+    return { success: true, request: data?.[0] ? mapMenuChangeRequest(data[0]) : null };
+  },
+
+  async createMenuEditRequest(stallId, menuItemId, currentItem, proposedPatch) {
+    const user = await currentUser();
+    const proposed_data = {
+      name: proposedPatch.name ?? currentItem.name,
+      price: proposedPatch.price !== undefined ? Number(proposedPatch.price) : currentItem.price,
+      category: proposedPatch.category ?? currentItem.category,
+      is_veg: proposedPatch.isVeg !== undefined ? Boolean(proposedPatch.isVeg) : currentItem.isVeg,
+      stock: proposedPatch.stock !== undefined ? Number(proposedPatch.stock) : currentItem.stock,
+      is_available: proposedPatch.available !== undefined ? Boolean(proposedPatch.available) : Boolean(currentItem.available),
+      img: proposedPatch.img !== undefined ? proposedPatch.img : currentItem.img
+    };
+
+    const { data, error } = await supabase.from('menu_change_requests').insert({
+      stall_id: stallId,
+      menu_item_id: menuItemId,
+      request_type: 'UPDATE',
+      status: 'PENDING',
+      proposed_data,
+      current_data: currentItem,
+      version_at_submission: currentItem?.updatedAt || currentItem?.updated_at || new Date().toISOString(),
+      submitted_by: user?.email || user?.id || 'vendor'
+    }).select();
+
+    if (error) return { success: false, message: error.message };
+    addAuditLog({ level: 'INFO', category: 'Menu', message: `Menu EDIT request submitted for Item #${menuItemId}` });
+    return { success: true, request: data?.[0] ? mapMenuChangeRequest(data[0]) : null };
+  },
+
+  async createMenuDeleteRequest(stallId, menuItemId, currentItem) {
+    const user = await currentUser();
+    const { data, error } = await supabase.from('menu_change_requests').insert({
+      stall_id: stallId,
+      menu_item_id: menuItemId,
+      request_type: 'DELETE',
+      status: 'PENDING',
+      proposed_data: { is_available: false },
+      current_data: currentItem,
+      version_at_submission: currentItem?.updatedAt || currentItem?.updated_at || new Date().toISOString(),
+      submitted_by: user?.email || user?.id || 'vendor'
+    }).select();
+
+    if (error) return { success: false, message: error.message };
+    addAuditLog({ level: 'INFO', category: 'Menu', message: `Menu DELETE request submitted for Item #${menuItemId}` });
+    return { success: true, request: data?.[0] ? mapMenuChangeRequest(data[0]) : null };
+  },
+
+  // ── Queries & RPC Calls for Admin / Vendor Dashboards ───────────────────
+  async getVendorMenuRequests(stallId) {
+    const { data, error } = await supabase
+      .from('menu_change_requests')
+      .select('*')
+      .eq('stall_id', stallId)
+      .order('created_at', { ascending: false });
+
+    if (error || !data) return [];
+    return data.map(mapMenuChangeRequest);
+  },
+
+  async getAdminMenuRequests(statusFilter = 'PENDING') {
+    let query = supabase
+      .from('menu_change_requests')
+      .select('*, stalls(name)')
+      .order('created_at', { ascending: false });
+
+    if (statusFilter && statusFilter !== 'ALL') {
+      query = query.eq('status', statusFilter);
+    }
+    const { data, error } = await query;
+    if (error || !data) return [];
+    return data.map(r => ({
+      ...mapMenuChangeRequest(r),
+      stallName: r.stalls?.name || r.stall_id
+    }));
+  },
+
+  async approveMenuRequest(requestId) {
+    const user = await currentUser();
+    const adminId = user?.email || user?.id || 'admin';
+    const { data, error } = await supabase.rpc('approve_menu_change_request', {
+      p_request_id: requestId,
+      p_admin_id: adminId
+    });
+
+    if (error) return { success: false, message: error.message };
+    addAuditLog({ level: 'INFO', category: 'Menu', message: `Admin approved menu change request ${requestId}` });
+    return { success: true, data };
+  },
+
+  async rejectMenuRequest(requestId, rejectionReason) {
+    const user = await currentUser();
+    const adminId = user?.email || user?.id || 'admin';
+    const { data, error } = await supabase.rpc('reject_menu_change_request', {
+      p_request_id: requestId,
+      p_admin_id: adminId,
+      p_rejection_reason: rejectionReason
+    });
+
+    if (error) return { success: false, message: error.message };
+    addAuditLog({ level: 'INFO', category: 'Menu', message: `Admin rejected menu change request ${requestId}` });
+    return { success: true, data };
   },
 
   // ── Menu item image upload (Supabase Storage) ────────────────────────────
