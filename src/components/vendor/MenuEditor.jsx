@@ -194,11 +194,11 @@ export const MenuEditor = ({ shopId }) => {
   };
 
   return (
-    <div className="w-full space-y-4 font-sans text-slate-800">
-      {/* 1. Control Toolbar (Compact & Aligned) */}
-      <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3 flex-wrap">
-          <span className="text-xs font-black text-slate-800 uppercase tracking-wider">
+    <div className="w-full space-y-5 font-sans text-slate-800">
+      {/* 1. Control Toolbar (Clear Spacing & Typography) */}
+      <div className="bg-white p-4 sm:p-4.5 rounded-2xl border border-slate-200 shadow-xs flex flex-wrap items-center justify-between gap-3.5">
+        <div className="flex items-center gap-3.5 flex-wrap">
+          <span className="text-xs sm:text-sm font-black text-slate-900 uppercase tracking-wider whitespace-nowrap">
             ACTIVE MENU ITEMS ({items.length})
           </span>
 
@@ -206,11 +206,11 @@ export const MenuEditor = ({ shopId }) => {
           <button
             type="button"
             onClick={() => setShowRequestsDrawer(!showRequestsDrawer)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200/80 rounded-xl text-xs font-bold transition-all cursor-pointer"
+            className="inline-flex items-center gap-2 px-3.5 py-2 bg-amber-50 hover:bg-amber-100 text-amber-950 border border-amber-300/80 rounded-xl text-xs font-extrabold transition-all cursor-pointer shadow-2xs whitespace-nowrap"
           >
-            <Clock size={13} className="text-amber-600" />
+            <Clock size={14} className="text-amber-600 shrink-0" />
             <span>Approval Requests ({pendingRequestsCount} Pending)</span>
-            {showRequestsDrawer ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+            {showRequestsDrawer ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
           </button>
         </div>
 
@@ -220,11 +220,11 @@ export const MenuEditor = ({ shopId }) => {
           whileTap={{ scale: 0.98 }}
           type="button"
           onClick={() => setIsAdding(!isAdding)}
-          className={`inline-flex items-center justify-center gap-1.5 px-4 h-10 rounded-xl text-xs font-bold transition-all border-0 cursor-pointer tracking-wide uppercase ${
-            isAdding ? 'bg-slate-700 text-white' : 'bg-red-600 hover:bg-red-700 text-white shadow-xs'
+          className={`inline-flex items-center justify-center gap-2 px-4.5 h-11 rounded-xl text-xs font-black transition-all border-0 cursor-pointer tracking-wider uppercase shadow-xs shrink-0 ${
+            isAdding ? 'bg-slate-700 text-white' : 'bg-red-600 hover:bg-red-700 text-white'
           }`}
         >
-          {isAdding ? <X size={15} strokeWidth={2.5} /> : <Plus size={15} strokeWidth={2.5} />}
+          {isAdding ? <X size={16} strokeWidth={2.5} /> : <Plus size={16} strokeWidth={2.5} />}
           <span>{isAdding ? 'CANCEL' : 'ADD NEW ITEM'}</span>
         </motion.button>
       </div>
