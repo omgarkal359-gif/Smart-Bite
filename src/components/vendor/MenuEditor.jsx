@@ -77,9 +77,10 @@ export const MenuEditor = ({ shopId }) => {
   }, [shopId, loadData, showToast]);
 
   const categories = useMemo(() => {
-    const list = [...new Set(items.map(item => item.category))];
-    if (list.length === 0) return ['Main', 'Sides', 'Beverages', 'Desserts'];
-    return list;
+    const list = items.map(item => item.category).filter(Boolean);
+    const defaults = ['Main', 'Sides', 'Beverages', 'Desserts', 'Snacks', 'Combos'];
+    const merged = Array.from(new Set([...list, ...defaults]));
+    return merged;
   }, [items]);
 
   const pendingRequestsCount = useMemo(() => {
@@ -105,11 +106,15 @@ export const MenuEditor = ({ shopId }) => {
   const handleAddItem = async (e) => {
     e.preventDefault();
     if (!newItem.name || !newItem.price) return;
+    const finalCategory = newItem.category === '__CUSTOM__' 
+      ? (newItem.customCategory?.trim() || 'Main') 
+      : newItem.category;
+
     try {
       const payload = {
         name: newItem.name,
         price: parseFloat(newItem.price),
-        category: newItem.category,
+        category: finalCategory,
         stock: 20,
         isVeg: 1,
         img: newItem.img || null
@@ -117,7 +122,7 @@ export const MenuEditor = ({ shopId }) => {
       const result = await api.createMenuAddRequest(shopId, payload);
       if (!result?.success) throw new Error(result?.message || 'Request failed');
       
-      setNewItem({ name: '', price: '', category: 'Main', img: '' });
+      setNewItem({ name: '', price: '', category: 'Main', customCategory: '', img: '' });
       setIsAdding(false);
       setShowRequestsDrawer(true);
       showToast(`Menu addition request for "${newItem.name}" submitted for Admin Approval! ⏳`, 'info');
@@ -332,15 +337,21 @@ export const MenuEditor = ({ shopId }) => {
                 className="floating-input appearance-none bg-white border border-slate-200 p-2.5 rounded-xl w-full text-xs font-medium"
                 value={newItem.category}
                 onChange={(e) => setNewItem({...newItem, category: e.target.value})}
+                style={{ padding: '12px 14px', borderRadius: '12px', border: '1px solid #cbd5e1', fontSize: '13px' }}
               >
                 {categories.map(c => <option key={c} value={c}>{c}</option>)}
-                <option value="Main">Main</option>
-                <option value="Sides">Sides</option>
-                <option value="Beverages">Beverages</option>
-                <option value="Desserts">Desserts</option>
+                <option value="__CUSTOM__">+ Add Custom Category...</option>
               </select>
               <label className="floating-label">Category</label>
             </div>
+
+            {newItem.category === '__CUSTOM__' && (
+              <FloatingInput 
+                label="Enter Custom Category Name (e.g. Thali)"
+                value={newItem.customCategory || ''}
+                onChange={(e) => setNewItem({...newItem, customCategory: e.target.value})}
+              />
+            )}
 
             <input 
               type="file" 
@@ -387,11 +398,30 @@ export const MenuEditor = ({ shopId }) => {
           if (catItems.length === 0 && !isAdding) return null;
           
           return (
-            <div key={cat} className="space-y-3.5">
-              {/* Category Header */}
-              <div className="flex items-center justify-between border-b border-slate-200/80 pb-2 pt-2">
-                <h2 className="text-base sm:text-lg font-black uppercase text-red-600 tracking-tight m-0">{cat}</h2>
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{catItems.length} ITEMS</span>
+            <div key={cat} className="space-y-3.5" style={{ marginBottom: '28px' }}>
+              {/* Category Header Box */}
+              <div 
+                className="flex items-center justify-between border border-slate-200 rounded-2xl p-4 bg-slate-50/80 shadow-2xs"
+                style={{ 
+                  padding: '14px 20px', 
+                  backgroundColor: '#f8fafc', 
+                  borderRadius: '14px', 
+                  border: '1px solid #e2e8f0', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'space-between',
+                  marginBottom: '14px'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#dc2626', display: 'inline-block' }} />
+                  <h2 className="text-base sm:text-lg font-black uppercase text-slate-900 tracking-tight m-0" style={{ margin: 0, fontSize: '16px', fontWeight: 900, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    {cat}
+                  </h2>
+                </div>
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-widest bg-white px-3 py-1 rounded-xl border border-slate-200" style={{ padding: '4px 12px', backgroundColor: '#ffffff', borderRadius: '10px', border: '1px solid #e2e8f0', fontSize: '11px', fontWeight: 800, color: '#64748b', letterSpacing: '0.05em' }}>
+                  {catItems.length} {catItems.length === 1 ? 'ITEM' : 'ITEMS'}
+                </span>
               </div>
               
               {/* 5. Full-Width Single-Column Cards (One Big Card Per Line) */}

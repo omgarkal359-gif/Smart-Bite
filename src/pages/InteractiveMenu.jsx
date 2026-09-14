@@ -276,12 +276,28 @@ const InteractiveMenu = () => {
       <header className="menu-header-v21">
         <h2 className="heading-2">{stallInfo ? stallInfo.name : `Shop #${shopId}`}</h2>
         
-        <div className="category-scroll-wrapper mt-4">
+        <div className="category-scroll-wrapper mt-4" style={{ display: 'flex', overflowX: 'auto', gap: '8px', padding: '10px 0', margin: '8px 0 0 0', scrollbarWidth: 'none' }}>
           {CATEGORIES.map(cat => (
             <button
               key={cat}
               className={`category-pill-v21 tap-effect ${activeCategory === cat ? 'active' : ''}`}
               onClick={() => setActiveCategory(cat)}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '8px 16px',
+                borderRadius: '999px',
+                fontSize: '13px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                border: activeCategory === cat ? '1px solid #e4002b' : '1px solid #e2e8f0',
+                backgroundColor: activeCategory === cat ? '#e4002b' : '#ffffff',
+                color: activeCategory === cat ? '#ffffff' : '#475569',
+                boxShadow: activeCategory === cat ? '0 4px 12px rgba(228, 0, 43, 0.25)' : '0 1px 3px rgba(0,0,0,0.05)',
+                transition: 'all 0.2s ease'
+              }}
             >
               {CAT_ICONS[cat] || <Flame size={16} />}
               <span>{cat}</span>
