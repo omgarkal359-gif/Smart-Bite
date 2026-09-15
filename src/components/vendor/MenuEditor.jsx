@@ -223,17 +223,20 @@ export const MenuEditor = ({ shopId }) => {
           </button>
         </div>
 
-        <div className="flex items-center">
+        <div className="flex items-center mt-1 mb-1">
           <motion.button 
-            whileHover={{ scale: 1.01 }}
-            whileTap={{ scale: 0.99 }}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             type="button"
             onClick={() => setIsAdding(!isAdding)}
-            className={`inline-flex items-center justify-center gap-1.5 px-5 h-10 rounded-full text-xs font-black transition-all border-0 cursor-pointer tracking-wider uppercase shadow-[0_4px_14px_rgba(249,38,52,0.35)] ${
-              isAdding ? 'bg-slate-700 text-white' : 'bg-[#FF2E37] hover:bg-[#E0242D] text-white'
-            }`}
+            className="inline-flex items-center justify-center gap-2 px-5 h-10.5 rounded-xl text-xs sm:text-sm font-black transition-all border-0 cursor-pointer tracking-wider uppercase text-white shadow-md shrink-0"
+            style={{
+              backgroundColor: isAdding ? '#334155' : '#EF4444',
+              color: '#FFFFFF',
+              boxShadow: isAdding ? 'none' : '0 4px 14px rgba(239, 68, 68, 0.4)'
+            }}
           >
-            {isAdding ? <X size={15} strokeWidth={2.5} /> : <Plus size={15} strokeWidth={2.5} />}
+            {isAdding ? <X size={16} strokeWidth={2.5} /> : <Plus size={16} strokeWidth={2.5} />}
             <span>{isAdding ? 'CANCEL' : 'ADD NEW ITEM'}</span>
           </motion.button>
         </div>
@@ -442,57 +445,65 @@ export const MenuEditor = ({ shopId }) => {
                 {catItems.map((item) => (
                   <div 
                     key={item.id} 
-                    className="w-full bg-white p-2.5 sm:p-3 rounded-2xl border border-[#E2E8F0] shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:shadow-xs transition-all flex items-center justify-between gap-3"
+                    className="w-full bg-white p-2.5 sm:p-3 rounded-2xl border border-[#E2E8F0] shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:shadow-xs transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3"
                   >
-                    {/* Left: Product Thumbnail */}
-                    <div className="relative w-16 h-16 sm:w-18 sm:h-18 rounded-xl overflow-hidden bg-slate-100 shrink-0 border border-slate-100 group shadow-2xs">
-                      <img src={getFoodItemImage(item)} alt={item.name} className="w-full h-full object-cover" />
-                      <div 
-                        className="absolute inset-0 bg-slate-900/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white cursor-pointer"
-                        onClick={() => setEditingItem({...item})}
-                        title="Click to edit details"
-                      >
-                        <Edit2 size={14} />
-                      </div>
-                    </div>
-                    
-                    {/* Middle: Information Block */}
-                    <div className="flex flex-col justify-center min-w-0 flex-1 gap-1">
-                      <h4 className="text-xs sm:text-sm font-bold text-[#0F172A] truncate m-0 leading-tight">
-                        {item.name}
-                      </h4>
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="px-2 py-0.5 bg-[#F1F5F9] text-[#64748B] font-extrabold text-[10px] rounded-md uppercase tracking-wider border border-slate-200/60">
-                          {item.category}
-                        </span>
-                        <span className="px-2.5 py-0.5 bg-[#ECFDF5] text-[#059669] font-black text-[11px] sm:text-xs rounded-md border border-[#A7F3D0]/60 inline-flex items-center gap-0.5">
-                          ₹{item.price}
-                        </span>
-
-                        {/* Operational Quick Availability Toggle */}
-                        <button
-                          type="button"
-                          onClick={() => handleToggleAvailability(item)}
-                          className={`px-1.5 py-0.5 rounded-md text-[10px] sm:text-[11px] font-bold tracking-wider transition-all border-0 cursor-pointer flex items-center gap-1 whitespace-nowrap ml-1 ${
-                            item.available 
-                              ? 'text-[#059669] hover:text-[#047857]' 
-                              : 'text-[#DC2626] hover:text-[#B91C1C]'
-                          }`}
-                          title="Toggle stock status"
+                    {/* Left Group: Image + Title/Badges */}
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      {/* Product Thumbnail */}
+                      <div className="relative w-16 h-16 sm:w-18 sm:h-18 rounded-xl overflow-hidden bg-slate-100 shrink-0 border border-slate-100 group shadow-2xs">
+                        <img src={getFoodItemImage(item)} alt={item.name} className="w-full h-full object-cover" />
+                        <div 
+                          className="absolute inset-0 bg-slate-900/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white cursor-pointer"
+                          onClick={() => setEditingItem({...item})}
+                          title="Click to edit details"
                         >
-                          <span className={`w-2 h-2 rounded-full ${item.available ? 'bg-[#10B981]' : 'bg-[#EF4444]'}`} />
-                          <span>{item.available ? 'In Stock' : 'Out of Stock'}</span>
-                        </button>
+                          <Edit2 size={14} />
+                        </div>
+                      </div>
+                      
+                      {/* Information Block */}
+                      <div className="flex flex-col justify-center min-w-0 flex-1 gap-1">
+                        <h4 className="text-xs sm:text-sm font-bold text-[#0F172A] truncate m-0 leading-tight">
+                          {item.name}
+                        </h4>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="px-2 py-0.5 bg-[#F1F5F9] text-[#64748B] font-extrabold text-[10px] rounded-md uppercase tracking-wider border border-slate-200/60">
+                            {item.category}
+                          </span>
+                          <span className="px-2.5 py-0.5 bg-[#ECFDF5] text-[#059669] font-black text-[11px] sm:text-xs rounded-md border border-[#A7F3D0]/60 inline-flex items-center gap-0.5">
+                            ₹{item.price}
+                          </span>
+                        </div>
                       </div>
                     </div>
 
-                    {/* Right: Action Buttons Group (Edit & Delete side by side) */}
-                    <div className="flex items-center gap-1.5 shrink-0">
+                    {/* Right Group: Operational Toggle + Edit + Delete */}
+                    <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto pt-0.5 sm:pt-0">
+                      {/* Operational Quick Availability Toggle Button */}
+                      <button
+                        type="button"
+                        onClick={() => handleToggleAvailability(item)}
+                        className={`px-3 py-1.5 rounded-xl text-[11px] sm:text-xs font-extrabold tracking-wider transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap shadow-2xs ${
+                          item.available 
+                            ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200/70' 
+                            : 'bg-red-50 text-red-700 hover:bg-red-100 border border-red-200/70'
+                        }`}
+                        style={{
+                          backgroundColor: item.available ? '#ECFDF5' : '#FEF2F2',
+                          color: item.available ? '#047857' : '#B91C1C',
+                          border: item.available ? '1px solid #A7F3D0' : '1px solid #FECDD3'
+                        }}
+                        title="Toggle stock availability"
+                      >
+                        <span className={`w-2 h-2 rounded-full ${item.available ? 'bg-emerald-500' : 'bg-red-500'}`} />
+                        <span>{item.available ? 'In Stock' : 'Out of Stock'}</span>
+                      </button>
+
                       {/* Edit Button */}
                       <button
                         type="button"
                         onClick={() => setEditingItem({...item})}
-                        className="w-8 h-8 sm:w-8.5 sm:h-8.5 flex items-center justify-center text-[#475569] hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-colors border border-[#E2E8F0] bg-[#F0F4F8] cursor-pointer"
+                        className="w-8 h-8 sm:w-8.5 sm:h-8.5 flex items-center justify-center text-[#475569] hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-colors border border-[#E2E8F0] bg-[#F0F4F8] cursor-pointer shrink-0"
                         title="Edit Item"
                       >
                         <Edit2 size={14} />
@@ -502,7 +513,7 @@ export const MenuEditor = ({ shopId }) => {
                       <button 
                         type="button"
                         onClick={() => handleDeleteRequest(item)}
-                        className="w-8 h-8 sm:w-8.5 sm:h-8.5 flex items-center justify-center text-[#F43F5E] hover:bg-[#FFE4E6] rounded-xl transition-colors border border-[#FECDD3] bg-[#FFF1F2] cursor-pointer"
+                        className="w-8 h-8 sm:w-8.5 sm:h-8.5 flex items-center justify-center text-[#F43F5E] hover:bg-[#FFE4E6] rounded-xl transition-colors border border-[#FECDD3] bg-[#FFF1F2] cursor-pointer shrink-0"
                         title="Deactivate Item"
                       >
                         <Trash2 size={14} />
