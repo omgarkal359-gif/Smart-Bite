@@ -11,19 +11,25 @@ export const isAdminEmail = (email) => {
 
 export const getStoredUser = () => {
   try {
-    const sessionActive = sessionStorage.getItem('sgu_logged_in_session');
-    if (sessionActive !== 'true') return null;
-
-    const token = sessionStorage.getItem('sgu_token') || localStorage.getItem('sgu_token');
+    const sessionActive = sessionStorage.getItem('sgu_logged_in_session') || localStorage.getItem('sgu_logged_in_session');
+    
+    // Check sessionStorage first
     const sessionSaved = sessionStorage.getItem('sgu_user');
-    if (token && sessionSaved) {
+    if (sessionSaved) {
       const u = JSON.parse(sessionSaved);
       if (u && u.role) return u;
     }
+
+    // Fallback to localStorage for persistent session
     const localSaved = localStorage.getItem('sgu_user');
-    if (token && localSaved) {
+    if (localSaved) {
       const u = JSON.parse(localSaved);
       if (u && u.role) return u;
+    }
+
+    if (sessionActive === 'true') {
+      const token = sessionStorage.getItem('sgu_token') || localStorage.getItem('sgu_token');
+      if (!token) return null;
     }
   } catch (e) {
     return null;
@@ -31,21 +37,19 @@ export const getStoredUser = () => {
   return null;
 };
 
-export const setStoredUser = (userData, rememberMe = false) => {
+export const setStoredUser = (userData, _rememberMe = true) => {
   const data = JSON.stringify(userData);
   sessionStorage.setItem('sgu_logged_in_session', 'true');
   sessionStorage.setItem('sgu_user', data);
-  if (rememberMe) {
-    localStorage.setItem('sgu_user', data);
-  } else {
-    localStorage.removeItem('sgu_user');
-  }
+  localStorage.setItem('sgu_logged_in_session', 'true');
+  localStorage.setItem('sgu_user', data);
 };
 
 export const clearStoredUser = () => {
   try {
     sessionStorage.removeItem('sgu_logged_in_session');
     sessionStorage.removeItem('sgu_user');
+    localStorage.removeItem('sgu_logged_in_session');
     localStorage.removeItem('sgu_user');
     sessionStorage.removeItem('sgu_token');
     localStorage.removeItem('sgu_token');

@@ -36,7 +36,41 @@ const LoginPage = () => {
     return 'welcome';
   });
 
-  const navigate = useNavigate();
+  const redirectByRole = useCallback((role, shopId) => {
+    if (role === 'student' || role === 'guest') navigate('/student');
+    else if (role === 'vendor') navigate(shopId ? `/vendor/${shopId}` : '/vendor');
+    else if (role === 'admin') navigate('/admin');
+  }, [navigate]);
+
+  // Auto-resume active session if user has not clicked Logout
+  useEffect(() => {
+    async function checkExistingSession() {
+      // Don't auto-redirect if an OAuth login flow is currently in progress
+      if (localStorage.getItem('sgu_google_oauth_started') === 'true') return;
+
+      const existingUser = getStoredUser();
+      if (existingUser && existingUser.role) {
+        redirectByRole(existingUser.role, existingUser.shopId);
+        return;
+      }
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          const userEmail = (session.user.email || '').toLowerCase().trim();
+          let profile = null;
+          try {
+            const { data: p } = await supabase.from('accounts').select('role, shop_id').eq('id', session.user.id).single();
+            profile = p;
+          } catch (_e) {}
+          const role = profile?.role || (isAdminEmail(userEmail) ? 'admin' : (session.user.user_metadata?.role || 'student'));
+          const shopId = profile?.shop_id || session.user.user_metadata?.shopId || null;
+          redirectByRole(role, shopId);
+        }
+      } catch (_e) {}
+    }
+
+    checkExistingSession();
+  }, [redirectByRole]);
 
   /* ── Keyboard shortcut to close Privacy Modal on Escape ── */
   useEffect(() => {
@@ -82,12 +116,6 @@ const LoginPage = () => {
       document.documentElement.style.background = prevHtmlBg;
     };
   }, []);
-
-  const redirectByRole = useCallback((role, shopId) => {
-    if (role === 'student' || role === 'guest') navigate('/student');
-    else if (role === 'vendor') navigate(shopId ? `/vendor/${shopId}` : '/vendor');
-    else if (role === 'admin') navigate('/admin');
-  }, [navigate]);
 
   const finish = useCallback((role, name, id, shopId = null, token = null) => {
     setIsLoading(false);

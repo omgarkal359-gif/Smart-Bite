@@ -51,22 +51,15 @@ const RootRedirect = () => {
   return <Navigate to="/login" replace />;
 };
 
-// Strict Protected Route Guard Component
+// Strict Protected Route Guard Component - Requires Supabase Auth / Stored Login Session
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const [authStatus, setAuthStatus] = useState('checking'); // 'checking' | 'allowed' | 'unauthorized' | 'unauthenticated'
 
   useEffect(() => {
     async function checkAuth() {
-      // Must have gone through login page in this session
-      const hasActiveSession = sessionStorage.getItem('sgu_logged_in_session') === 'true';
-      if (!hasActiveSession) {
-        setAuthStatus('unauthenticated');
-        return;
-      }
-
       const saved = getStoredUser();
 
-      // 1. Check Supabase active session first
+      // 1. Check active Supabase Auth session first
       try {
         const { data } = await supabase.auth.getSession();
         if (data?.session?.user) {
@@ -100,7 +93,7 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
         }
       } catch (_e) {}
 
-      // 2. Check active app token & authenticated user
+      // 2. Check stored app login token & user profile from Supabase login process
       if (saved && saved.role) {
         if (!allowedRoles || allowedRoles.includes(saved.role)) {
           setAuthStatus('allowed');
