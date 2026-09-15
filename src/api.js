@@ -103,16 +103,37 @@ function mapOrder(o) {
       id: it.menu_item_id ?? it.id,
       name: it.name,
       price: Number(it.unit_price) || 0,
-      quantity: it.quantity,
+      quantity: it.quantity || 1,
       stallId: it.stall_id,
       stallName: it.stall_name
     }));
   } else if (Array.isArray(o.items) && o.items.length > 0) {
-    items = o.items;
+    items = o.items.map(it => typeof it === 'object' && it !== null ? {
+      id: it.id || it.menu_item_id,
+      name: it.name || it.title || 'Food Item',
+      price: Number(it.price || it.unit_price) || 0,
+      quantity: it.quantity || it.qty || 1
+    } : { name: String(it), quantity: 1, price: 0 });
   } else if (typeof o.items === 'string' && o.items.trim()) {
     try {
       const parsed = JSON.parse(o.items);
-      items = Array.isArray(parsed) ? parsed : [{ name: o.items, quantity: 1, price: Number(o.total) || 0 }];
+      if (Array.isArray(parsed)) {
+        items = parsed.map(it => typeof it === 'object' && it !== null ? {
+          id: it.id || it.menu_item_id,
+          name: it.name || it.title || 'Food Item',
+          price: Number(it.price || it.unit_price) || 0,
+          quantity: it.quantity || it.qty || 1
+        } : { name: String(it), quantity: 1, price: 0 });
+      } else if (typeof parsed === 'object' && parsed !== null) {
+        items = [{
+          id: parsed.id || parsed.menu_item_id,
+          name: parsed.name || parsed.title || 'Food Item',
+          price: Number(parsed.price || parsed.unit_price) || 0,
+          quantity: parsed.quantity || parsed.qty || 1
+        }];
+      } else {
+        items = [{ name: String(parsed), quantity: 1, price: Number(o.total) || 0 }];
+      }
     } catch (_e) {
       items = [{ name: o.items, quantity: 1, price: Number(o.total) || 0 }];
     }
@@ -915,7 +936,13 @@ export const api = {
       payment_status: 'pending',
       subtotal,
       total: subtotal,
-      idempotency_key: orderData.idempotencyKey || `IDEM-${orderId}`
+      idempotency_key: orderData.idempotencyKey || `IDEM-${orderId}`,
+      items: JSON.stringify(items.map(it => ({
+        id: it.id,
+        name: it.name,
+        price: Number(it.price) || 0,
+        quantity: it.quantity || 1
+      })))
     };
 
     try {
