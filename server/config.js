@@ -74,9 +74,9 @@ export function validateJwtSecret(customSecret) {
 const NODE_ENV = process.env.NODE_ENV || 'development';
 const VERCEL = !!process.env.VERCEL;
 const DATABASE_URL = process.env.DATABASE_URL || '';
-const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || 'https://hmdewtmtxgfyunyypcon.supabase.co';
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || process.env.SUPABASE_URL_new || '';
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '';
+const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY_new || '';
 const SMTP_USER = process.env.SMTP_USER || process.env.EMAIL_USER || 'smartbite.sgu@gmail.com';
 const SMTP_PASS = process.env.SMTP_PASS || process.env.EMAIL_PASS || '';
 const SMTP_HOST = process.env.SMTP_HOST || 'smtp.gmail.com';
