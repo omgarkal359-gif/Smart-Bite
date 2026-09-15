@@ -11,6 +11,9 @@ export const isAdminEmail = (email) => {
 
 export const getStoredUser = () => {
   try {
+    const sessionActive = sessionStorage.getItem('sgu_logged_in_session');
+    if (sessionActive !== 'true') return null;
+
     const token = sessionStorage.getItem('sgu_token') || localStorage.getItem('sgu_token');
     const sessionSaved = sessionStorage.getItem('sgu_user');
     if (token && sessionSaved) {
@@ -30,6 +33,7 @@ export const getStoredUser = () => {
 
 export const setStoredUser = (userData, rememberMe = false) => {
   const data = JSON.stringify(userData);
+  sessionStorage.setItem('sgu_logged_in_session', 'true');
   sessionStorage.setItem('sgu_user', data);
   if (rememberMe) {
     localStorage.setItem('sgu_user', data);
@@ -40,6 +44,7 @@ export const setStoredUser = (userData, rememberMe = false) => {
 
 export const clearStoredUser = () => {
   try {
+    sessionStorage.removeItem('sgu_logged_in_session');
     sessionStorage.removeItem('sgu_user');
     localStorage.removeItem('sgu_user');
     sessionStorage.removeItem('sgu_token');

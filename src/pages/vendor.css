@@ -166,8 +166,8 @@
    RESPONSIVE: Tablet & Mobile
    ============================================= */
 
-/* Tablet (≤ 1024px) — narrower sidebar, no hover expand */
-@media (max-width: 1024px) {
+/* Tablet (768px - 1024px) — narrower sidebar */
+@media (min-width: 768px) and (max-width: 1024px) {
   .vendor-sidebar {
     width: 64px;
   }
@@ -179,63 +179,62 @@
   }
 }
 
-/* Mobile (≤ 768px) — thin icon bar */
-@media (max-width: 768px) {
+/* Mobile (≤ 767px) — sidebar strip is hidden by default; popped open via 3-line hamburger menu button */
+@media (max-width: 767px) {
   .vendor-sidebar {
-    width: 56px;
-    padding: 16px 0;
+    display: none !important;
   }
-  .vendor-sidebar:hover {
-    width: 56px;
-  }
-  .vs-logo {
-    width: 36px;
-    height: 36px;
-    min-height: 36px;
-    margin-bottom: 20px;
-    border-radius: 10px;
-  }
-  .vs-nav {
-    gap: 4px;
-    padding: 0 6px;
-  }
-  .vs-bottom {
-    padding: 0 6px;
-  }
-  .vs-item {
-    height: 42px;
-    min-height: 42px;
-    padding: 0 10px;
-    border-radius: 10px;
-  }
-  .vs-label {
-    display: none;
-  }
-}
 
-/* Very small phones (≤ 480px) */
-@media (max-width: 480px) {
-  .vendor-sidebar {
-    width: 48px;
-    padding: 12px 0;
+  .kds-header {
+    padding: 10px 14px !important;
   }
-  .vendor-sidebar:hover {
-    width: 48px;
+  .kds-header-left {
+    gap: 8px !important;
   }
-  .vs-logo {
-    width: 32px;
-    height: 32px;
-    min-height: 32px;
-    margin-bottom: 16px;
+  .status-toggle-container {
+    gap: 6px !important;
   }
-  .vs-item {
-    height: 38px;
-    min-height: 38px;
-    padding: 0 8px;
+  .premium-switch {
+    width: 96px !important;
+    height: 40px !important;
   }
-  .vs-icon svg {
-    width: 18px;
-    height: 18px;
+  .switch-knob {
+    width: 42px !important;
+    height: 32px !important;
+    margin-top: -16px !important;
+  }
+  .premium-switch.closed .switch-knob {
+    transform: translateX(46px) !important;
+  }
+  .switch-text {
+    width: 42px !important;
+    font-size: 0.68rem !important;
+  }
+
+  .command-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+    margin-bottom: 14px !important;
+  }
+  .command-card {
+    padding: 12px 14px !important;
+    border-radius: 18px !important;
+  }
+  .command-label {
+    font-size: 0.65rem !important;
+    letter-spacing: 0.05em !important;
+  }
+  .command-value {
+    font-size: 1.55rem !important;
+  }
+  .command-subvalue {
+    font-size: 0.72rem !important;
+  }
+
+  .management-sidebar {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    padding: 20px 16px !important;
   }
 }
 

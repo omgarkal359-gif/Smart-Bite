@@ -195,7 +195,9 @@ const LoginPage = () => {
     window.addEventListener('focus', handleWindowFocus);
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session?.user) {
+      const oauthStarted = localStorage.getItem('sgu_google_oauth_started') === 'true';
+
+      if (session?.user && (oauthStarted || event === 'SIGNED_IN')) {
         localStorage.removeItem('sgu_google_oauth_started');
         const userEmail = session.user.email || '';
         const meta = session.user.user_metadata || {};

@@ -57,6 +57,13 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
 
   useEffect(() => {
     async function checkAuth() {
+      // Must have gone through login page in this session
+      const hasActiveSession = sessionStorage.getItem('sgu_logged_in_session') === 'true';
+      if (!hasActiveSession) {
+        setAuthStatus('unauthenticated');
+        return;
+      }
+
       const saved = getStoredUser();
 
       // 1. Check Supabase active session first

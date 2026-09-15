@@ -201,8 +201,8 @@ export const MenuEditor = ({ shopId }) => {
   return (
     <div className="w-full space-y-5 font-sans text-slate-800">
       {/* 1. Control Toolbar (Shifted Right with Inset Padding) */}
-      <div className="bg-white px-5 sm:px-6 py-4 sm:py-4.5 rounded-2xl border border-slate-200 shadow-xs flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-4 flex-wrap pl-1 sm:pl-2">
+      <div className="bg-white px-5 sm:px-6 py-4 rounded-2xl border border-slate-200 shadow-2xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 w-full">
+        <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
           <span className="text-xs sm:text-sm font-black text-slate-900 uppercase tracking-wider whitespace-nowrap">
             ACTIVE MENU ITEMS ({items.length})
           </span>
@@ -241,35 +241,37 @@ export const MenuEditor = ({ shopId }) => {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="bg-amber-50/70 border border-amber-200 rounded-2xl p-4 space-y-3 overflow-hidden"
+            className="bg-amber-50/90 border border-amber-300/70 rounded-2xl p-4 sm:p-5 space-y-4 overflow-hidden shadow-xs"
           >
-            <div className="flex justify-between items-center border-b border-amber-200/60 pb-2">
-              <h3 className="text-xs font-black text-amber-900 uppercase tracking-wider flex items-center gap-1.5 m-0">
-                <Clock size={15} /> Vendor Menu Approval Requests ({requests.length})
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-amber-200/80 pb-3">
+              <h3 className="text-xs sm:text-sm font-black text-amber-950 uppercase tracking-wider flex items-center gap-2 m-0">
+                <Clock size={16} className="text-amber-700 shrink-0" /> Vendor Menu Approval Requests ({requests.length})
               </h3>
-              <span className="text-[11px] text-amber-700 font-medium">Structural changes require Super Admin approval</span>
+              <span className="text-[11px] sm:text-xs text-amber-800 font-semibold whitespace-nowrap">
+                Structural changes require Super Admin approval
+              </span>
             </div>
 
             {requests.length === 0 ? (
               <p className="text-xs text-amber-800 italic m-0">No change requests submitted yet.</p>
             ) : (
-              <div className="space-y-2.5 max-h-60 overflow-y-auto pr-1">
+              <div className="space-y-3 max-h-64 overflow-y-auto px-1 py-1">
                 {requests.map(r => (
-                  <div key={r.id} className="bg-white p-3 rounded-xl border border-amber-200/80 shadow-2xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-                    <div>
+                  <div key={r.id} className="bg-white px-4 py-3.5 rounded-xl border border-amber-200/90 shadow-2xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 min-w-0">
+                      <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider whitespace-nowrap shrink-0 ${
+                        r.requestType === 'CREATE' ? 'bg-emerald-100 text-emerald-800' :
+                        r.requestType === 'UPDATE' ? 'bg-blue-100 text-blue-800' :
+                        'bg-red-100 text-red-800'
+                      }`}>
+                        {r.requestType}
+                      </span>
                       <div className="flex items-center gap-2">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${
-                          r.requestType === 'CREATE' ? 'bg-emerald-100 text-emerald-800' :
-                          r.requestType === 'UPDATE' ? 'bg-blue-100 text-blue-800' :
-                          'bg-red-100 text-red-800'
-                        }`}>
-                          {r.requestType}
-                        </span>
-                        <span className="font-bold text-slate-800 text-xs">
+                        <span className="font-extrabold text-slate-900 text-xs sm:text-sm">
                           {r.proposedData?.name || r.currentData?.name || 'Menu Item'}
                         </span>
                         {r.proposedData?.price !== undefined && (
-                          <span className="text-xs font-semibold text-slate-600">₹{r.proposedData.price}</span>
+                          <span className="text-xs font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md">₹{r.proposedData.price}</span>
                         )}
                       </div>
 
@@ -280,18 +282,18 @@ export const MenuEditor = ({ shopId }) => {
                       )}
                     </div>
 
-                    <div className="flex items-center gap-2.5">
-                      <span className="text-[10px] text-slate-400 font-medium">
+                    <div className="flex items-center gap-3 shrink-0 self-end sm:self-auto">
+                      <span className="text-[11px] text-slate-500 font-medium whitespace-nowrap">
                         {new Date(r.createdAt).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                       </span>
-                      <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold inline-flex items-center gap-1 ${
-                        r.status === 'PENDING' ? 'bg-amber-100 text-amber-800' :
-                        r.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-800' :
-                        'bg-red-100 text-red-800'
+                      <span className={`px-2.5 py-1 rounded-full text-[11px] font-extrabold inline-flex items-center gap-1.5 whitespace-nowrap ${
+                        r.status === 'PENDING' ? 'bg-amber-100 text-amber-900 border border-amber-300/50' :
+                        r.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-900 border border-emerald-300/50' :
+                        'bg-red-100 text-red-900 border border-red-300/50'
                       }`}>
-                        {r.status === 'PENDING' && <Clock size={11} />}
-                        {r.status === 'APPROVED' && <CheckCircle2 size={11} />}
-                        {r.status === 'REJECTED' && <XCircle size={11} />}
+                        {r.status === 'PENDING' && <Clock size={12} />}
+                        {r.status === 'APPROVED' && <CheckCircle2 size={12} />}
+                        {r.status === 'REJECTED' && <XCircle size={12} />}
                         {r.status}
                       </span>
                     </div>

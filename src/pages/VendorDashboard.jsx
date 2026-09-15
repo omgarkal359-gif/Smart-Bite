@@ -62,6 +62,7 @@ const VendorDashboard = () => {
   const [heartbeat, setHeartbeat] = useState(true);
   const [shopStatus, setShopStatus] = useState('CLOSED'); // OPEN | CLOSED
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [activeSidebarTab, setActiveSidebarTab] = useState('menu'); // 'menu' | 'history'
   const { shopId: urlShopId } = useParams();
   const cleanUrlShopId = (urlShopId && urlShopId !== 'undefined' && urlShopId !== 'null') ? urlShopId : null;
@@ -525,8 +526,8 @@ const VendorDashboard = () => {
   return (
     <div className={`vendor-kds-container page-transition ${isPowerSaver ? 'power-saver' : ''}`} style={{ flexDirection: 'row', height: '100vh', overflow: 'hidden' }}>
       
-      {/* SIDEBAR — hover-to-expand, floats over content */}
-      <aside className="vendor-sidebar">
+      {/* SIDEBAR — hover-to-expand on desktop */}
+      <aside className="vendor-sidebar hidden md:flex">
         {/* Logo */}
         <div className="vs-logo">
           <Utensils size={22} className="text-white" />
@@ -579,17 +580,133 @@ const VendorDashboard = () => {
         </div>
       </aside>
 
+      {/* MOBILE POPUP SIDEBAR DRAWER (Only opens on mobile when 3-line option is clicked) */}
+      <AnimatePresence>
+        {isMobileNavOpen && (
+          <>
+            <motion.div 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              exit={{ opacity: 0 }} 
+              className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-[300] md:hidden" 
+              onClick={() => setIsMobileNavOpen(false)} 
+            />
+            <motion.div
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+              className="fixed top-0 left-0 bottom-0 w-[280px] max-w-[85vw] bg-[#FFFDF1] z-[310] md:hidden shadow-2xl p-5 flex flex-col justify-between overflow-y-auto border-r border-amber-200/60"
+            >
+              <div className="space-y-6">
+                {/* Header with Logo & Close button */}
+                <div className="flex items-center justify-between border-b border-amber-900/10 pb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-red-600 text-white flex items-center justify-center shadow-sm">
+                      <Utensils size={20} />
+                    </div>
+                    <div>
+                      <h2 className="text-sm font-black text-amber-950 uppercase tracking-wide m-0" style={{ fontFamily: 'Oswald, sans-serif' }}>
+                        {currentShop?.name || 'Vendor Operations'}
+                      </h2>
+                      <span className="text-[10px] font-extrabold text-amber-700/80 uppercase tracking-widest">Navigation Menu</span>
+                    </div>
+                  </div>
+                  <button 
+                    type="button"
+                    onClick={() => setIsMobileNavOpen(false)}
+                    className="p-2 text-amber-900 hover:bg-amber-100/80 rounded-xl border-0 bg-transparent cursor-pointer transition-colors"
+                  >
+                    <X size={22} strokeWidth={2.5} />
+                  </button>
+                </div>
+
+                {/* Menu Options */}
+                <div className="space-y-2.5">
+                  <button
+                    type="button"
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border-0 text-left cursor-pointer font-bold text-xs transition-all ${
+                      isBusyMode ? 'bg-amber-100/80 text-amber-950' : 'bg-emerald-50 text-emerald-950'
+                    }`}
+                    onClick={() => { handleToggleBusyMode(); setIsMobileNavOpen(false); }}
+                  >
+                    <Clock size={20} className={isBusyMode ? 'text-amber-600' : 'text-emerald-600'} />
+                    <div className="flex flex-col">
+                      <span className="font-black text-xs uppercase" style={{ fontFamily: 'Oswald, sans-serif' }}>MODE: {isBusyMode ? 'BUSY' : 'NORMAL'}</span>
+                      <span className="text-[10px] font-medium opacity-75">{isBusyMode ? '25 min wait time' : 'Standard speed'}</span>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border-0 bg-amber-100/60 hover:bg-amber-100 text-amber-950 text-left cursor-pointer font-bold text-xs transition-all"
+                    onClick={() => { setActiveSidebarTab('menu'); setIsSidebarOpen(true); setIsMobileNavOpen(false); }}
+                  >
+                    <Settings size={20} className="text-amber-800" />
+                    <div className="flex flex-col">
+                      <span className="font-black text-xs uppercase" style={{ fontFamily: 'Oswald, sans-serif' }}>CATALOG EDITOR</span>
+                      <span className="text-[10px] font-medium text-amber-800/80">Manage items & pricing</span>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border-0 bg-amber-100/60 hover:bg-amber-100 text-amber-950 text-left cursor-pointer font-bold text-xs transition-all"
+                    onClick={() => { setActiveSidebarTab('history'); setIsSidebarOpen(true); setIsMobileNavOpen(false); }}
+                  >
+                    <History size={20} className="text-amber-800" />
+                    <div className="flex flex-col">
+                      <span className="font-black text-xs uppercase" style={{ fontFamily: 'Oswald, sans-serif' }}>ORDER HISTORY</span>
+                      <span className="text-[10px] font-medium text-amber-800/80">Completed receipts & stats</span>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              {/* Logout Button */}
+              <div className="pt-4 border-t border-amber-900/10">
+                <button
+                  type="button"
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-red-200 bg-red-50 hover:bg-red-100 text-red-700 text-left cursor-pointer font-bold text-xs transition-all"
+                  onClick={async () => {
+                    setIsMobileNavOpen(false);
+                    clearStoredUser();
+                    try { await supabase.auth.signOut(); } catch (_e) {}
+                    navigate('/login', { replace: true });
+                  }}
+                >
+                  <LogOut size={20} className="text-red-600" />
+                  <span className="font-black text-xs uppercase" style={{ fontFamily: 'Oswald, sans-serif' }}>LOGOUT</span>
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
       {/* MAIN CONTENT WRAPPER */}
       <div className="vendor-main-content flex-1 flex flex-col min-w-0 h-full relative" style={{ overflow: 'hidden' }}>
         
         <header className={`kds-header shadow-lg ${shopStatus === 'CLOSED' ? 'closed' : ''}`} style={{ flexShrink: 0 }}>
-          <div className="kds-header-left flex items-center gap-8 w-full justify-between">
-            <div className="flex flex-col">
-              <h1 className="heading-2 text-white text-2xl md:text-3xl" style={{ margin: 0 }}>{currentShop?.name || 'Vendor Dashboard'}</h1>
-              <div className="heartbeat-monitor mt-1" style={{ padding: '4px 12px' }}>
-                <Activity size={14} color={heartbeat ? '#22C55E' : '#94A3B8'} className={heartbeat ? 'pulse' : ''} />
-                <span className="text-white opacity-80 text-[10px] uppercase font-black tracking-widest">Live Operations</span>
-                {user && <span className="text-white opacity-60 text-[10px] font-semibold ml-2">· {user.name}</span>}
+          <div className="kds-header-left flex items-center gap-4 sm:gap-8 w-full justify-between">
+            <div className="flex items-center gap-3">
+              {/* 3-Line Hamburger Option Button for Mobile Interface */}
+              <button
+                type="button"
+                onClick={() => setIsMobileNavOpen(true)}
+                className="md:hidden inline-flex items-center justify-center w-10 h-10 rounded-xl bg-white/20 hover:bg-white/30 text-white border border-white/20 cursor-pointer transition-all shrink-0 active:scale-95 shadow-xs"
+                aria-label="Open Navigation Menu"
+              >
+                <Menu size={22} strokeWidth={2.5} />
+              </button>
+
+              <div className="flex flex-col">
+                <h1 className="heading-2 text-white text-xl sm:text-2xl md:text-3xl" style={{ margin: 0 }}>{currentShop?.name || 'Vendor Dashboard'}</h1>
+                <div className="heartbeat-monitor mt-0.5 sm:mt-1" style={{ padding: '3px 10px' }}>
+                  <Activity size={13} color={heartbeat ? '#22C55E' : '#94A3B8'} className={heartbeat ? 'pulse' : ''} />
+                  <span className="text-white opacity-80 text-[9px] sm:text-[10px] uppercase font-black tracking-widest">Live Operations</span>
+                  {user && <span className="text-white opacity-60 text-[9px] sm:text-[10px] font-semibold ml-1.5 sm:ml-2">· {user.name}</span>}
+                </div>
               </div>
             </div>
 
