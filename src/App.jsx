@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-route
 import { MobileLayout } from './components/layout/MobileLayout';
 import { CartProvider } from './context/CartContext';
 import { supabase } from './supabaseClient';
-import { getStoredUser, clearStoredUser, isAdminEmail } from './utils/auth';
+import { getStoredUser, clearStoredUser, isAdminEmail, isSessionExpired } from './utils/auth';
 
 // Helper to automatically reload the page if a chunk fails to load (due to a new deployment)
 const lazyWithRetry = (componentImport) => {
@@ -63,6 +63,18 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
       try {
         const { data } = await supabase.auth.getSession();
         if (data?.session?.user) {
+          const lastSignIn = data.session.user.last_sign_in_at || data.session.user.created_at;
+          const storedTs = localStorage.getItem('sgu_login_timestamp') || sessionStorage.getItem('sgu_login_timestamp');
+          const effectiveTimestamp = storedTs ? Number(storedTs) : (lastSignIn ? new Date(lastSignIn).getTime() : null);
+
+          if (effectiveTimestamp && isSessionExpired(effectiveTimestamp)) {
+            console.warn('[AUTH SECURITY] Supabase Auth session expired (> 7 days). Signing user out.');
+            await supabase.auth.signOut();
+            clearStoredUser();
+            setAuthStatus('unauthenticated');
+            return;
+          }
+
           const userEmail = (data.session.user.email || '').toLowerCase().trim();
 
           let profile = null;

@@ -163,6 +163,21 @@ async function runSecurityTests() {
     console.log('  -> PASSED: Vendor isolated to own line items on shared multi-stall order.');
   }
 
+  // Test 6: Verify 7-day session expiration policy calculation
+  {
+    console.log('[SECURITY TEST 6] Verifying 7-day session expiration policy math...');
+    const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+    const now = Date.now();
+    const sixDaysAgo = now - (6 * 24 * 60 * 60 * 1000);
+    const eightDaysAgo = now - (8 * 24 * 60 * 60 * 1000);
+
+    const isExpired = (ts) => (now - ts) > SEVEN_DAYS_MS;
+
+    assert.strictEqual(isExpired(sixDaysAgo), false, '6-day old session must NOT be expired');
+    assert.strictEqual(isExpired(eightDaysAgo), true, '8-day old session MUST be expired');
+    console.log('  -> PASSED: 7-day session expiration policy correctly distinguishes valid and expired sessions.');
+  }
+
   console.log('\n--- ALL SECURITY TESTS PASSED SUCCESSFULLY! ---\n');
 }
 

@@ -8,7 +8,7 @@ import {
 } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
-import { setStoredUser, clearStoredUser, isAdminEmail } from '../utils/auth';
+import { getStoredUser, setStoredUser, clearStoredUser, isAdminEmail, isSessionExpired } from '../utils/auth';
 import { api } from '../api';
 import { addAuditLog } from '../utils/logger';
 import './LoginPage.css';
@@ -42,7 +42,7 @@ const LoginPage = () => {
     else if (role === 'admin') navigate('/admin');
   }, [navigate]);
 
-  // Auto-resume active session if user has not clicked Logout
+  // Auto-resume active session if user has not clicked Logout (and session <= 7 days old)
   useEffect(() => {
     async function checkExistingSession() {
       // Don't auto-redirect if an OAuth login flow is currently in progress
@@ -56,6 +56,17 @@ const LoginPage = () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
+          const lastSignIn = session.user.last_sign_in_at || session.user.created_at;
+          const storedTs = localStorage.getItem('sgu_login_timestamp') || sessionStorage.getItem('sgu_login_timestamp');
+          const effectiveTimestamp = storedTs ? Number(storedTs) : (lastSignIn ? new Date(lastSignIn).getTime() : null);
+
+          if (effectiveTimestamp && isSessionExpired(effectiveTimestamp)) {
+            console.warn('[AUTH SECURITY] Supabase Auth session expired (> 7 days). Signing out.');
+            await supabase.auth.signOut();
+            clearStoredUser();
+            return;
+          }
+
           const userEmail = (session.user.email || '').toLowerCase().trim();
           let profile = null;
           try {
