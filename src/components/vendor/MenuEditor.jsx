@@ -200,38 +200,37 @@ export const MenuEditor = ({ shopId }) => {
 
   return (
     <div className="w-full space-y-5 font-sans text-slate-800">
-      {/* 1. Control Toolbar (Shifted Right with Inset Padding) */}
-      <div className="bg-white px-4 sm:px-6 py-3 sm:py-3.5 rounded-2xl border border-slate-200 shadow-2xs flex flex-wrap items-center justify-between gap-3 w-full">
-        <div className="flex items-center gap-2.5 sm:gap-4 flex-wrap">
-          <span className="text-xs sm:text-sm font-black text-slate-900 uppercase tracking-wider whitespace-nowrap">
+      {/* 1. Control Toolbar */}
+      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-3 w-full">
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-xs sm:text-sm font-black text-slate-900 uppercase tracking-wider">
             ACTIVE MENU ITEMS ({items.length})
           </span>
-
-          {/* Approval Requests Trigger */}
-          <button
+          <motion.button 
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             type="button"
-            onClick={() => setShowRequestsDrawer(!showRequestsDrawer)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-950 border border-amber-300/80 rounded-xl text-xs font-extrabold transition-all cursor-pointer shadow-2xs whitespace-nowrap"
+            onClick={() => setIsAdding(!isAdding)}
+            className={`inline-flex items-center justify-center gap-1.5 px-3.5 h-9.5 rounded-xl text-xs font-black transition-all border-0 cursor-pointer tracking-wider uppercase shadow-xs shrink-0 ${
+              isAdding ? 'bg-slate-700 text-white' : 'bg-red-600 hover:bg-red-700 text-white'
+            }`}
           >
-            <Clock size={13} className="text-amber-600 shrink-0" />
-            <span>Approval Requests ({pendingRequestsCount} Pending)</span>
-            {showRequestsDrawer ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
-          </button>
+            {isAdding ? <X size={14} strokeWidth={2.5} /> : <Plus size={14} strokeWidth={2.5} />}
+            <span>{isAdding ? 'CANCEL' : 'ADD NEW ITEM'}</span>
+          </motion.button>
         </div>
 
-        {/* Add New Item Button */}
-        <motion.button 
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
+        <button
           type="button"
-          onClick={() => setIsAdding(!isAdding)}
-          className={`inline-flex items-center justify-center gap-2 px-4 h-10 rounded-xl text-xs font-black transition-all border-0 cursor-pointer tracking-wider uppercase shadow-xs shrink-0 ${
-            isAdding ? 'bg-slate-700 text-white' : 'bg-red-600 hover:bg-red-700 text-white'
-          }`}
+          onClick={() => setShowRequestsDrawer(!showRequestsDrawer)}
+          className="w-full inline-flex items-center justify-between px-3.5 py-2.5 bg-amber-50 hover:bg-amber-100 text-amber-950 border border-amber-300/80 rounded-xl text-xs font-extrabold transition-all cursor-pointer shadow-2xs"
         >
-          {isAdding ? <X size={15} strokeWidth={2.5} /> : <Plus size={15} strokeWidth={2.5} />}
-          <span>{isAdding ? 'CANCEL' : 'ADD NEW ITEM'}</span>
-        </motion.button>
+          <div className="flex items-center gap-2">
+            <Clock size={14} className="text-amber-600 shrink-0" />
+            <span>Approval Requests ({pendingRequestsCount} Pending)</span>
+          </div>
+          {showRequestsDrawer ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+        </button>
       </div>
 
       {/* 2. Approval Requests Drawer */}
@@ -406,57 +405,57 @@ export const MenuEditor = ({ shopId }) => {
       </AnimatePresence>
 
       {/* 4. Menu Categories & High-Density Horizontal Cards */}
-      <div className="space-y-6">
+      <div className="space-y-8">
         {categories.map(cat => {
           const catItems = items.filter(i => i.category === cat);
           if (catItems.length === 0 && !isAdding) return null;
           
           return (
-            <div key={cat} className="space-y-3">
+            <div key={cat} className="space-y-4">
               {/* Category Header Box */}
-              <div className="flex items-center justify-between px-4 py-3 bg-slate-100/80 rounded-xl border border-slate-200/90 shadow-2xs mb-3 mt-4">
+              <div className="flex items-center justify-between px-4 py-3.5 bg-slate-100/80 rounded-2xl border border-slate-200/90 shadow-2xs mb-4 mt-6">
                 <div className="flex items-center gap-2.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-red-600 inline-block shrink-0" />
-                  <h2 className="text-sm sm:text-base font-black uppercase text-slate-900 tracking-wide m-0">
+                  <span className="w-3 h-3 rounded-full bg-red-600 inline-block shrink-0 shadow-2xs" />
+                  <h2 className="text-base sm:text-lg font-black uppercase text-slate-900 tracking-wide m-0">
                     {cat}
                   </h2>
                 </div>
-                <span className="text-[10px] sm:text-xs font-black text-slate-600 uppercase tracking-widest bg-white px-2.5 py-1 rounded-lg border border-slate-200 shadow-2xs">
+                <span className="text-xs font-black text-slate-600 uppercase tracking-widest bg-white px-3 py-1 rounded-xl border border-slate-200 shadow-2xs">
                   {catItems.length} {catItems.length === 1 ? 'ITEM' : 'ITEMS'}
                 </span>
               </div>
               
-              {/* 5. Sleek Single-Row Cards */}
-              <div className="flex flex-col gap-2.5 w-full">
+              {/* 5. High-Density Professional Card List (Increased 80px/96px Image + 16px Spacing) */}
+              <div className="flex flex-col gap-4 w-full">
                 {catItems.map((item) => (
                   <div 
                     key={item.id} 
-                    className="w-full bg-white px-3.5 py-3 sm:px-4 sm:py-3.5 rounded-2xl border border-slate-200/90 shadow-2xs hover:shadow-xs transition-all flex items-center justify-between gap-3 min-h-[72px]"
+                    className="w-full bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/90 shadow-2xs hover:shadow-xs transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3.5"
                   >
-                    {/* Left Group: Thumbnail + Text Information */}
-                    <div className="flex items-center gap-3 min-w-0 flex-1">
-                      {/* Product Thumbnail (56px / 64px square) */}
-                      <div className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden bg-slate-100 shrink-0 border border-slate-200/80 group shadow-2xs">
+                    {/* Left Group: Increased Image Size (80px / 96px square) + Information */}
+                    <div className="flex items-center gap-3.5 min-w-0 flex-1">
+                      {/* Product Thumbnail (80px square on mobile, 96px on desktop) */}
+                      <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden bg-slate-100 shrink-0 border border-slate-200/90 group shadow-xs">
                         <img src={getFoodItemImage(item)} alt={item.name} className="w-full h-full object-cover" />
                         <div 
                           className="absolute inset-0 bg-slate-900/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white cursor-pointer"
                           onClick={() => setEditingItem({...item})}
                           title="Click to edit details"
                         >
-                          <Edit2 size={14} />
+                          <Edit2 size={16} />
                         </div>
                       </div>
                       
                       {/* Information Block */}
-                      <div className="flex flex-col gap-1 min-w-0 flex-1">
-                        <h4 className="text-xs sm:text-base font-extrabold text-slate-900 truncate m-0 leading-snug tracking-tight">
+                      <div className="flex flex-col gap-1.5 min-w-0 flex-1">
+                        <h4 className="text-sm sm:text-lg font-black text-slate-900 truncate m-0 leading-tight tracking-tight">
                           {item.name}
                         </h4>
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="px-2 py-0.5 bg-slate-100 text-slate-600 font-bold text-[10px] sm:text-xs rounded-md uppercase tracking-wider border border-slate-200/60">
+                          <span className="px-2.5 py-1 bg-slate-100 text-slate-700 font-extrabold text-[11px] sm:text-xs rounded-xl uppercase tracking-wider border border-slate-200/70">
                             {item.category}
                           </span>
-                          <span className="px-2.5 py-0.5 bg-emerald-50 text-emerald-800 font-black text-xs sm:text-sm rounded-md border border-emerald-200/80 inline-flex items-center gap-0.5">
+                          <span className="px-3 py-1 bg-emerald-50 text-emerald-800 font-black text-xs sm:text-sm rounded-xl border border-emerald-200/80 inline-flex items-center gap-0.5">
                             ₹{item.price}
                           </span>
                         </div>
@@ -464,12 +463,12 @@ export const MenuEditor = ({ shopId }) => {
                     </div>
 
                     {/* Right Group: Operational Toggle + Edit + Delete */}
-                    <div className="flex items-center gap-2 shrink-0">
+                    <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto pt-1 sm:pt-0">
                       {/* Operational Quick Availability Toggle */}
                       <button
                         type="button"
                         onClick={() => handleToggleAvailability(item)}
-                        className={`px-3 py-1.5 rounded-lg text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all border-0 cursor-pointer flex items-center gap-1.5 whitespace-nowrap shadow-2xs ${
+                        className={`px-3.5 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all border-0 cursor-pointer flex items-center gap-1.5 whitespace-nowrap shadow-2xs ${
                           item.available 
                             ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200/60' 
                             : 'bg-red-50 text-red-700 hover:bg-red-100 border border-red-200/60'
@@ -484,20 +483,20 @@ export const MenuEditor = ({ shopId }) => {
                       <button
                         type="button"
                         onClick={() => setEditingItem({...item})}
-                        className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors border border-slate-200 bg-white cursor-pointer shadow-2xs shrink-0"
+                        className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-colors border border-slate-200 bg-white cursor-pointer shadow-2xs shrink-0"
                         title="Request Structural Edit"
                       >
-                        <Edit2 size={14} />
+                        <Edit2 size={16} />
                       </button>
 
                       {/* Delete Button */}
                       <button 
                         type="button"
                         onClick={() => handleDeleteRequest(item)}
-                        className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors border border-slate-200 bg-white cursor-pointer shadow-2xs shrink-0"
+                        className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors border border-slate-200 bg-white cursor-pointer shadow-2xs shrink-0"
                         title="Request Item Deactivation"
                       >
-                        <Trash2 size={14} />
+                        <Trash2 size={16} />
                       </button>
                     </div>
                   </div>
@@ -506,7 +505,6 @@ export const MenuEditor = ({ shopId }) => {
             </div>
           );
         })}
-      </div>
 
       {/* Structural Edit Modal */}
       <AnimatePresence>
