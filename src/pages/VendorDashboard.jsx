@@ -621,8 +621,8 @@ const VendorDashboard = () => {
                 </button>
               </div>
 
-              {/* Menu Options - Scrollable Middle Area */}
-              <div className="flex-1 overflow-y-auto py-3 my-2 pr-1 flex flex-col gap-3">
+              {/* Menu Options - Scrollable Middle Area with Generous Spacing */}
+              <div className="flex-1 overflow-y-auto py-4 my-2 pr-1 flex flex-col gap-5" style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginTop: '16px', marginBottom: '16px' }}>
                 <button
                   type="button"
                   className={`w-full flex items-center gap-4 p-4 rounded-2xl border transition-all cursor-pointer text-left shadow-2xs ${
@@ -630,7 +630,7 @@ const VendorDashboard = () => {
                       ? 'bg-amber-50/90 border-amber-200/90 text-amber-950 hover:bg-amber-100/90' 
                       : 'bg-emerald-50/90 border-emerald-200/90 text-emerald-950 hover:bg-emerald-100/90'
                   }`}
-                  style={{ marginBottom: '8px' }}
+                  style={{ marginTop: '12px', marginBottom: '16px' }}
                   onClick={() => { handleToggleBusyMode(); setIsMobileNavOpen(false); }}
                 >
                   <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${isBusyMode ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>
@@ -649,7 +649,7 @@ const VendorDashboard = () => {
                 <button
                   type="button"
                   className="w-full flex items-center gap-4 p-4 rounded-2xl border border-slate-200/80 bg-slate-50/80 hover:bg-slate-100/90 text-left cursor-pointer transition-all shadow-2xs group"
-                  style={{ marginBottom: '8px' }}
+                  style={{ marginTop: '12px', marginBottom: '16px' }}
                   onClick={() => { setActiveSidebarTab('menu'); setIsSidebarOpen(true); setIsMobileNavOpen(false); }}
                 >
                   <div className="w-11 h-11 rounded-xl bg-indigo-50 border border-indigo-100/80 text-indigo-600 flex items-center justify-center shrink-0 group-hover:bg-indigo-100 transition-colors">
@@ -668,7 +668,7 @@ const VendorDashboard = () => {
                 <button
                   type="button"
                   className="w-full flex items-center gap-4 p-4 rounded-2xl border border-slate-200/80 bg-slate-50/80 hover:bg-slate-100/90 text-left cursor-pointer transition-all shadow-2xs group"
-                  style={{ marginBottom: '8px' }}
+                  style={{ marginTop: '12px', marginBottom: '16px' }}
                   onClick={() => { setActiveSidebarTab('history'); setIsSidebarOpen(true); setIsMobileNavOpen(false); }}
                 >
                   <div className="w-11 h-11 rounded-xl bg-blue-50 border border-blue-100/80 text-blue-600 flex items-center justify-center shrink-0 group-hover:bg-blue-100 transition-colors">
@@ -685,12 +685,12 @@ const VendorDashboard = () => {
                 </button>
               </div>
 
-              {/* Logout Button - Pinned at bottom */}
-              <div className="pt-4 border-t border-slate-200/90 mt-auto shrink-0 pb-2 bg-white">
+              {/* Logout Button - Shrunk in size & shifted upwards */}
+              <div className="pt-4 border-t border-slate-200/90 mt-auto shrink-0 pb-8 sm:pb-10 bg-white flex justify-center">
                 <button
                   type="button"
-                  className="w-full h-12 flex items-center justify-center gap-2.5 rounded-2xl bg-[#DC2626] hover:bg-red-700 active:bg-red-800 text-white cursor-pointer font-black text-xs tracking-widest uppercase transition-all shadow-lg shadow-red-500/25 active:scale-[0.98] border border-red-600"
-                  style={{ backgroundColor: '#DC2626', color: '#FFFFFF', fontFamily: 'Oswald, sans-serif' }}
+                  className="w-[88%] h-10 flex items-center justify-center gap-2 rounded-xl bg-[#DC2626] hover:bg-red-700 active:bg-red-800 text-white cursor-pointer font-extrabold text-xs tracking-wider uppercase transition-all shadow-md shadow-red-500/20 active:scale-[0.98] border border-red-600 my-2"
+                  style={{ backgroundColor: '#DC2626', color: '#FFFFFF', fontFamily: 'Oswald, sans-serif', height: '40px', marginTop: '8px', marginBottom: '16px' }}
                   onClick={async () => {
                     setIsMobileNavOpen(false);
                     clearStoredUser();
@@ -698,8 +698,8 @@ const VendorDashboard = () => {
                     navigate('/login', { replace: true });
                   }}
                 >
-                  <LogOut size={20} strokeWidth={2.5} className="text-white" />
-                  <span className="font-black text-xs uppercase tracking-widest text-white">LOGOUT</span>
+                  <LogOut size={17} strokeWidth={2.5} className="text-white" />
+                  <span className="font-extrabold text-xs uppercase tracking-wider text-white">LOGOUT</span>
                 </button>
               </div>
             </motion.div>
