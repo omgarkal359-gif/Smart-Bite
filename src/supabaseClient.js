@@ -1,14 +1,21 @@
 import { createClient } from '@supabase/supabase-js';
 
-const DEFAULT_SUPABASE_URL = 'https://hmdewtmtxgfyunyypcon.supabase.co';
-const DEFAULT_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhtZGV3dG10eGdmeXVueXlwY29uIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0MDQ2NDQsImV4cCI6MjA5NTk4MDY0NH0.sy6oeke8atqEHPnkWKMZPK9ggbJp8J3HF6G-GFsJRGg';
+// Supabase connection is configured exclusively through build-time env vars.
+// The anon key is public by design (it ships in the browser bundle), but the
+// specific project URL/key must NOT be hard-coded in source — that pins the
+// repo to one project and blocks rotation. Set these in .env (local) and in
+// your host's environment (Vercel/Netlify/etc.):
+//   VITE_SUPABASE_URL
+//   VITE_SUPABASE_ANON_KEY
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_ANON_KEY;
-
-if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
-  console.warn('Supabase Notice: VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY not set in build environment. Using default project connection.');
+if (!supabaseUrl || !supabaseAnonKey) {
+  // Fail loudly instead of silently connecting to a baked-in fallback project.
+  throw new Error(
+    'Supabase config missing: set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY ' +
+    'in your environment (.env for local dev, project settings for deploys).'
+  );
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
-

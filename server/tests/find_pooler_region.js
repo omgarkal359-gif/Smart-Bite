@@ -2,8 +2,14 @@ import pg from 'pg';
 import dns from 'dns';
 const { Pool } = pg;
 
-const projectRef = 'hmdewtmtxgfyunyypcon';
-const password = 'SGUsmartbite%402026';
+// Credentials come from the environment — never hard-code DB passwords in source.
+//   SUPABASE_PROJECT_REF, SUPABASE_DB_PASSWORD (URL-encode special chars, e.g. @ -> %40)
+const projectRef = process.env.SUPABASE_PROJECT_REF;
+const password = process.env.SUPABASE_DB_PASSWORD;
+if (!projectRef || !password) {
+  console.error('Set SUPABASE_PROJECT_REF and SUPABASE_DB_PASSWORD in the environment.');
+  process.exit(1);
+}
 
 // Let's test all Supabase pooler regions with IPv4
 const regions = [

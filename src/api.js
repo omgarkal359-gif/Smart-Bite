@@ -281,120 +281,56 @@ export const api = {
       return { success: false, message: 'Email and Password are required.' };
     }
 
-    // 1. Primary Authentication: Try Supabase Auth
-    let authUser = null;
-    let authSession = null;
+    // Authentication goes through Supabase Auth ONLY. Vendors are provisioned as
+    // real auth users by an admin (see the provision-vendor Edge Function); there
+    // is deliberately NO plaintext-password / localStorage fallback and no
+    // hard-coded token — those were an authentication-bypass risk.
     const { data, error } = await supabase.auth.signInWithPassword({ email, password: pwd });
-    if (!error && data?.user) {
-      authUser = data.user;
-      authSession = data.session;
+    if (error || !data?.user) {
+      return { success: false, message: error?.message || 'Invalid email or password.' };
     }
+    const authUser = data.user;
+    const authSession = data.session;
 
-    // 2. Query Supabase 'vendors' table
-    let vendorRecord = null;
-    try {
-      // First try exact ilike match on contact_email
-      const { data: v1 } = await supabase.from('vendors').select('*').ilike('contact_email', email).maybeSingle();
-      if (v1) {
-        vendorRecord = v1;
-      } else {
-        // Fall back to querying all vendors and checking email/stall_id/details
-        const { data: allV } = await supabase.from('vendors').select('*');
-        if (allV && allV.length > 0) {
-          const matched = allV.find(v => 
-            v.stall_id === email ||
-            v.contact_email?.toLowerCase() === email ||
-            v.details?.email?.toLowerCase() === email
-          );
-          if (matched) vendorRecord = matched;
-        }
-      }
-    } catch (_e) {}
-
-    // 3. Query Supabase 'accounts' table
+    // Resolve role/shop from the authenticated identity (DB profile + JWT metadata).
     let profileRecord = null;
     try {
-      const { data: pData } = await supabase.from('accounts').select('*').ilike('email', email).maybeSingle();
+      const { data: pData } = await supabase.from('accounts').select('*').eq('id', authUser.id).maybeSingle();
       if (pData) profileRecord = pData;
     } catch (_e) {}
 
-    // 4. Query Supabase 'stalls' table
-    let stallRecord = null;
+    let vendorRecord = null;
     try {
-      const { data: sData } = await supabase.from('stalls').select('*').eq('id', email).maybeSingle();
-      if (sData) stallRecord = sData;
+      const { data: v1 } = await supabase.from('vendors').select('*').ilike('contact_email', email).maybeSingle();
+      if (v1) vendorRecord = v1;
     } catch (_e) {}
 
-    // Check if password matches stored password in Supabase database
-    let dbPasswordMatch = false;
-    if (!authUser && vendorRecord) {
-      const storedPwd = vendorRecord.details?.system_password || vendorRecord.details?.temp_password || vendorRecord.details?.password;
-      if (storedPwd && storedPwd === pwd) {
-        dbPasswordMatch = true;
-      }
-    }
-
-    if (!authUser && !dbPasswordMatch && stallRecord) {
-      const { data: vStall } = await supabase.from('vendors').select('*').eq('stall_id', stallRecord.id).maybeSingle();
-      const sPwd = vStall?.details?.system_password || vStall?.details?.temp_password || vStall?.details?.password;
-      if (sPwd && sPwd === pwd) {
-        dbPasswordMatch = true;
-        vendorRecord = vStall;
-      }
-    }
-
-    // Check Local Storage fallback credentials (for immediate local verification)
-    let localPasswordMatch = false;
-    if (!authUser && !dbPasswordMatch) {
-      try {
-        const storedMap = JSON.parse(localStorage.getItem('sgu_vendor_credentials') || '{}');
-        const localPwd = storedMap[email] || (vendorRecord?.stall_id ? storedMap[vendorRecord.stall_id.toLowerCase()] : null) || (stallRecord?.id ? storedMap[stallRecord.id.toLowerCase()] : null);
-        if (localPwd && localPwd === pwd) {
-          localPasswordMatch = true;
-        }
-      } catch (_e) {}
-    }
-
-    if (!authUser && !dbPasswordMatch && !localPasswordMatch) {
-      return { success: false, message: error?.message || 'Invalid email or password verified by Supabase.' };
-    }
-
-    let role = profileRecord?.role || (vendorRecord || stallRecord ? 'vendor' : authUser?.user_metadata?.role);
+    let role = profileRecord?.role || authUser.app_metadata?.role || authUser.user_metadata?.role;
+    // Cosmetic admin flag for UI routing only. The real authorization boundary
+    // is public.is_admin() enforced by RLS; this requires a valid authenticated
+    // session (established above), so it is not a client-side privilege bypass.
     if (isAdminEmail(email)) role = 'admin';
-    if (!role) role = 'vendor';
-
-    let shopId = vendorRecord?.stall_id || stallRecord?.id || profileRecord?.shop_id || null;
-    if (!shopId) {
-      try {
-        const userId = authUser?.id || profileRecord?.id;
-        if (userId) {
-          const { data: stall } = await supabase
-            .from('stalls')
-            .select('id')
-            .or(`vendor_id.eq.${userId},owner_id.eq.${userId}`)
-            .maybeSingle();
-          if (stall) shopId = stall.id;
-        }
-      } catch (_e) {}
-    }
+    if (!role && vendorRecord) role = 'vendor';
 
     if (role !== 'vendor' && role !== 'admin') {
-      if (authUser) await supabase.auth.signOut();
+      await supabase.auth.signOut();
       return {
         success: false,
-        message: 'Access Denied: Account is not registered as a Vendor or Admin in Supabase.'
+        message: 'Access Denied: this account is not registered as a Vendor or Admin.'
       };
     }
 
+    const shopId = profileRecord?.shop_id || vendorRecord?.stall_id || authUser.user_metadata?.shopId || null;
+
     return {
       success: true,
-      token: authSession?.access_token || 'supabase_db_verified_token',
+      token: authSession?.access_token,
       user: {
-        id: authUser?.id || profileRecord?.id || vendorRecord?.stall_id || email,
+        id: authUser.id,
         username: email,
-        name: profileRecord?.full_name || vendorRecord?.business_name || stallRecord?.name || email.split('@')[0],
+        name: profileRecord?.full_name || vendorRecord?.business_name || authUser.user_metadata?.full_name || email.split('@')[0],
         role,
-        shopId: shopId || vendorRecord?.stall_id
+        shopId
       }
     };
   },
@@ -457,52 +393,6 @@ export const api = {
     } catch (_e) {}
 
     return mapped;
-  },
-
-  async deleteVendor(stallId) {
-    if (!stallId) throw new Error('Stall ID is required.');
-    const cleanId = String(stallId);
-
-    // 1. Instantly register in deleted stalls registry
-    addDeletedStallId(cleanId);
-
-    // 2. Perform DB deletions across tables
-    try { await supabase.from('menu_items').delete().eq('stall_id', cleanId); } catch (_e) {}
-    try { await supabase.from('vendors').delete().eq('stall_id', cleanId); } catch (_e) {}
-    try { await supabase.from('accounts').delete().eq('shop_id', cleanId); } catch (_e) {}
-    try { await supabase.from('vendor_invites').delete().eq('stall_id', cleanId); } catch (_e) {}
-
-    // Hard delete from stalls
-    try { await supabase.from('stalls').delete().eq('id', cleanId); } catch (_e) {}
-
-    // Soft delete / inactive fallback on stalls
-    try {
-      await supabase.from('stalls').update({ is_active: false, is_online: false, updated_at: new Date().toISOString() }).eq('id', cleanId);
-    } catch (_e) {}
-
-    // Edge function delete fallback
-    try {
-      await supabase.functions.invoke('delete-vendor', { body: { stallId: cleanId } });
-    } catch (_e) {}
-
-    // 3. Clean up local credentials
-    try {
-      const stored = JSON.parse(localStorage.getItem('sgu_vendor_credentials') || '{}');
-      delete stored[cleanId];
-      delete stored[cleanId.toLowerCase()];
-      localStorage.setItem('sgu_vendor_credentials', JSON.stringify(stored));
-    } catch (_e) {}
-
-    // 4. Broadcast real-time deletion event
-    try {
-      supabase.channel('global-stall-broadcasts').send({
-        type: 'broadcast',
-        event: 'stall_deleted',
-        payload: { id: cleanId }
-      });
-    } catch (_e) {}
-
-    return { success: true, message: 'Vendor permanently deleted from database and dashboard.' };
   },
 
   async updateStallStatus(stallId, statusData) {
@@ -600,61 +490,38 @@ export const api = {
 
   async deleteVendor(stallId) {
     if (!stallId) throw new Error('Stall ID is required.');
+    const cleanId = String(stallId);
 
-    // 1. Find vendor email if present
-    let vendorEmail = null;
+    // Destructive multi-table deletion is admin-only and MUST run server-side.
+    // The browser (anon key) is not allowed to issue these deletes; the
+    // delete-vendor Edge Function verifies the caller is an admin (via their
+    // JWT) and performs the deletes with the service-role key.
+    const { data, error } = await supabase.functions.invoke('delete-vendor', {
+      body: { stallId: cleanId }
+    });
+    if (error || !data?.success) {
+      const message = data?.message || error?.message || 'Vendor deletion failed.';
+      throw new Error(message);
+    }
+
+    // Local UI convenience only (hide the stall immediately, broadcast to tabs).
+    try { addDeletedStallId(cleanId); } catch (_e) {}
     try {
-      const { data: vRec } = await supabase.from('vendors').select('contact_email, id').eq('stall_id', stallId).maybeSingle();
-      if (vRec?.contact_email) vendorEmail = vRec.contact_email;
+      supabase.channel('global-stall-broadcasts').send({
+        type: 'broadcast',
+        event: 'stall_deleted',
+        payload: { id: cleanId }
+      });
     } catch (_e) {}
-
-    // 2. Delete from stalls table
-    try {
-      await supabase.from('stalls').delete().eq('id', stallId);
-    } catch (_e) {}
-
-    // 3. Delete from vendors table
-    try {
-      await supabase.from('vendors').delete().eq('stall_id', stallId);
-      if (vendorEmail) {
-        await supabase.from('vendors').delete().ilike('contact_email', vendorEmail);
-      }
-    } catch (_e) {}
-
-    // 4. Delete from accounts table
-    try {
-      await supabase.from('accounts').delete().eq('shop_id', stallId);
-      if (vendorEmail) {
-        await supabase.from('accounts').delete().ilike('email', vendorEmail);
-      }
-    } catch (_e) {}
-
-    // 5. Delete from vendor_invites table
-    try {
-      await supabase.from('vendor_invites').delete().eq('stall_id', stallId);
-      if (vendorEmail) {
-        await supabase.from('vendor_invites').delete().ilike('contact_email', vendorEmail);
-      }
-    } catch (_e) {}
-
-    // 6. Delete from local credentials store
-    try {
-      const stored = JSON.parse(localStorage.getItem('sgu_vendor_credentials') || '{}');
-      if (stored[String(stallId).toLowerCase()]) delete stored[String(stallId).toLowerCase()];
-      if (vendorEmail && stored[vendorEmail.toLowerCase()]) delete stored[vendorEmail.toLowerCase()];
-      localStorage.setItem('sgu_vendor_credentials', JSON.stringify(stored));
-    } catch (_e) {}
-
-    // 7. Audit log entry
     try {
       addAuditLog({
         level: 'WARNING',
         category: 'Vendors',
-        message: `Vendor stall "${stallId}" deleted permanently from database by admin.`
+        message: `Vendor stall "${cleanId}" deleted permanently by admin.`
       });
     } catch (_e) {}
 
-    return { success: true, message: `Vendor "${stallId}" deleted successfully.` };
+    return { success: true, message: `Vendor "${cleanId}" deleted successfully.` };
   },
 
   // ── Menu ───────────────────────────────────────────────────────────────
@@ -1174,12 +1041,18 @@ export const api = {
       let query = supabase.from('orders').select('*, order_items(*)');
       const orConditions = [];
 
+      // Never interpolate raw user input into a PostgREST .or() filter string —
+      // commas/dots/parens there are operators and enable filter injection.
+      // Validate each value against a strict shape and reject anything else.
+      const isEmail = (s) => /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(s);
+      const isSafeName = (s) => /^[a-zA-Z0-9 ._-]{1,60}$/.test(s);
+
       if (clean) {
         if (clean.includes('@')) {
-          orConditions.push(`customer_email.ilike.${clean}`);
+          if (isEmail(clean)) orConditions.push(`customer_email.eq.${clean.toLowerCase()}`);
         } else if (isUuid.test(clean)) {
           orConditions.push(`customer_id.eq.${clean}`);
-        } else {
+        } else if (isSafeName(clean)) {
           orConditions.push(`customer_name.ilike.%${clean}%`);
         }
       }
@@ -1187,8 +1060,8 @@ export const api = {
       if (user?.id && isUuid.test(user.id)) {
         orConditions.push(`customer_id.eq.${user.id}`);
       }
-      if (user?.email && user.email.toLowerCase() !== clean.toLowerCase()) {
-        orConditions.push(`customer_email.ilike.${user.email}`);
+      if (user?.email && isEmail(user.email) && user.email.toLowerCase() !== clean.toLowerCase()) {
+        orConditions.push(`customer_email.eq.${user.email.toLowerCase()}`);
       }
 
       if (orConditions.length > 0) {
@@ -1429,86 +1302,29 @@ export const api = {
       const pwd = (newPassword || '').trim();
 
       if (!cleanEmail) throw new Error('Vendor email address is required.');
-      if (!pwd || pwd.length < 4) throw new Error('Password must be at least 4 characters long.');
+      if (!pwd || pwd.length < 8) throw new Error('Password must be at least 8 characters long.');
 
-      // 1. Save/Update password in Supabase Auth via Edge Function if available
-      try {
-        await supabase.functions.invoke('update-vendor-password', {
-          body: { email: cleanEmail, password: pwd }
-        });
-      } catch (_e) {}
-
-      // 2. Save the updated password directly into Supabase database (vendors table)
-      if (stallId || cleanEmail) {
-        try {
-          const { data: vendorsList } = await supabase.from('vendors').select('*');
-          const existingVendor = vendorsList?.find(v => 
-            (stallId && v.stall_id === stallId) ||
-            v.contact_email?.toLowerCase() === cleanEmail ||
-            v.details?.email?.toLowerCase() === cleanEmail
-          );
-
-          const updatedDetails = {
-            ...(existingVendor?.details || {}),
-            email: cleanEmail,
-            system_password: pwd,
-            password_updated_at: new Date().toISOString()
-          };
-
-          if (existingVendor?.id) {
-            const { error: vErr } = await supabase.from('vendors').update({
-              contact_email: cleanEmail,
-              details: updatedDetails,
-              updated_at: new Date().toISOString()
-            }).eq('id', existingVendor.id);
-
-            if (vErr) {
-              console.warn('Supabase vendors database update notice:', vErr.message);
-            }
-          } else if (stallId) {
-            await supabase.from('vendors').insert({
-              stall_id: stallId,
-              contact_email: cleanEmail,
-              details: updatedDetails,
-              updated_at: new Date().toISOString()
-            });
-          }
-        } catch (_e) {}
+      // The password is set ONLY in Supabase Auth (bcrypt-hashed), via an
+      // admin-gated Edge Function. Passwords are never written to the vendors
+      // table, never stored in localStorage, and never returned to the caller.
+      const { data, error } = await supabase.functions.invoke('update-vendor-password', {
+        body: { email: cleanEmail, password: pwd }
+      });
+      if (error || !data?.success) {
+        throw new Error(data?.message || error?.message || 'Password update failed.');
       }
 
-      // 3. Save/Update account record in Supabase accounts table
+      // Non-secret linkage: keep the accounts role/shop mapping in sync.
       try {
-        const { data: accList } = await supabase.from('accounts').select('*');
-        const existingAcc = accList?.find(a => a.email?.toLowerCase() === cleanEmail);
+        const { data: existingAcc } = await supabase.from('accounts').select('id').ilike('email', cleanEmail).maybeSingle();
         if (existingAcc?.id) {
           await supabase.from('accounts').update({
-            role: 'vendor',
-            shop_id: stallId || null,
-            updated_at: new Date().toISOString()
+            role: 'vendor', shop_id: stallId || null, updated_at: new Date().toISOString()
           }).eq('id', existingAcc.id);
-        } else {
-          await supabase.from('accounts').insert({
-            email: cleanEmail,
-            role: 'vendor',
-            shop_id: stallId || null,
-            updated_at: new Date().toISOString()
-          });
         }
       } catch (_e) {}
 
-      // 4. Save to local credentials store (localStorage) for immediate verification
-      try {
-        const stored = JSON.parse(localStorage.getItem('sgu_vendor_credentials') || '{}');
-        stored[cleanEmail] = pwd;
-        if (stallId) stored[stallId.toLowerCase()] = pwd;
-        localStorage.setItem('sgu_vendor_credentials', JSON.stringify(stored));
-      } catch (_e) {}
-
-      return {
-        success: true,
-        message: `✓ Vendor password updated in Supabase database & Auth! Email: ${cleanEmail} | Password: ${pwd}`,
-        password: pwd
-      };
+      return { success: true, message: 'Vendor password updated.' };
     }
   }
 };
