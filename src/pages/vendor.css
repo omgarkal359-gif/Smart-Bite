@@ -1624,3 +1624,26 @@ select.floating-input {
   color: #DC2626 !important;
 }
 
+/* Red Submit Action Button */
+.submit-btn-red {
+  background-color: #DC2626 !important;
+  background: #DC2626 !important;
+  color: #FFFFFF !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: 0 10px 25px -5px rgba(220, 38, 38, 0.45), 0 4px 10px -2px rgba(220, 38, 38, 0.25) !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.submit-btn-red * {
+  color: #FFFFFF !important;
+}
+
+.submit-btn-red:hover {
+  background-color: #B91C1C !important;
+  background: #B91C1C !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 14px 28px -4px rgba(185, 28, 28, 0.55), 0 6px 12px -2px rgba(185, 28, 28, 0.35) !important;
+}
+
+
