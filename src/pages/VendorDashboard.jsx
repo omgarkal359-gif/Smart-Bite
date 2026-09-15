@@ -972,12 +972,12 @@ const VendorDashboard = () => {
               transition={{ type: 'spring', damping: 30, stiffness: 300 }}
               className="management-sidebar open shadow-2xl"
             >
-              <div className="flex items-center justify-between pb-3.5 mb-4 border-b border-slate-200 shrink-0 gap-4">
+              <div className="flex items-center justify-between pb-2.5 mb-3 border-b border-slate-200/80 shrink-0 gap-3">
                 <div className="flex flex-col">
-                  <h2 className="text-xl sm:text-3xl font-black uppercase tracking-tight text-slate-900 leading-none m-0" style={{ fontFamily: 'Oswald, sans-serif' }}>
+                  <h2 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-slate-900 leading-none m-0" style={{ fontFamily: 'Oswald, sans-serif' }}>
                     {activeSidebarTab === 'menu' ? 'CATALOG EDITOR' : 'ORDER HISTORY'}
                   </h2>
-                  <span className="text-[11px] sm:text-xs font-extrabold text-slate-500 uppercase tracking-widest mt-1 block">
+                  <span className="text-[10px] sm:text-xs font-extrabold text-slate-500 uppercase tracking-widest mt-0.5 block">
                     {activeSidebarTab === 'menu' ? 'Manage Menu & Pricing' : 'Completed Receipts'}
                   </span>
                 </div>

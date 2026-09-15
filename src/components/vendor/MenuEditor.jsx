@@ -201,25 +201,111 @@ export const MenuEditor = ({ shopId }) => {
   return (
     <div className="w-full space-y-5 font-sans text-slate-800">
       {/* 1. Control Toolbar */}
-      <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/90 shadow-2xs flex items-center justify-between gap-3 w-full">
-        <span className="text-xs sm:text-sm font-black text-slate-900 uppercase tracking-wider">
-          ACTIVE MENU ITEMS ({items.length})
-        </span>
-        <motion.button 
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          type="button"
-          onClick={() => setIsAdding(!isAdding)}
-          className={`inline-flex items-center justify-center gap-1.5 px-3.5 h-9 rounded-xl text-xs font-black transition-all border-0 cursor-pointer tracking-wider uppercase shadow-xs shrink-0 ${
-            isAdding ? 'bg-slate-700 text-white' : 'bg-red-600 hover:bg-red-700 text-white'
-          }`}
-        >
-          {isAdding ? <X size={14} strokeWidth={2.5} /> : <Plus size={14} strokeWidth={2.5} />}
-          <span>{isAdding ? 'CANCEL' : 'ADD NEW ITEM'}</span>
-        </motion.button>
+      <div className="flex flex-col gap-2.5 w-full">
+        <div className="flex items-center justify-between gap-2 w-full">
+          <span className="px-3.5 py-1.5 bg-slate-100/90 text-slate-800 text-[11px] sm:text-xs font-black rounded-full border border-slate-200/80 uppercase tracking-wider">
+            ACTIVE MENU ITEMS ({items.length})
+          </span>
+
+          <button
+            type="button"
+            onClick={() => setShowRequestsDrawer(!showRequestsDrawer)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100/90 hover:bg-slate-200/80 text-slate-700 border border-slate-200/80 rounded-xl text-[11px] sm:text-xs font-black transition-all cursor-pointer shadow-2xs"
+          >
+            <Clock size={13} className="text-amber-600 shrink-0" />
+            <span>Approval Requests {pendingRequestsCount > 0 ? `${pendingRequestsCount} Pending` : '0 Pending'}</span>
+            {showRequestsDrawer ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+          </button>
+        </div>
+
+        <div className="flex items-center">
+          <motion.button 
+            whileHover={{ scale: 1.01 }}
+            whileTap={{ scale: 0.99 }}
+            type="button"
+            onClick={() => setIsAdding(!isAdding)}
+            className={`inline-flex items-center justify-center gap-1.5 px-4 h-10 rounded-xl text-xs font-black transition-all border-0 cursor-pointer tracking-wider uppercase shadow-xs ${
+              isAdding ? 'bg-slate-700 text-white' : 'bg-red-600 hover:bg-red-700 text-white'
+            }`}
+          >
+            {isAdding ? <X size={14} strokeWidth={2.5} /> : <Plus size={14} strokeWidth={2.5} />}
+            <span>{isAdding ? 'CANCEL' : 'ADD NEW ITEM'}</span>
+          </motion.button>
+        </div>
       </div>
 
-      {/* 2. Add New Item Form */}
+      {/* 2. Approval Requests Drawer */}
+      <AnimatePresence>
+        {showRequestsDrawer && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="bg-amber-50/90 border border-amber-300/70 rounded-2xl p-3.5 space-y-3 overflow-hidden shadow-xs"
+          >
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 border-b border-amber-200/80 pb-2.5">
+              <h3 className="text-xs font-black text-amber-950 uppercase tracking-wider flex items-center gap-1.5 m-0">
+                <Clock size={14} className="text-amber-700 shrink-0" /> Vendor Menu Approval Requests ({requests.length})
+              </h3>
+              <span className="text-[10px] text-amber-800 font-semibold whitespace-nowrap">
+                Structural changes require Super Admin approval
+              </span>
+            </div>
+
+            {requests.length === 0 ? (
+              <p className="text-xs text-amber-800 italic m-0">No change requests submitted yet.</p>
+            ) : (
+              <div className="space-y-2 max-h-56 overflow-y-auto px-0.5 py-0.5">
+                {requests.map(r => (
+                  <div key={r.id} className="bg-white px-3 py-2.5 rounded-xl border border-amber-200/90 shadow-2xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 min-w-0">
+                      <span className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider whitespace-nowrap shrink-0 ${
+                        r.requestType === 'CREATE' ? 'bg-emerald-100 text-emerald-800' :
+                        r.requestType === 'UPDATE' ? 'bg-blue-100 text-blue-800' :
+                        'bg-red-100 text-red-800'
+                      }`}>
+                        {r.requestType}
+                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-extrabold text-slate-900 text-xs">
+                          {r.proposedData?.name || r.currentData?.name || 'Menu Item'}
+                        </span>
+                        {r.proposedData?.price !== undefined && (
+                          <span className="text-[11px] font-bold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded-md">₹{r.proposedData.price}</span>
+                        )}
+                      </div>
+
+                      {r.status === 'REJECTED' && r.rejectionReason && (
+                        <p className="text-[11px] text-red-600 font-bold mt-0.5 bg-red-50 p-1 rounded-md border border-red-100 m-0">
+                          Rejection: {r.rejectionReason}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+                      <span className="text-[10px] text-slate-500 font-medium whitespace-nowrap">
+                        {new Date(r.createdAt).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold inline-flex items-center gap-1 whitespace-nowrap ${
+                        r.status === 'PENDING' ? 'bg-amber-100 text-amber-900 border border-amber-300/50' :
+                        r.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-900 border border-emerald-300/50' :
+                        'bg-red-100 text-red-900 border border-red-300/50'
+                      }`}>
+                        {r.status === 'PENDING' && <Clock size={11} />}
+                        {r.status === 'APPROVED' && <CheckCircle2 size={11} />}
+                        {r.status === 'REJECTED' && <XCircle size={11} />}
+                        {r.status}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 3. Add New Item Form */}
       <AnimatePresence>
         {isAdding && (
           <motion.form 
@@ -319,100 +405,96 @@ export const MenuEditor = ({ shopId }) => {
         )}
       </AnimatePresence>
 
-      {/* 3. Menu Categories & High-Density Horizontal Cards */}
+      {/* 4. Menu Categories & High-Density Horizontal Cards */}
       <div className="space-y-6">
         {categories.map(cat => {
           const catItems = items.filter(i => i.category === cat);
           if (catItems.length === 0 && !isAdding) return null;
           
           return (
-            <div key={cat} className="space-y-3">
-              {/* Category Header Box */}
-              <div className="flex items-center justify-between px-3.5 py-2.5 bg-slate-100/90 rounded-xl border border-slate-200/80 shadow-2xs mt-4 mb-3">
-                <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-red-600 inline-block shrink-0 shadow-2xs" />
-                  <h2 className="text-sm sm:text-base font-extrabold uppercase text-slate-900 tracking-wide m-0">
-                    {cat}
-                  </h2>
-                </div>
-                <span className="text-[11px] font-black text-slate-600 uppercase tracking-wider bg-white px-2.5 py-0.5 rounded-lg border border-slate-200/80 shadow-2xs">
+            <div key={cat} className="space-y-2.5">
+              {/* Category Header Box with Dot + Line Divider */}
+              <div className="flex items-center gap-2.5 mt-4 mb-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-red-600 inline-block shrink-0 shadow-2xs" />
+                <h2 className="text-base sm:text-lg font-black uppercase text-slate-900 tracking-wide m-0">
+                  {cat}
+                </h2>
+                <div className="flex-1 h-px bg-slate-200/80 mx-1" />
+                <span className="text-xs font-black text-slate-500 uppercase tracking-wider shrink-0">
                   {catItems.length} {catItems.length === 1 ? 'ITEM' : 'ITEMS'}
                 </span>
               </div>
               
               {/* Card List */}
-              <div className="flex flex-col gap-3 w-full">
+              <div className="flex flex-col gap-2.5 w-full">
                 {catItems.map((item) => (
                   <div 
                     key={item.id} 
-                    className="w-full bg-white p-3 sm:p-3.5 rounded-2xl border border-slate-200/90 shadow-2xs hover:shadow-xs transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                    className="w-full bg-white p-2.5 sm:p-3 rounded-2xl border border-slate-200/80 shadow-2xs hover:shadow-xs transition-all flex items-center justify-between gap-2.5"
                   >
-                    {/* Left Group: Image + Information */}
-                    <div className="flex items-center gap-3 min-w-0 flex-1">
-                      {/* Product Thumbnail (72px square on mobile, 88px on desktop) */}
-                      <div className="relative w-18 h-18 sm:w-22 sm:h-22 rounded-xl overflow-hidden bg-slate-100 shrink-0 border border-slate-200/90 group shadow-xs">
-                        <img src={getFoodItemImage(item)} alt={item.name} className="w-full h-full object-cover" />
-                        <div 
-                          className="absolute inset-0 bg-slate-900/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white cursor-pointer"
-                          onClick={() => setEditingItem({...item})}
-                          title="Click to edit details"
-                        >
-                          <Edit2 size={16} />
-                        </div>
-                      </div>
-                      
-                      {/* Information Block */}
-                      <div className="flex flex-col gap-1 min-w-0 flex-1">
-                        <h4 className="text-sm sm:text-base font-bold text-slate-900 truncate m-0 leading-snug tracking-tight">
-                          {item.name}
-                        </h4>
-                        <div className="flex items-center gap-2 flex-wrap mt-0.5">
-                          <span className="px-2 py-0.5 bg-slate-100 text-slate-600 font-extrabold text-[10px] sm:text-[11px] rounded-md uppercase tracking-wider border border-slate-200/60">
-                            {item.category}
-                          </span>
-                          <span className="px-2.5 py-0.5 bg-emerald-50 text-emerald-700 font-black text-xs sm:text-sm rounded-lg border border-emerald-200/70 inline-flex items-center gap-0.5">
-                            ₹{item.price}
-                          </span>
-                        </div>
+                    {/* Product Thumbnail */}
+                    <div className="relative w-16 h-16 sm:w-18 sm:h-18 rounded-xl overflow-hidden bg-slate-100 shrink-0 border border-slate-200/80 group shadow-2xs">
+                      <img src={getFoodItemImage(item)} alt={item.name} className="w-full h-full object-cover" />
+                      <div 
+                        className="absolute inset-0 bg-slate-900/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white cursor-pointer"
+                        onClick={() => setEditingItem({...item})}
+                        title="Click to edit details"
+                      >
+                        <Edit2 size={14} />
                       </div>
                     </div>
+                    
+                    {/* Information Block */}
+                    <div className="flex flex-col justify-center min-w-0 flex-1 gap-1">
+                      <h4 className="text-xs sm:text-sm font-bold text-slate-900 truncate m-0 leading-tight">
+                        {item.name}
+                      </h4>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="px-1.5 py-0.5 bg-slate-100 text-slate-600 font-extrabold text-[10px] rounded-md uppercase tracking-wider border border-slate-200/60">
+                          {item.category}
+                        </span>
+                        <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 font-black text-[11px] sm:text-xs rounded-md border border-emerald-200/70 inline-flex items-center gap-0.5">
+                          ₹{item.price}
+                        </span>
 
-                    {/* Right Group: Operational Toggle + Edit + Delete */}
-                    <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto pt-0.5 sm:pt-0">
-                      {/* Operational Quick Availability Toggle */}
-                      <button
-                        type="button"
-                        onClick={() => handleToggleAvailability(item)}
-                        className={`px-3 py-1.5 rounded-xl text-[11px] sm:text-xs font-black uppercase tracking-wider transition-all border-0 cursor-pointer flex items-center gap-1.5 whitespace-nowrap shadow-2xs ${
-                          item.available 
-                            ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200/60' 
-                            : 'bg-red-50 text-red-700 hover:bg-red-100 border border-red-200/60'
-                        }`}
-                        title="Operational Toggle: Instant Live Update"
-                      >
-                        <span className={`w-2 h-2 rounded-full ${item.available ? 'bg-emerald-500' : 'bg-red-500'}`} />
-                        <span>{item.available ? 'In Stock' : 'Out of Stock'}</span>
-                      </button>
+                        {/* Operational Quick Availability Toggle */}
+                        <button
+                          type="button"
+                          onClick={() => handleToggleAvailability(item)}
+                          className={`px-1.5 py-0.5 rounded-md text-[10px] sm:text-[11px] font-bold tracking-wider transition-all border-0 cursor-pointer flex items-center gap-1 whitespace-nowrap ml-1 ${
+                            item.available 
+                              ? 'text-emerald-700 hover:text-emerald-800' 
+                              : 'text-red-600 hover:text-red-700'
+                          }`}
+                          title="Toggle stock status"
+                        >
+                          <span className={`w-2 h-2 rounded-full ${item.available ? 'bg-emerald-500' : 'bg-red-500'}`} />
+                          <span>{item.available ? 'In Stock' : 'Out of Stock'}</span>
+                        </button>
 
-                      {/* Edit Button */}
-                      <button
-                        type="button"
-                        onClick={() => setEditingItem({...item})}
-                        className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-colors border border-slate-200 bg-white cursor-pointer shadow-2xs shrink-0"
-                        title="Edit Item"
-                      >
-                        <Edit2 size={15} />
-                      </button>
+                        {/* Action Buttons Group */}
+                        <div className="flex items-center gap-1.5 ml-auto">
+                          {/* Edit Button */}
+                          <button
+                            type="button"
+                            onClick={() => setEditingItem({...item})}
+                            className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-colors border border-slate-200/80 bg-slate-50/80 cursor-pointer shrink-0"
+                            title="Edit Item"
+                          >
+                            <Edit2 size={13} />
+                          </button>
 
-                      {/* Delete Button */}
-                      <button 
-                        type="button"
-                        onClick={() => handleDeleteRequest(item)}
-                        className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors border border-slate-200 bg-white cursor-pointer shadow-2xs shrink-0"
-                        title="Deactivate Item"
-                      >
-                        <Trash2 size={15} />
-                      </button>
+                          {/* Delete Button */}
+                          <button 
+                            type="button"
+                            onClick={() => handleDeleteRequest(item)}
+                            className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center text-red-500 hover:text-red-600 hover:bg-red-100 rounded-xl transition-colors border border-red-200/80 bg-red-50/80 cursor-pointer shrink-0"
+                            title="Deactivate Item"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 ))}
