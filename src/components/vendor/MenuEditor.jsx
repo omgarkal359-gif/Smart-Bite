@@ -476,7 +476,7 @@ export const MenuEditor = ({ shopId }) => {
                 {catItems.map((item) => (
                   <div 
                     key={item.id} 
-                    className="w-full bg-white p-2 sm:p-2.5 rounded-2xl border border-[#E2E8F0] shadow-[0_2px_6px_rgba(0,0,0,0.02)] hover:shadow-xs transition-all flex items-center justify-between gap-2.5 h-[76px] sm:h-[84px]"
+                    className="w-full bg-white p-2.5 sm:p-3 rounded-2xl border border-[#E2E8F0] shadow-[0_2px_6px_rgba(0,0,0,0.02)] hover:shadow-xs transition-all flex items-center justify-between gap-3 sm:gap-4 h-[76px] sm:h-[84px]"
                   >
                     {/* Product Thumbnail */}
                     <div className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden bg-slate-100 shrink-0 border border-slate-100 group shadow-2xs">
@@ -490,12 +490,12 @@ export const MenuEditor = ({ shopId }) => {
                       </div>
                     </div>
                     
-                    {/* Middle: Information Block */}
-                    <div className="flex flex-col justify-center min-w-0 flex-1 gap-0.5">
+                    {/* Middle: Information Block with generous left padding & margin */}
+                    <div className="flex flex-col justify-center min-w-0 flex-1 gap-1 pl-2 sm:pl-3 ml-0.5">
                       <h4 className="text-xs sm:text-sm font-extrabold text-[#0F172A] truncate m-0 leading-tight">
                         {item.name}
                       </h4>
-                      <div className="flex items-center gap-1.5 flex-wrap">
+                      <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap">
                         <span className="px-1.5 py-0.5 bg-[#F1F5F9] text-[#64748B] font-extrabold text-[10px] rounded-md uppercase tracking-wider border border-slate-200/60">
                           {item.category}
                         </span>
