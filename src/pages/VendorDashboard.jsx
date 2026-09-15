@@ -597,49 +597,157 @@ const VendorDashboard = () => {
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: 'spring', damping: 28, stiffness: 300 }}
-              className="fixed top-0 left-0 bottom-0 h-[100dvh] max-h-screen w-[310px] max-w-[85vw] bg-white z-[310] md:hidden shadow-2xl flex flex-col justify-between border-r border-slate-200/80 font-sans overflow-hidden"
+              style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                bottom: 0,
+                height: '100dvh',
+                maxHeight: '100vh',
+                width: '310px',
+                maxWidth: '85vw',
+                backgroundColor: '#FFFFFF',
+                zIndex: 310,
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                borderRight: '1px solid #E2E8F0',
+                overflow: 'hidden',
+                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+              }}
             >
               {/* Header with Logo & Close button */}
-              <div className="flex items-center justify-between border-b border-slate-100 p-5 shrink-0 bg-white">
-                <div className="flex items-center gap-3.5">
-                  <div className="w-11 h-11 rounded-2xl bg-[#DC2626] text-white flex items-center justify-center shadow-md shadow-red-500/20 shrink-0">
+              <div 
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  borderBottom: '1px solid #F1F5F9',
+                  padding: '20px',
+                  flexShrink: 0,
+                  backgroundColor: '#FFFFFF'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                  <div 
+                    style={{
+                      width: '44px',
+                      height: '44px',
+                      borderRadius: '16px',
+                      backgroundColor: '#DC2626',
+                      color: '#FFFFFF',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      boxShadow: '0 4px 12px rgba(220, 38, 38, 0.25)',
+                      flexShrink: 0
+                    }}
+                  >
                     <Utensils size={20} strokeWidth={2.5} />
                   </div>
-                  <div className="flex flex-col gap-0.5">
-                    <h2 className="text-base font-black text-slate-900 uppercase tracking-wide m-0 leading-tight" style={{ fontFamily: 'Oswald, sans-serif' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                    <h2 
+                      style={{
+                        fontSize: '1rem',
+                        fontWeight: 900,
+                        color: '#0F172A',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.04em',
+                        margin: 0,
+                        lineHeight: 1.2,
+                        fontFamily: 'Oswald, sans-serif'
+                      }}
+                    >
                       {currentShop?.name || 'Vendor Operations'}
                     </h2>
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-widest block leading-tight">Navigation Menu</span>
+                    <span 
+                      style={{
+                        fontSize: '0.7rem',
+                        fontWeight: 700,
+                        color: '#94A3B8',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.08em',
+                        display: 'block',
+                        lineHeight: 1.2
+                      }}
+                    >
+                      Navigation Menu
+                    </span>
                   </div>
                 </div>
                 <button 
                   type="button"
                   onClick={() => setIsMobileNavOpen(false)}
-                  className="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-xl border-0 bg-transparent cursor-pointer transition-colors"
+                  style={{
+                    width: '38px',
+                    height: '38px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#94A3B8',
+                    borderRadius: '12px',
+                    border: 'none',
+                    backgroundColor: 'transparent',
+                    cursor: 'pointer'
+                  }}
                 >
                   <X size={22} strokeWidth={2.5} />
                 </button>
               </div>
 
-              {/* Menu Options - Scrollable Middle Area with Clear Margins & Padding */}
-              <div className="flex-1 overflow-y-auto px-5 py-6 flex flex-col gap-6">
+              {/* Menu Options - Scrollable Middle Area with Bulletproof Inline Spacing */}
+              <div 
+                style={{ 
+                  flex: 1, 
+                  overflowY: 'auto', 
+                  padding: '24px 20px', 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  gap: '24px',
+                  boxSizing: 'border-box'
+                }}
+              >
                 <button
                   type="button"
-                  className={`w-full flex items-center gap-4 p-4 rounded-2xl border transition-all cursor-pointer text-left shadow-xs ${
-                    isBusyMode 
-                      ? 'bg-amber-50/90 border-amber-200 text-amber-950 hover:bg-amber-100/90' 
-                      : 'bg-emerald-50/90 border-emerald-200 text-emerald-950 hover:bg-emerald-100/90'
-                  }`}
                   onClick={() => { handleToggleBusyMode(); setIsMobileNavOpen(false); }}
+                  style={{
+                    width: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '16px',
+                    padding: '16px 18px',
+                    borderRadius: '20px',
+                    border: isBusyMode ? '1.5px solid #FDE68A' : '1.5px solid #A7F3D0',
+                    backgroundColor: isBusyMode ? '#FFFBEB' : '#ECFDF5',
+                    color: isBusyMode ? '#78350F' : '#064E3B',
+                    marginTop: '8px',
+                    marginBottom: '16px',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.04)',
+                    boxSizing: 'border-box'
+                  }}
                 >
-                  <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${isBusyMode ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                  <div 
+                    style={{ 
+                      width: '44px', 
+                      height: '44px', 
+                      borderRadius: '14px', 
+                      backgroundColor: isBusyMode ? '#FEF3C7' : '#D1FAE5', 
+                      color: isBusyMode ? '#B45309' : '#047857', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center', 
+                      flexShrink: 0 
+                    }}
+                  >
                     <Clock size={22} strokeWidth={2.2} />
                   </div>
-                  <div className="flex flex-col gap-1">
-                    <span className="font-black text-sm uppercase tracking-wide text-slate-900" style={{ fontFamily: 'Oswald, sans-serif' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <span style={{ fontFamily: 'Oswald, sans-serif', fontWeight: 900, fontSize: '0.95rem', textTransform: 'uppercase', letterSpacing: '0.04em', color: '#0F172A', display: 'block', margin: 0 }}>
                       MODE: {isBusyMode ? 'BUSY' : 'NORMAL'}
                     </span>
-                    <span className="text-xs font-bold text-slate-500 leading-tight">
+                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748B', display: 'block', margin: 0, lineHeight: 1.2 }}>
                       {isBusyMode ? '25 min wait time' : 'Standard speed'}
                     </span>
                   </div>
@@ -647,17 +755,46 @@ const VendorDashboard = () => {
 
                 <button
                   type="button"
-                  className="w-full flex items-center gap-4 p-4 rounded-2xl border border-slate-200/90 bg-slate-50/90 hover:bg-slate-100 text-left cursor-pointer transition-all shadow-xs group"
                   onClick={() => { setActiveSidebarTab('menu'); setIsSidebarOpen(true); setIsMobileNavOpen(false); }}
+                  style={{
+                    width: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '16px',
+                    padding: '16px 18px',
+                    borderRadius: '20px',
+                    border: '1.5px solid #E2E8F0',
+                    backgroundColor: '#F8FAFC',
+                    color: '#0F172A',
+                    marginTop: '8px',
+                    marginBottom: '16px',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.04)',
+                    boxSizing: 'border-box'
+                  }}
                 >
-                  <div className="w-11 h-11 rounded-xl bg-indigo-50 border border-indigo-100/80 text-indigo-600 flex items-center justify-center shrink-0 group-hover:bg-indigo-100 transition-colors">
+                  <div 
+                    style={{ 
+                      width: '44px', 
+                      height: '44px', 
+                      borderRadius: '14px', 
+                      backgroundColor: '#EEF2FF', 
+                      border: '1px solid #E0E7FF',
+                      color: '#4F46E5', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center', 
+                      flexShrink: 0 
+                    }}
+                  >
                     <Settings size={22} strokeWidth={2.2} />
                   </div>
-                  <div className="flex flex-col gap-1">
-                    <span className="font-black text-sm uppercase tracking-wide text-slate-900" style={{ fontFamily: 'Oswald, sans-serif' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <span style={{ fontFamily: 'Oswald, sans-serif', fontWeight: 900, fontSize: '0.95rem', textTransform: 'uppercase', letterSpacing: '0.04em', color: '#0F172A', display: 'block', margin: 0 }}>
                       CATALOG EDITOR
                     </span>
-                    <span className="text-xs font-bold text-slate-500 leading-tight">
+                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748B', display: 'block', margin: 0, lineHeight: 1.2 }}>
                       Manage items & pricing
                     </span>
                   </div>
@@ -665,17 +802,46 @@ const VendorDashboard = () => {
 
                 <button
                   type="button"
-                  className="w-full flex items-center gap-4 p-4 rounded-2xl border border-slate-200/90 bg-slate-50/90 hover:bg-slate-100 text-left cursor-pointer transition-all shadow-xs group"
                   onClick={() => { setActiveSidebarTab('history'); setIsSidebarOpen(true); setIsMobileNavOpen(false); }}
+                  style={{
+                    width: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '16px',
+                    padding: '16px 18px',
+                    borderRadius: '20px',
+                    border: '1.5px solid #E2E8F0',
+                    backgroundColor: '#F8FAFC',
+                    color: '#0F172A',
+                    marginTop: '8px',
+                    marginBottom: '16px',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.04)',
+                    boxSizing: 'border-box'
+                  }}
                 >
-                  <div className="w-11 h-11 rounded-xl bg-blue-50 border border-blue-100/80 text-blue-600 flex items-center justify-center shrink-0 group-hover:bg-blue-100 transition-colors">
+                  <div 
+                    style={{ 
+                      width: '44px', 
+                      height: '44px', 
+                      borderRadius: '14px', 
+                      backgroundColor: '#EFF6FF', 
+                      border: '1px solid #DBEAFE',
+                      color: '#2563EB', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center', 
+                      flexShrink: 0 
+                    }}
+                  >
                     <History size={22} strokeWidth={2.2} />
                   </div>
-                  <div className="flex flex-col gap-1">
-                    <span className="font-black text-sm uppercase tracking-wide text-slate-900" style={{ fontFamily: 'Oswald, sans-serif' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <span style={{ fontFamily: 'Oswald, sans-serif', fontWeight: 900, fontSize: '0.95rem', textTransform: 'uppercase', letterSpacing: '0.04em', color: '#0F172A', display: 'block', margin: 0 }}>
                       ORDER HISTORY
                     </span>
-                    <span className="text-xs font-bold text-slate-500 leading-tight">
+                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748B', display: 'block', margin: 0, lineHeight: 1.2 }}>
                       Completed receipts & stats
                     </span>
                   </div>
@@ -683,11 +849,43 @@ const VendorDashboard = () => {
               </div>
 
               {/* Logout Button - Shrunk & Shifted Upwards with Generous Bottom Padding */}
-              <div className="pt-4 pb-12 px-5 border-t border-slate-100 bg-white flex justify-center shrink-0">
+              <div 
+                style={{ 
+                  paddingTop: '16px', 
+                  paddingBottom: '52px', 
+                  paddingLeft: '20px', 
+                  paddingRight: '20px', 
+                  borderTop: '1px solid #F1F5F9', 
+                  backgroundColor: '#FFFFFF', 
+                  display: 'flex', 
+                  justifyContent: 'center', 
+                  flexShrink: 0 
+                }}
+              >
                 <button
                   type="button"
-                  className="w-[85%] max-w-[220px] h-10 flex items-center justify-center gap-2 rounded-xl bg-[#DC2626] hover:bg-red-700 active:bg-red-800 text-white cursor-pointer font-extrabold text-xs tracking-wider uppercase transition-all shadow-md shadow-red-500/20 active:scale-[0.98] border border-red-600"
-                  style={{ backgroundColor: '#DC2626', color: '#FFFFFF', fontFamily: 'Oswald, sans-serif', height: '40px' }}
+                  style={{
+                    width: '85%',
+                    maxWidth: '220px',
+                    height: '42px',
+                    minHeight: '42px',
+                    borderRadius: '14px',
+                    backgroundColor: '#DC2626',
+                    color: '#FFFFFF',
+                    border: '1px solid #B91C1C',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    fontWeight: 800,
+                    fontSize: '0.78rem',
+                    letterSpacing: '0.08em',
+                    textTransform: 'uppercase',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 14px rgba(220, 38, 38, 0.3)',
+                    fontFamily: 'Oswald, sans-serif',
+                    boxSizing: 'border-box'
+                  }}
                   onClick={async () => {
                     setIsMobileNavOpen(false);
                     clearStoredUser();
@@ -695,8 +893,8 @@ const VendorDashboard = () => {
                     navigate('/login', { replace: true });
                   }}
                 >
-                  <LogOut size={17} strokeWidth={2.5} className="text-white" />
-                  <span className="font-extrabold text-xs uppercase tracking-wider text-white">LOGOUT</span>
+                  <LogOut size={18} strokeWidth={2.5} style={{ color: '#FFFFFF' }} />
+                  <span style={{ fontWeight: 800, fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#FFFFFF' }}>LOGOUT</span>
                 </button>
               </div>
             </motion.div>
