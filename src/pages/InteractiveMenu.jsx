@@ -140,7 +140,39 @@ const InteractiveMenu = () => {
     socket.on('menu_item_update', handleMenuItemUpdate);
     socket.on('stall_status_update', handleStallStatusUpdate);
 
-    // --- Supabase Realtime: listen for stall status changes ---
+    // --- Supabase Realtime: listen for menu item availability & stall status changes ---
+    const menuItemsChannel = supabase
+      .channel(`customer-menu-items-${shopId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'menu_items', filter: `stall_id=eq.${shopId}` },
+        (payload) => {
+          if (payload.eventType === 'UPDATE' && payload.new) {
+            const updatedAvailable = payload.new.is_available ? 1 : 0;
+            setInventory(prev => prev.map(i => i.id === payload.new.id ? { ...i, available: updatedAvailable, stock: payload.new.stock ?? i.stock } : i));
+          } else {
+            api.getStallMenu(shopId).then(items => {
+              if (isMounted && Array.isArray(items)) setInventory(items);
+            });
+          }
+        }
+      )
+      .on('broadcast', { event: 'menu_item_availability_changed' }, (payload) => {
+        const data = payload?.payload;
+        if (isMounted && data?.itemId) {
+          setInventory(prev => prev.map(i => i.id === data.itemId ? { ...i, available: data.available } : i));
+        }
+      })
+      .subscribe();
+
+    const handleLocalMenuUpdate = (e) => {
+      const data = e?.detail;
+      if (isMounted && data?.itemId) {
+        setInventory(prev => prev.map(i => i.id === data.itemId ? { ...i, available: data.available } : i));
+      }
+    };
+    window.addEventListener('sgu:menu_item_updated', handleLocalMenuUpdate);
+
     const stallBroadcastChannel = supabase
       .channel(`stall-status-${shopId}`)
       .on('broadcast', { event: 'stall_status_changed' }, (payload) => {
@@ -161,7 +193,7 @@ const InteractiveMenu = () => {
       })
       .subscribe();
 
-    // Polling fallback: re-fetch stall status every 3 seconds
+    // Polling fallback: re-fetch stall status & menu every 5 seconds
     const pollInterval = setInterval(async () => {
       try {
         const stalls = await api.getStalls();
@@ -169,16 +201,16 @@ const InteractiveMenu = () => {
           const stall = stalls.find(s => String(s.id) === String(shopId));
           if (stall) setStallInfo(stall);
         }
-      } catch (_) {
-        // silent
-      }
-    }, 3000);
+      } catch (_) {}
+    }, 5000);
 
     return () => {
       isMounted = false;
       socket.off('menu_item_update', handleMenuItemUpdate);
       socket.off('stall_status_update', handleStallStatusUpdate);
       window.removeEventListener('sgu:stall_status_updated', handleCustomStallUpdate);
+      window.removeEventListener('sgu:menu_item_updated', handleLocalMenuUpdate);
+      supabase.removeChannel(menuItemsChannel);
       supabase.removeChannel(stallBroadcastChannel);
       supabase.removeChannel(globalBroadcastChannel);
       clearInterval(pollInterval);
@@ -247,8 +279,12 @@ const InteractiveMenu = () => {
     }
   }, [isOnline, totalItems, clearCart]);
 
+  const isItemInStock = (item) => {
+    return item?.available !== 0 && item?.available !== false && item?.available !== '0' && (item?.stock ?? 20) > 0;
+  };
+
   const handleAddToCartClick = (item) => {
-    if (item.stock > 0 && isOnline) {
+    if (isItemInStock(item) && isOnline) {
       const itemWithStall = {
         ...item,
         stallId: item.stallId || shopId,
@@ -333,6 +369,7 @@ const InteractiveMenu = () => {
           ) : (
             filteredInventory.map((item, index) => {
               const isImgError = imgErrors[item.id];
+              const inStock = isItemInStock(item);
               return (
                 <motion.div
                   key={item.id || index}
@@ -343,7 +380,7 @@ const InteractiveMenu = () => {
                   exit={{ opacity: 0, scale: 0.9 }}
                   transition={{ type: "spring", stiffness: 100, damping: 15, delay: index * 0.05 }}
                   whileHover={{ y: -5 }}
-                  className={`food-card-v21 shadow-sm ${item.stock === 0 ? 'out-of-stock' : ''}`}
+                  className={`food-card-v21 shadow-sm ${!inStock ? 'out-of-stock opacity-70' : ''}`}
                 >
                   <div className="food-img-wrapper-v21">
                     {!isImgError ? (
@@ -361,6 +398,13 @@ const InteractiveMenu = () => {
                       </div>
                     )}
 
+                    {/* Out of stock badge floating on top of food image */}
+                    {!inStock && (
+                      <div className="absolute top-2 left-2 z-10 px-2 py-0.5 bg-red-600/90 backdrop-blur-md text-white font-extrabold text-[10px] uppercase tracking-wider rounded-md shadow-sm">
+                        Out of Stock
+                      </div>
+                    )}
+
                     {/* Floating KFC Red Add/Qty Selector */}
                     {cart[item.id] ? (
                       <div className="qty-controls-v21 shadow-md">
@@ -368,7 +412,7 @@ const InteractiveMenu = () => {
                           -
                         </motion.button>
                         <span className="qty-value">{cart[item.id].quantity}</span>
-                        <motion.button whileTap={{ scale: 0.9 }} className="qty-btn" onClick={() => handleAddToCartClick(item)} disabled={item.stock === 0 || !isOnline}>
+                        <motion.button whileTap={{ scale: 0.9 }} className="qty-btn" onClick={() => handleAddToCartClick(item)} disabled={!inStock || !isOnline}>
                           +
                         </motion.button>
                       </div>
@@ -377,10 +421,10 @@ const InteractiveMenu = () => {
                         whileTap={{ scale: 0.8 }}
                         className="kfc-add-btn"
                         onClick={() => handleAddToCartClick(item)}
-                        disabled={item.stock === 0 || !isOnline}
-                        style={!isOnline ? { background: '#94A3B8', cursor: 'not-allowed', fontSize: '0.75rem', width: 'auto', padding: '0 8px' } : {}}
+                        disabled={!inStock || !isOnline}
+                        style={!isOnline || !inStock ? { background: '#64748B', cursor: 'not-allowed', fontSize: '0.68rem', width: 'auto', padding: '0 8px', borderRadius: '999px' } : {}}
                       >
-                        {isOnline ? '+' : 'Closed'}
+                        {!isOnline ? 'Closed' : (!inStock ? 'Out of Stock' : '+')}
                       </motion.button>
                     )}
                   </div>

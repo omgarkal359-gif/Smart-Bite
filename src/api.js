@@ -670,7 +670,7 @@ export const api = {
     return { success: false, message: 'Structural edits must be submitted via createMenuEditRequest.' };
   },
 
-  // ── Operational Quick Toggle (Instant Live Update + Audit Log) ───────────
+  // ── Operational Quick Toggle (Instant Live Update + Audit Log + Realtime Broadcast) ───────────
   async updateMenuAvailability(itemId, isAvailable) {
     const user = await currentUser();
     const { data, error } = await supabase
@@ -681,13 +681,57 @@ export const api = {
 
     if (error) return { success: false, message: error.message };
 
+    const updatedItem = data?.[0] ? mapMenuItem(data[0]) : null;
+    const stallId = updatedItem?.stallId;
+
+    // 1. Multi-Channel Supabase Realtime Broadcast for instant dashboard sync
+    try {
+      const payload = {
+        itemId,
+        stallId,
+        available: isAvailable ? 1 : 0,
+        is_available: Boolean(isAvailable),
+        updatedItem
+      };
+
+      supabase.channel('global-menu-broadcasts').send({
+        type: 'broadcast',
+        event: 'menu_item_availability_changed',
+        payload
+      });
+
+      if (stallId) {
+        supabase.channel(`stall-menu-${stallId}`).send({
+          type: 'broadcast',
+          event: 'menu_item_availability_changed',
+          payload
+        });
+        supabase.channel(`vendor-menu-${stallId}`).send({
+          type: 'broadcast',
+          event: 'menu_item_availability_changed',
+          payload
+        });
+      }
+    } catch (_bErr) {
+      console.warn('Menu availability broadcast error:', _bErr);
+    }
+
+    // 2. Dispatch local browser custom event for instant cross-tab / local state sync
+    try {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('sgu:menu_item_updated', {
+          detail: { itemId, stallId, available: isAvailable ? 1 : 0, is_available: Boolean(isAvailable), updatedItem }
+        }));
+      }
+    } catch (_e) {}
+
     addAuditLog({
       level: 'INFO',
       category: 'Menu',
       message: `Operational Toggle: Menu Item #${itemId} set ${isAvailable ? 'AVAILABLE' : 'OUT_OF_STOCK'} by ${user?.email || 'vendor'}`
     });
 
-    return { success: true, item: data?.[0] ? mapMenuItem(data[0]) : null };
+    return { success: true, item: updatedItem };
   },
 
   // ── Structural Change Requests (100% Pure Supabase Database Operations) ──

@@ -48,6 +48,13 @@ export const CheckoutDrawer = ({ isOpen, onClose, cart, inventory, onComplete })
     return total + (item.price * item.quantity);
   }, 0);
 
+  const isItemAvailable = (item) => {
+    const invItem = Array.isArray(inventory) ? inventory.find(i => String(i.id) === String(item.id)) : null;
+    const currentAvailable = invItem ? invItem.available : item.available;
+    return currentAvailable !== 0 && currentAvailable !== false && currentAvailable !== '0';
+  };
+  const hasOutOfStockItems = cartItems.some(item => !isItemAvailable(item));
+
   // Auto-close if cart becomes empty (safe: only rendered when isOpen is true)
   if (cartItems.length === 0 && step === 1) {
     onClose();
@@ -148,6 +155,11 @@ export const CheckoutDrawer = ({ isOpen, onClose, cart, inventory, onComplete })
   };
 
   const handleCheckout = () => {
+    if (hasOutOfStockItems) {
+      alert('Your cart contains out-of-stock items. Please remove them before proceeding.');
+      return;
+    }
+
     if (step < 3) {
       setStep(step + 1);
       return;
@@ -258,62 +270,91 @@ export const CheckoutDrawer = ({ isOpen, onClose, cart, inventory, onComplete })
           <AnimatePresence mode="wait">
             {step === 1 && (
               <motion.div key="step1" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
+                {hasOutOfStockItems && (
+                  <div style={{
+                    padding: '10px 14px',
+                    marginBottom: '12px',
+                    borderRadius: '12px',
+                    backgroundColor: '#FEF2F2',
+                    border: '1px solid #FECDD3',
+                    color: '#991B1B',
+                    fontSize: '0.8rem',
+                    fontWeight: 600,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}>
+                    <span>⚠️</span>
+                    <span>Some items in your cart are currently out of stock. Please remove them to continue.</span>
+                  </div>
+                )}
                 <div className="receipt-preview-v20 shadow-md">
                   <div className="item-list-v20">
-                    {cartItems.map((item) => (
-                      <div key={item.id} className="receipt-item-v20" style={{ alignItems: 'center', gap: '10px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-                          <button 
+                    {cartItems.map((item) => {
+                      const avail = isItemAvailable(item);
+                      return (
+                        <div key={item.id} className="receipt-item-v20" style={{ alignItems: 'center', gap: '10px', opacity: avail ? 1 : 0.6 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                            <button 
+                              className="tap-effect"
+                              onClick={() => removeFromCart(item.id)}
+                              style={{
+                                width: '28px', height: '28px', borderRadius: '50%',
+                                background: 'var(--bg-soft-gray)', border: '1px solid #E2E8F0',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                cursor: 'pointer', color: 'var(--text-muted)',
+                              }}
+                            >
+                              <Minus size={14} />
+                            </button>
+                            <span style={{ 
+                              fontFamily: 'var(--font-heading)', fontWeight: 800, 
+                              fontSize: '1rem', minWidth: '20px', textAlign: 'center',
+                              color: 'var(--text-dark)',
+                            }}>{item.quantity}</span>
+                            <button 
+                              className="tap-effect"
+                              onClick={() => avail && addToCart(item)}
+                              disabled={!avail}
+                              style={{
+                                width: '28px', height: '28px', borderRadius: '50%',
+                                background: avail ? 'var(--bg-soft-gray)' : '#E2E8F0', border: '1px solid #E2E8F0',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                cursor: avail ? 'pointer' : 'not-allowed', color: avail ? 'var(--text-dark)' : '#94A3B8',
+                              }}
+                            >
+                              <Plus size={14} />
+                            </button>
+                          </div>
+                          <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                            <span className="item-name" style={{ fontWeight: 600 }}>{item.name}</span>
+                            {!avail && (
+                              <span style={{ fontSize: '0.65rem', fontWeight: 800, color: '#DC2626', textTransform: 'uppercase' }}>
+                                Out of Stock
+                              </span>
+                            )}
+                          </div>
+                          <span className="item-price" style={{ fontWeight: 700, marginRight: '8px' }}>₹{item.price * item.quantity}</span>
+                          <button
                             className="tap-effect"
-                            onClick={() => removeFromCart(item.id)}
+                            onClick={() => {
+                              // Remove all of this item
+                              for (let i = 0; i < item.quantity; i++) {
+                                removeFromCart(item.id);
+                              }
+                            }}
                             style={{
-                              width: '28px', height: '28px', borderRadius: '50%',
-                              background: 'var(--bg-soft-gray)', border: '1px solid #E2E8F0',
+                              width: '28px', height: '28px', borderRadius: '8px',
+                              background: 'rgba(228, 0, 43, 0.08)', border: 'none',
                               display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              cursor: 'pointer', color: 'var(--text-muted)',
+                              cursor: 'pointer', color: '#E4002B', flexShrink: 0,
                             }}
                           >
-                            <Minus size={14} />
-                          </button>
-                          <span style={{ 
-                            fontFamily: 'var(--font-heading)', fontWeight: 800, 
-                            fontSize: '1rem', minWidth: '20px', textAlign: 'center',
-                            color: 'var(--text-dark)',
-                          }}>{item.quantity}</span>
-                          <button 
-                            className="tap-effect"
-                            onClick={() => addToCart(item)}
-                            style={{
-                              width: '28px', height: '28px', borderRadius: '50%',
-                              background: 'var(--bg-soft-gray)', border: '1px solid #E2E8F0',
-                              display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              cursor: 'pointer', color: 'var(--text-dark)',
-                            }}
-                          >
-                            <Plus size={14} />
+                            <Trash2 size={14} />
                           </button>
                         </div>
-                        <span className="item-name" style={{ flex: 1, fontWeight: 600 }}>{item.name}</span>
-                        <span className="item-price" style={{ fontWeight: 700, marginRight: '8px' }}>₹{item.price * item.quantity}</span>
-                        <button
-                          className="tap-effect"
-                          onClick={() => {
-                            // Remove all of this item
-                            for (let i = 0; i < item.quantity; i++) {
-                              removeFromCart(item.id);
-                            }
-                          }}
-                          style={{
-                            width: '28px', height: '28px', borderRadius: '8px',
-                            background: 'rgba(228, 0, 43, 0.08)', border: 'none',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            cursor: 'pointer', color: '#E4002B', flexShrink: 0,
-                          }}
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                   <div className="receipt-total-v20">
                     <span>To Pay</span>

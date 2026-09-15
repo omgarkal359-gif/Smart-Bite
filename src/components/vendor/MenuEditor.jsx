@@ -51,7 +51,7 @@ export const MenuEditor = ({ shopId }) => {
 
     if (!shopId) return;
 
-    // Realtime subscription for vendor change requests
+    // Realtime subscription for vendor change requests & menu item updates
     const channel = supabase
       .channel(`vendor-menu-reqs-${shopId}`)
       .on(
@@ -69,10 +69,41 @@ export const MenuEditor = ({ shopId }) => {
           loadData();
         }
       )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'menu_items', filter: `stall_id=eq.${shopId}` },
+        (payload) => {
+          if (payload.eventType === 'UPDATE' && payload.new) {
+            const updatedAvailable = payload.new.is_available ? 1 : 0;
+            setItems(prev => prev.map(i => i.id === payload.new.id ? { ...i, available: updatedAvailable } : i));
+          } else {
+            loadData();
+          }
+        }
+      )
+      .on(
+        'broadcast',
+        { event: 'menu_item_availability_changed' },
+        (payload) => {
+          if (payload?.payload?.itemId) {
+            const { itemId, available } = payload.payload;
+            setItems(prev => prev.map(i => i.id === itemId ? { ...i, available } : i));
+          }
+        }
+      )
       .subscribe();
+
+    const handleLocalMenuUpdate = (e) => {
+      if (e?.detail?.itemId) {
+        const { itemId, available } = e.detail;
+        setItems(prev => prev.map(i => i.id === itemId ? { ...i, available } : i));
+      }
+    };
+    window.addEventListener('sgu:menu_item_updated', handleLocalMenuUpdate);
 
     return () => {
       supabase.removeChannel(channel);
+      window.removeEventListener('sgu:menu_item_updated', handleLocalMenuUpdate);
     };
   }, [shopId, loadData, showToast]);
 
