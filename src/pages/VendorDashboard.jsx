@@ -705,7 +705,7 @@ const VendorDashboard = () => {
       </AnimatePresence>
 
       {/* MAIN CONTENT WRAPPER */}
-      <div className="vendor-main-content flex-1 flex flex-col min-w-0 h-full relative" style={{ overflow: 'hidden' }}>
+      <div className="vendor-main-content flex-1 flex flex-col min-w-0 h-full relative" style={{ overflowY: 'auto' }}>
         
         <header className={`kds-header shadow-lg ${shopStatus === 'CLOSED' ? 'closed' : ''}`} style={{ flexShrink: 0 }}>
           <div className="kds-header-left flex items-center gap-4 sm:gap-8 w-full justify-between">
@@ -861,7 +861,7 @@ const VendorDashboard = () => {
                       initial={{ opacity: 0, scale: 0.8, x: 50 }}
                       animate={{ opacity: 1, scale: 1, x: 0 }}
                       exit={{ opacity: 0, scale: 0.8, y: -50 }}
-                      className="elite-card kds-ticket overflow-visible h-auto flex flex-col justify-between"
+                      className="elite-card kds-ticket overflow-auto h-auto flex flex-col justify-between"
                       style={{
                         borderColor: ticket.status === 'placed' ? '#F87171' : 
                                      ticket.status === 'preparing' ? '#FBBF24' : '#4ADE80'

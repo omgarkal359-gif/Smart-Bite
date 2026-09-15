@@ -792,12 +792,13 @@ select.floating-input {
   gap: 24px;
   padding: 20px 10px 40px 10px;
   overflow-x: auto;
-  overflow-y: visible;
+  overflow-y: auto !important;
+  max-height: 100%;
   flex: 1;
   align-items: flex-start !important;
   scrollbar-width: thin;
   scrollbar-color: var(--primary-navy) transparent;
-  touch-action: pan-x;
+  touch-action: pan-x pan-y;
   -webkit-overflow-scrolling: touch;
   scroll-snap-type: x mandatory;
   scroll-behavior: smooth;
@@ -808,6 +809,8 @@ select.floating-input {
   max-width: 400px;
   height: auto !important;
   min-height: min-content;
+  max-height: calc(100vh - 240px) !important;
+  overflow-y: auto !important;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -829,13 +832,27 @@ select.floating-input {
 }
 
 .ticket-items {
-  flex: none !important;
-  overflow: visible !important;
-  overflow-y: visible !important;
-  max-height: none !important;
+  flex: 1 1 auto;
+  overflow-y: auto !important;
+  max-height: 220px !important;
   height: auto !important;
   margin-bottom: 16px;
-  padding-right: 0 !important;
+  padding-right: 6px !important;
+  scrollbar-width: thin;
+  scrollbar-color: #94A3B8 transparent;
+}
+
+.ticket-items::-webkit-scrollbar {
+  width: 5px;
+}
+
+.ticket-items::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ticket-items::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 4px;
 }
 
 .ticket-footer {
@@ -1450,7 +1467,8 @@ select.floating-input {
     display: flex !important;
     flex-direction: row !important;
     overflow-x: auto !important;
-    overflow-y: hidden !important;
+    overflow-y: auto !important;
+    max-height: calc(100vh - 220px) !important;
     gap: 24px !important;
     padding: 12px 6px 30px 6px !important;
     align-items: flex-start !important;
@@ -1463,6 +1481,8 @@ select.floating-input {
     max-width: 380px !important;
     height: auto !important;
     min-height: min-content !important;
+    max-height: calc(100vh - 240px) !important;
+    overflow-y: auto !important;
     flex-shrink: 0 !important;
     margin-bottom: 0 !important;
   }
