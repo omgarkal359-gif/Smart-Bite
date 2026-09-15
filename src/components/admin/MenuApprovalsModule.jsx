@@ -334,10 +334,26 @@ export const MenuApprovalsModule = () => {
                       </td>
 
                       <td className="p-4 font-semibold text-slate-800" style={{ padding: '16px 20px', verticalAlign: 'middle', fontWeight: 600, color: '#1e293b' }}>
-                        {proposedName}
-                        {r.proposedData?.category && (
-                          <span className="ml-2 text-xs font-medium text-slate-400" style={{ marginLeft: '8px', fontSize: '12px', color: '#94a3b8', fontWeight: 500 }}>({r.proposedData.category})</span>
-                        )}
+                        <div className="flex items-center gap-3" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          {(r.proposedData?.img || r.currentData?.img) ? (
+                            <img
+                              src={r.proposedData?.img || r.currentData?.img}
+                              alt={proposedName}
+                              className="w-10 h-10 rounded-lg object-cover border border-slate-200 shrink-0 shadow-2xs"
+                              style={{ width: '40px', height: '40px', borderRadius: '8px', objectFit: 'cover', border: '1px solid #e2e8f0', flexShrink: 0 }}
+                            />
+                          ) : (
+                            <div className="w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center shrink-0 text-slate-400" style={{ width: '40px', height: '40px', borderRadius: '8px', backgroundColor: '#f1f5f9', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: '#94a3b8' }}>
+                              <ImageIcon size={18} />
+                            </div>
+                          )}
+                          <div className="min-w-0">
+                            <div className="font-bold text-slate-900" style={{ fontWeight: 700, color: '#0f172a' }}>{proposedName}</div>
+                            {r.proposedData?.category && (
+                              <span className="text-xs font-medium text-slate-400" style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 500 }}>({r.proposedData.category})</span>
+                            )}
+                          </div>
+                        </div>
                       </td>
 
                       <td className="p-4 font-bold text-slate-900" style={{ padding: '16px 20px', verticalAlign: 'middle', fontWeight: 800, color: '#0f172a' }}>
