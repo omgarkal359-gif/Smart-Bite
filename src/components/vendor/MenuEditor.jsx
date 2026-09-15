@@ -505,6 +505,7 @@ export const MenuEditor = ({ shopId }) => {
             </div>
           );
         })}
+      </div>
 
       {/* Structural Edit Modal */}
       <AnimatePresence>
