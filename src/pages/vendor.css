@@ -154,6 +154,15 @@
               width 0ms linear 0ms;
 }
 
+.vs-item.vs-item-logout .vs-label,
+.vs-item.vs-item-logout .vs-icon {
+  color: #DC2626 !important;
+}
+
+.vs-item.vs-item-logout:hover {
+  background: rgba(220, 38, 38, 0.12) !important;
+}
+
 /* Accessibility: respect reduced motion */
 @media (prefers-reduced-motion: reduce) {
   .vendor-sidebar,
