@@ -17,6 +17,8 @@ const LoginPage = () => {
   /* modal */
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
 
+  const navigate = useNavigate();
+
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
