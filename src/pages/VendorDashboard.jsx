@@ -622,7 +622,7 @@ const VendorDashboard = () => {
                 </div>
 
                 {/* Menu Options - Generous Card Spacing & Typography */}
-                <div className="space-y-4">
+                <div className="flex flex-col gap-4 my-4" style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '16px', marginBottom: '16px' }}>
                   <button
                     type="button"
                     className={`w-full flex items-center gap-4 p-4 rounded-2xl border transition-all cursor-pointer text-left shadow-2xs ${
@@ -630,6 +630,7 @@ const VendorDashboard = () => {
                         ? 'bg-amber-50/90 border-amber-200/90 text-amber-950 hover:bg-amber-100/90' 
                         : 'bg-emerald-50/90 border-emerald-200/90 text-emerald-950 hover:bg-emerald-100/90'
                     }`}
+                    style={{ marginBottom: '14px' }}
                     onClick={() => { handleToggleBusyMode(); setIsMobileNavOpen(false); }}
                   >
                     <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${isBusyMode ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>
@@ -648,6 +649,7 @@ const VendorDashboard = () => {
                   <button
                     type="button"
                     className="w-full flex items-center gap-4 p-4 rounded-2xl border border-slate-200/80 bg-slate-50/80 hover:bg-slate-100/90 text-left cursor-pointer transition-all shadow-2xs group"
+                    style={{ marginBottom: '14px' }}
                     onClick={() => { setActiveSidebarTab('menu'); setIsSidebarOpen(true); setIsMobileNavOpen(false); }}
                   >
                     <div className="w-11 h-11 rounded-xl bg-indigo-50 border border-indigo-100/80 text-indigo-600 flex items-center justify-center shrink-0 group-hover:bg-indigo-100 transition-colors">
@@ -666,6 +668,7 @@ const VendorDashboard = () => {
                   <button
                     type="button"
                     className="w-full flex items-center gap-4 p-4 rounded-2xl border border-slate-200/80 bg-slate-50/80 hover:bg-slate-100/90 text-left cursor-pointer transition-all shadow-2xs group"
+                    style={{ marginBottom: '14px' }}
                     onClick={() => { setActiveSidebarTab('history'); setIsSidebarOpen(true); setIsMobileNavOpen(false); }}
                   >
                     <div className="w-11 h-11 rounded-xl bg-blue-50 border border-blue-100/80 text-blue-600 flex items-center justify-center shrink-0 group-hover:bg-blue-100 transition-colors">
