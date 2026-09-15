@@ -596,78 +596,98 @@ const VendorDashboard = () => {
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: 'spring', damping: 28, stiffness: 300 }}
-              className="fixed top-0 left-0 bottom-0 w-[280px] max-w-[85vw] bg-[#FFFDF1] z-[310] md:hidden shadow-2xl p-5 flex flex-col justify-between overflow-y-auto border-r border-amber-200/60"
+              className="fixed top-0 left-0 bottom-0 w-[300px] max-w-[85vw] bg-white z-[310] md:hidden shadow-2xl p-5 sm:p-6 flex flex-col justify-between overflow-y-auto border-r border-slate-200/80 font-sans"
             >
               <div className="space-y-6">
                 {/* Header with Logo & Close button */}
-                <div className="flex items-center justify-between border-b border-amber-900/10 pb-4">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-red-600 text-white flex items-center justify-center shadow-sm">
-                      <Utensils size={20} />
+                    <div className="w-11 h-11 rounded-2xl bg-[#FF2E37] text-white flex items-center justify-center shadow-md shadow-red-500/20 shrink-0">
+                      <Utensils size={20} strokeWidth={2.5} />
                     </div>
-                    <div>
-                      <h2 className="text-sm font-black text-amber-950 uppercase tracking-wide m-0" style={{ fontFamily: 'Oswald, sans-serif' }}>
+                    <div className="flex flex-col gap-0.5">
+                      <h2 className="text-sm font-black text-slate-900 uppercase tracking-wide m-0 leading-tight" style={{ fontFamily: 'Oswald, sans-serif' }}>
                         {currentShop?.name || 'Vendor Operations'}
                       </h2>
-                      <span className="text-[10px] font-extrabold text-amber-700/80 uppercase tracking-widest">Navigation Menu</span>
+                      <span className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest block leading-tight">Navigation Menu</span>
                     </div>
                   </div>
                   <button 
                     type="button"
                     onClick={() => setIsMobileNavOpen(false)}
-                    className="p-2 text-amber-900 hover:bg-amber-100/80 rounded-xl border-0 bg-transparent cursor-pointer transition-colors"
+                    className="p-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-xl border-0 bg-transparent cursor-pointer transition-colors"
                   >
                     <X size={22} strokeWidth={2.5} />
                   </button>
                 </div>
 
-                {/* Menu Options */}
-                <div className="space-y-2.5">
+                {/* Menu Options - Generous Card Spacing & Typography */}
+                <div className="space-y-3.5">
                   <button
                     type="button"
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border-0 text-left cursor-pointer font-bold text-xs transition-all ${
-                      isBusyMode ? 'bg-amber-100/80 text-amber-950' : 'bg-emerald-50 text-emerald-950'
+                    className={`w-full flex items-center gap-3.5 p-3.5 rounded-2xl border transition-all cursor-pointer text-left shadow-2xs ${
+                      isBusyMode 
+                        ? 'bg-amber-50/90 border-amber-200/90 text-amber-950 hover:bg-amber-100/90' 
+                        : 'bg-emerald-50/90 border-emerald-200/90 text-emerald-950 hover:bg-emerald-100/90'
                     }`}
                     onClick={() => { handleToggleBusyMode(); setIsMobileNavOpen(false); }}
                   >
-                    <Clock size={20} className={isBusyMode ? 'text-amber-600' : 'text-emerald-600'} />
-                    <div className="flex flex-col">
-                      <span className="font-black text-xs uppercase" style={{ fontFamily: 'Oswald, sans-serif' }}>MODE: {isBusyMode ? 'BUSY' : 'NORMAL'}</span>
-                      <span className="text-[10px] font-medium opacity-75">{isBusyMode ? '25 min wait time' : 'Standard speed'}</span>
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${isBusyMode ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                      <Clock size={20} strokeWidth={2.2} />
+                    </div>
+                    <div className="flex flex-col gap-0.5">
+                      <span className="font-black text-xs uppercase tracking-wide text-slate-900" style={{ fontFamily: 'Oswald, sans-serif' }}>
+                        MODE: {isBusyMode ? 'BUSY' : 'NORMAL'}
+                      </span>
+                      <span className="text-[11px] font-bold text-slate-500 leading-tight">
+                        {isBusyMode ? '25 min wait time' : 'Standard speed'}
+                      </span>
                     </div>
                   </button>
 
                   <button
                     type="button"
-                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border-0 bg-amber-100/60 hover:bg-amber-100 text-amber-950 text-left cursor-pointer font-bold text-xs transition-all"
+                    className="w-full flex items-center gap-3.5 p-3.5 rounded-2xl border border-slate-200/80 bg-slate-50/80 hover:bg-slate-100/90 text-left cursor-pointer transition-all shadow-2xs group"
                     onClick={() => { setActiveSidebarTab('menu'); setIsSidebarOpen(true); setIsMobileNavOpen(false); }}
                   >
-                    <Settings size={20} className="text-amber-800" />
-                    <div className="flex flex-col">
-                      <span className="font-black text-xs uppercase" style={{ fontFamily: 'Oswald, sans-serif' }}>CATALOG EDITOR</span>
-                      <span className="text-[10px] font-medium text-amber-800/80">Manage items & pricing</span>
+                    <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100/80 text-indigo-600 flex items-center justify-center shrink-0 group-hover:bg-indigo-100 transition-colors">
+                      <Settings size={20} strokeWidth={2.2} />
+                    </div>
+                    <div className="flex flex-col gap-0.5">
+                      <span className="font-black text-xs uppercase tracking-wide text-slate-900" style={{ fontFamily: 'Oswald, sans-serif' }}>
+                        CATALOG EDITOR
+                      </span>
+                      <span className="text-[11px] font-bold text-slate-500 leading-tight">
+                        Manage items & pricing
+                      </span>
                     </div>
                   </button>
 
                   <button
                     type="button"
-                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border-0 bg-amber-100/60 hover:bg-amber-100 text-amber-950 text-left cursor-pointer font-bold text-xs transition-all"
+                    className="w-full flex items-center gap-3.5 p-3.5 rounded-2xl border border-slate-200/80 bg-slate-50/80 hover:bg-slate-100/90 text-left cursor-pointer transition-all shadow-2xs group"
                     onClick={() => { setActiveSidebarTab('history'); setIsSidebarOpen(true); setIsMobileNavOpen(false); }}
                   >
-                    <History size={20} className="text-amber-800" />
-                    <div className="flex flex-col">
-                      <span className="font-black text-xs uppercase" style={{ fontFamily: 'Oswald, sans-serif' }}>ORDER HISTORY</span>
-                      <span className="text-[10px] font-medium text-amber-800/80">Completed receipts & stats</span>
+                    <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100/80 text-blue-600 flex items-center justify-center shrink-0 group-hover:bg-blue-100 transition-colors">
+                      <History size={20} strokeWidth={2.2} />
+                    </div>
+                    <div className="flex flex-col gap-0.5">
+                      <span className="font-black text-xs uppercase tracking-wide text-slate-900" style={{ fontFamily: 'Oswald, sans-serif' }}>
+                        ORDER HISTORY
+                      </span>
+                      <span className="text-[11px] font-bold text-slate-500 leading-tight">
+                        Completed receipts & stats
+                      </span>
                     </div>
                   </button>
                 </div>
               </div>
 
               {/* Logout Button */}
-              <div className="pt-4 border-t border-amber-900/10">
+              <div className="pt-4 border-t border-slate-100">
                 <button
                   type="button"
-                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-red-200 bg-red-50 hover:bg-red-100 text-red-700 text-left cursor-pointer font-bold text-xs transition-all"
+                  className="w-full flex items-center justify-center gap-2.5 p-3.5 rounded-2xl border border-red-200/80 bg-red-50/80 hover:bg-red-100/80 text-red-600 text-left cursor-pointer font-black text-xs tracking-wider transition-all shadow-2xs"
                   onClick={async () => {
                     setIsMobileNavOpen(false);
                     clearStoredUser();
@@ -675,8 +695,8 @@ const VendorDashboard = () => {
                     navigate('/login', { replace: true });
                   }}
                 >
-                  <LogOut size={20} className="text-red-600" />
-                  <span className="font-black text-xs uppercase" style={{ fontFamily: 'Oswald, sans-serif' }}>LOGOUT</span>
+                  <LogOut size={18} strokeWidth={2.5} />
+                  <span className="font-black text-xs uppercase tracking-wider" style={{ fontFamily: 'Oswald, sans-serif' }}>LOGOUT</span>
                 </button>
               </div>
             </motion.div>
