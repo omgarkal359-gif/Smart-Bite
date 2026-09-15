@@ -441,7 +441,7 @@ export const MenuEditor = ({ shopId }) => {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 type="submit" 
-                className="px-8 sm:px-10 py-3.5 bg-[#DC2626] hover:bg-[#B91C1C] text-white font-black rounded-full text-xs sm:text-xs transition-all border-0 cursor-pointer tracking-wider uppercase shadow-lg shadow-red-500/25 flex items-center justify-center gap-2 max-w-sm"
+                className="h-14 sm:h-15 min-h-[56px] px-9 sm:px-12 py-4 bg-[#DC2626] hover:bg-[#B91C1C] text-white font-black rounded-full text-xs sm:text-sm transition-all border-0 cursor-pointer tracking-wider uppercase shadow-lg shadow-red-500/25 flex items-center justify-center gap-2.5 max-w-md shrink-0"
               >
                 Submit Item for Admin Approval
               </motion.button>
@@ -671,11 +671,11 @@ export const MenuEditor = ({ shopId }) => {
                 <div className="flex justify-center pt-5 pb-2 mt-2">
                   <button 
                     type="button"
-                    className="px-8 py-3.5 text-white font-black shadow-lg shadow-red-500/25 hover:shadow-xl transition-all border-0 cursor-pointer flex items-center justify-center gap-2 rounded-full bg-[#DC2626] hover:bg-[#B91C1C] text-xs tracking-wider uppercase max-w-sm"
+                    className="h-14 sm:h-15 min-h-[56px] px-9 sm:px-12 py-4 text-white font-black shadow-lg shadow-red-500/25 hover:shadow-xl transition-all border-0 cursor-pointer flex items-center justify-center gap-2.5 rounded-full bg-[#DC2626] hover:bg-[#B91C1C] text-xs sm:text-sm tracking-wider uppercase max-w-md shrink-0"
                     onClick={handleSaveEdit}
                     disabled={isUploading}
                   >
-                    <Check size={18} />
+                    <Check size={20} />
                     Submit Edit for Admin Approval
                   </button>
                 </div>
