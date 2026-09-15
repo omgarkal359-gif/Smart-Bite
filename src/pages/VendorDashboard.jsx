@@ -1112,14 +1112,6 @@ const VendorDashboard = () => {
                             }`}>
                               {order.status === 'ready' ? '✅ READY FOR PICKUP' : order.status}
                             </span>
-                            {order.status === 'ready' && (
-                              <button 
-                                onClick={() => handleUpdateStatus(order.id, 'completed')}
-                                className="text-[10px] font-black uppercase bg-emerald-600 text-white px-3 py-1 rounded-lg hover:bg-emerald-700 transition-all cursor-pointer border-none shadow-xs whitespace-nowrap"
-                              >
-                                Mark Completed
-                              </button>
-                            )}
                           </div>
                         </div>
                       </GlassCard>
