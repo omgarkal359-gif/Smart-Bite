@@ -201,20 +201,25 @@ export const MenuEditor = ({ shopId }) => {
   return (
     <div className="w-full space-y-5 font-sans text-slate-800">
       {/* 1. Control Toolbar */}
-      <div className="flex flex-col gap-2.5 w-full">
+      <div className="flex flex-col gap-3 w-full">
         <div className="flex items-center justify-between gap-2 w-full">
-          <span className="px-3.5 py-1.5 bg-slate-100/90 text-slate-800 text-[11px] sm:text-xs font-black rounded-full border border-slate-200/80 uppercase tracking-wider">
+          <span className="px-3.5 py-1.5 bg-[#F1F5F9] text-[#1E293B] text-[11px] sm:text-xs font-black rounded-full border border-[#E2E8F0] uppercase tracking-wider shadow-2xs">
             ACTIVE MENU ITEMS ({items.length})
           </span>
 
           <button
             type="button"
             onClick={() => setShowRequestsDrawer(!showRequestsDrawer)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100/90 hover:bg-slate-200/80 text-slate-700 border border-slate-200/80 rounded-xl text-[11px] sm:text-xs font-black transition-all cursor-pointer shadow-2xs"
+            className="px-3 py-1.5 bg-[#F0F4F8] hover:bg-[#E2E8F0]/80 text-[#334155] border border-[#E2E8F0] rounded-2xl flex items-center gap-2 cursor-pointer shadow-2xs transition-all"
           >
-            <Clock size={13} className="text-amber-600 shrink-0" />
-            <span>Approval Requests {pendingRequestsCount > 0 ? `${pendingRequestsCount} Pending` : '0 Pending'}</span>
-            {showRequestsDrawer ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+            <Clock size={16} className="text-[#475569] shrink-0" />
+            <div className="flex flex-col text-left leading-tight">
+              <span className="text-[11px] font-extrabold text-[#334155]">Approval Requests</span>
+              <span className="text-[10px] font-bold text-[#64748B]">
+                {pendingRequestsCount > 0 ? `${pendingRequestsCount} Pending` : '0 Pending'}
+              </span>
+            </div>
+            {showRequestsDrawer ? <ChevronUp size={14} className="text-[#475569] shrink-0 ml-1" /> : <ChevronDown size={14} className="text-[#475569] shrink-0 ml-1" />}
           </button>
         </div>
 
@@ -224,11 +229,11 @@ export const MenuEditor = ({ shopId }) => {
             whileTap={{ scale: 0.99 }}
             type="button"
             onClick={() => setIsAdding(!isAdding)}
-            className={`inline-flex items-center justify-center gap-1.5 px-4 h-10 rounded-xl text-xs font-black transition-all border-0 cursor-pointer tracking-wider uppercase shadow-xs ${
-              isAdding ? 'bg-slate-700 text-white' : 'bg-red-600 hover:bg-red-700 text-white'
+            className={`inline-flex items-center justify-center gap-1.5 px-5 h-10 rounded-full text-xs font-black transition-all border-0 cursor-pointer tracking-wider uppercase shadow-[0_4px_14px_rgba(249,38,52,0.35)] ${
+              isAdding ? 'bg-slate-700 text-white' : 'bg-[#FF2E37] hover:bg-[#E0242D] text-white'
             }`}
           >
-            {isAdding ? <X size={14} strokeWidth={2.5} /> : <Plus size={14} strokeWidth={2.5} />}
+            {isAdding ? <X size={15} strokeWidth={2.5} /> : <Plus size={15} strokeWidth={2.5} />}
             <span>{isAdding ? 'CANCEL' : 'ADD NEW ITEM'}</span>
           </motion.button>
         </div>
@@ -414,13 +419,20 @@ export const MenuEditor = ({ shopId }) => {
           return (
             <div key={cat} className="space-y-2.5">
               {/* Category Header Box with Dot + Line Divider */}
-              <div className="flex items-center gap-2.5 mt-4 mb-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-red-600 inline-block shrink-0 shadow-2xs" />
-                <h2 className="text-base sm:text-lg font-black uppercase text-slate-900 tracking-wide m-0">
+              <div className="flex items-center gap-2.5 mt-5 mb-2.5">
+                <span className={`w-2.5 h-2.5 rounded-full inline-block shrink-0 ${
+                  cat.toUpperCase().includes('IDLI') ? 'bg-[#FF2E37]' :
+                  cat.toUpperCase().includes('DOSA') ? 'bg-[#EAB308]' :
+                  cat.toUpperCase().includes('MAIN') ? 'bg-[#3B82F6]' :
+                  cat.toUpperCase().includes('BEVERAGE') ? 'bg-[#06B6D4]' :
+                  cat.toUpperCase().includes('DESSERT') ? 'bg-[#A855F7]' :
+                  'bg-[#FF2E37]'
+                }`} />
+                <h2 className="text-base sm:text-lg font-black uppercase text-[#0F172A] tracking-wider m-0">
                   {cat}
                 </h2>
-                <div className="flex-1 h-px bg-slate-200/80 mx-1" />
-                <span className="text-xs font-black text-slate-500 uppercase tracking-wider shrink-0">
+                <div className="flex-1 h-px bg-[#E2E8F0] mx-1" />
+                <span className="text-xs font-black text-[#64748B] uppercase tracking-wider shrink-0">
                   {catItems.length} {catItems.length === 1 ? 'ITEM' : 'ITEMS'}
                 </span>
               </div>
@@ -430,10 +442,10 @@ export const MenuEditor = ({ shopId }) => {
                 {catItems.map((item) => (
                   <div 
                     key={item.id} 
-                    className="w-full bg-white p-2.5 sm:p-3 rounded-2xl border border-slate-200/80 shadow-2xs hover:shadow-xs transition-all flex items-center justify-between gap-2.5"
+                    className="w-full bg-white p-2.5 sm:p-3 rounded-2xl border border-[#E2E8F0] shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:shadow-xs transition-all flex items-center justify-between gap-3"
                   >
-                    {/* Product Thumbnail */}
-                    <div className="relative w-16 h-16 sm:w-18 sm:h-18 rounded-xl overflow-hidden bg-slate-100 shrink-0 border border-slate-200/80 group shadow-2xs">
+                    {/* Left: Product Thumbnail */}
+                    <div className="relative w-16 h-16 sm:w-18 sm:h-18 rounded-xl overflow-hidden bg-slate-100 shrink-0 border border-slate-100 group shadow-2xs">
                       <img src={getFoodItemImage(item)} alt={item.name} className="w-full h-full object-cover" />
                       <div 
                         className="absolute inset-0 bg-slate-900/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white cursor-pointer"
@@ -444,16 +456,16 @@ export const MenuEditor = ({ shopId }) => {
                       </div>
                     </div>
                     
-                    {/* Information Block */}
+                    {/* Middle: Information Block */}
                     <div className="flex flex-col justify-center min-w-0 flex-1 gap-1">
-                      <h4 className="text-xs sm:text-sm font-bold text-slate-900 truncate m-0 leading-tight">
+                      <h4 className="text-xs sm:text-sm font-bold text-[#0F172A] truncate m-0 leading-tight">
                         {item.name}
                       </h4>
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="px-1.5 py-0.5 bg-slate-100 text-slate-600 font-extrabold text-[10px] rounded-md uppercase tracking-wider border border-slate-200/60">
+                        <span className="px-2 py-0.5 bg-[#F1F5F9] text-[#64748B] font-extrabold text-[10px] rounded-md uppercase tracking-wider border border-slate-200/60">
                           {item.category}
                         </span>
-                        <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 font-black text-[11px] sm:text-xs rounded-md border border-emerald-200/70 inline-flex items-center gap-0.5">
+                        <span className="px-2.5 py-0.5 bg-[#ECFDF5] text-[#059669] font-black text-[11px] sm:text-xs rounded-md border border-[#A7F3D0]/60 inline-flex items-center gap-0.5">
                           ₹{item.price}
                         </span>
 
@@ -463,38 +475,38 @@ export const MenuEditor = ({ shopId }) => {
                           onClick={() => handleToggleAvailability(item)}
                           className={`px-1.5 py-0.5 rounded-md text-[10px] sm:text-[11px] font-bold tracking-wider transition-all border-0 cursor-pointer flex items-center gap-1 whitespace-nowrap ml-1 ${
                             item.available 
-                              ? 'text-emerald-700 hover:text-emerald-800' 
-                              : 'text-red-600 hover:text-red-700'
+                              ? 'text-[#059669] hover:text-[#047857]' 
+                              : 'text-[#DC2626] hover:text-[#B91C1C]'
                           }`}
                           title="Toggle stock status"
                         >
-                          <span className={`w-2 h-2 rounded-full ${item.available ? 'bg-emerald-500' : 'bg-red-500'}`} />
+                          <span className={`w-2 h-2 rounded-full ${item.available ? 'bg-[#10B981]' : 'bg-[#EF4444]'}`} />
                           <span>{item.available ? 'In Stock' : 'Out of Stock'}</span>
                         </button>
-
-                        {/* Action Buttons Group */}
-                        <div className="flex items-center gap-1.5 ml-auto">
-                          {/* Edit Button */}
-                          <button
-                            type="button"
-                            onClick={() => setEditingItem({...item})}
-                            className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-colors border border-slate-200/80 bg-slate-50/80 cursor-pointer shrink-0"
-                            title="Edit Item"
-                          >
-                            <Edit2 size={13} />
-                          </button>
-
-                          {/* Delete Button */}
-                          <button 
-                            type="button"
-                            onClick={() => handleDeleteRequest(item)}
-                            className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center text-red-500 hover:text-red-600 hover:bg-red-100 rounded-xl transition-colors border border-red-200/80 bg-red-50/80 cursor-pointer shrink-0"
-                            title="Deactivate Item"
-                          >
-                            <Trash2 size={13} />
-                          </button>
-                        </div>
                       </div>
+                    </div>
+
+                    {/* Right: Action Buttons Group (Edit & Delete side by side) */}
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {/* Edit Button */}
+                      <button
+                        type="button"
+                        onClick={() => setEditingItem({...item})}
+                        className="w-8 h-8 sm:w-8.5 sm:h-8.5 flex items-center justify-center text-[#475569] hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-colors border border-[#E2E8F0] bg-[#F0F4F8] cursor-pointer"
+                        title="Edit Item"
+                      >
+                        <Edit2 size={14} />
+                      </button>
+
+                      {/* Delete Button */}
+                      <button 
+                        type="button"
+                        onClick={() => handleDeleteRequest(item)}
+                        className="w-8 h-8 sm:w-8.5 sm:h-8.5 flex items-center justify-center text-[#F43F5E] hover:bg-[#FFE4E6] rounded-xl transition-colors border border-[#FECDD3] bg-[#FFF1F2] cursor-pointer"
+                        title="Deactivate Item"
+                      >
+                        <Trash2 size={14} />
+                      </button>
                     </div>
                   </div>
                 ))}
