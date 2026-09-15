@@ -356,15 +356,15 @@ export const MenuEditor = ({ shopId }) => {
             initial={{ height: 0, opacity: 0, y: -10 }}
             animate={{ height: 'auto', opacity: 1, y: 0 }}
             exit={{ height: 0, opacity: 0, y: -10 }}
-            className="overflow-hidden p-5 bg-white rounded-2xl border border-slate-200 shadow-sm space-y-4"
+            className="overflow-hidden p-6 sm:p-8 bg-white rounded-3xl border border-slate-200/90 shadow-md space-y-6 my-4 w-full"
             onSubmit={handleAddItem}
           >
-            <div className="border-b border-slate-100 pb-2">
-              <h3 className="text-base font-bold text-slate-900 m-0">Submit New Item Request</h3>
-              <p className="text-xs text-slate-500 m-0 mt-0.5">Structural additions will be submitted to the Admin for approval before publishing live.</p>
+            <div className="border-b border-slate-100 pb-3">
+              <h3 className="text-lg sm:text-xl font-extrabold text-slate-900 tracking-tight m-0">Submit New Item Request</h3>
+              <p className="text-xs sm:text-sm text-slate-500 font-medium m-0 mt-1">Structural additions will be submitted to the Admin for approval before publishing live.</p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
               <FloatingInput 
                 label="Item Name (e.g. Single Idli)"
                 value={newItem.name}
@@ -380,21 +380,20 @@ export const MenuEditor = ({ shopId }) => {
 
             <div className="floating-label-group">
               <select 
-                className="floating-input appearance-none bg-white border border-slate-200 p-2.5 rounded-xl w-full text-xs font-medium"
+                className="floating-input appearance-none bg-white border border-slate-300 rounded-2xl w-full text-sm font-semibold text-slate-800 cursor-pointer"
                 value={newItem.category}
                 onChange={(e) => setNewItem({...newItem, category: e.target.value})}
                 style={{ 
-                  padding: '12px 36px 12px 14px', 
-                  borderRadius: '12px', 
-                  border: '1px solid #cbd5e1', 
-                  fontSize: '13px',
+                  borderRadius: '16px', 
+                  border: '1.5px solid #cbd5e1', 
+                  fontSize: '14px',
                   appearance: 'none',
                   WebkitAppearance: 'none',
                   MozAppearance: 'none',
                   backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
                   backgroundRepeat: 'no-repeat',
-                  backgroundPosition: 'right 12px center',
-                  backgroundSize: '14px 14px'
+                  backgroundPosition: 'right 14px center',
+                  backgroundSize: '16px 16px'
                 }}
               >
                 {categories.map(c => <option key={c} value={c}>{c}</option>)}
@@ -419,20 +418,20 @@ export const MenuEditor = ({ shopId }) => {
               onChange={handleFileChange} 
             />
             <div 
-              className={`border border-dashed border-slate-300 rounded-xl p-4 text-center cursor-pointer hover:border-indigo-500 transition-colors ${isUploading ? 'shimmer' : ''}`}
+              className={`border-2 border-dashed border-slate-300 hover:border-red-500 rounded-2xl p-6 sm:p-7 text-center cursor-pointer bg-slate-50/50 hover:bg-red-50/30 transition-all shadow-2xs ${isUploading ? 'shimmer' : ''}`}
               onClick={() => fileInputRef.current.click()}
             >
               {newItem.img ? (
-                <img src={newItem.img} className="max-h-32 mx-auto rounded-lg object-cover" alt="Preview" />
+                <img src={newItem.img} className="max-h-36 mx-auto rounded-xl object-cover shadow-xs" alt="Preview" />
               ) : isUploading ? (
-                <Loader2 size={32} className="animate-spin mx-auto text-indigo-500" />
+                <Loader2 size={32} className="animate-spin mx-auto text-red-500" />
               ) : (
                 <div className="flex flex-col items-center">
-                  <div className="w-8 h-8 bg-slate-100 text-slate-600 rounded-full flex items-center justify-center mb-1">
-                    <Camera size={16} />
+                  <div className="w-10 h-10 bg-white text-slate-700 rounded-full shadow-xs border border-slate-200 flex items-center justify-center mb-2 mx-auto">
+                    <Camera size={18} />
                   </div>
-                  <p className="text-xs font-bold text-slate-700 m-0">Upload Photo</p>
-                  <p className="text-[10px] text-slate-400 m-0">TAP TO BROWSE</p>
+                  <p className="text-xs sm:text-sm font-extrabold text-slate-800 m-0">Upload Photo</p>
+                  <p className="text-[10px] text-slate-400 font-bold tracking-wider uppercase m-0 mt-0.5">TAP TO BROWSE</p>
                 </div>
               )}
             </div>
@@ -441,7 +440,7 @@ export const MenuEditor = ({ shopId }) => {
               whileHover={{ scale: 1.01 }}
               whileTap={{ scale: 0.99 }}
               type="submit" 
-              className="w-full py-3 bg-[#DC2626] hover:bg-[#B91C1C] text-white font-extrabold rounded-xl text-xs transition-all border-0 cursor-pointer tracking-wider uppercase shadow-md flex items-center justify-center gap-2"
+              className="w-full py-4 bg-[#DC2626] hover:bg-[#B91C1C] text-white font-extrabold rounded-2xl text-xs sm:text-sm transition-all border-0 cursor-pointer tracking-wider uppercase shadow-md hover:shadow-lg flex items-center justify-center gap-2.5"
             >
               Submit Item for Admin Approval
             </motion.button>
@@ -608,20 +607,18 @@ export const MenuEditor = ({ shopId }) => {
                     <div style={{ flex: 1 }}>
                       <div className="floating-label-group" style={{ margin: 0, height: '100%' }}>
                         <select 
-                          className="floating-input bg-white border border-slate-200 rounded-xl"
+                          className="floating-input bg-white border border-slate-300 rounded-2xl cursor-pointer"
                           style={{ 
-                            height: '100%',
-                            padding: '12px 36px 12px 14px', 
-                            borderRadius: '12px', 
-                            border: '1px solid #cbd5e1', 
-                            fontSize: '13px',
+                            borderRadius: '16px', 
+                            border: '1.5px solid #cbd5e1', 
+                            fontSize: '14px',
                             appearance: 'none',
                             WebkitAppearance: 'none',
                             MozAppearance: 'none',
                             backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
                             backgroundRepeat: 'no-repeat',
-                            backgroundPosition: 'right 12px center',
-                            backgroundSize: '14px 14px'
+                            backgroundPosition: 'right 14px center',
+                            backgroundSize: '16px 16px'
                           }}
                           value={editingItem.category}
                           onChange={(e) => setEditingItem({...editingItem, category: e.target.value})}
@@ -636,9 +633,9 @@ export const MenuEditor = ({ shopId }) => {
 
                 {/* Image Upload Section */}
                 <div style={{ marginTop: '12px', paddingTop: '20px', borderTop: '1px solid #e2e8f0' }}>
-                  <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3" style={{ margin: '0 0 12px 0' }}>Item Photo</h4>
+                  <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3" style={{ margin: '0 0 12px 0' }}>Item Photo</h4>
                   <div 
-                    className={`relative w-full h-40 rounded-2xl overflow-hidden border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all ${isUploading ? 'border-slate-300 bg-slate-50' : 'border-indigo-200 bg-indigo-50 hover:bg-indigo-100 hover:border-indigo-300'}`}
+                    className={`relative w-full h-44 rounded-2xl overflow-hidden border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all ${isUploading ? 'border-slate-300 bg-slate-50' : 'border-slate-300 bg-slate-50/50 hover:bg-red-50/20 hover:border-red-400'}`}
                     onClick={() => editFileInputRef.current.click()}
                   >
                     {editingItem.img ? (
