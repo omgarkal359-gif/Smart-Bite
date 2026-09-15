@@ -972,21 +972,21 @@ const VendorDashboard = () => {
               transition={{ type: 'spring', damping: 30, stiffness: 300 }}
               className="management-sidebar open shadow-2xl"
             >
-              <div className="flex justify-between items-start pb-5 mb-6 border-b border-slate-200 shrink-0 gap-4">
-                <div className="flex flex-col gap-1">
-                  <h2 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-slate-900 leading-none m-0" style={{ fontFamily: 'Oswald, sans-serif' }}>
+              <div className="flex items-center justify-between pb-3.5 mb-4 border-b border-slate-200 shrink-0 gap-4">
+                <div className="flex flex-col">
+                  <h2 className="text-xl sm:text-3xl font-black uppercase tracking-tight text-slate-900 leading-none m-0" style={{ fontFamily: 'Oswald, sans-serif' }}>
                     {activeSidebarTab === 'menu' ? 'CATALOG EDITOR' : 'ORDER HISTORY'}
                   </h2>
-                  <span className="text-xs font-bold text-slate-500 uppercase tracking-widest leading-normal">
+                  <span className="text-[11px] sm:text-xs font-extrabold text-slate-500 uppercase tracking-widest mt-1 block">
                     {activeSidebarTab === 'menu' ? 'Manage Menu & Pricing' : 'Completed Receipts'}
                   </span>
                 </div>
                 <button 
-                  className="p-2.5 hover:bg-slate-100 rounded-full transition-all text-slate-700 hover:text-slate-900 border-0 bg-transparent cursor-pointer flex items-center justify-center shrink-0" 
+                  className="p-2 hover:bg-slate-100 rounded-full transition-all text-slate-600 hover:text-slate-900 border-0 bg-transparent cursor-pointer flex items-center justify-center shrink-0" 
                   onClick={() => setIsSidebarOpen(false)}
                   title="Close Sidebar"
                 >
-                  <X size={26} strokeWidth={2.5} />
+                  <X size={22} strokeWidth={2.5} />
                 </button>
               </div>
               
