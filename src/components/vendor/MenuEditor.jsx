@@ -232,35 +232,35 @@ export const MenuEditor = ({ shopId }) => {
   return (
     <div className="w-full space-y-5 font-sans text-slate-800">
       {/* 1. Control Toolbar */}
-      <div className="flex flex-col gap-2.5 w-full">
-        <div className="flex items-center justify-between gap-2 w-full">
-          <span className="px-3.5 py-1.5 bg-[#F1F5F9] text-[#1E293B] text-[11px] sm:text-xs font-black rounded-full border border-[#E2E8F0] uppercase tracking-wider shadow-2xs">
+      <div className="flex flex-col gap-3 w-full">
+        <div className="flex items-center justify-between gap-3 w-full">
+          <span className="px-4 py-2 bg-slate-100/90 text-slate-800 text-[11px] sm:text-xs font-black rounded-xl border border-slate-200 uppercase tracking-wider shadow-2xs inline-flex items-center whitespace-nowrap">
             ACTIVE MENU ITEMS ({items.length})
           </span>
 
           <button
             type="button"
             onClick={() => setShowRequestsDrawer(!showRequestsDrawer)}
-            className="px-3 py-1.5 bg-[#F0F4F8] hover:bg-[#E2E8F0]/80 text-[#334155] border border-[#E2E8F0] rounded-2xl flex items-center gap-2 cursor-pointer shadow-2xs transition-all"
+            className="px-3.5 py-1.5 bg-slate-100/90 hover:bg-slate-200/80 text-slate-700 border border-slate-200 rounded-xl flex items-center gap-2 cursor-pointer shadow-2xs transition-all"
           >
-            <Clock size={16} className="text-[#475569] shrink-0" />
+            <Clock size={16} className="text-slate-600 shrink-0" />
             <div className="flex flex-col text-left leading-tight">
-              <span className="text-[11px] font-extrabold text-[#334155]">Approval Requests</span>
-              <span className="text-[10px] font-bold text-[#64748B]">
+              <span className="text-[11px] font-extrabold text-slate-800">Approval Requests</span>
+              <span className="text-[10px] font-bold text-slate-500">
                 {pendingRequestsCount > 0 ? `${pendingRequestsCount} Pending` : '0 Pending'}
               </span>
             </div>
-            {showRequestsDrawer ? <ChevronUp size={14} className="text-[#475569] shrink-0 ml-1" /> : <ChevronDown size={14} className="text-[#475569] shrink-0 ml-1" />}
+            {showRequestsDrawer ? <ChevronUp size={14} className="text-slate-600 shrink-0 ml-0.5" /> : <ChevronDown size={14} className="text-slate-600 shrink-0 ml-0.5" />}
           </button>
         </div>
 
-        <div className="flex items-center mt-1 mb-1">
+        <div className="flex items-center mt-3.5 mb-2 sm:mt-4 sm:mb-2.5">
           <motion.button 
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             type="button"
             onClick={() => setIsAdding(!isAdding)}
-            className="inline-flex items-center justify-center gap-2.5 px-6.5 sm:px-8 h-11 rounded-full text-xs font-black transition-all border-0 cursor-pointer tracking-wide uppercase text-white shadow-md shrink-0 whitespace-nowrap"
+            className="inline-flex items-center justify-center gap-2.5 px-7 sm:px-8 h-11 rounded-full text-xs font-black transition-all border-0 cursor-pointer tracking-wider uppercase text-white shadow-md shrink-0 whitespace-nowrap"
             style={{
               backgroundColor: isAdding ? '#334155' : '#FF2E37',
               color: '#FFFFFF',
