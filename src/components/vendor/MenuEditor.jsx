@@ -436,19 +436,19 @@ export const MenuEditor = ({ shopId }) => {
               )}
             </div>
 
-            <div className="flex justify-center pt-5 pb-2 mt-2 mb-1 w-full">
+            <div className="flex justify-center pt-6 sm:pt-8 pb-3 mt-4 sm:mt-6 mb-2 w-full">
               <motion.button 
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 type="submit" 
-                className="submit-btn-red h-14 sm:h-15 min-h-[56px] px-10 sm:px-12 py-4 font-black rounded-full text-xs sm:text-sm transition-all border-0 cursor-pointer tracking-wider uppercase flex items-center justify-center gap-2.5 max-w-md shrink-0"
+                className="submit-btn-red h-12 sm:h-13 min-h-[48px] px-8 sm:px-10 py-3 rounded-full flex items-center justify-center gap-2 max-w-md shrink-0 cursor-pointer"
                 style={{
                   backgroundColor: '#DC2626',
                   color: '#FFFFFF',
                   boxShadow: '0 10px 25px -5px rgba(220, 38, 38, 0.45), 0 4px 10px -2px rgba(220, 38, 38, 0.25)'
                 }}
               >
-                <span className="text-white leading-none">Submit Item for Admin Approval</span>
+                <span className="text-white leading-none text-[10px] sm:text-[11px] font-black tracking-wider uppercase">Submit Item for Admin Approval</span>
               </motion.button>
             </div>
           </motion.form>
@@ -673,10 +673,10 @@ export const MenuEditor = ({ shopId }) => {
                 </div>
                 
                 {/* Submit Edit Request Button */}
-                <div className="flex justify-center pt-5 pb-2 mt-2">
+                <div className="flex justify-center pt-6 sm:pt-8 pb-3 mt-4 sm:mt-6 mb-2">
                   <button 
                     type="button"
-                    className="submit-btn-red h-14 sm:h-15 min-h-[56px] px-10 sm:px-12 py-4 font-black transition-all border-0 cursor-pointer flex items-center justify-center gap-2.5 rounded-full text-xs sm:text-sm tracking-wider uppercase max-w-md shrink-0"
+                    className="submit-btn-red h-12 sm:h-13 min-h-[48px] px-8 sm:px-10 py-3 rounded-full flex items-center justify-center gap-2 max-w-md shrink-0 cursor-pointer transition-all border-0"
                     style={{
                       backgroundColor: '#DC2626',
                       color: '#FFFFFF',
@@ -685,8 +685,8 @@ export const MenuEditor = ({ shopId }) => {
                     onClick={handleSaveEdit}
                     disabled={isUploading}
                   >
-                    <Check size={20} strokeWidth={2.5} className="text-white shrink-0" />
-                    <span className="text-white leading-none">Submit Edit for Admin Approval</span>
+                    <Check size={16} strokeWidth={2.5} className="text-white shrink-0" />
+                    <span className="text-white leading-none text-[10px] sm:text-[11px] font-black tracking-wider uppercase">Submit Edit for Admin Approval</span>
                   </button>
                 </div>
               </div>
