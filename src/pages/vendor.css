@@ -1548,3 +1548,70 @@ select.floating-input {
     padding: 16px 12px !important;
   }
 }
+
+/* =============================================
+   FLOATING LABEL INPUT SYSTEM
+   ============================================= */
+.floating-label-group {
+  position: relative;
+  width: 100%;
+}
+
+.floating-input {
+  width: 100%;
+  height: 52px;
+  padding: 20px 14px 6px 14px;
+  background-color: #ffffff;
+  border: 1.5px solid #E2E8F0;
+  border-radius: 14px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #0F172A;
+  outline: none;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-sizing: border-box;
+}
+
+.floating-input:focus {
+  border-color: #DC2626;
+  box-shadow: 0 0 0 3.5px rgba(220, 38, 38, 0.15);
+}
+
+.floating-label {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 13px;
+  font-weight: 500;
+  color: #64748B;
+  pointer-events: none;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  background-color: transparent;
+}
+
+.floating-input:focus ~ .floating-label,
+.floating-input:not(:placeholder-shown) ~ .floating-label {
+  top: 10px;
+  transform: translateY(0);
+  font-size: 10px;
+  font-weight: 800;
+  color: #DC2626;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.floating-label-group select.floating-input ~ .floating-label {
+  top: 10px;
+  transform: translateY(0);
+  font-size: 10px;
+  font-weight: 800;
+  color: #64748B;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.floating-label-group select.floating-input:focus ~ .floating-label {
+  color: #DC2626;
+}
+
