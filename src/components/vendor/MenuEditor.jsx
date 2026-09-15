@@ -436,14 +436,16 @@ export const MenuEditor = ({ shopId }) => {
               )}
             </div>
 
-            <motion.button 
-              whileHover={{ scale: 1.01 }}
-              whileTap={{ scale: 0.99 }}
-              type="submit" 
-              className="w-full py-4 bg-[#DC2626] hover:bg-[#B91C1C] text-white font-extrabold rounded-2xl text-xs sm:text-sm transition-all border-0 cursor-pointer tracking-wider uppercase shadow-md hover:shadow-lg flex items-center justify-center gap-2.5"
-            >
-              Submit Item for Admin Approval
-            </motion.button>
+            <div className="flex justify-center pt-5 pb-2 mt-2 mb-1 w-full">
+              <motion.button 
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                type="submit" 
+                className="px-8 sm:px-10 py-3.5 bg-[#DC2626] hover:bg-[#B91C1C] text-white font-black rounded-full text-xs sm:text-xs transition-all border-0 cursor-pointer tracking-wider uppercase shadow-lg shadow-red-500/25 flex items-center justify-center gap-2 max-w-sm"
+              >
+                Submit Item for Admin Approval
+              </motion.button>
+            </div>
           </motion.form>
         )}
       </AnimatePresence>
@@ -666,15 +668,17 @@ export const MenuEditor = ({ shopId }) => {
                 </div>
                 
                 {/* Submit Edit Request Button */}
-                <button 
-                  type="button"
-                  className="w-full text-white font-extrabold shadow-md hover:shadow-lg transition-all border-0 cursor-pointer flex items-center justify-center gap-2 shrink-0 py-3.5 rounded-xl bg-[#DC2626] hover:bg-[#B91C1C] text-xs tracking-wider uppercase mt-3"
-                  onClick={handleSaveEdit}
-                  disabled={isUploading}
-                >
-                  <Check size={18} />
-                  Submit Edit for Admin Approval
-                </button>
+                <div className="flex justify-center pt-5 pb-2 mt-2">
+                  <button 
+                    type="button"
+                    className="px-8 py-3.5 text-white font-black shadow-lg shadow-red-500/25 hover:shadow-xl transition-all border-0 cursor-pointer flex items-center justify-center gap-2 rounded-full bg-[#DC2626] hover:bg-[#B91C1C] text-xs tracking-wider uppercase max-w-sm"
+                    onClick={handleSaveEdit}
+                    disabled={isUploading}
+                  >
+                    <Check size={18} />
+                    Submit Edit for Admin Approval
+                  </button>
+                </div>
               </div>
             </motion.div>
           </div>
