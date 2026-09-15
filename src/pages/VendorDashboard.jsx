@@ -861,7 +861,7 @@ const VendorDashboard = () => {
                       initial={{ opacity: 0, scale: 0.8, x: 50 }}
                       animate={{ opacity: 1, scale: 1, x: 0 }}
                       exit={{ opacity: 0, scale: 0.8, y: -50 }}
-                      className="elite-card kds-ticket overflow-hidden"
+                      className="elite-card kds-ticket overflow-visible h-auto flex flex-col justify-between"
                       style={{
                         borderColor: ticket.status === 'placed' ? '#F87171' : 
                                      ticket.status === 'preparing' ? '#FBBF24' : '#4ADE80'
@@ -901,9 +901,15 @@ const VendorDashboard = () => {
                         </div>
                         {Array.isArray(ticket.items) && ticket.items.length > 0 ? (
                           ticket.items.map((item, i) => {
-                            const qty = typeof item === 'object' && item !== null ? (item.quantity || item.qty || 1) : 1;
-                            const name = typeof item === 'object' && item !== null ? (item.name || item.title || 'Food Item') : String(item);
+                            let qty = typeof item === 'object' && item !== null ? (item.quantity || item.qty || 1) : 1;
+                            let name = typeof item === 'object' && item !== null ? (item.name || item.title || 'Food Item') : String(item);
                             const price = typeof item === 'object' && item !== null ? Number(item.price || item.unit_price || 0) : 0;
+                            
+                            const match = name.match(/^(\d+)x\s*(.*)$/i);
+                            if (match) {
+                              qty = parseInt(match[1], 10) || qty;
+                              name = match[2].trim();
+                            }
                             return (
                               <div key={i} className="flex items-center justify-between gap-2 text-xs sm:text-sm font-extrabold text-slate-800">
                                 <div className="flex items-center gap-2 min-w-0">
@@ -920,16 +926,22 @@ const VendorDashboard = () => {
                               </div>
                             );
                           })
-                        ) : ticket.items ? (
-                          <div className="flex items-center justify-between gap-2 text-xs sm:text-sm font-extrabold text-slate-800">
-                            <div className="flex items-center gap-2 min-w-0">
-                              <span className="w-5 h-5 rounded-md bg-[#FF2E37] text-white text-[11px] font-black flex items-center justify-center shrink-0 shadow-2xs">
-                                1x
-                              </span>
-                              <span className="truncate text-slate-900 font-extrabold">{getItemText(ticket.items)}</span>
+                        ) : ticket.items ? (() => {
+                          const rawText = getItemText(ticket.items);
+                          const match = rawText.match(/^(\d+)x\s*(.*)$/i);
+                          const qty = match ? parseInt(match[1], 10) : 1;
+                          const name = match ? match[2].trim() : rawText;
+                          return (
+                            <div className="flex items-center justify-between gap-2 text-xs sm:text-sm font-extrabold text-slate-800">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <span className="w-5 h-5 rounded-md bg-[#FF2E37] text-white text-[11px] font-black flex items-center justify-center shrink-0 shadow-2xs">
+                                  {qty}x
+                                </span>
+                                <span className="truncate text-slate-900 font-extrabold">{name}</span>
+                              </div>
                             </div>
-                          </div>
-                        ) : (
+                          );
+                        })() : (
                           <div className="flex items-center gap-2 text-xs font-bold text-slate-400 italic">
                             <span className="w-5 h-5 rounded-md bg-slate-200 text-slate-600 text-[11px] font-black flex items-center justify-center shrink-0">1x</span>
                             <span>Student Food Order</span>

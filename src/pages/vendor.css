@@ -794,7 +794,7 @@ select.floating-input {
   overflow-x: auto;
   overflow-y: visible;
   flex: 1;
-  align-items: flex-start;
+  align-items: flex-start !important;
   scrollbar-width: thin;
   scrollbar-color: var(--primary-navy) transparent;
   touch-action: pan-x;
@@ -804,16 +804,19 @@ select.floating-input {
 }
 
 .kds-ticket {
-  min-width: 360px;
+  min-width: 340px;
   max-width: 400px;
+  height: auto !important;
+  min-height: min-content;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
   background: var(--white);
   border: 2px solid transparent;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
-  padding: 24px !important;
+  padding: 22px !important;
   scroll-snap-align: start;
 }
 
@@ -1450,7 +1453,7 @@ select.floating-input {
     overflow-y: hidden !important;
     gap: 24px !important;
     padding: 12px 6px 30px 6px !important;
-    align-items: stretch !important;
+    align-items: flex-start !important;
     width: 100% !important;
   }
 
@@ -1458,6 +1461,8 @@ select.floating-input {
     width: 360px !important;
     min-width: 340px !important;
     max-width: 380px !important;
+    height: auto !important;
+    min-height: min-content !important;
     flex-shrink: 0 !important;
     margin-bottom: 0 !important;
   }
