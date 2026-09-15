@@ -597,13 +597,13 @@ const VendorDashboard = () => {
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: 'spring', damping: 28, stiffness: 300 }}
-              className="fixed top-0 left-0 bottom-0 h-[100dvh] max-h-screen w-[310px] max-w-[85vw] bg-white z-[310] md:hidden shadow-2xl p-5 sm:p-6 flex flex-col justify-between border-r border-slate-200/80 font-sans overflow-hidden"
+              className="fixed top-0 left-0 bottom-0 h-[100dvh] max-h-screen w-[310px] max-w-[85vw] bg-white z-[310] md:hidden shadow-2xl flex flex-col justify-between border-r border-slate-200/80 font-sans overflow-hidden"
             >
               {/* Header with Logo & Close button */}
-              <div className="flex items-center justify-between border-b border-slate-100 pb-4 shrink-0">
+              <div className="flex items-center justify-between border-b border-slate-100 p-5 shrink-0 bg-white">
                 <div className="flex items-center gap-3.5">
-                  <div className="w-12 h-12 rounded-2xl bg-[#DC2626] text-white flex items-center justify-center shadow-md shadow-red-500/20 shrink-0">
-                    <Utensils size={22} strokeWidth={2.5} />
+                  <div className="w-11 h-11 rounded-2xl bg-[#DC2626] text-white flex items-center justify-center shadow-md shadow-red-500/20 shrink-0">
+                    <Utensils size={20} strokeWidth={2.5} />
                   </div>
                   <div className="flex flex-col gap-0.5">
                     <h2 className="text-base font-black text-slate-900 uppercase tracking-wide m-0 leading-tight" style={{ fontFamily: 'Oswald, sans-serif' }}>
@@ -621,16 +621,15 @@ const VendorDashboard = () => {
                 </button>
               </div>
 
-              {/* Menu Options - Scrollable Middle Area with Generous Mobile Spacing */}
-              <div className="flex-1 overflow-y-auto py-4 my-2 pr-1 flex flex-col gap-5" style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginTop: '16px', marginBottom: '16px' }}>
+              {/* Menu Options - Scrollable Middle Area with Clear Margins & Padding */}
+              <div className="flex-1 overflow-y-auto px-5 py-6 flex flex-col gap-6">
                 <button
                   type="button"
-                  className={`w-full flex items-center gap-4 p-4 rounded-2xl border transition-all cursor-pointer text-left shadow-2xs ${
+                  className={`w-full flex items-center gap-4 p-4 rounded-2xl border transition-all cursor-pointer text-left shadow-xs ${
                     isBusyMode 
-                      ? 'bg-amber-50/90 border-amber-200/90 text-amber-950 hover:bg-amber-100/90' 
-                      : 'bg-emerald-50/90 border-emerald-200/90 text-emerald-950 hover:bg-emerald-100/90'
+                      ? 'bg-amber-50/90 border-amber-200 text-amber-950 hover:bg-amber-100/90' 
+                      : 'bg-emerald-50/90 border-emerald-200 text-emerald-950 hover:bg-emerald-100/90'
                   }`}
-                  style={{ marginTop: '14px', marginBottom: '18px' }}
                   onClick={() => { handleToggleBusyMode(); setIsMobileNavOpen(false); }}
                 >
                   <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${isBusyMode ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>
@@ -648,8 +647,7 @@ const VendorDashboard = () => {
 
                 <button
                   type="button"
-                  className="w-full flex items-center gap-4 p-4 rounded-2xl border border-slate-200/80 bg-slate-50/80 hover:bg-slate-100/90 text-left cursor-pointer transition-all shadow-2xs group"
-                  style={{ marginTop: '14px', marginBottom: '18px' }}
+                  className="w-full flex items-center gap-4 p-4 rounded-2xl border border-slate-200/90 bg-slate-50/90 hover:bg-slate-100 text-left cursor-pointer transition-all shadow-xs group"
                   onClick={() => { setActiveSidebarTab('menu'); setIsSidebarOpen(true); setIsMobileNavOpen(false); }}
                 >
                   <div className="w-11 h-11 rounded-xl bg-indigo-50 border border-indigo-100/80 text-indigo-600 flex items-center justify-center shrink-0 group-hover:bg-indigo-100 transition-colors">
@@ -667,8 +665,7 @@ const VendorDashboard = () => {
 
                 <button
                   type="button"
-                  className="w-full flex items-center gap-4 p-4 rounded-2xl border border-slate-200/80 bg-slate-50/80 hover:bg-slate-100/90 text-left cursor-pointer transition-all shadow-2xs group"
-                  style={{ marginTop: '14px', marginBottom: '18px' }}
+                  className="w-full flex items-center gap-4 p-4 rounded-2xl border border-slate-200/90 bg-slate-50/90 hover:bg-slate-100 text-left cursor-pointer transition-all shadow-xs group"
                   onClick={() => { setActiveSidebarTab('history'); setIsSidebarOpen(true); setIsMobileNavOpen(false); }}
                 >
                   <div className="w-11 h-11 rounded-xl bg-blue-50 border border-blue-100/80 text-blue-600 flex items-center justify-center shrink-0 group-hover:bg-blue-100 transition-colors">
@@ -685,12 +682,12 @@ const VendorDashboard = () => {
                 </button>
               </div>
 
-              {/* Logout Button - Shrunk in size & shifted upwards for mobile viewports */}
-              <div className="pt-4 border-t border-slate-200/90 mt-auto shrink-0 pb-8 sm:pb-10 bg-white flex justify-center">
+              {/* Logout Button - Shrunk & Shifted Upwards with Generous Bottom Padding */}
+              <div className="pt-4 pb-12 px-5 border-t border-slate-100 bg-white flex justify-center shrink-0">
                 <button
                   type="button"
-                  className="w-[85%] max-w-[240px] h-10 flex items-center justify-center gap-2 rounded-xl bg-[#DC2626] hover:bg-red-700 active:bg-red-800 text-white cursor-pointer font-extrabold text-xs tracking-wider uppercase transition-all shadow-md shadow-red-500/20 active:scale-[0.98] border border-red-600 my-2"
-                  style={{ backgroundColor: '#DC2626', color: '#FFFFFF', fontFamily: 'Oswald, sans-serif', height: '40px', marginTop: '8px', marginBottom: '16px' }}
+                  className="w-[85%] max-w-[220px] h-10 flex items-center justify-center gap-2 rounded-xl bg-[#DC2626] hover:bg-red-700 active:bg-red-800 text-white cursor-pointer font-extrabold text-xs tracking-wider uppercase transition-all shadow-md shadow-red-500/20 active:scale-[0.98] border border-red-600"
+                  style={{ backgroundColor: '#DC2626', color: '#FFFFFF', fontFamily: 'Oswald, sans-serif', height: '40px' }}
                   onClick={async () => {
                     setIsMobileNavOpen(false);
                     clearStoredUser();
