@@ -422,15 +422,6 @@ export const CheckoutDrawer = ({ isOpen, onClose, cart, inventory, onComplete })
 
             {step === 3.5 && (
               <motion.div key="step3_5" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="flex flex-col items-center text-center py-4">
-                {(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768) ? (
-                  <a 
-                    href={`upi://pay?pa=${(cartItems[0]?.stallId || 'general').replace('-', '')}@bank&pn=${encodeURIComponent(cartItems[0]?.stallName || 'SGU Food Court')}&am=${totalCartValue}&cu=INR&tr=${currentPaymentId || ''}`} 
-                    className="pay-btn-v20 mb-6 flex items-center justify-center gap-2 font-bold"
-                    style={{ width: '100%', textDecoration: 'none', padding: '12px 0', borderRadius: '12px', fontSize: '0.9rem', display: 'flex' }}
-                  >
-                    Open UPI App to Pay
-                  </a>
-                ) : null}
                 <div className="bg-white p-4 rounded-3xl shadow-lg border border-solid border-slate-100 mb-4" style={{ display: 'inline-block' }}>
                   <img 
                     src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
@@ -471,20 +462,22 @@ export const CheckoutDrawer = ({ isOpen, onClose, cart, inventory, onComplete })
           <AnimatePresence mode="wait">
             {step < 4 && (
               <div className="w-full flex flex-col gap-3">
-                <motion.button 
-                  key="button"
-                  whileTap={!isProcessing ? { scale: 0.97 } : {}}
-                  className={`pay-btn-v20 shadow-lg ${isProcessing ? 'processing' : ''}`}
-                  onClick={handleCheckout}
-                  disabled={isProcessing}
-                >
-                  {isProcessing ? (step === 3.5 ? 'Awaiting Payment...' : 'Processing...') : (
-                    <>
-                      {step < 3 ? 'Continue' : `PAY ₹${totalCartValue}`} 
-                      <ArrowRight size={20} className="ml-2" />
-                    </>
-                  )}
-                </motion.button>
+                {step !== 3.5 && (
+                  <motion.button 
+                    key="button"
+                    whileTap={!isProcessing ? { scale: 0.97 } : {}}
+                    className={`pay-btn-v20 shadow-lg ${isProcessing ? 'processing' : ''}`}
+                    onClick={handleCheckout}
+                    disabled={isProcessing}
+                  >
+                    {isProcessing ? 'Processing...' : (
+                      <>
+                        {step < 3 ? 'Continue' : `PAY ₹${totalCartValue}`} 
+                        <ArrowRight size={20} className="ml-2" />
+                      </>
+                    )}
+                  </motion.button>
+                )}
                 {step === 3.5 && (
                   <button
                     onClick={handleCancelPayment}

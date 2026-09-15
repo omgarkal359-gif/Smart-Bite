@@ -446,15 +446,6 @@ const CartPage = () => {
             >
               {upiPaymentState === 'awaiting' && (
                 <>
-                  {(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768) ? (
-                    <a 
-                      href={`upi://pay?pa=${(cartItems[0]?.stallId || 'general').replace('-', '')}@bank&pn=${encodeURIComponent(cartItems[0]?.stallName || 'SGU Food Court')}&am=${totalPrice}&cu=INR&tr=${currentPaymentId || ''}`} 
-                      className="checkout-btn-v21 mb-6 flex items-center justify-center gap-2 font-bold"
-                      style={{ width: '100%', textDecoration: 'none', padding: '14px 0', borderRadius: '12px', fontSize: '0.95rem', display: 'flex' }}
-                    >
-                      Open UPI Payment App
-                    </a>
-                  ) : null}
                   <div className="bg-white p-4 rounded-3xl shadow-lg border border-solid border-slate-100 mb-4" style={{ display: 'inline-block', position: 'relative' }}>
                     <img 
                       src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
