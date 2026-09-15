@@ -441,14 +441,14 @@ export const MenuEditor = ({ shopId }) => {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 type="submit" 
-                className="submit-btn-red h-12 sm:h-13 min-h-[48px] px-8 sm:px-10 py-3 rounded-full flex items-center justify-center gap-2 max-w-md shrink-0 cursor-pointer"
+                className="submit-btn-red h-11 sm:h-12 min-h-[44px] px-10 sm:px-14 py-3 rounded-full flex items-center justify-center gap-2 shrink-0 cursor-pointer"
                 style={{
                   backgroundColor: '#DC2626',
                   color: '#FFFFFF',
-                  boxShadow: '0 10px 25px -5px rgba(220, 38, 38, 0.45), 0 4px 10px -2px rgba(220, 38, 38, 0.25)'
+                  boxShadow: '0 8px 20px -4px rgba(220, 38, 38, 0.45), 0 3px 8px -2px rgba(220, 38, 38, 0.25)'
                 }}
               >
-                <span className="text-white leading-none text-[10px] sm:text-[11px] font-black tracking-wider uppercase">Submit Item for Admin Approval</span>
+                <span className="text-white leading-none text-[9px] sm:text-[10px] font-extrabold tracking-widest uppercase">Submit Item for Admin Approval</span>
               </motion.button>
             </div>
           </motion.form>
@@ -676,17 +676,17 @@ export const MenuEditor = ({ shopId }) => {
                 <div className="flex justify-center pt-6 sm:pt-8 pb-3 mt-4 sm:mt-6 mb-2">
                   <button 
                     type="button"
-                    className="submit-btn-red h-12 sm:h-13 min-h-[48px] px-8 sm:px-10 py-3 rounded-full flex items-center justify-center gap-2 max-w-md shrink-0 cursor-pointer transition-all border-0"
+                    className="submit-btn-red h-11 sm:h-12 min-h-[44px] px-10 sm:px-14 py-3 rounded-full flex items-center justify-center gap-2 shrink-0 cursor-pointer transition-all border-0"
                     style={{
                       backgroundColor: '#DC2626',
                       color: '#FFFFFF',
-                      boxShadow: '0 10px 25px -5px rgba(220, 38, 38, 0.45), 0 4px 10px -2px rgba(220, 38, 38, 0.25)'
+                      boxShadow: '0 8px 20px -4px rgba(220, 38, 38, 0.45), 0 3px 8px -2px rgba(220, 38, 38, 0.25)'
                     }}
                     onClick={handleSaveEdit}
                     disabled={isUploading}
                   >
-                    <Check size={16} strokeWidth={2.5} className="text-white shrink-0" />
-                    <span className="text-white leading-none text-[10px] sm:text-[11px] font-black tracking-wider uppercase">Submit Edit for Admin Approval</span>
+                    <Check size={14} strokeWidth={2.5} className="text-white shrink-0" />
+                    <span className="text-white leading-none text-[9px] sm:text-[10px] font-extrabold tracking-widest uppercase">Submit Edit for Admin Approval</span>
                   </button>
                 </div>
               </div>
