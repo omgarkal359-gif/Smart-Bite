@@ -154,7 +154,7 @@ const UserProfile = () => {
             <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: 600, color: '#64748B' }}>
               {userData?.email || userData?.id || userData?.username || 'student@sgu.edu'}
             </p>
-            <span style={{ fontSize: '0.75rem', fontWeight 800, padding: '6px 16px', borderRadius: 999, background: '#FFF1F2', color: '#FF3B5C', textTransform: 'uppercase', marginTop: 4, display: 'inline-block' }}>
+            <span style={{ fontSize: '0.75rem', fontWeight: 800, padding: '6px 16px', borderRadius: 999, background: '#FFF1F2', color: '#FF3B5C', textTransform: 'uppercase', marginTop: 4, display: 'inline-block' }}>
               Role: {userData?.role ? userData.role.toUpperCase() : 'STUDENT'}
             </span>
             <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8rem', fontWeight: 700, color: '#16A34A', background: '#F0FDF4', padding: '6px 16px', borderRadius: 999, border: '1px solid #DCFCE7' }}>
