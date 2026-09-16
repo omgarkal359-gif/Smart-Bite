@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Mail, Check, X, RefreshCw, Copy, Store, Power, UserPlus, Link2, Pencil, Save, KeyRound, Eye, EyeOff, ShieldCheck, Trash2 } from 'lucide-react';
-import { api, DEFAULT_FIELD_CATALOG, getDeletedStallIds } from '../../api';
+import { api, DEFAULT_FIELD_CATALOG, getDeletedStallIds, parseDetails } from '../../api';
 import { supabase } from '../../supabaseClient';
 
 const GROUP_LABELS = {
@@ -184,7 +184,7 @@ export const OnboardingModule = () => {
 
       const data = vRes?.data;
       const accData = accRes?.data;
-      const detailsObj = data?.details || {};
+      const detailsObj = parseDetails(data?.details);
 
       const resolvedEmail = data?.contact_email || detailsObj?.email || detailsObj?.contact_email || accData?.email || initialEmail || '';
 
@@ -219,7 +219,7 @@ export const OnboardingModule = () => {
 
       // 2. Read existing vendor details from Supabase to preserve system_password
       const { data: existingV } = await supabase.from('vendors').select('*').eq('stall_id', id).maybeSingle();
-      const existingDetails = existingV?.details || {};
+      const existingDetails = parseDetails(existingV?.details);
 
       const updatedDetails = {
         ...existingDetails,

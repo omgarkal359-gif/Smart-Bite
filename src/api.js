@@ -33,6 +33,18 @@ export const DEFAULT_FIELD_CATALOG = [
   { key: 'operating_hours', label: 'Operating Hours',       group: 'stall' }
 ];
 
+export function parseDetails(details) {
+  if (!details) return {};
+  if (typeof details === 'object' && !Array.isArray(details)) return details;
+  if (typeof details === 'string') {
+    try {
+      const parsed = JSON.parse(details);
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) return parsed;
+    } catch (_e) {}
+  }
+  return {};
+}
+
 // ── Mappers: DB (snake_case) -> UI contract ──────────────────────────────────
 function mapStall(s) {
   if (!s) return s;
@@ -281,21 +293,42 @@ export const api = {
       return { success: false, message: 'Email/Username and Password are required.' };
     }
 
+    const checkVendorPassword = (vRec, inputPassword) => {
+      if (!vRec) return false;
+      const d = parseDetails(vRec.details);
+      const sysPwd = (d.system_password || d.password || vRec.system_password || '').trim();
+      return sysPwd !== '' && sysPwd === inputPassword;
+    };
+
     // 1. Fetch vendor records from Supabase vendors table
     let vendorRecord = null;
     try {
       const { data: vList } = await supabase.from('vendors').select('*');
       if (Array.isArray(vList) && vList.length > 0) {
         vendorRecord = vList.find(v => {
-          const sId = (v.stall_id || '').toLowerCase();
-          const cEmail = (v.contact_email || '').toLowerCase();
-          const dEmail = (v.details?.email || '').toLowerCase();
-          const dCEmail = (v.details?.contact_email || '').toLowerCase();
-          const bName = (v.business_name || '').toLowerCase();
+          const d = parseDetails(v.details);
+          const sId = (v.stall_id || '').toLowerCase().trim();
+          const cEmail = (v.contact_email || '').toLowerCase().trim();
+          const dEmail = (d.email || '').toLowerCase().trim();
+          const dCEmail = (d.contact_email || '').toLowerCase().trim();
+          const bName = (v.business_name || '').toLowerCase().trim();
           return sId === input || cEmail === input || dEmail === input || dCEmail === input || bName === input;
         });
       }
     } catch (_e) {}
+
+    // Fallback single queries on vendors table
+    if (!vendorRecord && input) {
+      try {
+        const { data: v1 } = await supabase.from('vendors').select('*').eq('contact_email', input).maybeSingle();
+        if (v1) {
+          vendorRecord = v1;
+        } else {
+          const { data: v2 } = await supabase.from('vendors').select('*').eq('stall_id', input).maybeSingle();
+          if (v2) vendorRecord = v2;
+        }
+      } catch (_e) {}
+    }
 
     // 2. Fetch account records from Supabase accounts table
     let accountRecord = null;
@@ -303,12 +336,24 @@ export const api = {
       const { data: accList } = await supabase.from('accounts').select('*');
       if (Array.isArray(accList) && accList.length > 0) {
         accountRecord = accList.find(acc => {
-          const aEmail = (acc.email || '').toLowerCase();
-          const aShopId = (acc.shop_id || '').toLowerCase();
+          const aEmail = (acc.email || '').toLowerCase().trim();
+          const aShopId = (acc.shop_id || '').toLowerCase().trim();
           return aEmail === input || aShopId === input;
         });
       }
     } catch (_e) {}
+
+    if (!accountRecord && input) {
+      try {
+        const { data: a1 } = await supabase.from('accounts').select('*').eq('email', input).maybeSingle();
+        if (a1) {
+          accountRecord = a1;
+        } else {
+          const { data: a2 } = await supabase.from('accounts').select('*').eq('shop_id', input).maybeSingle();
+          if (a2) accountRecord = a2;
+        }
+      } catch (_e) {}
+    }
 
     // 3. Fetch stalls records from Supabase stalls table as fallback
     let stallRecord = null;
@@ -316,8 +361,8 @@ export const api = {
       const { data: stallList } = await supabase.from('stalls').select('*');
       if (Array.isArray(stallList) && stallList.length > 0) {
         stallRecord = stallList.find(s => {
-          const sId = (s.id || '').toLowerCase();
-          const sName = (s.name || '').toLowerCase();
+          const sId = (s.id || '').toLowerCase().trim();
+          const sName = (s.name || '').toLowerCase().trim();
           return sId === input || sName === input;
         });
       }
@@ -325,7 +370,8 @@ export const api = {
 
     // Resolve shopId & targetEmail
     const shopId = accountRecord?.shop_id || vendorRecord?.stall_id || stallRecord?.id || null;
-    const targetEmail = vendorRecord?.contact_email || vendorRecord?.details?.email || accountRecord?.email || input;
+    const vDetails = parseDetails(vendorRecord?.details);
+    const targetEmail = (vendorRecord?.contact_email || vDetails?.email || vDetails?.contact_email || accountRecord?.email || input).toLowerCase().trim();
 
     // Cross-link vendorRecord if missing
     if (!vendorRecord && shopId) {
@@ -361,44 +407,38 @@ export const api = {
     }
 
     // 5. Verification check against vendorRecord details.system_password or system_password
-    if (vendorRecord) {
-      const sysPwd = (vendorRecord.details?.system_password || vendorRecord.system_password || '').trim();
-      if (sysPwd && sysPwd === pwd) {
-        const resolvedShopId = vendorRecord.stall_id || shopId || 'narayana';
-        const role = isAdminEmail(vendorRecord.contact_email || input) ? 'admin' : 'vendor';
-        return {
-          success: true,
-          token: `vendor-session-${resolvedShopId}`,
-          user: {
-            id: resolvedShopId,
-            username: vendorRecord.contact_email || input,
-            name: vendorRecord.business_name || resolvedShopId,
-            role,
-            shopId: resolvedShopId
-          }
-        };
-      }
+    if (vendorRecord && checkVendorPassword(vendorRecord, pwd)) {
+      const resolvedShopId = vendorRecord.stall_id || shopId || 'narayana';
+      const role = isAdminEmail(vendorRecord.contact_email || input) ? 'admin' : 'vendor';
+      return {
+        success: true,
+        token: `vendor-session-${resolvedShopId}`,
+        user: {
+          id: resolvedShopId,
+          username: vendorRecord.contact_email || targetEmail || input,
+          name: vendorRecord.business_name || resolvedShopId,
+          role,
+          shopId: resolvedShopId
+        }
+      };
     }
 
     // 6. Verification check if shopId exists and password matches
     if (shopId) {
       try {
         const { data: vRec } = await supabase.from('vendors').select('*').eq('stall_id', shopId).maybeSingle();
-        if (vRec) {
-          const sysPwd = (vRec.details?.system_password || vRec.system_password || '').trim();
-          if (sysPwd && sysPwd === pwd) {
-            return {
-              success: true,
-              token: `vendor-session-${shopId}`,
-              user: {
-                id: shopId,
-                username: targetEmail || input,
-                name: vRec.business_name || shopId,
-                role: 'vendor',
-                shopId
-              }
-            };
-          }
+        if (vRec && checkVendorPassword(vRec, pwd)) {
+          return {
+            success: true,
+            token: `vendor-session-${shopId}`,
+            user: {
+              id: shopId,
+              username: vRec.contact_email || targetEmail || input,
+              name: vRec.business_name || shopId,
+              role: 'vendor',
+              shopId
+            }
+          };
         }
       } catch (_e) {}
     }
@@ -1434,7 +1474,8 @@ export const api = {
       if (stallId) {
         try {
           const { data: v } = await supabase.from('vendors').select('details').eq('stall_id', stallId).maybeSingle();
-          const updatedDetails = { ...(v?.details || {}), system_password: pwd, email: cleanEmail };
+          const existingDetails = parseDetails(v?.details);
+          const updatedDetails = { ...existingDetails, system_password: pwd, email: cleanEmail };
           const { error: upErr } = await supabase.from('vendors').upsert({
             stall_id: stallId,
             contact_email: cleanEmail,
