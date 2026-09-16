@@ -44,6 +44,37 @@ const LoginPage = () => {
     else if (role === 'admin') navigate('/admin');
   }, [navigate]);
 
+  const finish = useCallback((role, name, id, shopId = null, token = null) => {
+    setIsLoading(false);
+    setIsSuccess(true);
+    const ud = {
+      role: role || 'student',
+      name: name || 'Student',
+      id: id || 'student',
+      shopId: shopId || null,
+      timestamp: new Date().toISOString(),
+    };
+    if (token) {
+      localStorage.setItem('sgu_token', token);
+      sessionStorage.setItem('sgu_token', token);
+    }
+    setStoredUser(ud, true);
+
+    try {
+      const level = ud.role === 'admin' ? 'SECURITY' : 'INFO';
+      addAuditLog({
+        level,
+        category: 'Auth',
+        message: `${ud.role === 'admin' ? 'Super Admin' : ud.role === 'vendor' ? 'Vendor Owner' : 'Student'} login session initialized for "${ud.name}" (${ud.id})`
+      });
+    } catch (e) {}
+
+    setTimeout(() => {
+      setIsSuccess(false);
+      redirectByRole(ud.role, ud.shopId);
+    }, 1200);
+  }, [redirectByRole]);
+
   // Auto-resume active session if user has not clicked Logout (and session <= 7 days old)
   useEffect(() => {
     async function checkExistingSession() {
@@ -129,36 +160,6 @@ const LoginPage = () => {
     };
   }, []);
 
-  const finish = useCallback((role, name, id, shopId = null, token = null) => {
-    setIsLoading(false);
-    setIsSuccess(true);
-    const ud = {
-      role: role || 'student',
-      name: name || 'Student',
-      id: id || 'student',
-      shopId: shopId || null,
-      timestamp: new Date().toISOString(),
-    };
-    if (token) {
-      localStorage.setItem('sgu_token', token);
-      sessionStorage.setItem('sgu_token', token);
-    }
-    setStoredUser(ud, true);
-
-    try {
-      const level = ud.role === 'admin' ? 'SECURITY' : 'INFO';
-      addAuditLog({
-        level,
-        category: 'Auth',
-        message: `${ud.role === 'admin' ? 'Super Admin' : ud.role === 'vendor' ? 'Vendor Owner' : 'Student'} login session initialized for "${ud.name}" (${ud.id})`
-      });
-    } catch (e) {}
-
-    setTimeout(() => {
-      setIsSuccess(false);
-      redirectByRole(ud.role, ud.shopId);
-    }, 1200);
-  }, [redirectByRole]);
 
   const handleGoogleLogin = async () => {
     setIsLoading(true);
