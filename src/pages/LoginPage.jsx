@@ -44,13 +44,15 @@ const LoginPage = () => {
     else if (role === 'admin') navigate('/admin');
   }, [navigate]);
 
-  const finish = useCallback((role, name, id, shopId = null, token = null) => {
+  const finish = useCallback((role, name, id, shopId = null, token = null, avatar = null) => {
     setIsLoading(false);
     setIsSuccess(true);
     const ud = {
       role: role || 'student',
       name: name || 'Student',
       id: id || 'student',
+      email: id && id.includes('@') ? id : null,
+      avatar: avatar || null,
       shopId: shopId || null,
       timestamp: new Date().toISOString(),
     };
@@ -98,16 +100,18 @@ const LoginPage = () => {
           }
 
           const userEmail = (session.user.email || '').toLowerCase().trim();
+          const meta = session.user.user_metadata || {};
           let profile = null;
           try {
-            const { data: p } = await supabase.from('accounts').select('role, shop_id').eq('id', session.user.id).single();
+            const { data: p } = await supabase.from('accounts').select('role, shop_id, full_name').eq('id', session.user.id).single();
             profile = p;
           } catch (_e) {}
           const role = profile?.role || (isAdminEmail(userEmail) ? 'admin' : (session.user.user_metadata?.role || 'student'));
           const shopId = profile?.shop_id || session.user.user_metadata?.shopId || null;
-          const name = profile?.full_name || session.user.user_metadata?.full_name || session.user.user_metadata?.name || userEmail.split('@')[0] || (role === 'admin' ? 'System Admin' : 'Student');
+          const name = profile?.full_name || meta.full_name || meta.name || (userEmail ? userEmail.split('@')[0] : 'Student');
+          const avatar = meta.avatar_url || meta.picture || null;
           const id = userEmail || session.user.id;
-          finish(role, name, id, shopId, session.access_token);
+          finish(role, name, id, shopId, session.access_token, avatar);
         }
       } catch (_e) {}
     }
@@ -159,7 +163,6 @@ const LoginPage = () => {
       document.documentElement.style.background = prevHtmlBg;
     };
   }, []);
-
 
   const handleGoogleLogin = async () => {
     setIsLoading(true);
@@ -254,12 +257,13 @@ const LoginPage = () => {
         // Google Auth Role Routing: Admin emails -> 'admin', all other Google users -> 'student'
         const role = isAdminEmail(userEmail) ? 'admin' : (profile?.role === 'vendor' ? 'vendor' : 'student');
 
-        const name = profile?.full_name || meta.full_name || meta.name || userEmail.split('@')[0] || (role === 'admin' ? 'System Admin' : 'Student');
+        const name = profile?.full_name || meta.full_name || meta.name || (userEmail ? userEmail.split('@')[0] : 'Student');
+        const avatar = meta.avatar_url || meta.picture || null;
         const id = userEmail || session.user.phone || session.user.id;
         const shopId = profile?.shop_id || meta.shopId || null;
 
         try { await api.loginGoogle(id, name).catch(() => null); } catch (_e) {}
-        finish(role, name, id, shopId, session.access_token);
+        finish(role, name, id, shopId, session.access_token, avatar);
       }
     });
 

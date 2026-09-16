@@ -30,20 +30,30 @@ const UserProfile = () => {
 
         let parsed = getStoredUser();
 
-        if (!parsed && user) {
+        if (user) {
+          const googleEmail = (user.email || '').toLowerCase().trim();
+          const meta = user.user_metadata || {};
+          const googleName = meta.full_name || meta.name || (googleEmail ? googleEmail.split('@')[0] : 'Student');
+          const googleAvatar = meta.avatar_url || meta.picture || null;
+          const userRole = parsed?.role || meta.role || (isAdminEmail(googleEmail) ? 'admin' : 'student');
+
           parsed = {
-            name: user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || 'Student',
-            id: user.email || user.phone || user.id,
-            role: user.user_metadata?.role || 'student'
+            ...(parsed || {}),
+            name: googleName,
+            id: googleEmail || user.id,
+            email: googleEmail,
+            username: googleEmail,
+            avatar: googleAvatar,
+            role: userRole
           };
-          setStoredUser(parsed, false);
+          setStoredUser(parsed, true);
         }
 
         if (isMounted && parsed) {
           setUserData(parsed);
         }
 
-        const customerId = (parsed?.id || parsed?.username || 'student').toString().trim().toLowerCase();
+        const customerId = (parsed?.email || parsed?.id || parsed?.username || 'student').toString().trim().toLowerCase();
 
         try {
           const liveOrders = await api.getStudentOrders(customerId);
@@ -87,7 +97,7 @@ const UserProfile = () => {
     loadUserData();
 
     const parsed = getStoredUser();
-    const customerId = parsed ? (parsed.id || parsed.username || 'student').toString().trim().toLowerCase() : null;
+    const customerId = parsed ? (parsed.email || parsed.id || parsed.username || 'student').toString().trim().toLowerCase() : null;
     
     let channel;
     if (customerId) {
@@ -130,17 +140,21 @@ const UserProfile = () => {
       <main className="profile-main" style={{ padding: '20px', maxWidth: 600, margin: '0 auto' }}>
         {/* User Info Card */}
         <GlassCard className="profile-card user-info animate-stagger-item stagger-delay-1" style={{ background: '#FFFFFF', borderRadius: 20, border: '1px solid #E2E8F0', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 16, padding: '32px 20px', boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}>
-          <div className="avatar-placeholder" style={{ width: 80, height: 80, display: 'flex', justifyContent: 'center', alignItems: 'center', borderRadius: '50%', background: '#FF3B5C', color: 'white', boxShadow: '0 8px 20px rgba(255,59,92,0.3)' }}>
-            <User size={40} />
+          <div className="avatar-placeholder" style={{ width: 80, height: 80, display: 'flex', justifyContent: 'center', alignItems: 'center', borderRadius: '50%', background: '#FF3B5C', color: 'white', boxShadow: '0 8px 20px rgba(255,59,92,0.3)', overflow: 'hidden' }}>
+            {userData?.avatar ? (
+              <img src={userData.avatar} alt={userData?.name || 'User Profile'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            ) : (
+              <User size={40} />
+            )}
           </div>
           <div className="user-details" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
             <h2 style={{ textTransform: 'capitalize', fontSize: '1.5rem', fontWeight: 800, margin: 0, color: '#0F172A' }}>
-              {userData?.name || 'SGU Student'}
+              {userData?.name || 'Student'}
             </h2>
             <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: 600, color: '#64748B' }}>
-              {userData?.username || userData?.id || 'student@sgu.edu'}
+              {userData?.email || userData?.id || userData?.username || 'student@sgu.edu'}
             </p>
-            <span style={{ fontSize: '0.75rem', fontWeight: 800, padding: '6px 16px', borderRadius: 999, background: '#FFF1F2', color: '#FF3B5C', textTransform: 'uppercase', marginTop: 4, display: 'inline-block' }}>
+            <span style={{ fontSize: '0.75rem', fontWeight 800, padding: '6px 16px', borderRadius: 999, background: '#FFF1F2', color: '#FF3B5C', textTransform: 'uppercase', marginTop: 4, display: 'inline-block' }}>
               Role: {userData?.role ? userData.role.toUpperCase() : 'STUDENT'}
             </span>
             <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8rem', fontWeight: 700, color: '#16A34A', background: '#F0FDF4', padding: '6px 16px', borderRadius: 999, border: '1px solid #DCFCE7' }}>
