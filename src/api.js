@@ -281,75 +281,61 @@ export const api = {
       return { success: false, message: 'Email/Username and Password are required.' };
     }
 
-    // 1. Search Supabase vendors table by contact_email or stall_id
+    // 1. Fetch vendor records from Supabase vendors table
     let vendorRecord = null;
     try {
-      const { data: vByEmail } = await supabase
-        .from('vendors')
-        .select('*')
-        .ilike('contact_email', input)
-        .maybeSingle();
-      
-      if (vByEmail) {
-        vendorRecord = vByEmail;
-      } else {
-        const { data: vById } = await supabase
-          .from('vendors')
-          .select('*')
-          .eq('stall_id', input)
-          .maybeSingle();
-        if (vById) vendorRecord = vById;
+      const { data: vList } = await supabase.from('vendors').select('*');
+      if (Array.isArray(vList) && vList.length > 0) {
+        vendorRecord = vList.find(v => {
+          const sId = (v.stall_id || '').toLowerCase();
+          const cEmail = (v.contact_email || '').toLowerCase();
+          const dEmail = (v.details?.email || '').toLowerCase();
+          const dCEmail = (v.details?.contact_email || '').toLowerCase();
+          const bName = (v.business_name || '').toLowerCase();
+          return sId === input || cEmail === input || dEmail === input || dCEmail === input || bName === input;
+        });
       }
     } catch (_e) {}
 
-    // 2. Search Supabase accounts table by email or shop_id
+    // 2. Fetch account records from Supabase accounts table
     let accountRecord = null;
     try {
-      const { data: accByEmail } = await supabase
-        .from('accounts')
-        .select('*')
-        .ilike('email', input)
-        .maybeSingle();
-      
-      if (accByEmail) {
-        accountRecord = accByEmail;
-      } else {
-        const { data: accById } = await supabase
-          .from('accounts')
-          .select('*')
-          .eq('shop_id', input)
-          .maybeSingle();
-        if (accById) accountRecord = accById;
+      const { data: accList } = await supabase.from('accounts').select('*');
+      if (Array.isArray(accList) && accList.length > 0) {
+        accountRecord = accList.find(acc => {
+          const aEmail = (acc.email || '').toLowerCase();
+          const aShopId = (acc.shop_id || '').toLowerCase();
+          return aEmail === input || aShopId === input;
+        });
       }
     } catch (_e) {}
 
-    // Cross-link vendor and account records if one was found but not the other
-    if (!vendorRecord && accountRecord?.shop_id) {
-      try {
-        const { data: vByShop } = await supabase
-          .from('vendors')
-          .select('*')
-          .eq('stall_id', accountRecord.shop_id)
-          .maybeSingle();
-        if (vByShop) vendorRecord = vByShop;
-      } catch (_e) {}
-    }
+    // 3. Fetch stalls records from Supabase stalls table as fallback
+    let stallRecord = null;
+    try {
+      const { data: stallList } = await supabase.from('stalls').select('*');
+      if (Array.isArray(stallList) && stallList.length > 0) {
+        stallRecord = stallList.find(s => {
+          const sId = (s.id || '').toLowerCase();
+          const sName = (s.name || '').toLowerCase();
+          return sId === input || sName === input;
+        });
+      }
+    } catch (_e) {}
 
-    if (!accountRecord && vendorRecord?.contact_email) {
-      try {
-        const { data: accByVEmail } = await supabase
-          .from('accounts')
-          .select('*')
-          .ilike('email', vendorRecord.contact_email)
-          .maybeSingle();
-        if (accByVEmail) accountRecord = accByVEmail;
-      } catch (_e) {}
-    }
-
+    // Resolve shopId & targetEmail
+    const shopId = accountRecord?.shop_id || vendorRecord?.stall_id || stallRecord?.id || null;
     const targetEmail = vendorRecord?.contact_email || vendorRecord?.details?.email || accountRecord?.email || input;
-    const shopId = accountRecord?.shop_id || vendorRecord?.stall_id || null;
 
-    // 3. Try Supabase Auth first if target email looks like an email address
+    // Cross-link vendorRecord if missing
+    if (!vendorRecord && shopId) {
+      try {
+        const { data: vData } = await supabase.from('vendors').select('*').eq('stall_id', shopId).maybeSingle();
+        if (vData) vendorRecord = vData;
+      } catch (_e) {}
+    }
+
+    // 4. Try Supabase Auth first if target email looks like an email address
     if (targetEmail.includes('@')) {
       const { data, error } = await supabase.auth.signInWithPassword({ email: targetEmail, password: pwd });
       if (!error && data?.user) {
@@ -374,11 +360,11 @@ export const api = {
       }
     }
 
-    // 4. Verification against Supabase vendors table details.system_password or system_password
+    // 5. Verification check against vendorRecord details.system_password or system_password
     if (vendorRecord) {
-      const systemPwd = vendorRecord.details?.system_password || vendorRecord.system_password;
-      if (systemPwd && systemPwd === pwd) {
-        const resolvedShopId = vendorRecord.stall_id || shopId;
+      const sysPwd = (vendorRecord.details?.system_password || vendorRecord.system_password || '').trim();
+      if (sysPwd && sysPwd === pwd) {
+        const resolvedShopId = vendorRecord.stall_id || shopId || 'narayana';
         const role = isAdminEmail(vendorRecord.contact_email || input) ? 'admin' : 'vendor';
         return {
           success: true,
@@ -394,24 +380,20 @@ export const api = {
       }
     }
 
-    // 5. Verification check if password matches what was saved in details on accounts or vendors
-    if (accountRecord && shopId) {
+    // 6. Verification check if shopId exists and password matches
+    if (shopId) {
       try {
-        const { data: vRecord } = await supabase
-          .from('vendors')
-          .select('*')
-          .eq('stall_id', shopId)
-          .maybeSingle();
-        if (vRecord) {
-          const sysPwd = vRecord.details?.system_password || vRecord.system_password;
+        const { data: vRec } = await supabase.from('vendors').select('*').eq('stall_id', shopId).maybeSingle();
+        if (vRec) {
+          const sysPwd = (vRec.details?.system_password || vRec.system_password || '').trim();
           if (sysPwd && sysPwd === pwd) {
             return {
               success: true,
               token: `vendor-session-${shopId}`,
               user: {
                 id: shopId,
-                username: accountRecord.email || input,
-                name: vRecord.business_name || shopId,
+                username: targetEmail || input,
+                name: vRec.business_name || shopId,
                 role: 'vendor',
                 shopId
               }
@@ -421,7 +403,7 @@ export const api = {
       } catch (_e) {}
     }
 
-    // 6. Check for admin sign-in attempt
+    // 7. Verification check for admin email sign-in
     if (isAdminEmail(input)) {
       const { data, error } = await supabase.auth.signInWithPassword({ email: input, password: pwd });
       if (!error && data?.user) {
