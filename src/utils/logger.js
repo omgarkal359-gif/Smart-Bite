@@ -6,10 +6,10 @@ function getInitialLogs() {
   const now = new Date();
   return [
     { id: 'seed-1', level: 'SECURITY', message: 'Super Admin login session initialized from ip 157.32.14.88', userEmail: 'admin@sgu.edu', timestamp: new Date(now - 1000 * 60 * 2).toLocaleTimeString([], { hour12: false }), category: 'Auth' },
-    { id: 'seed-2', level: 'INFO', message: 'Order #1004 created by student (₹155 - Online UPI)', userEmail: 'student@sgu.edu', timestamp: new Date(now - 1000 * 60 * 5).toLocaleTimeString([], { hour12: false }), category: 'Orders' },
+    { id: 'seed-2', level: 'INFO', message: 'Order #1004 created by student (₹155 - Online UPI)', userEmail: 'Om Garkal (omgarkal357@gmail.com)', timestamp: new Date(now - 1000 * 60 * 5).toLocaleTimeString([], { hour12: false }), category: 'Orders' },
     { id: 'seed-3', level: 'INFO', message: 'Stall "mangales-snacks" updated status to ONLINE (busyMode: false)', userEmail: 'vendor.mangales@sguk.ac.in', timestamp: new Date(now - 1000 * 60 * 12).toLocaleTimeString([], { hour12: false }), category: 'Vendors' },
     { id: 'seed-4', level: 'WARN', message: 'Supabase DB pool connection latency spike detected (42ms)', userEmail: 'system@sgu.edu', timestamp: new Date(now - 1000 * 60 * 22).toLocaleTimeString([], { hour12: false }), category: 'Database' },
-    { id: 'seed-5', level: 'INFO', message: 'Order #1002 marked COMPLETED by vendor', userEmail: 'vendor.narayana@sguk.ac.in', timestamp: new Date(now - 1000 * 60 * 35).toLocaleTimeString([], { hour12: false }), category: 'Orders' },
+    { id: 'seed-5', level: 'INFO', message: 'Order #1002 status changed to COMPLETED', userEmail: 'Om Garkal (omgarkal357@gmail.com)', timestamp: new Date(now - 1000 * 60 * 35).toLocaleTimeString([], { hour12: false }), category: 'Orders' },
     { id: 'seed-6', level: 'SECURITY', message: 'Failed login attempt for user "admin_invalid" from ip 103.22.10.4', userEmail: 'admin_invalid@sgu.edu', timestamp: new Date(now - 1000 * 60 * 50).toLocaleTimeString([], { hour12: false }), category: 'Auth' },
     { id: 'seed-7', level: 'INFO', message: 'Socket.io broadcast room "vendor-cool-cravings" client connected', userEmail: 'vendor.coolcravings@sguk.ac.in', timestamp: new Date(now - 1000 * 60 * 75).toLocaleTimeString([], { hour12: false }), category: 'Socket' },
   ];

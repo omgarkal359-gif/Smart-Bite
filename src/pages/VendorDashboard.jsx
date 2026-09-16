@@ -482,12 +482,11 @@ const VendorDashboard = () => {
   };
 
   const handleUpdateStatus = async (id, newStatus) => {
-    const vendorUser = getStoredUser();
-    const vendorEmail = vendorUser?.username || vendorUser?.email || 'vendor@sgu.edu';
+    const ticket = tickets.find(t => String(t.id) === String(id)) || completedTickets.find(t => String(t.id) === String(id));
+    const customerUser = ticket?.customerName || ticket?.customerEmail || ticket?.customer_name || 'Student';
     
     // Update local state immediately for instant feedback
     if (newStatus === 'completed' || newStatus === 'ready' || newStatus === 'cancelled') {
-      const ticket = tickets.find(t => String(t.id) === String(id)) || completedTickets.find(t => String(t.id) === String(id));
       setTickets(prev => prev.filter(t => String(t.id) !== String(id)));
       if (ticket) {
         setCompletedTickets(prev => {
@@ -512,7 +511,7 @@ const VendorDashboard = () => {
     }
 
     try {
-      await api.updateOrderStatus(id, newStatus, vendorEmail);
+      await api.updateOrderStatus(id, newStatus, customerUser);
       showToast(`Order #${id} updated to ${newStatus.toUpperCase()} ⚡`, 'success');
     } catch (err) {
       showToast('Failed to update order status: ' + err.message, 'error');

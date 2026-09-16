@@ -882,7 +882,15 @@ export const api = {
       console.warn('Supabase order insert exception:', insertErr);
     }
 
-    try { addAuditLog({ level: 'INFO', category: 'Orders', message: `Order #${orderId} created (₹${subtotal})` }); } catch (_e) {}
+    const orderCustomerDisplayName = orderData.customerName || user?.name || customerEmail || 'Student';
+    try { 
+      addAuditLog({ 
+        level: 'INFO', 
+        category: 'Orders', 
+        message: `Order #${orderId} created (₹${subtotal})`,
+        userEmail: orderCustomerDisplayName
+      }); 
+    } catch (_e) {}
 
     const orderResult = {
       ...mapOrder(orderRow),
@@ -1129,25 +1137,25 @@ export const api = {
 
   async updateOrderStatus(orderId, status, userEmail = null) {
     let prevStatus = null;
+    let ordCustomerName = null;
+    let ordCustomerEmail = null;
     try {
-      const { data: existingOrd } = await supabase.from('orders').select('status').eq('id', orderId).maybeSingle();
-      if (existingOrd) prevStatus = existingOrd.status;
+      const { data: existingOrd } = await supabase.from('orders').select('status, customer_name, customer_email').eq('id', orderId).maybeSingle();
+      if (existingOrd) {
+        prevStatus = existingOrd.status;
+        ordCustomerName = existingOrd.customer_name;
+        ordCustomerEmail = existingOrd.customer_email;
+      }
     } catch (_e) {}
 
     const { data, error } = await supabase
       .from('orders').update({ status, updated_at: new Date().toISOString() }).eq('id', orderId).select();
     
-    let email = userEmail;
-    if (!email) {
-      try {
-        const raw = sessionStorage.getItem('sgu_user') || localStorage.getItem('sgu_user');
-        if (raw) {
-          const u = JSON.parse(raw);
-          email = u?.username || u?.email;
-        }
-      } catch (_e) {}
+    // Always prioritize the customer name or email who placed the order over vendor email
+    let email = ordCustomerName || ordCustomerEmail;
+    if (!email || String(email).toLowerCase().includes('vendor@')) {
+      email = (userEmail && !String(userEmail).toLowerCase().includes('vendor@')) ? userEmail : (ordCustomerName || ordCustomerEmail || 'Student');
     }
-    if (!email) email = 'system@sgu.edu';
 
     // Record status transition in order_status_history table
     try {
