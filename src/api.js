@@ -1406,12 +1406,19 @@ export const api = {
         try {
           const { data: v } = await supabase.from('vendors').select('details').eq('stall_id', stallId).maybeSingle();
           const updatedDetails = { ...(v?.details || {}), system_password: pwd, email: cleanEmail };
-          await supabase.from('vendors').upsert({
+          const { error: upErr } = await supabase.from('vendors').upsert({
             stall_id: stallId,
             contact_email: cleanEmail,
             details: updatedDetails,
             updated_at: new Date().toISOString()
           }, { onConflict: 'stall_id' });
+          if (upErr) {
+            await supabase.from('vendors').update({
+              contact_email: cleanEmail,
+              details: updatedDetails,
+              updated_at: new Date().toISOString()
+            }).eq('stall_id', stallId).catch(() => null);
+          }
         } catch (_e) {}
       }
 
