@@ -47,9 +47,6 @@ const LoginPage = () => {
   // Auto-resume active session if user has not clicked Logout (and session <= 7 days old)
   useEffect(() => {
     async function checkExistingSession() {
-      // Don't auto-redirect if an OAuth login flow is currently in progress
-      if (localStorage.getItem('sgu_google_oauth_started') === 'true') return;
-
       const existingUser = getStoredUser();
       if (existingUser && existingUser.role) {
         redirectByRole(existingUser.role, existingUser.shopId);
@@ -77,13 +74,15 @@ const LoginPage = () => {
           } catch (_e) {}
           const role = profile?.role || (isAdminEmail(userEmail) ? 'admin' : (session.user.user_metadata?.role || 'student'));
           const shopId = profile?.shop_id || session.user.user_metadata?.shopId || null;
-          redirectByRole(role, shopId);
+          const name = profile?.full_name || session.user.user_metadata?.full_name || session.user.user_metadata?.name || userEmail.split('@')[0] || (role === 'admin' ? 'System Admin' : 'Student');
+          const id = userEmail || session.user.id;
+          finish(role, name, id, shopId, session.access_token);
         }
       } catch (_e) {}
     }
 
     checkExistingSession();
-  }, [redirectByRole]);
+  }, [finish, redirectByRole]);
 
   /* ── Keyboard shortcut to close Privacy Modal on Escape ── */
   useEffect(() => {
@@ -236,9 +235,7 @@ const LoginPage = () => {
     window.addEventListener('focus', handleWindowFocus);
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      const oauthStarted = localStorage.getItem('sgu_google_oauth_started') === 'true';
-
-      if (session?.user && (oauthStarted || event === 'SIGNED_IN')) {
+      if (session?.user) {
         localStorage.removeItem('sgu_google_oauth_started');
         const userEmail = session.user.email || '';
         const meta = session.user.user_metadata || {};
