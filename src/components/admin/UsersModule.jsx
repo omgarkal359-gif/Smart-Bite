@@ -4,6 +4,7 @@ import {
   RefreshCw, CheckCircle, Shield 
 } from 'lucide-react';
 import { api } from '../../api';
+import { supabase } from '../../supabaseClient';
 
 export const UsersModule = () => {
   const [users, setUsers] = useState([]);
@@ -20,18 +21,26 @@ export const UsersModule = () => {
     setIsLoading(true);
     try {
       const data = await api.getAdminUsers();
-      setUsers(data || []);
+      if (data && data.length > 0) {
+        setUsers(data);
+      } else {
+        const { data: vList } = await supabase.from('vendors').select('*');
+        if (vList && vList.length > 0) {
+          const vUsers = vList.map((v, idx) => ({
+            id: v.stall_id || idx + 1,
+            username: v.contact_email || v.stall_id,
+            name: v.business_name || v.stall_id,
+            role: 'vendor',
+            shopId: v.stall_id
+          }));
+          setUsers(vUsers);
+        } else {
+          setUsers([]);
+        }
+      }
     } catch (err) {
       console.error('Failed to load users:', err);
-      // Default fallback users if endpoint is loading
-      setUsers([
-        { id: 1, username: 'student@sgu.edu', name: 'Satej', role: 'student', shopId: null },
-        { id: 2, username: '9876543210', name: 'Guest Satej', role: 'guest', shopId: null },
-        { id: 3, username: 'admin@sgu.edu', name: 'Administrator', role: 'admin', shopId: null },
-        { id: 4, username: 'mangales-snacks', name: 'Mangale Snacks Owner', role: 'vendor', shopId: 'mangales-snacks' },
-        { id: 5, username: 'tea-coffee', name: 'Tea & Coffee Owner', role: 'vendor', shopId: 'tea-coffee' },
-        { id: 6, username: 'rohit-vadewale', name: 'Rohit Vadewale Owner', role: 'vendor', shopId: 'rohit-vadewale' },
-      ]);
+      setUsers([]);
     } finally {
       setIsLoading(false);
     }
