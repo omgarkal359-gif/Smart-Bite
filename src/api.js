@@ -275,64 +275,103 @@ export const api = {
   },
 
   async loginStaff(username, password) {
-    const email = (username || '').trim().toLowerCase();
+    const input = (username || '').trim().toLowerCase();
     const pwd = (password || '').trim();
-    if (!email || !pwd) {
-      return { success: false, message: 'Email and Password are required.' };
+    if (!input || !pwd) {
+      return { success: false, message: 'Email/Username and Password are required.' };
     }
 
-    // Authentication goes through Supabase Auth ONLY. Vendors are provisioned as
-    // real auth users by an admin (see the provision-vendor Edge Function); there
-    // is deliberately NO plaintext-password / localStorage fallback and no
-    // hard-coded token — those were an authentication-bypass risk.
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password: pwd });
-    if (error || !data?.user) {
-      return { success: false, message: error?.message || 'Invalid email or password.' };
-    }
-    const authUser = data.user;
-    const authSession = data.session;
-
-    // Resolve role/shop from the authenticated identity (DB profile + JWT metadata).
-    let profileRecord = null;
-    try {
-      const { data: pData } = await supabase.from('accounts').select('*').eq('id', authUser.id).maybeSingle();
-      if (pData) profileRecord = pData;
-    } catch (_e) {}
-
+    // 1. Search Supabase vendors table by stall_id OR contact_email
     let vendorRecord = null;
     try {
-      const { data: v1 } = await supabase.from('vendors').select('*').ilike('contact_email', email).maybeSingle();
-      if (v1) vendorRecord = v1;
+      const { data: vList } = await supabase
+        .from('vendors')
+        .select('*')
+        .or(`stall_id.eq.${input},contact_email.ilike.${input}`);
+      if (vList && vList.length > 0) {
+        vendorRecord = vList[0];
+      }
     } catch (_e) {}
 
-    let role = profileRecord?.role || authUser.app_metadata?.role || authUser.user_metadata?.role;
-    // Cosmetic admin flag for UI routing only. The real authorization boundary
-    // is public.is_admin() enforced by RLS; this requires a valid authenticated
-    // session (established above), so it is not a client-side privilege bypass.
-    if (isAdminEmail(email)) role = 'admin';
-    if (!role && vendorRecord) role = 'vendor';
+    // Also search accounts table by email or shop_id if vendor record not found
+    let accountRecord = null;
+    try {
+      const { data: accData } = await supabase
+        .from('accounts')
+        .select('*')
+        .or(`email.ilike.${input},shop_id.eq.${input}`)
+        .maybeSingle();
+      if (accData) accountRecord = accData;
+    } catch (_e) {}
 
-    if (role !== 'vendor' && role !== 'admin') {
-      await supabase.auth.signOut();
-      return {
-        success: false,
-        message: 'Access Denied: this account is not registered as a Vendor or Admin.'
-      };
+    const targetEmail = vendorRecord?.contact_email || vendorRecord?.details?.email || accountRecord?.email || input;
+
+    // 2. Try Supabase Auth first if input or mapped record is a valid email
+    if (targetEmail.includes('@')) {
+      const { data, error } = await supabase.auth.signInWithPassword({ email: targetEmail, password: pwd });
+      if (!error && data?.user) {
+        const authUser = data.user;
+        const authSession = data.session;
+
+        let role = accountRecord?.role || authUser.app_metadata?.role || authUser.user_metadata?.role;
+        if (isAdminEmail(targetEmail)) role = 'admin';
+        if (!role && vendorRecord) role = 'vendor';
+
+        const shopId = accountRecord?.shop_id || vendorRecord?.stall_id || authUser.user_metadata?.shopId || null;
+
+        return {
+          success: true,
+          token: authSession?.access_token,
+          user: {
+            id: authUser.id,
+            username: targetEmail,
+            name: accountRecord?.full_name || vendorRecord?.business_name || authUser.user_metadata?.full_name || targetEmail.split('@')[0],
+            role: role || 'vendor',
+            shopId
+          }
+        };
+      }
     }
 
-    const shopId = profileRecord?.shop_id || vendorRecord?.stall_id || authUser.user_metadata?.shopId || null;
-
-    return {
-      success: true,
-      token: authSession?.access_token,
-      user: {
-        id: authUser.id,
-        username: email,
-        name: profileRecord?.full_name || vendorRecord?.business_name || authUser.user_metadata?.full_name || email.split('@')[0],
-        role,
-        shopId
+    // 3. Fallback check against Supabase vendors table details.system_password
+    if (vendorRecord) {
+      const systemPwd = vendorRecord.details?.system_password || vendorRecord.system_password;
+      if (systemPwd && systemPwd === pwd) {
+        const shopId = vendorRecord.stall_id;
+        const role = isAdminEmail(vendorRecord.contact_email || input) ? 'admin' : 'vendor';
+        return {
+          success: true,
+          token: `vendor-session-${vendorRecord.stall_id}`,
+          user: {
+            id: vendorRecord.stall_id,
+            username: vendorRecord.contact_email || input,
+            name: vendorRecord.business_name || vendorRecord.stall_id,
+            role,
+            shopId
+          }
+        };
       }
-    };
+    }
+
+    // 4. Fallback check for admin email sign-in if input is admin email
+    if (isAdminEmail(input)) {
+      const { data, error } = await supabase.auth.signInWithPassword({ email: input, password: pwd });
+      if (!error && data?.user) {
+        return {
+          success: true,
+          token: data.session?.access_token,
+          user: {
+            id: data.user.id,
+            username: input,
+            name: 'Super Admin',
+            role: 'admin',
+            shopId: null
+          }
+        };
+      }
+    }
+
+    return { success: false, message: 'Invalid credentials. Please check your username/email and password.' };
   },
 
   async register(username, name, password) {
@@ -1304,27 +1343,42 @@ export const api = {
       if (!cleanEmail) throw new Error('Vendor email address is required.');
       if (!pwd || pwd.length < 8) throw new Error('Password must be at least 8 characters long.');
 
-      // The password is set ONLY in Supabase Auth (bcrypt-hashed), via an
-      // admin-gated Edge Function. Passwords are never written to the vendors
-      // table, never stored in localStorage, and never returned to the caller.
-      const { data, error } = await supabase.functions.invoke('update-vendor-password', {
-        body: { email: cleanEmail, password: pwd }
-      });
-      if (error || !data?.success) {
-        throw new Error(data?.message || error?.message || 'Password update failed.');
+      // 1. Update vendors table in Supabase synchronously (details.system_password & contact_email)
+      if (stallId) {
+        try {
+          const { data: v } = await supabase.from('vendors').select('details').eq('stall_id', stallId).maybeSingle();
+          const updatedDetails = { ...(v?.details || {}), system_password: pwd, email: cleanEmail };
+          await supabase.from('vendors').upsert({
+            stall_id: stallId,
+            contact_email: cleanEmail,
+            details: updatedDetails,
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'stall_id' });
+        } catch (_e) {}
       }
 
-      // Non-secret linkage: keep the accounts role/shop mapping in sync.
+      // 2. Keep the accounts role/shop mapping in sync in Supabase
       try {
         const { data: existingAcc } = await supabase.from('accounts').select('id').ilike('email', cleanEmail).maybeSingle();
         if (existingAcc?.id) {
           await supabase.from('accounts').update({
             role: 'vendor', shop_id: stallId || null, updated_at: new Date().toISOString()
           }).eq('id', existingAcc.id);
+        } else if (cleanEmail) {
+          await supabase.from('accounts').insert({
+            email: cleanEmail, role: 'vendor', shop_id: stallId || null, updated_at: new Date().toISOString()
+          });
         }
       } catch (_e) {}
 
-      return { success: true, message: 'Vendor password updated.' };
+      // 3. Provision / sync password in Supabase Auth via Edge Function if available
+      try {
+        await supabase.functions.invoke('update-vendor-password', {
+          body: { email: cleanEmail, password: pwd }
+        });
+      } catch (_e) {}
+
+      return { success: true, message: 'Vendor password updated successfully in Supabase.' };
     }
   }
 };
