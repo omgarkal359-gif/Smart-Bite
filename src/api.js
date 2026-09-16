@@ -281,32 +281,75 @@ export const api = {
       return { success: false, message: 'Email/Username and Password are required.' };
     }
 
-    // 1. Search Supabase vendors table by stall_id OR contact_email
+    // 1. Search Supabase vendors table by contact_email or stall_id
     let vendorRecord = null;
     try {
-      const { data: vList } = await supabase
+      const { data: vByEmail } = await supabase
         .from('vendors')
         .select('*')
-        .or(`stall_id.eq.${input},contact_email.ilike.${input}`);
-      if (vList && vList.length > 0) {
-        vendorRecord = vList[0];
+        .ilike('contact_email', input)
+        .maybeSingle();
+      
+      if (vByEmail) {
+        vendorRecord = vByEmail;
+      } else {
+        const { data: vById } = await supabase
+          .from('vendors')
+          .select('*')
+          .eq('stall_id', input)
+          .maybeSingle();
+        if (vById) vendorRecord = vById;
       }
     } catch (_e) {}
 
-    // Also search accounts table by email or shop_id if vendor record not found
+    // 2. Search Supabase accounts table by email or shop_id
     let accountRecord = null;
     try {
-      const { data: accData } = await supabase
+      const { data: accByEmail } = await supabase
         .from('accounts')
         .select('*')
-        .or(`email.ilike.${input},shop_id.eq.${input}`)
+        .ilike('email', input)
         .maybeSingle();
-      if (accData) accountRecord = accData;
+      
+      if (accByEmail) {
+        accountRecord = accByEmail;
+      } else {
+        const { data: accById } = await supabase
+          .from('accounts')
+          .select('*')
+          .eq('shop_id', input)
+          .maybeSingle();
+        if (accById) accountRecord = accById;
+      }
     } catch (_e) {}
 
-    const targetEmail = vendorRecord?.contact_email || vendorRecord?.details?.email || accountRecord?.email || input;
+    // Cross-link vendor and account records if one was found but not the other
+    if (!vendorRecord && accountRecord?.shop_id) {
+      try {
+        const { data: vByShop } = await supabase
+          .from('vendors')
+          .select('*')
+          .eq('stall_id', accountRecord.shop_id)
+          .maybeSingle();
+        if (vByShop) vendorRecord = vByShop;
+      } catch (_e) {}
+    }
 
-    // 2. Try Supabase Auth first if input or mapped record is a valid email
+    if (!accountRecord && vendorRecord?.contact_email) {
+      try {
+        const { data: accByVEmail } = await supabase
+          .from('accounts')
+          .select('*')
+          .ilike('email', vendorRecord.contact_email)
+          .maybeSingle();
+        if (accByVEmail) accountRecord = accByVEmail;
+      } catch (_e) {}
+    }
+
+    const targetEmail = vendorRecord?.contact_email || vendorRecord?.details?.email || accountRecord?.email || input;
+    const shopId = accountRecord?.shop_id || vendorRecord?.stall_id || null;
+
+    // 3. Try Supabase Auth first if target email looks like an email address
     if (targetEmail.includes('@')) {
       const { data, error } = await supabase.auth.signInWithPassword({ email: targetEmail, password: pwd });
       if (!error && data?.user) {
@@ -315,9 +358,7 @@ export const api = {
 
         let role = accountRecord?.role || authUser.app_metadata?.role || authUser.user_metadata?.role;
         if (isAdminEmail(targetEmail)) role = 'admin';
-        if (!role && vendorRecord) role = 'vendor';
-
-        const shopId = accountRecord?.shop_id || vendorRecord?.stall_id || authUser.user_metadata?.shopId || null;
+        if (!role && (vendorRecord || shopId)) role = 'vendor';
 
         return {
           success: true,
@@ -327,33 +368,60 @@ export const api = {
             username: targetEmail,
             name: accountRecord?.full_name || vendorRecord?.business_name || authUser.user_metadata?.full_name || targetEmail.split('@')[0],
             role: role || 'vendor',
-            shopId
+            shopId: shopId || authUser.user_metadata?.shopId || null
           }
         };
       }
     }
 
-    // 3. Fallback check against Supabase vendors table details.system_password
+    // 4. Verification against Supabase vendors table details.system_password or system_password
     if (vendorRecord) {
       const systemPwd = vendorRecord.details?.system_password || vendorRecord.system_password;
       if (systemPwd && systemPwd === pwd) {
-        const shopId = vendorRecord.stall_id;
+        const resolvedShopId = vendorRecord.stall_id || shopId;
         const role = isAdminEmail(vendorRecord.contact_email || input) ? 'admin' : 'vendor';
         return {
           success: true,
-          token: `vendor-session-${vendorRecord.stall_id}`,
+          token: `vendor-session-${resolvedShopId}`,
           user: {
-            id: vendorRecord.stall_id,
+            id: resolvedShopId,
             username: vendorRecord.contact_email || input,
-            name: vendorRecord.business_name || vendorRecord.stall_id,
+            name: vendorRecord.business_name || resolvedShopId,
             role,
-            shopId
+            shopId: resolvedShopId
           }
         };
       }
     }
 
-    // 4. Fallback check for admin email sign-in if input is admin email
+    // 5. Verification check if password matches what was saved in details on accounts or vendors
+    if (accountRecord && shopId) {
+      try {
+        const { data: vRecord } = await supabase
+          .from('vendors')
+          .select('*')
+          .eq('stall_id', shopId)
+          .maybeSingle();
+        if (vRecord) {
+          const sysPwd = vRecord.details?.system_password || vRecord.system_password;
+          if (sysPwd && sysPwd === pwd) {
+            return {
+              success: true,
+              token: `vendor-session-${shopId}`,
+              user: {
+                id: shopId,
+                username: accountRecord.email || input,
+                name: vRecord.business_name || shopId,
+                role: 'vendor',
+                shopId
+              }
+            };
+          }
+        }
+      } catch (_e) {}
+    }
+
+    // 6. Check for admin sign-in attempt
     if (isAdminEmail(input)) {
       const { data, error } = await supabase.auth.signInWithPassword({ email: input, password: pwd });
       if (!error && data?.user) {
@@ -371,7 +439,7 @@ export const api = {
       }
     }
 
-    return { success: false, message: 'Invalid credentials. Please check your username/email and password.' };
+    return { success: false, message: 'Invalid credentials. Please check your vendor email/username and password.' };
   },
 
   async register(username, name, password) {
