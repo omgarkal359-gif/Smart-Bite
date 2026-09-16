@@ -1,4 +1,8 @@
-export const ADMIN_EMAILS = [
+const envAdminEmails = import.meta.env.VITE_ADMIN_EMAILS
+  ? import.meta.env.VITE_ADMIN_EMAILS.split(',').map(e => e.trim().toLowerCase()).filter(Boolean)
+  : null;
+
+export const ADMIN_EMAILS = envAdminEmails || [
   'omgarkal359@gmail.com',
   'omgarkal357@gmail.com',
   'admin@smartbite.in'
