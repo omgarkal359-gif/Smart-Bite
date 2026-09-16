@@ -4,6 +4,7 @@ import { MobileLayout } from './components/layout/MobileLayout';
 import { CartProvider } from './context/CartContext';
 import { supabase } from './supabaseClient';
 import { getStoredUser, clearStoredUser, isAdminEmail, isSessionExpired } from './utils/auth';
+import LoginPage from './pages/LoginPage';
 
 // Helper to automatically reload the page if a chunk fails to load (due to a new deployment)
 const lazyWithRetry = (componentImport) => {
@@ -29,7 +30,7 @@ const lazyWithRetry = (componentImport) => {
   });
 };
 
-// Dynamic route code splitting
+// Dynamic route code splitting for protected application modules
 const ShopDirectory = lazyWithRetry(() => import('./pages/ShopDirectory'));
 const InteractiveMenu = lazyWithRetry(() => import('./pages/InteractiveMenu'));
 const DigitalReceiptTracker = lazyWithRetry(() => import('./pages/DigitalReceiptTracker'));
@@ -39,7 +40,6 @@ const AdminControlCenter = lazyWithRetry(() => import('./pages/AdminControlCente
 const UserProfile = lazyWithRetry(() => import('./pages/UserProfile'));
 const SearchPage = lazyWithRetry(() => import('./pages/SearchPage'));
 const OrdersPage = lazyWithRetry(() => import('./pages/OrdersPage'));
-const LoginPage = lazyWithRetry(() => import('./pages/LoginPage'));
 const OnboardingPage = lazyWithRetry(() => import('./pages/OnboardingPage'));
 const ForgotPassword = lazyWithRetry(() => import('./pages/ForgotPassword'));
 const ResetPassword = lazyWithRetry(() => import('./pages/ResetPassword'));
@@ -53,13 +53,26 @@ const RootRedirect = () => {
 
 // Strict Protected Route Guard Component - Requires Supabase Auth / Stored Login Session
 const ProtectedRoute = ({ children, allowedRoles }) => {
-  const [authStatus, setAuthStatus] = useState('checking'); // 'checking' | 'allowed' | 'unauthorized' | 'unauthenticated'
+  const [authStatus, setAuthStatus] = useState(() => {
+    const saved = getStoredUser();
+    if (!saved || !saved.role) return 'unauthenticated';
+    if (saved.loginTimestamp && isSessionExpired(saved.loginTimestamp)) {
+      clearStoredUser();
+      return 'unauthenticated';
+    }
+    if (allowedRoles && !allowedRoles.includes(saved.role) && saved.role !== 'admin') {
+      return 'unauthorized';
+    }
+    return 'allowed';
+  });
 
   useEffect(() => {
-    async function checkAuth() {
+    let isMounted = true;
+
+    async function verifySupabaseSession() {
       const saved = getStoredUser();
 
-      // 1. Check active Supabase Auth session first
+      // Check active Supabase Auth session via Supabase API
       try {
         const { data } = await supabase.auth.getSession();
         if (data?.session?.user) {
@@ -71,7 +84,7 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
             console.warn('[AUTH SECURITY] Supabase Auth session expired (> 7 days). Signing user out.');
             await supabase.auth.signOut();
             clearStoredUser();
-            setAuthStatus('unauthenticated');
+            if (isMounted) setAuthStatus('unauthenticated');
             return;
           }
 
@@ -96,31 +109,26 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
           }
 
           if (!allowedRoles || allowedRoles.includes(role)) {
-            setAuthStatus('allowed');
+            if (isMounted) setAuthStatus('allowed');
             return;
           } else {
-            setAuthStatus('unauthorized');
+            if (isMounted) setAuthStatus('unauthorized');
             return;
           }
+        } else if (!saved || !saved.role) {
+          if (isMounted) setAuthStatus('unauthenticated');
+          return;
         }
-      } catch (_e) {}
-
-      // 2. Check stored app login token & user profile from Supabase login process
-      if (saved && saved.role) {
-        if (!allowedRoles || allowedRoles.includes(saved.role)) {
-          setAuthStatus('allowed');
-          return;
-        } else {
-          setAuthStatus('unauthorized');
-          return;
+      } catch (_e) {
+        if (!saved || !saved.role) {
+          if (isMounted) setAuthStatus('unauthenticated');
         }
       }
-
-      // No active login session found -> Force redirect to login page
-      setAuthStatus('unauthenticated');
     }
 
-    checkAuth();
+    verifySupabaseSession();
+
+    return () => { isMounted = false; };
   }, [allowedRoles]);
 
   if (authStatus === 'checking') {
@@ -216,13 +224,6 @@ function App() {
             <Route path="/board" element={
               <ProtectedRoute allowedRoles={['student', 'guest', 'vendor', 'admin']}>
                 <PublicOrderBoard />
-              </ProtectedRoute>
-            } />
-            
-            {/* Fallback routes */}
-            <Route path="*" element={
-              <ProtectedRoute allowedRoles={['student', 'guest', 'vendor', 'admin']}>
-                <Navigate to="/" replace />
               </ProtectedRoute>
             } />
             
