@@ -238,34 +238,21 @@ const LoginPage = () => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
         localStorage.removeItem('sgu_google_oauth_started');
-        const userEmail = session.user.email || '';
+        const userEmail = (session.user.email || '').toLowerCase().trim();
         const meta = session.user.user_metadata || {};
 
         let profile = null;
         try {
           const { data, error } = await supabase
-            .from('profiles')
+            .from('accounts')
             .select('*')
             .eq('id', session.user.id)
             .maybeSingle();
           if (!error && data) profile = data;
         } catch (_e) {}
 
-        const role = profile?.role || (isAdminEmail(userEmail) ? 'admin' : (meta.role || 'student'));
-
-        const isAllowedDomain = (email, userRole) => {
-          if (userRole === 'admin' || userRole === 'vendor') return true;
-          if (isAdminEmail(email)) return true;
-          return true;
-        };
-
-        if (!isAllowedDomain(userEmail, role)) {
-          setErrorMsg('Access Restricted: Only authorized accounts and @sguk.ac.in email addresses are allowed.');
-          await supabase.auth.signOut();
-          clearStoredUser();
-          setIsLoading(false);
-          return;
-        }
+        // Google Auth Role Routing: Admin emails -> 'admin', all other Google users -> 'student'
+        const role = isAdminEmail(userEmail) ? 'admin' : (profile?.role === 'vendor' ? 'vendor' : 'student');
 
         const name = profile?.full_name || meta.full_name || meta.name || userEmail.split('@')[0] || (role === 'admin' ? 'System Admin' : 'Student');
         const id = userEmail || session.user.phone || session.user.id;
