@@ -462,7 +462,36 @@ export const api = {
     // Filter out stalls marked inactive or registered in deleted stall registry
     list = list.filter(s => s.is_active !== false && !deletedIds.includes(String(s.id)));
 
-    let mapped = list.map(mapStall);
+    // Fetch vendors and accounts to map vendor emails to stalls
+    let vendorMap = {};
+    let accountMap = {};
+    try {
+      const [vRes, accRes] = await Promise.all([
+        supabase.from('vendors').select('stall_id, contact_email, details'),
+        supabase.from('accounts').select('shop_id, email').eq('role', 'vendor')
+      ]);
+      if (vRes?.data) {
+        vRes.data.forEach(v => {
+          if (v.stall_id) {
+            vendorMap[v.stall_id] = v.contact_email || v.details?.email || v.details?.contact_email;
+          }
+        });
+      }
+      if (accRes?.data) {
+        accRes.data.forEach(acc => {
+          if (acc.shop_id && acc.email) {
+            accountMap[acc.shop_id] = acc.email;
+          }
+        });
+      }
+    } catch (_e) {}
+
+    let mapped = list.map(s => {
+      const baseMapped = mapStall(s);
+      const email = vendorMap[s.id] || accountMap[s.id] || s.email || s.contact_email || null;
+      return { ...baseMapped, email, contact_email: email };
+    });
+
     try {
       const cached = JSON.parse(localStorage.getItem('sgu_stall_status_overrides') || '{}');
       mapped = mapped.map(s => {

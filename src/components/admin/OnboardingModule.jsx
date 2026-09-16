@@ -170,23 +170,36 @@ export const OnboardingModule = () => {
 
   const openEdit = async (v) => {
     setError(''); setNotice(null); setEditingId(v.id);
-    setEditData({ name: v.name, category: v.category, email: v.email || v.contact_email || '' });
+    const initialEmail = v.email || v.contact_email || '';
+    setEditData({ name: v.name, category: v.category, email: initialEmail });
     try {
-      const { data } = await supabase.from('vendors')
-        .select('business_name, fssai, contact_email, details, account_holder, ifsc, upi_id, account_last4, payout_status')
-        .eq('stall_id', v.id).maybeSingle();
+      const [vRes, accRes] = await Promise.all([
+        supabase.from('vendors')
+          .select('business_name, fssai, contact_email, details, account_holder, ifsc, upi_id, account_last4, payout_status')
+          .eq('stall_id', v.id).maybeSingle(),
+        supabase.from('accounts')
+          .select('email')
+          .eq('shop_id', v.id).maybeSingle()
+      ]);
+
+      const data = vRes?.data;
+      const accData = accRes?.data;
+      const detailsObj = data?.details || {};
+
+      const resolvedEmail = data?.contact_email || detailsObj?.email || detailsObj?.contact_email || accData?.email || initialEmail || '';
+
       setEditData({
         name: data?.business_name || v.name,
         category: v.category,
-        email: data?.contact_email || v.contact_email || v.email || '',
         fssai: data?.fssai || '',
         account_holder: data?.account_holder || '',
         ifsc: data?.ifsc || '',
         upi_id: data?.upi_id || '',
-        account_number: '', // never prefilled; encrypted at rest
+        account_number: '',
         _last4: data?.account_last4 || '',
         _payoutStatus: data?.payout_status || 'pending',
-        ...(data?.details || {})
+        ...detailsObj,
+        email: resolvedEmail
       });
     } catch (_e) {}
   };
