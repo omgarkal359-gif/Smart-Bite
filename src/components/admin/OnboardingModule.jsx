@@ -176,10 +176,10 @@ export const OnboardingModule = () => {
       const [vRes, accRes] = await Promise.all([
         supabase.from('vendors')
           .select('business_name, fssai, contact_email, details, account_holder, ifsc, upi_id, account_last4, payout_status')
-          .eq('stall_id', v.id).maybeSingle(),
+          .or(`stall_id.ilike.${v.id},id.ilike.${v.id},stall_id.eq.${v.id}`).maybeSingle(),
         supabase.from('accounts')
           .select('email')
-          .eq('shop_id', v.id).maybeSingle()
+          .or(`shop_id.ilike.${v.id},shop_id.eq.${v.id}`).maybeSingle()
       ]);
 
       const data = vRes?.data;
@@ -208,18 +208,20 @@ export const OnboardingModule = () => {
     setEditBusy(true); setError('');
     try {
       const { name, category, email: vendorEmail, fssai, _last4, _payoutStatus, ...rest } = editData;
-      const cleanEmail = vendorEmail ? vendorEmail.trim().toLowerCase() : null;
 
       // Bank fields go through the server (encrypted + payout registration).
       const bank = {};
       for (const k of BANK_KEYS) { if (rest[k] !== undefined) bank[k] = rest[k]; delete rest[k]; }
 
-      // 1. Update stall name & category in Supabase stalls table
-      await supabase.from('stalls').update({ name, category, updated_at: new Date().toISOString() }).eq('id', id);
-
-      // 2. Read existing vendor details from Supabase to preserve system_password
-      const { data: existingV } = await supabase.from('vendors').select('*').or(`stall_id.eq.${id},id.eq.${id}`).maybeSingle();
+      // 1. Read existing vendor details from Supabase to preserve existing fields
+      const { data: existingV } = await supabase.from('vendors').select('*').or(`stall_id.ilike.${id},id.ilike.${id},stall_id.eq.${id}`).maybeSingle();
       const existingDetails = parseDetails(existingV?.details);
+
+      const inputEmail = vendorEmail ? vendorEmail.trim().toLowerCase() : '';
+      const cleanEmail = inputEmail || existingV?.contact_email || existingDetails?.email || existingDetails?.contact_email || null;
+
+      // 2. Update stall name & category in Supabase stalls table
+      await supabase.from('stalls').update({ name, category, updated_at: new Date().toISOString() }).eq('id', id);
 
       const updatedDetails = {
         ...existingDetails,
@@ -251,7 +253,7 @@ export const OnboardingModule = () => {
           fssai: fssai || null,
           details: updatedDetails,
           updated_at: new Date().toISOString()
-        }).eq('stall_id', id);
+        }).ilike('stall_id', id);
         if (!stallErr) saved = true;
       }
 
@@ -270,7 +272,7 @@ export const OnboardingModule = () => {
       // 4. Upsert into Supabase accounts table so login locates shop_id instantly
       if (cleanEmail) {
         try {
-          const { data: existingAcc } = await supabase.from('accounts').select('id').eq('email', cleanEmail).maybeSingle();
+          const { data: existingAcc } = await supabase.from('accounts').select('id').ilike('email', cleanEmail).maybeSingle();
           if (existingAcc) {
             await supabase.from('accounts').update({
               role: 'vendor',
@@ -289,9 +291,9 @@ export const OnboardingModule = () => {
       }
 
       // 5. If new password was entered, invoke resetPassword to update Auth & DB
-      if (passwords[id] && cleanEmail) {
+      if (passwords[id] && passwords[id].trim() && cleanEmail) {
         try {
-          await api.onboarding.resetPassword(cleanEmail, passwords[id], id);
+          await api.onboarding.resetPassword(cleanEmail, passwords[id].trim(), id);
         } catch (_e) {}
       }
 
