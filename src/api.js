@@ -1491,21 +1491,26 @@ export const api = {
       const pwd = (newPassword || '').trim();
 
       if (!cleanEmail) throw new Error('Vendor email address is required.');
-      if (!pwd || pwd.length < 8) throw new Error('Password must be at least 8 characters long.');
+      if (!pwd || pwd.length < 6) throw new Error('Password must be at least 6 characters long.');
 
       // 1. Update vendors table in Supabase synchronously (details.system_password & contact_email)
       if (stallId) {
         try {
-          const { data: v } = await supabase.from('vendors').select('details').eq('stall_id', stallId).maybeSingle();
+          const { data: v } = await supabase.from('vendors').select('*').or(`stall_id.eq.${stallId},id.eq.${stallId}`).maybeSingle();
           const existingDetails = parseDetails(v?.details);
           const updatedDetails = { ...existingDetails, system_password: pwd, email: cleanEmail };
-          const { error: upErr } = await supabase.from('vendors').upsert({
-            stall_id: stallId,
-            contact_email: cleanEmail,
-            details: updatedDetails,
-            updated_at: new Date().toISOString()
-          }, { onConflict: 'stall_id' });
-          if (upErr) {
+
+          let saved = false;
+          if (v?.id) {
+            const { error: idErr } = await supabase.from('vendors').update({
+              contact_email: cleanEmail,
+              details: updatedDetails,
+              updated_at: new Date().toISOString()
+            }).eq('id', v.id);
+            if (!idErr) saved = true;
+          }
+
+          if (!saved) {
             await supabase.from('vendors').update({
               contact_email: cleanEmail,
               details: updatedDetails,

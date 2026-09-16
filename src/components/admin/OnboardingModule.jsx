@@ -218,7 +218,7 @@ export const OnboardingModule = () => {
       await supabase.from('stalls').update({ name, category, updated_at: new Date().toISOString() }).eq('id', id);
 
       // 2. Read existing vendor details from Supabase to preserve system_password
-      const { data: existingV } = await supabase.from('vendors').select('*').eq('stall_id', id).maybeSingle();
+      const { data: existingV } = await supabase.from('vendors').select('*').or(`stall_id.eq.${id},id.eq.${id}`).maybeSingle();
       const existingDetails = parseDetails(existingV?.details);
 
       const updatedDetails = {
@@ -227,37 +227,44 @@ export const OnboardingModule = () => {
         email: cleanEmail
       };
 
-      if (passwords[id]) {
+      if (passwords[id] && passwords[id].trim()) {
         updatedDetails.system_password = passwords[id].trim();
       }
 
-      // 3. Save/Upsert into Supabase vendors table (with fallback for RLS policies)
-      const { error: vErr } = await supabase.from('vendors').upsert({
-        stall_id: id,
-        business_name: name,
-        contact_email: cleanEmail,
-        fssai: fssai || null,
-        details: updatedDetails,
-        updated_at: new Date().toISOString()
-      }, { onConflict: 'stall_id' });
+      // 3. Save/Update into Supabase vendors table
+      let saved = false;
+      if (existingV?.id) {
+        const { error: idErr } = await supabase.from('vendors').update({
+          business_name: name,
+          contact_email: cleanEmail,
+          fssai: fssai || null,
+          details: updatedDetails,
+          updated_at: new Date().toISOString()
+        }).eq('id', existingV.id);
+        if (!idErr) saved = true;
+      }
 
-      if (vErr) {
-        // Fallback: attempt direct update on stall_id
-        const { error: updateErr } = await supabase.from('vendors').update({
+      if (!saved) {
+        const { error: stallErr } = await supabase.from('vendors').update({
           business_name: name,
           contact_email: cleanEmail,
           fssai: fssai || null,
           details: updatedDetails,
           updated_at: new Date().toISOString()
         }).eq('stall_id', id);
+        if (!stallErr) saved = true;
+      }
 
-        if (updateErr) {
-          console.warn('Supabase vendors table write notice:', updateErr.message);
-          // Try server trust endpoint if client direct RLS is restricted
-          try {
-            await api.onboarding.savePayout({ stallId: id, name, email: cleanEmail, fssai, details: updatedDetails });
-          } catch (_e) {}
-        }
+      if (!saved) {
+        await supabase.from('vendors').insert({
+          stall_id: id,
+          business_name: name,
+          contact_email: cleanEmail,
+          fssai: fssai || null,
+          details: updatedDetails,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }).catch(() => null);
       }
 
       // 4. Upsert into Supabase accounts table so login locates shop_id instantly
