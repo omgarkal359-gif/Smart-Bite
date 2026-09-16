@@ -299,7 +299,10 @@ export const api = {
     const checkVendorPassword = (vRec, inputPassword) => {
       if (!vRec) return false;
       const d = parseDetails(vRec.details);
-      const sysPwd = (d.system_password || d.password || vRec.system_password || '').trim();
+      const sysPwd = (
+        d.system_password || d.password || d.systemPassword ||
+        vRec.system_password || vRec.password || ''
+      ).trim();
       return sysPwd !== '' && sysPwd === inputPassword;
     };
 
@@ -310,12 +313,15 @@ export const api = {
       if (Array.isArray(vList) && vList.length > 0) {
         vendorRecord = vList.find(v => {
           const d = parseDetails(v.details);
-          const sId = (v.stall_id || '').toLowerCase().trim();
+          const sId = (v.stall_id || v.id || '').toLowerCase().trim();
           const cEmail = (v.contact_email || '').toLowerCase().trim();
+          const vEmail = (v.email || '').toLowerCase().trim();
           const dEmail = (d.email || '').toLowerCase().trim();
           const dCEmail = (d.contact_email || '').toLowerCase().trim();
+          const dUser = (d.username || '').toLowerCase().trim();
+          const vUser = (v.username || '').toLowerCase().trim();
           const bName = (v.business_name || '').toLowerCase().trim();
-          return sId === input || cEmail === input || dEmail === input || dCEmail === input || bName === input;
+          return sId === input || cEmail === input || vEmail === input || dEmail === input || dCEmail === input || dUser === input || vUser === input || bName === input;
         });
       }
     } catch (_e) {}
@@ -323,12 +329,17 @@ export const api = {
     // Fallback single queries on vendors table
     if (!vendorRecord && input) {
       try {
-        const { data: v1 } = await supabase.from('vendors').select('*').eq('contact_email', input).maybeSingle();
+        const { data: v1 } = await supabase.from('vendors').select('*').ilike('contact_email', input).maybeSingle();
         if (v1) {
           vendorRecord = v1;
         } else {
-          const { data: v2 } = await supabase.from('vendors').select('*').eq('stall_id', input).maybeSingle();
-          if (v2) vendorRecord = v2;
+          const { data: v2 } = await supabase.from('vendors').select('*').ilike('stall_id', input).maybeSingle();
+          if (v2) {
+            vendorRecord = v2;
+          } else {
+            const { data: v3 } = await supabase.from('vendors').select('*').ilike('email', input).maybeSingle();
+            if (v3) vendorRecord = v3;
+          }
         }
       } catch (_e) {}
     }
@@ -348,11 +359,11 @@ export const api = {
 
     if (!accountRecord && input) {
       try {
-        const { data: a1 } = await supabase.from('accounts').select('*').eq('email', input).maybeSingle();
+        const { data: a1 } = await supabase.from('accounts').select('*').ilike('email', input).maybeSingle();
         if (a1) {
           accountRecord = a1;
         } else {
-          const { data: a2 } = await supabase.from('accounts').select('*').eq('shop_id', input).maybeSingle();
+          const { data: a2 } = await supabase.from('accounts').select('*').ilike('shop_id', input).maybeSingle();
           if (a2) accountRecord = a2;
         }
       } catch (_e) {}
@@ -374,12 +385,12 @@ export const api = {
     // Resolve shopId & targetEmail
     const shopId = accountRecord?.shop_id || vendorRecord?.stall_id || stallRecord?.id || null;
     const vDetails = parseDetails(vendorRecord?.details);
-    const targetEmail = (vendorRecord?.contact_email || vDetails?.email || vDetails?.contact_email || accountRecord?.email || input).toLowerCase().trim();
+    const targetEmail = (vendorRecord?.contact_email || vendorRecord?.email || vDetails?.email || vDetails?.contact_email || accountRecord?.email || input).toLowerCase().trim();
 
     // Cross-link vendorRecord if missing
     if (!vendorRecord && shopId) {
       try {
-        const { data: vData } = await supabase.from('vendors').select('*').eq('stall_id', shopId).maybeSingle();
+        const { data: vData } = await supabase.from('vendors').select('*').ilike('stall_id', shopId).maybeSingle();
         if (vData) vendorRecord = vData;
       } catch (_e) {}
     }
@@ -429,7 +440,7 @@ export const api = {
     // 6. Verification check if shopId exists and password matches
     if (shopId) {
       try {
-        const { data: vRec } = await supabase.from('vendors').select('*').eq('stall_id', shopId).maybeSingle();
+        const { data: vRec } = await supabase.from('vendors').select('*').ilike('stall_id', shopId).maybeSingle();
         if (vRec && checkVendorPassword(vRec, pwd)) {
           return {
             success: true,
@@ -463,6 +474,14 @@ export const api = {
         };
       }
     }
+
+    console.warn('[AUTH DEBUG] loginStaff failed for input:', input, {
+      vendorMatched: !!vendorRecord,
+      accountMatched: !!accountRecord,
+      stallMatched: !!stallRecord,
+      shopIdResolved: shopId,
+      targetEmailResolved: targetEmail
+    });
 
     return { success: false, message: 'Invalid credentials. Please check your vendor email/username and password.' };
   },
