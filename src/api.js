@@ -236,6 +236,9 @@ export const api = {
     // 1. Primary Authentication: Verify email and password via Supabase Auth
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error || !data?.user) {
+      // Fallback: Check vendor / staff credentials dynamically from Supabase vendors & accounts tables
+      const staffRes = await this.loginStaff(username, password);
+      if (staffRes && staffRes.success) return staffRes;
       return { success: false, message: error?.message || 'Invalid email or password.' };
     }
 
@@ -513,7 +516,8 @@ export const api = {
       if (vRes?.data) {
         vRes.data.forEach(v => {
           if (v.stall_id) {
-            vendorMap[v.stall_id] = v.contact_email || v.details?.email || v.details?.contact_email;
+            const vD = parseDetails(v.details);
+            vendorMap[v.stall_id] = v.contact_email || vD?.email || vD?.contact_email;
           }
         });
       }
