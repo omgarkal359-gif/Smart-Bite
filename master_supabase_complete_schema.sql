@@ -365,13 +365,22 @@ ALTER TABLE public.notifications      ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.system_settings    ENABLE ROW LEVEL SECURITY;
 
 -- POLICIES
-CREATE POLICY p_accounts_read ON public.accounts FOR SELECT TO authenticated USING (id = auth.uid() OR public.is_admin());
+DROP POLICY IF EXISTS p_accounts_read ON public.accounts;
+CREATE POLICY p_accounts_read ON public.accounts FOR SELECT TO anon, authenticated USING (true);
+
+DROP POLICY IF EXISTS p_accounts_update ON public.accounts;
 CREATE POLICY p_accounts_update ON public.accounts FOR UPDATE TO authenticated USING (id = auth.uid() OR public.is_admin());
+
+DROP POLICY IF EXISTS p_accounts_insert ON public.accounts;
 CREATE POLICY p_accounts_insert ON public.accounts FOR INSERT TO authenticated WITH CHECK (id = auth.uid() OR public.is_admin());
 
+DROP POLICY IF EXISTS p_allowlist_admin ON public.admin_allowlist;
 CREATE POLICY p_allowlist_admin ON public.admin_allowlist FOR ALL TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
 
+DROP POLICY IF EXISTS p_vendors_read ON public.vendors;
 CREATE POLICY p_vendors_read ON public.vendors FOR SELECT TO anon, authenticated USING (true);
+
+DROP POLICY IF EXISTS p_vendors_manage ON public.vendors;
 CREATE POLICY p_vendors_manage ON public.vendors FOR ALL TO authenticated USING (public.is_admin() OR user_id = auth.uid()) WITH CHECK (public.is_admin() OR user_id = auth.uid());
 
 CREATE POLICY p_invites_admin ON public.vendor_invites FOR ALL TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
