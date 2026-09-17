@@ -204,13 +204,25 @@ export const OnboardingModule = () => {
     const initialEmail = v.email || v.contact_email || '';
     setEditData({ name: v.name, category: v.category, email: initialEmail });
     try {
+      const vIdStr = String(v.id || '').trim();
+      let vQuery = supabase.from('vendors')
+        .select('business_name, fssai, contact_email, details, account_holder, ifsc, upi_id, account_last4, payout_status');
+      if (isUUID(vIdStr)) {
+        vQuery = vQuery.or(`id.eq.${vIdStr},stall_id.eq.${vIdStr},stall_id.ilike.${vIdStr}`);
+      } else {
+        vQuery = vQuery.or(`stall_id.eq.${vIdStr},stall_id.ilike.${vIdStr}`);
+      }
+
+      let accQuery = supabase.from('accounts').select('email');
+      if (isUUID(vIdStr)) {
+        accQuery = accQuery.or(`id.eq.${vIdStr},shop_id.eq.${vIdStr},shop_id.ilike.${vIdStr}`);
+      } else {
+        accQuery = accQuery.or(`shop_id.eq.${vIdStr},shop_id.ilike.${vIdStr}`);
+      }
+
       const [vRes, accRes] = await Promise.all([
-        supabase.from('vendors')
-          .select('business_name, fssai, contact_email, details, account_holder, ifsc, upi_id, account_last4, payout_status')
-          .or(`stall_id.ilike.${v.id},id.ilike.${v.id},stall_id.eq.${v.id}`).maybeSingle(),
-        supabase.from('accounts')
-          .select('email')
-          .or(`shop_id.ilike.${v.id},shop_id.eq.${v.id}`).maybeSingle()
+        vQuery.maybeSingle(),
+        accQuery.maybeSingle()
       ]);
 
       const data = vRes?.data;
@@ -245,7 +257,14 @@ export const OnboardingModule = () => {
       for (const k of BANK_KEYS) { if (rest[k] !== undefined) bank[k] = rest[k]; delete rest[k]; }
 
       // 1. Read existing vendor details from Supabase to preserve existing fields
-      const { data: existingV } = await supabase.from('vendors').select('*').or(`stall_id.ilike.${id},id.ilike.${id},stall_id.eq.${id}`).maybeSingle();
+      const targetId = String(id || '').trim();
+      let existingVQuery = supabase.from('vendors').select('*');
+      if (isUUID(targetId)) {
+        existingVQuery = existingVQuery.or(`id.eq.${targetId},stall_id.eq.${targetId},stall_id.ilike.${targetId}`);
+      } else {
+        existingVQuery = existingVQuery.or(`stall_id.eq.${targetId},stall_id.ilike.${targetId}`);
+      }
+      const { data: existingV } = await existingVQuery.maybeSingle();
       const existingDetails = parseDetails(existingV?.details);
 
       const inputEmail = vendorEmail ? vendorEmail.trim().toLowerCase() : '';

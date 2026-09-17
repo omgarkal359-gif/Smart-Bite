@@ -45,6 +45,11 @@ export function parseDetails(details) {
   return {};
 }
 
+export function isUUID(str) {
+  return typeof str === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(str).trim());
+}
+
+
 // ── Mappers: DB (snake_case) -> UI contract ──────────────────────────────────
 function mapStall(s) {
   if (!s) return s;
@@ -296,6 +301,17 @@ export const api = {
       return { success: false, message: 'Email/Username and Password are required.' };
     }
 
+    // 0. Primary: Call Supabase RPC verify_vendor_login (bypasses client RLS restrictions safely)
+    try {
+      const { data: rpcRes, error: rpcErr } = await supabase.rpc('verify_vendor_login', {
+        p_input: input,
+        p_password: pwd
+      });
+      if (!rpcErr && rpcRes && rpcRes.success) {
+        return rpcRes;
+      }
+    } catch (_rpcE) {}
+
     const checkVendorPassword = (vRec, inputPassword) => {
       if (!vRec) return false;
       const d = parseDetails(vRec.details);
@@ -336,9 +352,12 @@ export const api = {
           const { data: v2 } = await supabase.from('vendors').select('*').ilike('stall_id', input).maybeSingle();
           if (v2) {
             vendorRecord = v2;
-          } else {
-            const { data: v3 } = await supabase.from('vendors').select('*').ilike('email', input).maybeSingle();
+          } else if (isUUID(input)) {
+            const { data: v3 } = await supabase.from('vendors').select('*').eq('id', input).maybeSingle();
             if (v3) vendorRecord = v3;
+          } else {
+            const { data: v4 } = await supabase.from('vendors').select('*').ilike('business_name', input).maybeSingle();
+            if (v4) vendorRecord = v4;
           }
         }
       } catch (_e) {}
@@ -1496,7 +1515,14 @@ export const api = {
       // 1. Update vendors table in Supabase synchronously (details.system_password & contact_email)
       if (stallId) {
         try {
-          const { data: v } = await supabase.from('vendors').select('*').or(`stall_id.eq.${stallId},id.eq.${stallId}`).maybeSingle();
+          const sIdClean = String(stallId).trim();
+          let vQuery = supabase.from('vendors').select('*');
+          if (isUUID(sIdClean)) {
+            vQuery = vQuery.or(`stall_id.eq.${sIdClean},id.eq.${sIdClean}`);
+          } else {
+            vQuery = vQuery.eq('stall_id', sIdClean);
+          }
+          const { data: v } = await vQuery.maybeSingle();
           const existingDetails = parseDetails(v?.details);
           const updatedDetails = { ...existingDetails, system_password: pwd, email: cleanEmail };
 
