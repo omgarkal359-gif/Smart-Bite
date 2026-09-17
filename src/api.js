@@ -422,7 +422,7 @@ export const api = {
 
     // 5. Verification check against vendorRecord details.system_password or system_password
     if (vendorRecord && checkVendorPassword(vendorRecord, pwd)) {
-      const resolvedShopId = vendorRecord.stall_id || shopId || 'narayana';
+      const resolvedShopId = vendorRecord.stall_id || vendorRecord.id || shopId || null;
       const role = isAdminEmail(vendorRecord.contact_email || input) ? 'admin' : 'vendor';
       return {
         success: true,
