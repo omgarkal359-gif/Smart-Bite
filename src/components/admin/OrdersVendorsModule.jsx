@@ -48,6 +48,12 @@ export const OrdersVendorsModule = () => {
     // 2. Supabase Realtime Postgres Changes & Broadcast Subscription
     const channel = supabase
       .channel('admin-orders-module')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'stalls' }, () => {
+        loadData();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'vendors' }, () => {
+        loadData();
+      })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
         if (payload.eventType === 'INSERT') {
           const newOrd = {

@@ -86,7 +86,38 @@ export const OnboardingModule = () => {
     finally { setLoading(false); }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+
+    const channel = supabase
+      .channel('admin-onboarding-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'stalls' }, () => {
+        load();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'vendors' }, () => {
+        load();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'vendor_invites' }, () => {
+        load();
+      })
+      .on('broadcast', { event: 'stall_status_changed' }, () => {
+        load();
+      })
+      .on('broadcast', { event: 'vendor_updated' }, () => {
+        load();
+      })
+      .subscribe();
+
+    const handleStallUpdate = () => load();
+    window.addEventListener('sgu:stall_status_changed', handleStallUpdate);
+    window.addEventListener('sgu:vendor_updated', handleStallUpdate);
+
+    return () => {
+      supabase.removeChannel(channel);
+      window.removeEventListener('sgu:stall_status_changed', handleStallUpdate);
+      window.removeEventListener('sgu:vendor_updated', handleStallUpdate);
+    };
+  }, [load]);
 
   const grouped = catalog.reduce((acc, f) => { (acc[f.group] = acc[f.group] || []).push(f); return acc; }, {});
   const pending = invites.filter(i => i.status === 'submitted');
