@@ -603,7 +603,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
-GRANT EXECUTE ON FUNCTION public.verify_vendor_login(TEXT, TEXT) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.verify_vendor_login(TEXT, TEXT) TO anon, authenticated, service_role;
 
 -- REALTIME
 DO $$
