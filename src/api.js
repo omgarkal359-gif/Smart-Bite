@@ -1504,6 +1504,7 @@ export const api = {
           if (v?.id) {
             const { error: idErr } = await supabase.from('vendors').update({
               contact_email: cleanEmail,
+              vendor_status: 'ACTIVE',
               details: updatedDetails,
               updated_at: new Date().toISOString()
             }).eq('id', v.id);
@@ -1513,6 +1514,7 @@ export const api = {
           if (!saved) {
             await supabase.from('vendors').update({
               contact_email: cleanEmail,
+              vendor_status: 'ACTIVE',
               details: updatedDetails,
               updated_at: new Date().toISOString()
             }).eq('stall_id', stallId).catch(() => null);

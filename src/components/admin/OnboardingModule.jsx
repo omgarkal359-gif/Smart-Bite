@@ -270,6 +270,7 @@ export const OnboardingModule = () => {
         const { error: idErr } = await supabase.from('vendors').update({
           business_name: name,
           contact_email: cleanEmail,
+          vendor_status: 'ACTIVE',
           fssai: fssai || null,
           details: updatedDetails,
           updated_at: new Date().toISOString()
@@ -281,6 +282,7 @@ export const OnboardingModule = () => {
         const { error: stallErr } = await supabase.from('vendors').update({
           business_name: name,
           contact_email: cleanEmail,
+          vendor_status: 'ACTIVE',
           fssai: fssai || null,
           details: updatedDetails,
           updated_at: new Date().toISOString()
@@ -293,6 +295,7 @@ export const OnboardingModule = () => {
           stall_id: id,
           business_name: name,
           contact_email: cleanEmail,
+          vendor_status: 'ACTIVE',
           fssai: fssai || null,
           details: updatedDetails,
           created_at: new Date().toISOString(),

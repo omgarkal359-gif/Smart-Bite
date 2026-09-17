@@ -371,7 +371,7 @@ CREATE POLICY p_accounts_insert ON public.accounts FOR INSERT TO authenticated W
 
 CREATE POLICY p_allowlist_admin ON public.admin_allowlist FOR ALL TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
 
-CREATE POLICY p_vendors_read ON public.vendors FOR SELECT TO anon, authenticated USING (vendor_status = 'ACTIVE' OR public.is_admin());
+CREATE POLICY p_vendors_read ON public.vendors FOR SELECT TO anon, authenticated USING (true);
 CREATE POLICY p_vendors_manage ON public.vendors FOR ALL TO authenticated USING (public.is_admin() OR user_id = auth.uid()) WITH CHECK (public.is_admin() OR user_id = auth.uid());
 
 CREATE POLICY p_invites_admin ON public.vendor_invites FOR ALL TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
