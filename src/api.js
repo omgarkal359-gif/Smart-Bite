@@ -1337,71 +1337,21 @@ export const api = {
         return { success: true };
       }
     },
-    resetPassword: async (email, newPassword, stallId) => {
+    resetPassword: async (email, newPassword) => {
       const cleanEmail = (email || '').trim().toLowerCase();
       const pwd = (newPassword || '').trim();
-
       if (!cleanEmail) throw new Error('Vendor email address is required.');
-      if (!pwd || pwd.length < 6) throw new Error('Password must be at least 6 characters long.');
+      if (pwd.length < 8) throw new Error('Password must be at least 8 characters long.');
 
-      // 1. Update vendors table in Supabase synchronously (details.system_password & contact_email)
-      if (stallId) {
-        try {
-          const sIdClean = String(stallId).trim();
-          let vQuery = supabase.from('vendors').select('*');
-          if (isUUID(sIdClean)) {
-            vQuery = vQuery.or(`stall_id.eq.${sIdClean},id.eq.${sIdClean}`);
-          } else {
-            vQuery = vQuery.eq('stall_id', sIdClean);
-          }
-          const { data: v } = await vQuery.maybeSingle();
-          const existingDetails = parseDetails(v?.details);
-          const updatedDetails = { ...existingDetails, system_password: pwd, email: cleanEmail };
-
-          let saved = false;
-          if (v?.id) {
-            const { error: idErr } = await supabase.from('vendors').update({
-              contact_email: cleanEmail,
-              vendor_status: 'ACTIVE',
-              details: updatedDetails,
-              updated_at: new Date().toISOString()
-            }).eq('id', v.id);
-            if (!idErr) saved = true;
-          }
-
-          if (!saved) {
-            await supabase.from('vendors').update({
-              contact_email: cleanEmail,
-              vendor_status: 'ACTIVE',
-              details: updatedDetails,
-              updated_at: new Date().toISOString()
-            }).eq('stall_id', stallId).catch(() => null);
-          }
-        } catch (_e) {}
+      // Password is set (bcrypt-hashed) in auth.users by the admin-only Edge Function.
+      // Nothing is written to any plaintext column.
+      const { data, error } = await supabase.functions.invoke('update-vendor-password', {
+        body: { email: cleanEmail, password: pwd }
+      });
+      if (error || !data?.success) {
+        throw new Error(data?.message || error?.message || 'Failed to update vendor password.');
       }
-
-      // 2. Keep the accounts role/shop mapping in sync in Supabase
-      try {
-        const { data: existingAcc } = await supabase.from('accounts').select('id').ilike('email', cleanEmail).maybeSingle();
-        if (existingAcc?.id) {
-          await supabase.from('accounts').update({
-            role: 'vendor', shop_id: stallId || null, updated_at: new Date().toISOString()
-          }).eq('id', existingAcc.id);
-        } else if (cleanEmail) {
-          await supabase.from('accounts').insert({
-            email: cleanEmail, role: 'vendor', shop_id: stallId || null, updated_at: new Date().toISOString()
-          });
-        }
-      } catch (_e) {}
-
-      // 3. Provision / sync password in Supabase Auth via Edge Function if available
-      try {
-        await supabase.functions.invoke('update-vendor-password', {
-          body: { email: cleanEmail, password: pwd }
-        });
-      } catch (_e) {}
-
-      return { success: true, message: 'Vendor password updated successfully in Supabase.' };
+      return { success: true, message: data.message || 'Vendor password updated.' };
     }
   }
 };
