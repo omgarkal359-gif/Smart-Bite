@@ -93,8 +93,9 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
             const { data: p } = await supabase.from('accounts').select('role, shop_id').eq('id', data.session.user.id).maybeSingle();
             profile = p;
             // Staff signing in with Google have a different auth id than their
-            // provisioned password account — fall back to the verified email.
-            if (!profile && userEmail) {
+            // provisioned password account — fall back to the email, but ONLY
+            // when it is verified (never trust an unconfirmed email).
+            if (!profile && userEmail && data.session.user.email_confirmed_at) {
               const { data: pe } = await supabase.from('accounts').select('role, shop_id').eq('email', userEmail).maybeSingle();
               if (pe) profile = pe;
             }

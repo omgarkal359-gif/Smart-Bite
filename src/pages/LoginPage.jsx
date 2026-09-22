@@ -129,8 +129,9 @@ const LoginPage = () => {
             const { data: p } = await supabase.from('accounts').select('*').eq('id', session.user.id).maybeSingle();
             if (p) profile = p;
             // Staff who sign in with Google get a different auth id than their
-            // provisioned password account — fall back to the verified email.
-            if (!profile && userEmail) {
+            // provisioned password account — fall back to the email, but ONLY
+            // when it is verified (never trust an unconfirmed email).
+            if (!profile && userEmail && session.user.email_confirmed_at) {
               const { data: pe } = await supabase.from('accounts').select('*').eq('email', userEmail).maybeSingle();
               if (pe) profile = pe;
             }
@@ -305,8 +306,9 @@ const LoginPage = () => {
             .maybeSingle();
           if (!error && data) profile = data;
           // Staff who sign in with Google get a different auth id than their
-          // provisioned password account — fall back to the verified email.
-          if (!profile && userEmail) {
+          // provisioned password account — fall back to the email, but ONLY
+          // when it is verified (never trust an unconfirmed email).
+          if (!profile && userEmail && session.user.email_confirmed_at) {
             const { data: byEmail } = await supabase.from('accounts').select('*').eq('email', userEmail).maybeSingle();
             if (byEmail) profile = byEmail;
           }
