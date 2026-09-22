@@ -90,8 +90,14 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
 
           let profile = null;
           try {
-            const { data: p } = await supabase.from('accounts').select('role, shop_id').eq('id', data.session.user.id).single();
+            const { data: p } = await supabase.from('accounts').select('role, shop_id').eq('id', data.session.user.id).maybeSingle();
             profile = p;
+            // Staff signing in with Google have a different auth id than their
+            // provisioned password account — fall back to the verified email.
+            if (!profile && userEmail) {
+              const { data: pe } = await supabase.from('accounts').select('role, shop_id').eq('email', userEmail).maybeSingle();
+              if (pe) profile = pe;
+            }
           } catch (_e) {}
 
           let role = profile?.role || data.session.user.app_metadata?.role || data.session.user.user_metadata?.role;

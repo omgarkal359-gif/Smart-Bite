@@ -128,6 +128,12 @@ const LoginPage = () => {
           try {
             const { data: p } = await supabase.from('accounts').select('*').eq('id', session.user.id).maybeSingle();
             if (p) profile = p;
+            // Staff who sign in with Google get a different auth id than their
+            // provisioned password account — fall back to the verified email.
+            if (!profile && userEmail) {
+              const { data: pe } = await supabase.from('accounts').select('*').eq('email', userEmail).maybeSingle();
+              if (pe) profile = pe;
+            }
           } catch (_e) {}
 
           const isAdmin = (await checkIsAdmin(userEmail)) || profile?.role === 'admin';
@@ -225,7 +231,10 @@ const LoginPage = () => {
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/login`,
-          queryParams: { prompt: 'select_account', access_type: 'offline', hd: 'sguk.ac.in' }
+          // No `hd` domain lock: staff may sign in with a non-sguk Google (e.g.
+          // gmail). The onAuthStateChange gate decides access — sguk → student,
+          // a matching vendor/admin accounts row → that role, otherwise rejected.
+          queryParams: { prompt: 'select_account', access_type: 'offline' }
         }
       });
       if (error) {
@@ -295,6 +304,12 @@ const LoginPage = () => {
             .eq('id', session.user.id)
             .maybeSingle();
           if (!error && data) profile = data;
+          // Staff who sign in with Google get a different auth id than their
+          // provisioned password account — fall back to the verified email.
+          if (!profile && userEmail) {
+            const { data: byEmail } = await supabase.from('accounts').select('*').eq('email', userEmail).maybeSingle();
+            if (byEmail) profile = byEmail;
+          }
         } catch (_e) {}
 
         // Domain gate: admins (email allowlist, admin_allowlist table, or
