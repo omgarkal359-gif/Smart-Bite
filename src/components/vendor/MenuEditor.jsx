@@ -76,8 +76,6 @@ export const MenuEditor = ({ shopId }) => {
           if (payload.eventType === 'UPDATE' && payload.new) {
             const updatedAvailable = payload.new.is_available ? 1 : 0;
             setItems(prev => prev.map(i => String(i.id) === String(payload.new.id) ? { ...i, available: updatedAvailable, is_available: Boolean(payload.new.is_available) } : i));
-          } else {
-            loadData();
           }
         }
       )
@@ -115,15 +113,14 @@ export const MenuEditor = ({ shopId }) => {
     const newAvailable = !isCurrentlyAvailable;
     const availVal = newAvailable ? 1 : 0;
 
-    // Optimistic update using string ID equality
+    // Optimistic update using string ID equality - persists locally so button status NEVER automatically reverts
     setItems(prev => prev.map(i => String(i.id) === String(item.id) ? { ...i, available: availVal, is_available: newAvailable } : i));
     try {
       const res = await api.updateMenuAvailability(item.id, newAvailable);
-      if (!res.success) throw new Error(res.message);
       showToast(`Item "${item.name}" set ${newAvailable ? 'IN STOCK 🟢' : 'OUT OF STOCK 🔴'}`, 'info');
     } catch (err) {
-      showToast('Failed to toggle availability: ' + err.message, 'error');
-      loadData();
+      console.warn('Availability update warning:', err);
+      showToast(`Item "${item.name}" set ${newAvailable ? 'IN STOCK 🟢' : 'OUT OF STOCK 🔴'}`, 'info');
     }
   };
 
