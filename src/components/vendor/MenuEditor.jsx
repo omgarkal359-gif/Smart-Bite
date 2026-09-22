@@ -75,7 +75,7 @@ export const MenuEditor = ({ shopId }) => {
         (payload) => {
           if (payload.eventType === 'UPDATE' && payload.new) {
             const updatedAvailable = payload.new.is_available ? 1 : 0;
-            setItems(prev => prev.map(i => i.id === payload.new.id ? { ...i, available: updatedAvailable, is_available: Boolean(payload.new.is_available) } : i));
+            setItems(prev => prev.map(i => String(i.id) === String(payload.new.id) ? { ...i, available: updatedAvailable, is_available: Boolean(payload.new.is_available) } : i));
           } else {
             loadData();
           }
@@ -87,7 +87,7 @@ export const MenuEditor = ({ shopId }) => {
       if (e?.detail?.itemId) {
         const { itemId, available } = e.detail;
         const availVal = available !== undefined ? available : (e.detail.is_available ? 1 : 0);
-        setItems(prev => prev.map(i => i.id === itemId ? { ...i, available: availVal, is_available: Boolean(availVal) } : i));
+        setItems(prev => prev.map(i => String(i.id) === String(itemId) ? { ...i, available: availVal, is_available: Boolean(availVal) } : i));
       }
     };
     window.addEventListener('sgu:menu_item_updated', handleLocalMenuUpdate);
@@ -115,8 +115,8 @@ export const MenuEditor = ({ shopId }) => {
     const newAvailable = !isCurrentlyAvailable;
     const availVal = newAvailable ? 1 : 0;
 
-    // Optimistic update
-    setItems(prev => prev.map(i => i.id === item.id ? { ...i, available: availVal, is_available: newAvailable } : i));
+    // Optimistic update using string ID equality
+    setItems(prev => prev.map(i => String(i.id) === String(item.id) ? { ...i, available: availVal, is_available: newAvailable } : i));
     try {
       const res = await api.updateMenuAvailability(item.id, newAvailable);
       if (!res.success) throw new Error(res.message);

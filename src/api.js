@@ -767,15 +767,18 @@ export const api = {
     let updatedItem = null;
     let stallId = null;
 
-    // 1. Try RPC function first, fall back to direct Supabase update
+    // 1. Try RPC function first (for integer IDs), fall back to direct Supabase update
     try {
-      const { data: rpcData, error: rpcErr } = await supabase.rpc('toggle_menu_item_availability', {
-        p_item_id: itemId,
-        p_is_available: boolAvail
-      });
-      if (!rpcErr && rpcData) {
-        updatedItem = mapMenuItem(rpcData);
-        stallId = updatedItem?.stallId;
+      const numericItemId = Number(itemId);
+      if (!isNaN(numericItemId)) {
+        const { data: rpcData, error: rpcErr } = await supabase.rpc('toggle_menu_item_availability', {
+          p_item_id: numericItemId,
+          p_is_available: boolAvail
+        });
+        if (!rpcErr && rpcData) {
+          updatedItem = mapMenuItem(rpcData);
+          stallId = updatedItem?.stallId;
+        }
       }
     } catch (_rpcErr) {}
 

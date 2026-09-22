@@ -149,7 +149,7 @@ const InteractiveMenu = () => {
         (payload) => {
           if (payload.eventType === 'UPDATE' && payload.new) {
             const updatedAvailable = payload.new.is_available ? 1 : 0;
-            setInventory(prev => prev.map(i => i.id === payload.new.id ? { ...i, available: updatedAvailable, is_available: Boolean(payload.new.is_available), stock: payload.new.stock ?? i.stock } : i));
+            setInventory(prev => prev.map(i => String(i.id) === String(payload.new.id) ? { ...i, available: updatedAvailable, is_available: Boolean(payload.new.is_available), stock: payload.new.stock ?? i.stock } : i));
           } else {
             api.getStallMenu(shopId).then(items => {
               if (isMounted && Array.isArray(items)) setInventory(items);
@@ -163,7 +163,7 @@ const InteractiveMenu = () => {
       const data = e?.detail;
       if (isMounted && data?.itemId) {
         const availVal = data.available !== undefined ? data.available : (data.is_available ? 1 : 0);
-        setInventory(prev => prev.map(i => i.id === data.itemId ? { ...i, available: availVal, is_available: Boolean(availVal) } : i));
+        setInventory(prev => prev.map(i => String(i.id) === String(data.itemId) ? { ...i, available: availVal, is_available: Boolean(availVal) } : i));
       }
     };
     window.addEventListener('sgu:menu_item_updated', handleLocalMenuUpdate);
