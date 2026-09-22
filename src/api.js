@@ -758,57 +758,52 @@ export const api = {
     return { success: false, message: 'Structural edits must be submitted via createMenuEditRequest.' };
   },
 
-  // ── Operational Quick Toggle (Instant Live Update + Audit Log + Realtime Broadcast) ───────────
+  // ── Operational Quick Toggle (Instant Live Update + Audit Log + Realtime Postgres Changes) ──
   async updateMenuAvailability(itemId, isAvailable) {
     const user = await currentUser();
-    const { data, error } = await supabase
-      .from('menu_items')
-      .update({ is_available: Boolean(isAvailable), updated_at: new Date().toISOString() })
-      .eq('id', itemId)
-      .select();
+    const boolAvail = Boolean(isAvailable);
+    const availNum = boolAvail ? 1 : 0;
 
-    if (error) return { success: false, message: error.message };
+    let updatedItem = null;
+    let stallId = null;
 
-    const updatedItem = data?.[0] ? mapMenuItem(data[0]) : null;
-    const stallId = updatedItem?.stallId;
-
-    // 1. Multi-Channel Supabase Realtime Broadcast for instant dashboard sync
+    // 1. Try RPC function first, fall back to direct Supabase update
     try {
-      const payload = {
-        itemId,
-        stallId,
-        available: isAvailable ? 1 : 0,
-        is_available: Boolean(isAvailable),
-        updatedItem
-      };
-
-      supabase.channel('global-menu-broadcasts').send({
-        type: 'broadcast',
-        event: 'menu_item_availability_changed',
-        payload
+      const { data: rpcData, error: rpcErr } = await supabase.rpc('toggle_menu_item_availability', {
+        p_item_id: itemId,
+        p_is_available: boolAvail
       });
-
-      if (stallId) {
-        supabase.channel(`stall-menu-${stallId}`).send({
-          type: 'broadcast',
-          event: 'menu_item_availability_changed',
-          payload
-        });
-        supabase.channel(`vendor-menu-${stallId}`).send({
-          type: 'broadcast',
-          event: 'menu_item_availability_changed',
-          payload
-        });
+      if (!rpcErr && rpcData) {
+        updatedItem = mapMenuItem(rpcData);
+        stallId = updatedItem?.stallId;
       }
-    } catch (_bErr) {
-      console.warn('Menu availability broadcast error:', _bErr);
+    } catch (_rpcErr) {}
+
+    if (!updatedItem) {
+      const { data, error } = await supabase
+        .from('menu_items')
+        .update({ is_available: boolAvail, updated_at: new Date().toISOString() })
+        .eq('id', itemId)
+        .select();
+
+      if (error) return { success: false, message: error.message };
+      updatedItem = data?.[0] ? mapMenuItem(data[0]) : null;
+      stallId = updatedItem?.stallId;
     }
 
-    // 2. Dispatch local browser custom event for instant cross-tab / local state sync
+    const payload = {
+      itemId,
+      stallId,
+      available: availNum,
+      is_available: boolAvail,
+      updatedItem
+    };
+
+    // 2. Dispatch local browser custom event for zero-latency local tab update
     try {
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('sgu:menu_item_updated', {
-          detail: { itemId, stallId, available: isAvailable ? 1 : 0, is_available: Boolean(isAvailable), updatedItem }
+          detail: payload
         }));
       }
     } catch (_e) {}
@@ -816,10 +811,10 @@ export const api = {
     addAuditLog({
       level: 'INFO',
       category: 'Menu',
-      message: `Operational Toggle: Menu Item #${itemId} set ${isAvailable ? 'AVAILABLE' : 'OUT_OF_STOCK'} by ${user?.email || 'vendor'}`
+      message: `Operational Toggle: Menu Item #${itemId} set ${boolAvail ? 'AVAILABLE' : 'OUT_OF_STOCK'} by ${user?.email || 'vendor'}`
     });
 
-    return { success: true, item: updatedItem };
+    return { success: true, item: updatedItem || { id: itemId, available: availNum, is_available: boolAvail } };
   },
 
   // ── Structural Change Requests (100% Pure Supabase Database Operations) ──
@@ -972,23 +967,28 @@ export const api = {
     if (items.length === 0) throw new Error('Cart is empty.');
 
     // Server-authoritative total (never trust the client-supplied total).
-    const subtotal = items.reduce((s, it) => s + (Number(it.price) || 0) * (it.quantity || 1), 0);
-    const orderId = orderData.id || orderData.orderId || `ORD-${Date.now()}`;
-    const user = await currentUser();
-    const first = items[0] || {};
-    const status = orderData.payment === 'Cash' ? 'pending_cash' : 'placed';
+    // Verify item availability against database source of truth before order insertion
+    const itemIds = items.map(it => it.id).filter(Boolean);
+    if (itemIds.length > 0) {
+      try {
+        const { data: dbItems, error: checkErr } = await supabase
+          .from('menu_items')
+          .select('id, name, is_available')
+          .in('id', itemIds);
 
-    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    const customerId = (user?.id && isUuid.test(user.id)) 
-      ? user.id 
-      : (orderData.customerId && isUuid.test(orderData.customerId) ? orderData.customerId : null);
-
-    const customerEmail = user?.email 
-      || orderData.customerEmail 
-      || (orderData.customerId && String(orderData.customerId).includes('@') ? String(orderData.customerId).toLowerCase() : null);
-
-    const targetStallId = first.stallId || first.stall_id || first.shopId || first.shop_id || orderData.stallId || orderData.shopId || null;
-    const targetStallName = first.stallName || first.stall_name || first.shopName || first.shop_name || orderData.stallName || orderData.shopName || null;
+        if (!checkErr && Array.isArray(dbItems)) {
+          const unavailable = dbItems.filter(it => it.is_available === false);
+          if (unavailable.length > 0) {
+            const names = unavailable.map(u => `"${u.name}"`).join(', ');
+            throw new Error(`Order failed: Item ${names} is currently out of stock. Please remove it from your cart.`);
+          }
+        }
+      } catch (stockErr) {
+        if (stockErr.message && stockErr.message.includes('out of stock')) {
+          throw stockErr;
+        }
+      }
+    }
 
     const orderRow = {
       id: orderId,

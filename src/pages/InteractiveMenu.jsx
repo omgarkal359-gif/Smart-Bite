@@ -149,7 +149,7 @@ const InteractiveMenu = () => {
         (payload) => {
           if (payload.eventType === 'UPDATE' && payload.new) {
             const updatedAvailable = payload.new.is_available ? 1 : 0;
-            setInventory(prev => prev.map(i => i.id === payload.new.id ? { ...i, available: updatedAvailable, stock: payload.new.stock ?? i.stock } : i));
+            setInventory(prev => prev.map(i => i.id === payload.new.id ? { ...i, available: updatedAvailable, is_available: Boolean(payload.new.is_available), stock: payload.new.stock ?? i.stock } : i));
           } else {
             api.getStallMenu(shopId).then(items => {
               if (isMounted && Array.isArray(items)) setInventory(items);
@@ -157,18 +157,13 @@ const InteractiveMenu = () => {
           }
         }
       )
-      .on('broadcast', { event: 'menu_item_availability_changed' }, (payload) => {
-        const data = payload?.payload;
-        if (isMounted && data?.itemId) {
-          setInventory(prev => prev.map(i => i.id === data.itemId ? { ...i, available: data.available } : i));
-        }
-      })
       .subscribe();
 
     const handleLocalMenuUpdate = (e) => {
       const data = e?.detail;
       if (isMounted && data?.itemId) {
-        setInventory(prev => prev.map(i => i.id === data.itemId ? { ...i, available: data.available } : i));
+        const availVal = data.available !== undefined ? data.available : (data.is_available ? 1 : 0);
+        setInventory(prev => prev.map(i => i.id === data.itemId ? { ...i, available: availVal, is_available: Boolean(availVal) } : i));
       }
     };
     window.addEventListener('sgu:menu_item_updated', handleLocalMenuUpdate);
@@ -280,7 +275,11 @@ const InteractiveMenu = () => {
   }, [isOnline, totalItems, clearCart]);
 
   const isItemInStock = (item) => {
-    return item?.available !== 0 && item?.available !== false && item?.available !== '0' && (item?.stock ?? 20) > 0;
+    if (!item) return false;
+    const isAvail = typeof item.is_available === 'boolean' 
+      ? item.is_available 
+      : (item.available !== 0 && item.available !== false && item.available !== '0' && item.available !== 'false');
+    return isAvail && (item?.stock ?? 20) > 0;
   };
 
   const handleAddToCartClick = (item) => {

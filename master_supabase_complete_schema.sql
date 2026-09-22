@@ -392,7 +392,7 @@ CREATE POLICY p_stalls_insert ON public.stalls FOR INSERT TO authenticated WITH 
 CREATE POLICY p_cat_read ON public.menu_categories FOR SELECT TO anon, authenticated USING (is_active OR public.is_admin());
 CREATE POLICY p_cat_manage ON public.menu_categories FOR ALL TO authenticated USING (public.owns_stall(stall_id)) WITH CHECK (public.owns_stall(stall_id));
 
-CREATE POLICY p_menu_read ON public.menu_items FOR SELECT TO anon, authenticated USING (is_available OR public.owns_stall(stall_id));
+CREATE POLICY p_menu_read ON public.menu_items FOR SELECT TO anon, authenticated USING (true);
 CREATE POLICY p_menu_manage ON public.menu_items FOR ALL TO authenticated USING (public.owns_stall(stall_id)) WITH CHECK (public.owns_stall(stall_id));
 
 CREATE POLICY p_orders_read ON public.orders FOR SELECT TO anon, authenticated USING (true);

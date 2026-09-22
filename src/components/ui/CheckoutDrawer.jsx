@@ -50,8 +50,10 @@ export const CheckoutDrawer = ({ isOpen, onClose, cart, inventory, onComplete })
 
   const isItemAvailable = (item) => {
     const invItem = Array.isArray(inventory) ? inventory.find(i => String(i.id) === String(item.id)) : null;
-    const currentAvailable = invItem ? invItem.available : item.available;
-    return currentAvailable !== 0 && currentAvailable !== false && currentAvailable !== '0';
+    const target = invItem || item;
+    if (!target) return false;
+    if (typeof target.is_available === 'boolean') return target.is_available;
+    return target.available !== 0 && target.available !== false && target.available !== '0' && target.available !== 'false';
   };
   const hasOutOfStockItems = cartItems.some(item => !isItemAvailable(item));
 
