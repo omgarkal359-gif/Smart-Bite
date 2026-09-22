@@ -273,15 +273,14 @@ export const OnboardingModule = () => {
       // 2. Update stall name & category in Supabase stalls table
       await supabase.from('stalls').update({ name, category, updated_at: new Date().toISOString() }).eq('id', id);
 
+      // Never persist a plaintext password. The login password is set (hashed)
+      // in auth.users by the update-vendor-password Edge Function at step 5.
+      const { system_password: _dropSysPwd, password: _dropPwd, ...safeExistingDetails } = existingDetails || {};
       const updatedDetails = {
-        ...existingDetails,
+        ...safeExistingDetails,
         ...(rest || {}),
         email: cleanEmail
       };
-
-      if (passwords[id] && passwords[id].trim()) {
-        updatedDetails.system_password = passwords[id].trim();
-      }
 
       // 3. Save/Update into Supabase vendors table
       let saved = false;
