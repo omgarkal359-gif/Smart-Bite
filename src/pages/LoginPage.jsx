@@ -182,7 +182,7 @@ const LoginPage = () => {
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/login`,
-          queryParams: { prompt: 'select_account', access_type: 'offline' }
+          queryParams: { prompt: 'select_account', access_type: 'offline', hd: 'sguk.ac.in' }
         }
       });
       if (error) {
@@ -254,8 +254,20 @@ const LoginPage = () => {
           if (!error && data) profile = data;
         } catch (_e) {}
 
+        // Domain gate: only admins (allowlist) and provisioned vendors may use a
+        // non-@sguk.ac.in Google account. Everyone else must be @sguk.ac.in.
+        const isAdmin = isAdminEmail(userEmail);
+        const isVendor = profile?.role === 'vendor';
+        if (!isAdmin && !isVendor && !userEmail.endsWith('@sguk.ac.in')) {
+          await supabase.auth.signOut();
+          localStorage.removeItem('sgu_google_oauth_started');
+          setIsLoading(false);
+          setErrorMsg('Please sign in with your @sguk.ac.in institutional Google account.');
+          return;
+        }
+
         // Google Auth Role Routing: Admin emails -> 'admin', all other Google users -> 'student'
-        const role = isAdminEmail(userEmail) ? 'admin' : (profile?.role === 'vendor' ? 'vendor' : 'student');
+        const role = isAdmin ? 'admin' : (isVendor ? 'vendor' : 'student');
 
         const name = profile?.full_name || meta.full_name || meta.name || (userEmail ? userEmail.split('@')[0] : 'Student');
         const avatar = meta.avatar_url || meta.picture || null;
