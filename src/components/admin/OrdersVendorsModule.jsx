@@ -110,7 +110,7 @@ export const OrdersVendorsModule = () => {
 
     // 3. Auto-polling loop (every 3 seconds) for instant sync across serverless cold starts
     const pollInterval = setInterval(() => {
-      api.getOrderQueue().then(queue => {
+      api.getAdminOrders().then(queue => {
         if (queue && queue.length > 0) {
           setOrders(queue);
         }
@@ -131,7 +131,7 @@ export const OrdersVendorsModule = () => {
     setIsLoading(true);
     try {
       const [orderQueue, stallList] = await Promise.all([
-        api.getOrderQueue(),
+        api.getAdminOrders(),
         api.getStalls()
       ]);
       setOrders(orderQueue || []);

@@ -23,7 +23,7 @@ export const CmdKSearchModal = ({ isOpen, onClose, onNavigateModule, onLogout })
 
   async function loadSearchData() {
     try {
-      const allOrders = await api.getOrderQueue();
+      const allOrders = await api.getAdminOrders();
       setOrders(allOrders || []);
     } catch (e) {
       console.warn('CmdK order load:', e);

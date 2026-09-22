@@ -1065,9 +1065,27 @@ export const api = {
   },
 
   // ── Order reads ──────────────────────────────────────────────────────────
+  // Public pickup board. Masked, non-PII queue via SECURITY DEFINER RPC so it
+  // works for any viewer without exposing other customers' details.
   async getOrderQueue() {
+    const { data, error } = await supabase.rpc('get_public_order_queue');
+    if (error || !data) return [];
+    return data.map(r => mapOrder({
+      id: r.id,
+      order_number: r.order_number,
+      stall_id: r.stall_id,
+      stall_name: r.stall_name,
+      status: r.status,
+      created_at: r.created_at,
+      customer_name: r.masked_name
+    }));
+  },
+
+  // Admin-only full order feed (relies on is_admin() RLS; non-admins get only
+  // their own rows). Used by the admin console where customer detail is needed.
+  async getAdminOrders() {
     const { data, error } = await supabase
-      .from('orders').select('*, order_items(*)').order('created_at', { ascending: false }).limit(200);
+      .from('orders').select('*, order_items(*)').order('created_at', { ascending: false }).limit(500);
     if (error || !data) return [];
     return data.map(mapOrder);
   },
