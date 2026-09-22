@@ -4,7 +4,7 @@ import { GlassCard } from '../components/ui/GlassCard';
 import { Button } from '../components/ui/Button';
 import { ArrowLeft, QrCode, CheckCircle, Clock, ChefHat, BellRing, Download, ShoppingBag, ShieldAlert, XCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { api, socket } from '../api';
+import { api } from '../api';
 import { supabase } from '../supabaseClient';
 import { getStoredUser } from '../utils/auth';
 import './pages.css';
@@ -122,7 +122,6 @@ const DigitalReceiptTracker = () => {
     loadOrder();
 
     // Listen to real-time socket & DOM window events for this order status
-    socket.emit('join', `order-${orderId}`);
 
     const handleSocketUpdate = (data) => {
       const targetId = data?.id || data?.orderId;
@@ -139,7 +138,6 @@ const DigitalReceiptTracker = () => {
       }
     };
 
-    socket.on('order_status_update', handleSocketUpdate);
     window.addEventListener('sgu:order_updated', handleWindowUpdate);
 
     // Setup Supabase Realtime Broadcast & Postgres Database Listener
@@ -168,7 +166,6 @@ const DigitalReceiptTracker = () => {
     const interval = setInterval(loadOrder, 2000);
 
     return () => {
-      socket.off('order_status_update', handleSocketUpdate);
       window.removeEventListener('sgu:order_updated', handleWindowUpdate);
       supabase.removeChannel(channel);
       supabase.removeChannel(globalChannel);

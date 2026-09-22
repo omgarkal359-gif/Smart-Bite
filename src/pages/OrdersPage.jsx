@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Clock, CheckCircle, ShoppingBag, X } from 'lucide-react';
 import { GlassCard } from '../components/ui/GlassCard';
-import { api, socket, formatRelativeTime } from '../api';
+import { api, formatRelativeTime } from '../api';
 import { getStoredUser, isUserOrder, getLocalOrders } from '../utils/auth';
 import { supabase } from '../supabaseClient';
 import './home_v21.css';
@@ -71,7 +71,6 @@ const OrdersPage = () => {
     fetchOrders();
 
     // Listen to real-time status updates for student's orders
-    socket.emit('join', 'student');
 
     const handleStatusUpdate = (updatedOrder) => {
       const targetId = updatedOrder?.id || updatedOrder?.orderId;
@@ -92,7 +91,6 @@ const OrdersPage = () => {
       });
     };
 
-    socket.on('order_status_update', handleStatusUpdate);
 
     // Also subscribe to Supabase broadcast channel and postgres_changes
     const globalChannel = supabase.channel('global-orders-broadcast')
@@ -119,7 +117,6 @@ const OrdersPage = () => {
     const interval = setInterval(fetchOrders, 3000);
 
     return () => {
-      socket.off('order_status_update', handleStatusUpdate);
       supabase.removeChannel(globalChannel);
       clearInterval(interval);
     };

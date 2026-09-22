@@ -11,11 +11,6 @@ import { SHOPS } from './data/foodCourtDB';
 // them to the shape the pages consume (online 1/0, stallId, isVeg, ...).
 // =============================================================================
 
-// Legacy no-op socket kept so old imports don't break. Realtime is Supabase.
-export const socket = {
-  on: () => {}, off: () => {}, emit: () => {}, connect: () => {}, disconnect: () => {}
-};
-
 const STATUS_WEIGHT = { placed: 1, pending_cash: 1, preparing: 2, ready: 3, completed: 4, cancelled: 0 };
 
 export const DEFAULT_FIELD_CATALOG = [

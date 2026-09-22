@@ -6,16 +6,12 @@ import { Clock, Volume2, Power, LogOut, CheckCircle, Banknote, Activity, Smartph
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { MenuEditor } from '../components/vendor/MenuEditor';
 import { SHOPS } from '../data/foodCourtDB';
-import { api, socket, formatRelativeTime } from '../api';
+import { api } from '../api';
 import { supabase } from '../supabaseClient';
 import { useCart } from '../context/CartContext';
 import { getStoredUser, clearStoredUser } from '../utils/auth';
 import './pages.css';
 import './vendor.css';
-
-const MOCK_TICKETS = [];
-
-const COMPLETED_TICKETS_MOCK = [];
 
 const getItemText = (item) => {
   if (!item) return '';
@@ -124,7 +120,6 @@ const VendorDashboard = () => {
     loadOrders();
     
     // Join room for this vendor
-    socket.emit('join', `vendor-${targetShopId}`);
 
     const handleNewOrder = async (newOrder) => {
       if (!newOrder || !newOrder.id) return;
@@ -195,8 +190,6 @@ const VendorDashboard = () => {
       }
     };
 
-    socket.on('order_new', handleNewOrder);
-    socket.on('order_status_update', handleStatusUpdate);
 
     // Setup Supabase Realtime Broadcast & Postgres Database Listener
     const channel = supabase.channel(`vendor_sync_${targetShopId}`)
@@ -244,8 +237,6 @@ const VendorDashboard = () => {
     const interval = setInterval(loadOrders, intervalTime);
 
     return () => {
-      socket.off('order_new', handleNewOrder);
-      socket.off('order_status_update', handleStatusUpdate);
       supabase.removeChannel(channel);
       clearInterval(interval);
     };
@@ -449,7 +440,6 @@ const VendorDashboard = () => {
         if (res && res.success === false) {
           console.warn('Stall status notice:', res.message);
         }
-        socket.emit('stall_status_update', payload);
       }
       showToast(`Stall is now ${newStatus === 'OPEN' ? 'ONLINE 🟢' : 'OFFLINE 🔴'}`, newStatus === 'OPEN' ? 'success' : 'info');
       if (newStatus === 'OPEN') {
@@ -473,7 +463,6 @@ const VendorDashboard = () => {
     try {
       if (targetShopId) {
         await api.updateStallStatus(targetShopId, { busyMode: nextBusy, waitTime: nextWait });
-        socket.emit('stall_status_update', { id: targetShopId, busyMode: nextBusy, waitTime: nextWait });
       }
       showToast(`Busy Mode ${nextBusy ? 'ACTIVATED (25 min wait)' : 'DEACTIVATED'} 🔥`, 'info');
     } catch (err) {

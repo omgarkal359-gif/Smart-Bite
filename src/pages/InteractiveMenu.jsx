@@ -4,9 +4,8 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Leaf, Flame, Pizza, Coffee, Sandwich, WifiOff, Utensils } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCart } from '../context/CartContext';
-import { api, socket } from '../api';
+import { api } from '../api';
 import { supabase } from '../supabaseClient';
-import { SHOPS } from '../data/foodCourtDB';
 import { getFoodItemImage } from '../utils/imageHelper';
 import './pages.css';
 import './menu_v21.css';
@@ -105,7 +104,6 @@ const InteractiveMenu = () => {
     loadStallMenu();
 
     // Socket realtime listener (legacy local-server mode)
-    socket.emit('join', `stall-menu-${shopId}`);
     const handleMenuItemUpdate = (updatedItem) => {
       if (isMounted) {
         setInventory(prev => prev.map(i => i.id === updatedItem.id ? updatedItem : i));
@@ -137,8 +135,6 @@ const InteractiveMenu = () => {
       });
     });
 
-    socket.on('menu_item_update', handleMenuItemUpdate);
-    socket.on('stall_status_update', handleStallStatusUpdate);
 
     // --- Supabase Realtime: listen for menu item availability & stall status changes ---
     const menuItemsChannel = supabase
@@ -201,8 +197,6 @@ const InteractiveMenu = () => {
 
     return () => {
       isMounted = false;
-      socket.off('menu_item_update', handleMenuItemUpdate);
-      socket.off('stall_status_update', handleStallStatusUpdate);
       window.removeEventListener('sgu:stall_status_updated', handleCustomStallUpdate);
       window.removeEventListener('sgu:menu_item_updated', handleLocalMenuUpdate);
       supabase.removeChannel(menuItemsChannel);

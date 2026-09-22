@@ -3,13 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { GlassCard } from '../components/ui/GlassCard';
 import { Clock, Search, Flame, Star, ChevronRight } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { SHOPS } from '../data/foodCourtDB';
-import { api, socket, getDeletedStallIds } from '../api';
+import { api, getDeletedStallIds } from '../api';
 import { supabase } from '../supabaseClient';
 import './pages.css';
 import './home_v21.css';
-
-const MOCK_SHOPS = SHOPS;
 
 const MOST_ORDERED_SLIDES = [
   { 
@@ -142,14 +139,12 @@ const ShopDirectory = () => {
       })
       .subscribe();
 
-    socket.emit('join', 'student');
     const handleStatusUpdate = (updatedStall) => {
       const targetId = updatedStall?.id || updatedStall?.stallId;
       if (targetId) {
         setStalls(prev => prev.map(s => String(s.id) === String(targetId) ? { ...s, ...updatedStall } : s));
       }
     };
-    socket.on('stall_status_update', handleStatusUpdate);
 
     const handleCustomStallUpdate = (e) => {
       const data = e?.detail;
@@ -185,7 +180,6 @@ const ShopDirectory = () => {
     return () => {
       supabase.removeChannel(stallsChannel);
       supabase.removeChannel(broadcastChannel);
-      socket.off('stall_status_update', handleStatusUpdate);
       window.removeEventListener('sgu:stall_status_updated', handleCustomStallUpdate);
       window.removeEventListener('storage', loadStalls);
       clearInterval(interval);

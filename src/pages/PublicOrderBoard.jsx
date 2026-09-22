@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Utensils, CheckCircle, Store, ShieldAlert, ShoppingBag } from 'lucide-react';
-import { api, socket } from '../api';
+import { api } from '../api';
 import './pages.css';
 import './board.css';
 
@@ -50,8 +50,6 @@ const PublicOrderBoard = () => {
     checkStallsStatus();
 
     // Join real-time queue broadcasts
-    socket.emit('join', 'public-board');
-    socket.emit('join', 'student');
 
     const handleQueueUpdate = (updatedOrders) => {
       updateQueueStates(updatedOrders);
@@ -61,16 +59,12 @@ const PublicOrderBoard = () => {
       checkStallsStatus();
     };
 
-    socket.on('queue_update', handleQueueUpdate);
-    socket.on('stall_status_update', handleStallStatusUpdate);
 
     // Polling fallbacks
     const queueInterval = setInterval(loadQueue, 5000); // Poll queue every 5 seconds
     const stallsInterval = setInterval(checkStallsStatus, 15000); // Poll stalls status every 15 seconds
 
     return () => {
-      socket.off('queue_update', handleQueueUpdate);
-      socket.off('stall_status_update', handleStallStatusUpdate);
       clearInterval(queueInterval);
       clearInterval(stallsInterval);
     };
