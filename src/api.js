@@ -298,211 +298,43 @@ export const api = {
     const input = (username || '').trim().toLowerCase();
     const pwd = (password || '').trim();
     if (!input || !pwd) {
-      return { success: false, message: 'Email/Username and Password are required.' };
+      return { success: false, message: 'Email and Password are required.' };
+    }
+    if (!input.includes('@')) {
+      return { success: false, message: 'Please sign in with your registered email address.' };
     }
 
-    // 0. Primary: Call Supabase RPC verify_vendor_login (bypasses client RLS restrictions safely)
-    try {
-      const { data: rpcRes, error: rpcErr } = await supabase.rpc('verify_vendor_login', {
-        p_input: input,
-        p_password: pwd
-      });
-      if (!rpcErr && rpcRes && rpcRes.success) {
-        return rpcRes;
-      }
-    } catch (_rpcE) {}
+    // Authenticate against Supabase Auth (passwords are bcrypt-hashed in auth.users).
+    const { data, error } = await supabase.auth.signInWithPassword({ email: input, password: pwd });
+    if (error || !data?.user) {
+      return { success: false, message: 'Invalid email or password.' };
+    }
 
-    const checkVendorPassword = (vRec, inputPassword) => {
-      if (!vRec) return false;
-      const d = parseDetails(vRec.details);
-      const sysPwd = (
-        d.system_password || d.password || d.systemPassword ||
-        vRec.system_password || vRec.password || ''
-      ).trim();
-      return sysPwd !== '' && sysPwd === inputPassword;
+    const authUser = data.user;
+    const token = data.session?.access_token || null;
+
+    // Resolve role + shop from the accounts profile (accounts.id === auth user id).
+    let profile = null;
+    try {
+      const { data: acct } = await supabase
+        .from('accounts')
+        .select('role, shop_id, full_name')
+        .eq('id', authUser.id)
+        .maybeSingle();
+      profile = acct || null;
+    } catch (_e) {}
+
+    let role = profile?.role || authUser.app_metadata?.role || authUser.user_metadata?.role || 'vendor';
+    if (isAdminEmail(input)) role = 'admin';
+
+    const shopId = profile?.shop_id || authUser.app_metadata?.shopId || null;
+    const name = profile?.full_name || authUser.user_metadata?.full_name || input.split('@')[0];
+
+    return {
+      success: true,
+      token,
+      user: { id: authUser.id, username: input, name, role, shopId }
     };
-
-    // 1. Fetch vendor records from Supabase vendors table
-    let vendorRecord = null;
-    try {
-      const { data: vList } = await supabase.from('vendors').select('*');
-      if (Array.isArray(vList) && vList.length > 0) {
-        vendorRecord = vList.find(v => {
-          const d = parseDetails(v.details);
-          const sId = (v.stall_id || v.id || '').toLowerCase().trim();
-          const cEmail = (v.contact_email || '').toLowerCase().trim();
-          const vEmail = (v.email || '').toLowerCase().trim();
-          const dEmail = (d.email || '').toLowerCase().trim();
-          const dCEmail = (d.contact_email || '').toLowerCase().trim();
-          const dUser = (d.username || '').toLowerCase().trim();
-          const vUser = (v.username || '').toLowerCase().trim();
-          const bName = (v.business_name || '').toLowerCase().trim();
-          return sId === input || cEmail === input || vEmail === input || dEmail === input || dCEmail === input || dUser === input || vUser === input || bName === input;
-        });
-      }
-    } catch (_e) {}
-
-    // Fallback single queries on vendors table
-    if (!vendorRecord && input) {
-      try {
-        const { data: v1 } = await supabase.from('vendors').select('*').ilike('contact_email', input).maybeSingle();
-        if (v1) {
-          vendorRecord = v1;
-        } else {
-          const { data: v2 } = await supabase.from('vendors').select('*').ilike('stall_id', input).maybeSingle();
-          if (v2) {
-            vendorRecord = v2;
-          } else if (isUUID(input)) {
-            const { data: v3 } = await supabase.from('vendors').select('*').eq('id', input).maybeSingle();
-            if (v3) vendorRecord = v3;
-          } else {
-            const { data: v4 } = await supabase.from('vendors').select('*').ilike('business_name', input).maybeSingle();
-            if (v4) vendorRecord = v4;
-          }
-        }
-      } catch (_e) {}
-    }
-
-    // 2. Fetch account records from Supabase accounts table
-    let accountRecord = null;
-    try {
-      const { data: accList } = await supabase.from('accounts').select('*');
-      if (Array.isArray(accList) && accList.length > 0) {
-        accountRecord = accList.find(acc => {
-          const aEmail = (acc.email || '').toLowerCase().trim();
-          const aShopId = (acc.shop_id || '').toLowerCase().trim();
-          return aEmail === input || aShopId === input;
-        });
-      }
-    } catch (_e) {}
-
-    if (!accountRecord && input) {
-      try {
-        const { data: a1 } = await supabase.from('accounts').select('*').ilike('email', input).maybeSingle();
-        if (a1) {
-          accountRecord = a1;
-        } else {
-          const { data: a2 } = await supabase.from('accounts').select('*').ilike('shop_id', input).maybeSingle();
-          if (a2) accountRecord = a2;
-        }
-      } catch (_e) {}
-    }
-
-    // 3. Fetch stalls records from Supabase stalls table as fallback
-    let stallRecord = null;
-    try {
-      const { data: stallList } = await supabase.from('stalls').select('*');
-      if (Array.isArray(stallList) && stallList.length > 0) {
-        stallRecord = stallList.find(s => {
-          const sId = (s.id || '').toLowerCase().trim();
-          const sName = (s.name || '').toLowerCase().trim();
-          return sId === input || sName === input;
-        });
-      }
-    } catch (_e) {}
-
-    // Resolve shopId & targetEmail
-    const shopId = accountRecord?.shop_id || vendorRecord?.stall_id || stallRecord?.id || null;
-    const vDetails = parseDetails(vendorRecord?.details);
-    const targetEmail = (vendorRecord?.contact_email || vendorRecord?.email || vDetails?.email || vDetails?.contact_email || accountRecord?.email || input).toLowerCase().trim();
-
-    // Cross-link vendorRecord if missing
-    if (!vendorRecord && shopId) {
-      try {
-        const { data: vData } = await supabase.from('vendors').select('*').ilike('stall_id', shopId).maybeSingle();
-        if (vData) vendorRecord = vData;
-      } catch (_e) {}
-    }
-
-    // 4. Try Supabase Auth first if target email looks like an email address
-    if (targetEmail.includes('@')) {
-      const { data, error } = await supabase.auth.signInWithPassword({ email: targetEmail, password: pwd });
-      if (!error && data?.user) {
-        const authUser = data.user;
-        const authSession = data.session;
-
-        let role = accountRecord?.role || authUser.app_metadata?.role || authUser.user_metadata?.role;
-        if (isAdminEmail(targetEmail)) role = 'admin';
-        if (!role && (vendorRecord || shopId)) role = 'vendor';
-
-        return {
-          success: true,
-          token: authSession?.access_token,
-          user: {
-            id: authUser.id,
-            username: targetEmail,
-            name: accountRecord?.full_name || vendorRecord?.business_name || authUser.user_metadata?.full_name || targetEmail.split('@')[0],
-            role: role || 'vendor',
-            shopId: shopId || authUser.user_metadata?.shopId || null
-          }
-        };
-      }
-    }
-
-    // 5. Verification check against vendorRecord details.system_password or system_password
-    if (vendorRecord && checkVendorPassword(vendorRecord, pwd)) {
-      const resolvedShopId = vendorRecord.stall_id || vendorRecord.id || shopId || null;
-      const role = isAdminEmail(vendorRecord.contact_email || input) ? 'admin' : 'vendor';
-      return {
-        success: true,
-        token: `vendor-session-${resolvedShopId}`,
-        user: {
-          id: resolvedShopId,
-          username: vendorRecord.contact_email || targetEmail || input,
-          name: vendorRecord.business_name || resolvedShopId,
-          role,
-          shopId: resolvedShopId
-        }
-      };
-    }
-
-    // 6. Verification check if shopId exists and password matches
-    if (shopId) {
-      try {
-        const { data: vRec } = await supabase.from('vendors').select('*').ilike('stall_id', shopId).maybeSingle();
-        if (vRec && checkVendorPassword(vRec, pwd)) {
-          return {
-            success: true,
-            token: `vendor-session-${shopId}`,
-            user: {
-              id: shopId,
-              username: vRec.contact_email || targetEmail || input,
-              name: vRec.business_name || shopId,
-              role: 'vendor',
-              shopId
-            }
-          };
-        }
-      } catch (_e) {}
-    }
-
-    // 7. Verification check for admin email sign-in
-    if (isAdminEmail(input)) {
-      const { data, error } = await supabase.auth.signInWithPassword({ email: input, password: pwd });
-      if (!error && data?.user) {
-        return {
-          success: true,
-          token: data.session?.access_token,
-          user: {
-            id: data.user.id,
-            username: input,
-            name: 'Super Admin',
-            role: 'admin',
-            shopId: null
-          }
-        };
-      }
-    }
-
-    console.warn('[AUTH DEBUG] loginStaff failed for input:', input, {
-      vendorMatched: !!vendorRecord,
-      accountMatched: !!accountRecord,
-      stallMatched: !!stallRecord,
-      shopIdResolved: shopId,
-      targetEmailResolved: targetEmail
-    });
-
-    return { success: false, message: 'Invalid credentials. Please check your vendor email/username and password.' };
   },
 
   async register(username, name, password) {
