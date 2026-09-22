@@ -8,7 +8,7 @@ import {
 } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
-import { getStoredUser, setStoredUser, clearStoredUser, isAdminEmail, isSessionExpired } from '../utils/auth';
+import { getStoredUser, setStoredUser, clearStoredUser, isAdminEmail, isInstitutionalEmail, isSessionExpired } from '../utils/auth';
 import { api } from '../api';
 import { addAuditLog } from '../utils/logger';
 import './LoginPage.css';
@@ -77,6 +77,29 @@ const LoginPage = () => {
     }, 1200);
   }, [redirectByRole]);
 
+  const checkIsAdmin = useCallback(async (userEmail) => {
+    if (!userEmail) return false;
+    const cleanEmail = userEmail.toLowerCase().trim();
+    if (isAdminEmail(cleanEmail)) return true;
+    try {
+      const { data: allowlistEntry } = await supabase
+        .from('admin_allowlist')
+        .select('email')
+        .eq('email', cleanEmail)
+        .maybeSingle();
+      if (allowlistEntry) return true;
+    } catch (_e) {}
+    try {
+      const { data: acc } = await supabase
+        .from('accounts')
+        .select('role')
+        .eq('email', cleanEmail)
+        .maybeSingle();
+      if (acc && acc.role === 'admin') return true;
+    } catch (_e) {}
+    return false;
+  }, []);
+
   // Auto-resume active session if user has not clicked Logout (and session <= 7 days old)
   useEffect(() => {
     async function checkExistingSession() {
@@ -103,11 +126,31 @@ const LoginPage = () => {
           const meta = session.user.user_metadata || {};
           let profile = null;
           try {
-            const { data: p } = await supabase.from('accounts').select('role, shop_id, full_name').eq('id', session.user.id).single();
-            profile = p;
+            const { data: p } = await supabase.from('accounts').select('*').eq('id', session.user.id).maybeSingle();
+            if (p) profile = p;
           } catch (_e) {}
-          const role = profile?.role || (isAdminEmail(userEmail) ? 'admin' : (session.user.user_metadata?.role || 'student'));
-          const shopId = profile?.shop_id || session.user.user_metadata?.shopId || null;
+
+          const isAdmin = (await checkIsAdmin(userEmail)) || profile?.role === 'admin';
+          const isVendor = profile?.role === 'vendor';
+          const isSgukStudent = isInstitutionalEmail(userEmail);
+
+          let role = null;
+          if (isAdmin) {
+            role = 'admin';
+          } else if (isVendor) {
+            role = 'vendor';
+          } else if (isSgukStudent) {
+            role = 'student';
+          } else {
+            console.warn(`[AUTH REJECTED] Access denied for non-institutional email: ${userEmail}`);
+            await supabase.auth.signOut();
+            clearStoredUser();
+            setIsLoading(false);
+            setErrorMsg('Access Denied: Only institutional emails (@sguk.ac.in) are allowed for student login.');
+            return;
+          }
+
+          const shopId = profile?.shop_id || meta.shopId || null;
           const name = profile?.full_name || meta.full_name || meta.name || (userEmail ? userEmail.split('@')[0] : 'Student');
           const avatar = meta.avatar_url || meta.picture || null;
           const id = userEmail || session.user.id;
@@ -117,7 +160,7 @@ const LoginPage = () => {
     }
 
     checkExistingSession();
-  }, [finish, redirectByRole]);
+  }, [checkIsAdmin, finish, redirectByRole]);
 
   /* ── Keyboard shortcut to close Privacy Modal on Escape ── */
   useEffect(() => {
@@ -254,21 +297,28 @@ const LoginPage = () => {
           if (!error && data) profile = data;
         } catch (_e) {}
 
-        // Domain gate: only admins (email allowlist OR accounts.role='admin') and
-        // provisioned vendors may use a non-@sguk.ac.in Google account. Everyone
-        // else must be @sguk.ac.in.
-        const isAdmin = isAdminEmail(userEmail) || profile?.role === 'admin';
+        // Domain gate: admins (email allowlist, admin_allowlist table, or
+        // accounts.role='admin') and provisioned vendors may use a non-@sguk.ac.in
+        // Google account. Everyone else must be an institutional (@sguk.ac.in) email.
+        const isAdmin = (await checkIsAdmin(userEmail)) || profile?.role === 'admin';
         const isVendor = profile?.role === 'vendor';
-        if (!isAdmin && !isVendor && !userEmail.endsWith('@sguk.ac.in')) {
+        const isSgukStudent = isInstitutionalEmail(userEmail);
+
+        let role = null;
+        if (isAdmin) {
+          role = 'admin';
+        } else if (isVendor) {
+          role = 'vendor';
+        } else if (isSgukStudent) {
+          role = 'student';
+        } else {
+          console.warn(`[AUTH REJECTED] Access denied for non-institutional email: ${userEmail}`);
           await supabase.auth.signOut();
-          localStorage.removeItem('sgu_google_oauth_started');
+          clearStoredUser();
           setIsLoading(false);
-          setErrorMsg('Please sign in with your @sguk.ac.in institutional Google account.');
+          setErrorMsg('Access Denied: Only institutional emails (@sguk.ac.in) are allowed for student login.');
           return;
         }
-
-        // Google Auth Role Routing: Admin emails -> 'admin', all other Google users -> 'student'
-        const role = isAdmin ? 'admin' : (isVendor ? 'vendor' : 'student');
 
         const name = profile?.full_name || meta.full_name || meta.name || (userEmail ? userEmail.split('@')[0] : 'Student');
         const avatar = meta.avatar_url || meta.picture || null;
@@ -284,7 +334,7 @@ const LoginPage = () => {
       window.removeEventListener('focus', handleWindowFocus);
       subscription.unsubscribe();
     };
-  }, [finish, redirectByRole]);
+  }, [checkIsAdmin, finish, redirectByRole]);
 
   return (
     <>
