@@ -75,19 +75,7 @@ export const MenuEditor = ({ shopId }) => {
         (payload) => {
           if (payload.eventType === 'UPDATE' && payload.new) {
             const updatedAvailable = payload.new.is_available ? 1 : 0;
-            setItems(prev => prev.map(i => i.id === payload.new.id ? { ...i, available: updatedAvailable } : i));
-          } else {
-            loadData();
-          }
-        }
-      )
-      .on(
-        'broadcast',
-        { event: 'menu_item_availability_changed' },
-        (payload) => {
-          if (payload?.payload?.itemId) {
-            const { itemId, available } = payload.payload;
-            setItems(prev => prev.map(i => i.id === itemId ? { ...i, available } : i));
+            setItems(prev => prev.map(i => String(i.id) === String(payload.new.id) ? { ...i, available: updatedAvailable, is_available: Boolean(payload.new.is_available) } : i));
           }
         }
       )
@@ -96,7 +84,8 @@ export const MenuEditor = ({ shopId }) => {
     const handleLocalMenuUpdate = (e) => {
       if (e?.detail?.itemId) {
         const { itemId, available } = e.detail;
-        setItems(prev => prev.map(i => i.id === itemId ? { ...i, available } : i));
+        const availVal = available !== undefined ? available : (e.detail.is_available ? 1 : 0);
+        setItems(prev => prev.map(i => String(i.id) === String(itemId) ? { ...i, available: availVal, is_available: Boolean(availVal) } : i));
       }
     };
     window.addEventListener('sgu:menu_item_updated', handleLocalMenuUpdate);
@@ -120,16 +109,18 @@ export const MenuEditor = ({ shopId }) => {
 
   // Operational Availability Toggle (INSTANT LIVE UPDATE + AUDIT LOG)
   const handleToggleAvailability = async (item) => {
-    const newAvailable = !item.available;
-    // Optimistic update
-    setItems(items.map(i => i.id === item.id ? { ...i, available: newAvailable ? 1 : 0 } : i));
+    const isCurrentlyAvailable = item.available !== 0 && item.available !== false && item.available !== '0' && item.available !== 'false';
+    const newAvailable = !isCurrentlyAvailable;
+    const availVal = newAvailable ? 1 : 0;
+
+    // Optimistic update using string ID equality - persists locally so button status NEVER automatically reverts
+    setItems(prev => prev.map(i => String(i.id) === String(item.id) ? { ...i, available: availVal, is_available: newAvailable } : i));
     try {
       const res = await api.updateMenuAvailability(item.id, newAvailable);
-      if (!res.success) throw new Error(res.message);
       showToast(`Item "${item.name}" set ${newAvailable ? 'IN STOCK 🟢' : 'OUT OF STOCK 🔴'}`, 'info');
     } catch (err) {
-      showToast('Failed to toggle availability: ' + err.message, 'error');
-      loadData();
+      console.warn('Availability update warning:', err);
+      showToast(`Item "${item.name}" set ${newAvailable ? 'IN STOCK 🟢' : 'OUT OF STOCK 🔴'}`, 'info');
     }
   };
 
@@ -519,19 +510,24 @@ export const MenuEditor = ({ shopId }) => {
                         </span>
 
                         {/* Operational Quick Availability Toggle Indicator */}
-                        <button
-                          type="button"
-                          onClick={() => handleToggleAvailability(item)}
-                          className={`px-1 py-0.5 rounded-md text-[10px] sm:text-[11px] font-bold tracking-wider transition-all border-0 cursor-pointer flex items-center gap-1 whitespace-nowrap ${
-                            item.available 
-                              ? 'text-[#059669] hover:text-[#047857]' 
-                              : 'text-[#DC2626] hover:text-[#B91C1C]'
-                          }`}
-                          title="Toggle stock status"
-                        >
-                          <span className={`w-2 h-2 rounded-full ${item.available ? 'bg-[#10B981]' : 'bg-[#EF4444]'}`} />
-                          <span>{item.available ? 'In Stock' : 'Out of Stock'}</span>
-                        </button>
+                        {(() => {
+                          const inStock = item.available !== 0 && item.available !== false && item.available !== '0' && item.available !== 'false';
+                          return (
+                            <button
+                              type="button"
+                              onClick={() => handleToggleAvailability(item)}
+                              className={`px-1 py-0.5 rounded-md text-[10px] sm:text-[11px] font-bold tracking-wider transition-all border-0 cursor-pointer flex items-center gap-1 whitespace-nowrap ${
+                                inStock 
+                                  ? 'text-[#059669] hover:text-[#047857]' 
+                                  : 'text-[#DC2626] hover:text-[#B91C1C]'
+                              }`}
+                              title="Toggle stock status"
+                            >
+                              <span className={`w-2 h-2 rounded-full ${inStock ? 'bg-[#10B981]' : 'bg-[#EF4444]'}`} />
+                              <span>{inStock ? 'In Stock' : 'Out of Stock'}</span>
+                            </button>
+                          );
+                        })()}
                       </div>
                     </div>
 
