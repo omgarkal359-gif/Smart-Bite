@@ -41,8 +41,6 @@ const UserProfile = lazyWithRetry(() => import('./pages/UserProfile'));
 const SearchPage = lazyWithRetry(() => import('./pages/SearchPage'));
 const OrdersPage = lazyWithRetry(() => import('./pages/OrdersPage'));
 const OnboardingPage = lazyWithRetry(() => import('./pages/OnboardingPage'));
-const ForgotPassword = lazyWithRetry(() => import('./pages/ForgotPassword'));
-const ResetPassword = lazyWithRetry(() => import('./pages/ResetPassword'));
 const CartPage = lazyWithRetry(() => import('./pages/CartPage'));
 const Unauthorized = lazyWithRetry(() => import('./pages/Unauthorized'));
 
