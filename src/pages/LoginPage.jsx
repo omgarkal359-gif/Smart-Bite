@@ -254,9 +254,10 @@ const LoginPage = () => {
           if (!error && data) profile = data;
         } catch (_e) {}
 
-        // Domain gate: only admins (allowlist) and provisioned vendors may use a
-        // non-@sguk.ac.in Google account. Everyone else must be @sguk.ac.in.
-        const isAdmin = isAdminEmail(userEmail);
+        // Domain gate: only admins (email allowlist OR accounts.role='admin') and
+        // provisioned vendors may use a non-@sguk.ac.in Google account. Everyone
+        // else must be @sguk.ac.in.
+        const isAdmin = isAdminEmail(userEmail) || profile?.role === 'admin';
         const isVendor = profile?.role === 'vendor';
         if (!isAdmin && !isVendor && !userEmail.endsWith('@sguk.ac.in')) {
           await supabase.auth.signOut();
