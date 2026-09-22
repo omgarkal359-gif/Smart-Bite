@@ -13,6 +13,11 @@ export const isAdminEmail = (email) => {
   return ADMIN_EMAILS.includes(email.toLowerCase().trim());
 };
 
+export const isInstitutionalEmail = (email) => {
+  if (!email) return false;
+  return email.toLowerCase().trim().endsWith('@sguk.ac.in');
+};
+
 // 7 Days Session Duration Configuration (7 days * 24 hours * 60 mins * 60 secs * 1000 ms = 604,800,000 ms)
 export const SESSION_EXPIRY_DAYS = 7;
 export const SESSION_DURATION_MS = SESSION_EXPIRY_DAYS * 24 * 60 * 60 * 1000;
