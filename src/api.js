@@ -812,44 +812,55 @@ export const api = {
     const items = orderData.items || [];
     if (items.length === 0) throw new Error('Cart is empty.');
 
-    // Server-authoritative total (never trust the client-supplied total).
-    // Verify item availability against database source of truth before order insertion
-    const itemIds = items.map(it => it.id).filter(Boolean);
-    if (itemIds.length > 0) {
-      try {
-        const { data: dbItems, error: checkErr } = await supabase
-          .from('menu_items')
-          .select('id, name, is_available')
-          .in('id', itemIds);
+    // Identity is derived ONLY from the authenticated Supabase session — never
+    // from client-supplied customerId/customerEmail. (orders RLS is currently
+    // permissive, so the app layer must not trust caller-provided identity;
+    // the DB-level guard is tracked separately as an RLS migration.)
+    const user = await currentUser();
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!user || !user.id || !isUuid.test(String(user.id))) {
+      throw new Error('You must be signed in to place an order.');
+    }
+    const customerId = user.id;
+    const customerEmail = (user.email || '').toLowerCase() || null;
 
-        if (!checkErr && Array.isArray(dbItems)) {
-          const unavailable = dbItems.filter(it => it.is_available === false);
-          if (unavailable.length > 0) {
-            const names = unavailable.map(u => `"${u.name}"`).join(', ');
-            throw new Error(`Order failed: Item ${names} is currently out of stock. Please remove it from your cart.`);
-          }
-        }
-      } catch (stockErr) {
-        if (stockErr.message && stockErr.message.includes('out of stock')) {
-          throw stockErr;
-        }
+    // DB-authoritative price + availability. Client-supplied prices are never
+    // trusted: the subtotal is computed from menu_items.price fetched here.
+    const itemIds = items.map(it => it.id).filter(Boolean);
+    const priceMap = new Map();
+    if (itemIds.length > 0) {
+      const { data: dbItems, error: checkErr } = await supabase
+        .from('menu_items')
+        .select('id, name, is_available, price')
+        .in('id', itemIds);
+
+      if (checkErr) throw new Error('Could not verify item prices. Please try again.');
+
+      const unavailable = (dbItems || []).filter(it => it.is_available === false);
+      if (unavailable.length > 0) {
+        const names = unavailable.map(u => `"${u.name}"`).join(', ');
+        throw new Error(`Order failed: Item ${names} is currently out of stock. Please remove it from your cart.`);
+      }
+
+      const dbById = new Map((dbItems || []).map(r => [String(r.id), r]));
+      for (const it of items) {
+        if (!it.id) continue; // id-less items can't be verified (legacy)
+        const row = dbById.get(String(it.id));
+        if (!row) throw new Error('Order failed: one or more items are no longer on the menu. Please refresh your cart.');
+        priceMap.set(String(it.id), Number(row.price) || 0);
       }
     }
 
-    // Server-authoritative fields derived here (client-supplied total is never trusted).
-    const subtotal = items.reduce((s, it) => s + (Number(it.price) || 0) * (it.quantity || 1), 0);
+    // Server-authoritative total from DB prices × clamped positive-integer quantities.
+    const subtotal = items.reduce((s, it) => {
+      const unit = it.id != null && priceMap.has(String(it.id)) ? priceMap.get(String(it.id)) : (Number(it.price) || 0);
+      const qty = Math.max(1, Math.floor(Number(it.quantity) || 1));
+      return s + unit * qty;
+    }, 0);
+
     const orderId = orderData.id || orderData.orderId || `ORD-${Date.now()}`;
-    const user = await currentUser();
     const first = items[0] || {};
     const status = orderData.payment === 'Cash' ? 'pending_cash' : 'placed';
-
-    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    const customerId = (user?.id && isUuid.test(user.id))
-      ? user.id
-      : (orderData.customerId && isUuid.test(orderData.customerId) ? orderData.customerId : null);
-    const customerEmail = user?.email
-      || orderData.customerEmail
-      || (orderData.customerId && String(orderData.customerId).includes('@') ? String(orderData.customerId).toLowerCase() : null);
 
     const targetStallId = orderData.stallId || orderData.stall_id || first.stallId || first.stall_id || null;
     const targetStallName = orderData.stallName || orderData.stall_name || first.stallName || first.stall_name || null;
