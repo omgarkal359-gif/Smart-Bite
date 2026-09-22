@@ -175,22 +175,6 @@ function mapOrder(o) {
   };
 }
 
-// Thin trust-layer server calls (email + auth provisioning) reach the Express
-// serverless endpoints, authenticated with the current Supabase session token.
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || '';
-const API_BASE = BACKEND_URL ? `${BACKEND_URL}/api` : '/api';
-async function serverFetch(path, options = {}) {
-  let token = '';
-  try { const { data } = await supabase.auth.getSession(); token = data?.session?.access_token || ''; } catch (_e) {}
-  const res = await fetch(`${API_BASE}${path}`, {
-    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-    ...options
-  });
-  const json = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(json.message || json.error || `Server error ${res.status}`);
-  return json;
-}
-
 export function getDeletedStallIds() {
   try {
     const raw = localStorage.getItem('sgu_deleted_stalls') || sessionStorage.getItem('sgu_deleted_stalls') || '[]';
@@ -1290,95 +1274,111 @@ export const api = {
     return data.map(p => ({ id: p.id, username: p.email, name: p.full_name, role: p.role, shopId: p.shop_id, status: p.account_status }));
   },
 
-  // ── Vendor onboarding (server trust layer + client Supabase fallback) ─────
+  // ── Vendor onboarding (Supabase-direct + Edge Functions; no Express) ───────
+  // Reads/writes to vendor_invites go straight through PostgREST under admin RLS.
+  // Anything needing the service-role key (auth-user provisioning, bank-number
+  // encryption, the public token flow) runs in an Edge Function.
   onboarding: {
     listInvites: async () => {
-      try {
-        return await serverFetch('/onboarding');
-      } catch (_e) {
-        // Supabase-first fallback: admin RLS grants read on vendor_invites.
-        const { data } = await supabase.from('vendor_invites').select('*').order('created_at', { ascending: false });
-        return { invites: data || [], fieldCatalog: DEFAULT_FIELD_CATALOG };
-      }
+      // Admin RLS grants read on vendor_invites.
+      const { data } = await supabase.from('vendor_invites').select('*').order('created_at', { ascending: false });
+      return { invites: data || [], fieldCatalog: DEFAULT_FIELD_CATALOG };
     },
     createInvite: async (payload) => {
-      try {
-        return await serverFetch('/onboarding/invite', { method: 'POST', body: JSON.stringify(payload) });
-      } catch (_e) {
-        // Supabase-first fallback: insert the invite directly (admin RLS).
-        // Email delivery lives in the server layer, so emailed is false here.
-        const token = (crypto?.randomUUID?.() || `inv-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
-        const { error } = await supabase.from('vendor_invites').insert({
-          token,
-          contact_email: (payload.email || '').trim().toLowerCase(),
-          invitee_name: payload.inviteeName || null,
-          required_fields: Array.isArray(payload.fields) ? payload.fields : [],
-          status: 'sent'
-        });
-        if (error) throw new Error(error.message);
-        return { inviteLink: `${window.location.origin}/onboard/${token}`, emailed: false };
-      }
+      // Insert the invite directly (admin RLS). Invite email is not sent from the
+      // browser — the admin shares the copy-able onboarding link (emailed: false).
+      const token = (crypto?.randomUUID?.() || `inv-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
+      const { error } = await supabase.from('vendor_invites').insert({
+        token,
+        contact_email: (payload.email || '').trim().toLowerCase(),
+        invitee_name: payload.inviteeName || null,
+        required_fields: Array.isArray(payload.fields) ? payload.fields : [],
+        status: 'sent'
+      });
+      if (error) throw new Error(error.message);
+      return { inviteLink: `${window.location.origin}/onboard/${token}`, emailed: false };
     },
     manualCreate: async (payload) => {
-      // Provisioning a vendor requires creating a Supabase Auth user, which
-      // needs the service-role key and can ONLY happen server-side. Use the
-      // Edge Function (Supabase-first) and fall back to the Express trust layer
-      // if it is deployed. Never fabricate a password client-side — a password
-      // that was never registered in Auth cannot be used to log in.
+      // Provisioning a vendor requires creating a Supabase Auth user, which needs
+      // the service-role key and can ONLY happen server-side (Edge Function).
+      // Never fabricate a password client-side — a password that was never
+      // registered in Auth cannot be used to log in.
       const { data: fnData, error: fnErr } = await supabase.functions.invoke('provision-vendor', { body: payload });
-      if (!fnErr && fnData?.success) {
+      if (fnErr || !fnData?.success) {
+        throw new Error(fnData?.message || fnErr?.message || 'Vendor provisioning is unavailable. Deploy the "provision-vendor" Edge Function.');
+      }
+      try {
+        addAuditLog({
+          level: 'INFO', category: 'Vendors',
+          message: `Vendor '${fnData.email}' provisioned (stall: ${fnData.stallId})`,
+          userEmail: fnData.email
+        });
+      } catch (_a) {}
+
+      // provision-vendor stores only the last 4 digits. If bank details were
+      // collected, encrypt + persist the full account number server-side.
+      const d = payload?.data || {};
+      if (fnData.stallId && (d.account_number || d.upi_id || d.account_holder || d.ifsc)) {
         try {
-          addAuditLog({
-            level: 'INFO', category: 'Vendors',
-            message: `Vendor '${fnData.email}' provisioned (stall: ${fnData.stallId})`,
-            userEmail: fnData.email
+          await api.onboarding.savePayout({
+            stallId: fnData.stallId,
+            account_holder: d.account_holder,
+            account_number: d.account_number,
+            ifsc: d.ifsc,
+            upi_id: d.upi_id,
+            name: d.full_name || payload.email,
+            email: payload.email,
+            phone: d.mobile
           });
-        } catch (_a) {}
-        return fnData; // { email, stallId, tempPassword }
+        } catch (_p) { /* non-fatal: vendor exists; payout can be re-saved via edit */ }
       }
-
-      // Edge Function unavailable → try the Express trust layer (if deployed).
-      const serverMsg = fnData?.message || fnErr?.message;
-      try {
-        return await serverFetch('/onboarding/manual', { method: 'POST', body: JSON.stringify(payload) });
-      } catch (_e) {
-        throw new Error(serverMsg || 'Vendor provisioning is unavailable. Deploy the "provision-vendor" Edge Function.');
-      }
+      return fnData; // { email, stallId, tempPassword }
     },
-    savePayout: (payload) => serverFetch('/onboarding/payout', { method: 'POST', body: JSON.stringify(payload) }).catch(() => ({ success: true })),
-    getInvite: (token) => serverFetch(`/onboarding/${token}`).catch(() => ({ invite: null })),
-    submit: (token, data) => serverFetch(`/onboarding/${token}/submit`, { method: 'POST', body: JSON.stringify({ data }) }),
-    approve: async (id, stallId) => {
-      try {
-        return await serverFetch(`/onboarding/${id}/approve`, { method: 'POST', body: JSON.stringify({ stallId }) });
-      } catch (_e) {
-        // Supabase-first fallback: read the submitted invite (admin RLS), then
-        // provision the login through the Edge Function (service role).
-        const { data: inv, error } = await supabase.from('vendor_invites').select('*').eq('id', id).maybeSingle();
-        if (error) throw new Error(error.message);
-        if (!inv) throw new Error('Invite not found.');
-        if (inv.status !== 'submitted') throw new Error('Invite must be submitted before approval.');
-
-        const data = { ...(inv.submitted_data || {}) };
-        if (!data.full_name && inv.invitee_name) data.full_name = inv.invitee_name;
-        const res = await api.onboarding.manualCreate({ email: inv.contact_email, data, stallId });
-
-        await supabase.from('vendor_invites')
-          .update({ status: 'approved', stall_id: res.stallId, updated_at: new Date().toISOString() })
-          .eq('id', id);
-        return res; // { email, stallId, tempPassword }
+    savePayout: async (payload) => {
+      // Bank account number is encrypted (AES-256-GCM) server-side by the Edge
+      // Function; the raw number never touches the DB or the browser.
+      const { data, error } = await supabase.functions.invoke('save-payout', { body: payload });
+      if (error || !data?.success) {
+        throw new Error(data?.message || error?.message || 'Failed to save payout details.');
       }
+      return data;
+    },
+    getInvite: async (token) => {
+      // Public token flow → Edge Function (service role), no login required.
+      const { data, error } = await supabase.functions.invoke('onboarding-public', { body: { action: 'get', token } });
+      if (error) return { invite: null, message: error.message };
+      return data;
+    },
+    submit: async (token, data) => {
+      const { data: res, error } = await supabase.functions.invoke('onboarding-public', { body: { action: 'submit', token, data } });
+      if (error || !res?.success) {
+        throw new Error(res?.message || error?.message || 'Failed to submit onboarding.');
+      }
+      return res;
+    },
+    approve: async (id, stallId) => {
+      // Read the submitted invite (admin RLS), then provision the login through
+      // the Edge Function (service role).
+      const { data: inv, error } = await supabase.from('vendor_invites').select('*').eq('id', id).maybeSingle();
+      if (error) throw new Error(error.message);
+      if (!inv) throw new Error('Invite not found.');
+      if (inv.status !== 'submitted') throw new Error('Invite must be submitted before approval.');
+
+      const data = { ...(inv.submitted_data || {}) };
+      if (!data.full_name && inv.invitee_name) data.full_name = inv.invitee_name;
+      const res = await api.onboarding.manualCreate({ email: inv.contact_email, data, stallId });
+
+      await supabase.from('vendor_invites')
+        .update({ status: 'approved', stall_id: res.stallId, updated_at: new Date().toISOString() })
+        .eq('id', id);
+      return res; // { email, stallId, tempPassword }
     },
     reject: async (id, reason) => {
-      try {
-        return await serverFetch(`/onboarding/${id}/reject`, { method: 'POST', body: JSON.stringify({ reason }) });
-      } catch (_e) {
-        const { error } = await supabase.from('vendor_invites')
-          .update({ status: 'rejected', reject_reason: (reason || '').slice(0, 500), updated_at: new Date().toISOString() })
-          .eq('id', id);
-        if (error) throw new Error(error.message);
-        return { success: true };
-      }
+      const { error } = await supabase.from('vendor_invites')
+        .update({ status: 'rejected', reject_reason: (reason || '').slice(0, 500), updated_at: new Date().toISOString() })
+        .eq('id', id);
+      if (error) throw new Error(error.message);
+      return { success: true };
     },
     resetPassword: async (email, newPassword) => {
       const cleanEmail = (email || '').trim().toLowerCase();
