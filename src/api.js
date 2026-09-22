@@ -324,8 +324,18 @@ export const api = {
       profile = acct || null;
     } catch (_e) {}
 
-    let role = profile?.role || authUser.app_metadata?.role || authUser.user_metadata?.role || 'vendor';
-    if (isAdminEmail(input)) role = 'admin';
+    // Role comes only from authoritative sources: the admin allowlist or the
+    // RLS-protected accounts profile. Never from user_metadata (user-writable,
+    // set at signUp). Fail closed: if no staff role resolves, reject the login.
+    let role = null;
+    if (isAdminEmail(input)) {
+      role = 'admin';
+    } else if (profile?.role === 'vendor' || profile?.role === 'admin') {
+      role = profile.role;
+    }
+    if (!role) {
+      return { success: false, message: 'This account is not authorized for staff login.' };
+    }
 
     const shopId = profile?.shop_id || authUser.app_metadata?.shopId || null;
     const name = profile?.full_name || authUser.user_metadata?.full_name || input.split('@')[0];
