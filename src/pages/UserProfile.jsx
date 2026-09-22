@@ -5,7 +5,7 @@ import { Button } from '../components/ui/Button';
 import { LogOut, User, ShoppingBag, ArrowRight, ExternalLink, ShieldCheck } from 'lucide-react';
 import { api, formatRelativeTime } from '../api';
 import { supabase } from '../supabaseClient';
-import { getStoredUser, setStoredUser, clearStoredUser, isUserOrder, getLocalOrders } from '../utils/auth';
+import { getStoredUser, setStoredUser, clearStoredUser, isUserOrder, getLocalOrders, isAdminEmail } from '../utils/auth';
 import './pages.css';
 import './profile.css';
 

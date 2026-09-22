@@ -68,7 +68,9 @@ const VendorDashboard = () => {
   const cleanUrlShopId = (urlShopId && urlShopId !== 'undefined' && urlShopId !== 'null') ? urlShopId : null;
   const [user, setUser] = useState(null);
   const [showConfetti, setShowConfetti] = useState(false);
-  
+  const [waitTime, setWaitTime] = useState(10);
+  const { showToast } = useCart();
+
   // Determine target shop ID (URL takes priority, then user profile)
   const targetShopId = cleanUrlShopId || user?.shopId || user?.shopid;
   const currentShop = SHOPS.find(s => s.id === targetShopId);

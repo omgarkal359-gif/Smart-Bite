@@ -1,6 +1,7 @@
 import { supabase } from './supabaseClient';
 import { addAuditLog } from './utils/logger';
 import { isAdminEmail, saveLocalOrder } from './utils/auth';
+import { SHOPS } from './data/foodCourtDB';
 
 // =============================================================================
 // SINGLE SOURCE OF TRUTH: Supabase (PostgREST + Auth + Realtime).
@@ -834,6 +835,24 @@ export const api = {
         }
       }
     }
+
+    // Server-authoritative fields derived here (client-supplied total is never trusted).
+    const subtotal = items.reduce((s, it) => s + (Number(it.price) || 0) * (it.quantity || 1), 0);
+    const orderId = orderData.id || orderData.orderId || `ORD-${Date.now()}`;
+    const user = await currentUser();
+    const first = items[0] || {};
+    const status = orderData.payment === 'Cash' ? 'pending_cash' : 'placed';
+
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const customerId = (user?.id && isUuid.test(user.id))
+      ? user.id
+      : (orderData.customerId && isUuid.test(orderData.customerId) ? orderData.customerId : null);
+    const customerEmail = user?.email
+      || orderData.customerEmail
+      || (orderData.customerId && String(orderData.customerId).includes('@') ? String(orderData.customerId).toLowerCase() : null);
+
+    const targetStallId = orderData.stallId || orderData.stall_id || first.stallId || first.stall_id || null;
+    const targetStallName = orderData.stallName || orderData.stall_name || first.stallName || first.stall_name || null;
 
     const orderRow = {
       id: orderId,

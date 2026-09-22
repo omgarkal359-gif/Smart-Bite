@@ -17,6 +17,9 @@ const CartPage = () => {
   const [upiPaymentState, setUpiPaymentState] = useState('idle'); // 'idle' | 'awaiting' | 'verifying' | 'success'
   const [recentOrders, setRecentOrders] = useState([]);
   const [currentPaymentId, setCurrentPaymentId] = useState(null);
+  const [diningMode, setDiningMode] = useState('dine_in'); // 'dine_in' | 'takeaway'
+  const [currentOrderId, setCurrentOrderId] = useState(null);
+  const [currentCreatedOrder, setCurrentCreatedOrder] = useState(null);
 
 
   const cartItems = Object.values(cart);

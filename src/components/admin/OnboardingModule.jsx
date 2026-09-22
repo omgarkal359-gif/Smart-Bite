@@ -3,6 +3,10 @@ import { Mail, Check, X, RefreshCw, Copy, Store, Power, UserPlus, Link2, Pencil,
 import { api, DEFAULT_FIELD_CATALOG, getDeletedStallIds, parseDetails } from '../../api';
 import { supabase } from '../../supabaseClient';
 
+// A stall/account id may be a UUID or a slug (e.g. "mangales-snacks"). Only add
+// the id/uuid-column filters to a query when the value is actually a UUID.
+const isUUID = (s) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(s || '').trim());
+
 const GROUP_LABELS = {
   core: 'Core Details',
   bank: 'Bank & Payout Details',

@@ -6,8 +6,10 @@ import {
 import { api, getDeletedStallIds } from '../../api';
 import { supabase } from '../../supabaseClient';
 import { SHOPS } from '../../data/foodCourtDB';
+import { useCart } from '../../context/CartContext';
 
 export const OrdersVendorsModule = () => {
+  const { showToast } = useCart();
   const [activeTab, setActiveTab] = useState('orders'); // 'orders' | 'vendors'
   const [orders, setOrders] = useState([]);
   const [stalls, setStalls] = useState([]);
