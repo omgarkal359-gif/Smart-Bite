@@ -26,7 +26,7 @@ const CartPage = () => {
 
   useEffect(() => {
     const userData = getStoredUser() || {};
-    const customerId = (userData.id || userData.username || '9876543210').trim().toLowerCase();
+    const customerId = (userData.id || userData.username || '').trim().toLowerCase();
 
     api.getStudentOrders(customerId)
       .then(orders => {
@@ -123,7 +123,7 @@ const CartPage = () => {
     const customerEmail = userData.email || (userData.id && String(userData.id).includes('@') ? String(userData.id).toLowerCase() : null);
     const orderPayload = {
       customerName: userData.name || 'Guest User',
-      customerId: userData.id || '9876543210',
+      customerId: userData.id || null,
       customerEmail,
       type: diningMode === 'dine_in' ? 'Dine-In' : 'Takeaway',
       payment: 'Online UPI',

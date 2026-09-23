@@ -17,7 +17,7 @@ const OrdersPage = () => {
 
   React.useEffect(() => {
     const userData = getStoredUser() || {};
-    const customerId = userData.id || '9876543210';
+    const customerId = userData.id || userData.username || null;
 
     async function fetchOrders() {
       try {

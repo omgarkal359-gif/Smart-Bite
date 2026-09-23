@@ -177,7 +177,7 @@ export const CheckoutDrawer = ({ isOpen, onClose, cart, inventory, onComplete })
       const customerEmail = userData.email || (userData.id && String(userData.id).includes('@') ? String(userData.id).toLowerCase() : null);
       const orderPayload = {
         customerName: userData.name || 'Guest User',
-        customerId: userData.id || '9876543210',
+        customerId: userData.id || null,
         customerEmail,
         type: diningMode === 'dine_in' ? 'Dine-In' : 'Takeaway',
         payment: 'Online UPI',

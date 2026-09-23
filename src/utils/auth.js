@@ -138,7 +138,7 @@ export const isUserOrder = (order, user) => {
   // 4. Name match (if specific name)
   if (uName && oCustName && uName === oCustName && uName !== 'student' && uName !== 'guest user' && uName !== 'guest') return true;
   // 5. Default orders placed in the browser session without strict identity
-  if (!oCustId || oCustId === '9876543210' || oCustId === 'student' || oCustName === 'student' || oCustName === 'guest user' || oCustName === 'guest') {
+  if (!oCustId || oCustId === 'student' || oCustName === 'student' || oCustName === 'guest user' || oCustName === 'guest') {
     return true;
   }
 
