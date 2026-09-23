@@ -60,6 +60,10 @@ Deno.serve(async (req) => {
   if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
     return json({ success: false, message: 'A valid vendor email is required.' }, 400);
   }
+  // Reject SQL LIKE wildcards so the ilike match can't span multiple accounts.
+  if (/[%_\\]/.test(email)) {
+    return json({ success: false, message: 'Invalid vendor email.' }, 400);
+  }
   if (password.length < 8) {
     return json({ success: false, message: 'Password must be at least 8 characters.' }, 400);
   }

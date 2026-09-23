@@ -61,6 +61,8 @@ Deno.serve(async (req) => {
   const action = (p?.action || '').toString();
   const email = (p?.email || '').toString().trim().toLowerCase();
   if (!email || !/^\S+@\S+\.\S+$/.test(email)) return json({ success: false, message: 'A valid email is required.' }, 400);
+  // Reject SQL LIKE wildcards so an email can never match multiple rows.
+  if (/[%_\\]/.test(email)) return json({ success: false, message: 'Invalid email.' }, 400);
 
   // Guard: never let an admin lock themselves out.
   const selfTarget = email === callerEmail;
@@ -81,7 +83,7 @@ Deno.serve(async (req) => {
         });
       }
       const { error } = await admin.from('accounts')
-        .update({ role, shop_id: shopId }).ilike('email', email);
+        .update({ role, shop_id: shopId }).eq('email', email);
       if (error) return json({ success: false, message: error.message }, 500);
       return json({ success: true, email, role });
     }
@@ -95,7 +97,7 @@ Deno.serve(async (req) => {
         // Ban (indefinitely) or unban the auth user so the change is enforced.
         await admin.auth.admin.updateUserById(existing.id, { ban_duration: status === 'SUSPENDED' ? '876000h' : 'none' });
       }
-      const { error } = await admin.from('accounts').update({ account_status: status }).ilike('email', email);
+      const { error } = await admin.from('accounts').update({ account_status: status }).eq('email', email);
       if (error) return json({ success: false, message: error.message }, 500);
       return json({ success: true, email, status });
     }
@@ -104,7 +106,7 @@ Deno.serve(async (req) => {
       if (selfTarget) return json({ success: false, message: 'You cannot delete your own account.' }, 400);
       const existing = await findUserByEmail(admin, email);
       if (existing) await admin.auth.admin.deleteUser(existing.id);
-      await admin.from('accounts').delete().ilike('email', email);
+      await admin.from('accounts').delete().eq('email', email);
       return json({ success: true, email, deleted: true });
     }
 
@@ -117,7 +119,9 @@ Deno.serve(async (req) => {
 
       if (await findUserByEmail(admin, email)) return json({ success: false, message: 'A user with that email already exists.' }, 409);
 
-      const tempPassword = `Sb-${crypto.getRandomValues(new Uint8Array(5)).reduce((s, b) => s + b.toString(16).padStart(2, '0'), '')}`;
+      // Strong temp password: 24 random bytes (192 bits) base64url-ish.
+      const _pwBuf = crypto.getRandomValues(new Uint8Array(24));
+      const tempPassword = 'Sb-' + btoa(String.fromCharCode(..._pwBuf)).replace(/[+/=]/g, '').slice(0, 20);
       const { data: created, error: cErr } = await admin.auth.admin.createUser({
         email, password: tempPassword, email_confirm: true,
         app_metadata: { role, shopId }, user_metadata: { full_name: fullName, role }
