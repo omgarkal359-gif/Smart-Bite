@@ -4,7 +4,6 @@ import { AdminShell } from '../components/admin/AdminShell';
 import { OverviewModule } from '../components/admin/OverviewModule';
 import { OrdersVendorsModule } from '../components/admin/OrdersVendorsModule';
 import { OnboardingModule } from '../components/admin/OnboardingModule';
-import { RolesModule } from '../components/admin/RolesModule';
 import { SecurityLogsModule } from '../components/admin/SecurityLogsModule';
 import { DataRecoveryModule } from '../components/admin/DataRecoveryModule';
 import { BackupsModule } from '../components/admin/BackupsModule';
@@ -68,7 +67,6 @@ const AdminControlCenter = () => {
       {activeModule === 'orders' && <OrdersVendorsModule />}
       {activeModule === 'vendors' && <OnboardingModule />}
       {activeModule === 'menu-approvals' && <MenuApprovalsModule />}
-      {activeModule === 'roles' && <RolesModule />}
       {activeModule === 'security-logs' && <SecurityLogsModule />}
       {activeModule === 'data-recovery' && <DataRecoveryModule />}
       {activeModule === 'backups' && <BackupsModule />}

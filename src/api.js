@@ -1315,6 +1315,16 @@ export const api = {
     return data.map(p => ({ id: p.id, username: p.email, name: p.full_name, role: p.role, shopId: p.shop_id, status: p.account_status }));
   },
 
+  // Admin user management via the manage-user Edge Function (service-role,
+  // admin-gated). payload = { action: 'set-role'|'set-status'|'delete'|'create', ... }
+  async manageUser(payload) {
+    const { data, error } = await supabase.functions.invoke('manage-user', { body: payload });
+    if (error || !data?.success) {
+      throw new Error(data?.message || error?.message || 'User management failed.');
+    }
+    return data;
+  },
+
   // ── Vendor onboarding (Supabase-direct + Edge Functions; no Express) ───────
   // Reads/writes to vendor_invites go straight through PostgREST under admin RLS.
   // Anything needing the service-role key (auth-user provisioning, bank-number

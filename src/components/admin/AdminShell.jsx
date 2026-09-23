@@ -86,7 +86,6 @@ export const AdminShell = ({ activeModule, setActiveModule, user, children }) =>
     { id: 'orders', label: 'Orders & Shops', icon: ShoppingBag, badge: null },
     { id: 'vendors', label: 'Vendors', icon: Store, badge: null },
     { id: 'menu-approvals', label: 'Menu Approvals', icon: CheckSquare, badge: pendingMenuCount > 0 ? String(pendingMenuCount) : null },
-    { id: 'roles', label: 'Roles & Permissions', icon: Lock, badge: null },
     { id: 'security-logs', label: 'Security Logs', icon: ShieldAlert, badge: null },
     { id: 'data-recovery', label: 'Data Recovery', icon: RefreshCw, badge: null },
     { id: 'backups', label: 'Database Backups', icon: Database, badge: null },

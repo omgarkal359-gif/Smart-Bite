@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Users, Search, Filter, RefreshCw, ShieldAlert, UserCheck, UserX, KeyRound, Mail, Eye, Plus, Shield
+import {
+  Users, Search, RefreshCw, UserCheck, UserX, Plus, Shield
 } from 'lucide-react';
-import { adminApi } from '../../utils/adminApi';
+import { api } from '../../api';
 import { addAuditLog } from '../../utils/logger';
-import { SHOPS } from '../../data/foodCourtDB';
 import { useCart } from '../../context/CartContext';
 
 export const UserDirectoryModule = () => {
   const { showToast } = useCart();
   const [users, setUsers] = useState([]);
+  const [stalls, setStalls] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRole, setSelectedRole] = useState('ALL');
@@ -40,29 +40,9 @@ export const UserDirectoryModule = () => {
   async function loadUsers() {
     setIsLoading(true);
     try {
-      const res = await adminApi.getUsers().catch(() => ({ success: true, users: [] }));
-      const dbUsers = res.users || [];
-      const seedUsers = [
-        { id: 'usr-1', username: 'omgarkal359@gmail.com', name: 'Om Garkal', role: 'admin', shopId: null, status: 'ACTIVE' },
-        { id: 'usr-1b', username: 'omgarkal357@gmail.com', name: 'Om Garkal Admin', role: 'admin', shopId: null, status: 'ACTIVE' },
-        { id: 'usr-2', username: 'rohit-vadewale', name: 'Rohit Vadewale Owner', role: 'vendor', shopId: 'rohit-vadewale', status: 'ACTIVE' },
-        { id: 'usr-3', username: '252921004@sguk.ac.in', name: 'Aditya Sharma', role: 'student', shopId: null, status: 'ACTIVE' },
-        { id: 'usr-4', username: '252921012@sguk.ac.in', name: 'Sneha Patil', role: 'student', shopId: null, status: 'ACTIVE' },
-        { id: 'usr-5', username: 'mangales-snacks', name: 'Mangale Snacks Owner', role: 'vendor', shopId: 'mangales-snacks', status: 'ACTIVE' }
-      ];
-
-      // Merge with custom added/updated users in localStorage
-      let localDirectory = [];
-      try {
-        localDirectory = JSON.parse(localStorage.getItem('sgu_user_directory') || '[]');
-      } catch (e) {}
-
-      const userMap = new Map();
-      seedUsers.forEach(u => userMap.set(u.id, u));
-      dbUsers.forEach(u => userMap.set(u.id || u.username, { ...userMap.get(u.id || u.username), ...u }));
-      localDirectory.forEach(u => userMap.set(u.id || u.username, { ...userMap.get(u.id || u.username), ...u }));
-
-      setUsers(Array.from(userMap.values()));
+      const [dbUsers, stallList] = await Promise.all([api.getAdminUsers(), api.getStalls()]);
+      setUsers(Array.isArray(dbUsers) ? dbUsers : []);
+      setStalls(Array.isArray(stallList) ? stallList : []);
     } catch (err) {
       console.error('Failed to load user directory:', err);
     } finally {
@@ -72,134 +52,60 @@ export const UserDirectoryModule = () => {
 
   async function handleCreateUser(e) {
     e.preventDefault();
-    if (!formData.email || !formData.email.includes('@')) {
-      alert('Please enter a valid email address.');
-      return;
-    }
-
     const email = formData.email.trim().toLowerCase();
-    const existing = users.find(u => (u.username && u.username.toLowerCase() === email) || (u.email && u.email.toLowerCase() === email));
-    if (existing) {
-      alert(`User with email '${email}' is already registered! You can change or promote their role directly in the table.`);
-      return;
-    }
+    if (!email || !email.includes('@')) { alert('Please enter a valid email address.'); return; }
+    if (formData.role === 'vendor' && !formData.shopId) { alert('Select a stall for the vendor role.'); return; }
 
     setIsSubmitting(true);
-    const userId = `usr-${Date.now()}`;
-    const newUser = {
-      id: userId,
-      username: email,
-      email: email,
-      name: formData.name.trim() || email.split('@')[0],
-      role: formData.role,
-      shopId: formData.role === 'vendor' ? (formData.shopId || 'rohit-vadewale') : null,
-      status: 'ACTIVE'
-    };
-
-    // Optimistic Update
-    setUsers(prev => [newUser, ...prev]);
-
-    // Save to LocalStorage
     try {
-      const stored = JSON.parse(localStorage.getItem('sgu_user_directory') || '[]');
-      stored.unshift(newUser);
-      localStorage.setItem('sgu_user_directory', JSON.stringify(stored));
-    } catch (e) {}
-
-    try {
-      await adminApi.createUser(newUser).catch(() => {});
-      addAuditLog({
-        level: 'SECURITY',
-        category: 'Auth',
-        message: `New user '${newUser.username}' (${newUser.role.toUpperCase()}) provisioned by Admin`
+      const res = await api.manageUser({
+        action: 'create', email, role: formData.role,
+        shopId: formData.role === 'vendor' ? formData.shopId : null,
+        fullName: formData.name.trim()
       });
+      addAuditLog({ level: 'SECURITY', category: 'Auth', message: `User '${email}' (${formData.role.toUpperCase()}) provisioned by admin` });
+      alert(`User created.\nEmail: ${email}\nTemporary password (share securely): ${res.tempPassword}`);
       setShowAddModal(false);
       setFormData({ email: '', name: '', role: 'student', shopId: '' });
+      await loadUsers();
     } catch (err) {
-      setShowAddModal(false);
-      setFormData({ email: '', name: '', role: 'student', shopId: '' });
+      alert('Failed to create user: ' + err.message);
     } finally {
       setIsSubmitting(false);
     }
   }
 
   async function handleUpdateUserRole(targetUser, newRole, targetShopId) {
-    const userId = targetUser.id || targetUser.username;
-    if (targetUser.role === newRole && (targetShopId === undefined || targetShopId === targetUser.shopId)) {
-      return;
-    }
+    const email = (targetUser.username || targetUser.email || '').toLowerCase();
+    if (!email || !email.includes('@')) { alert('This account has no email and cannot be modified.'); return; }
+    if (targetUser.role === newRole && (targetShopId === undefined || targetShopId === targetUser.shopId)) { setRoleEditUser(null); return; }
 
-    const roleLabels = { admin: 'SUPER ADMIN', vendor: 'VENDOR OWNER', student: 'STUDENT' };
-    const oldRoleLabel = roleLabels[targetUser.role] || targetUser.role?.toUpperCase() || 'STUDENT';
-    const newRoleLabel = roleLabels[newRole] || newRole?.toUpperCase() || 'STUDENT';
-
-    const confirmMessage = `Change role of ${targetUser.name} to ${roleLabels[newRole] || newRole}?`;
-    if (!window.confirm(confirmMessage)) return;
-
-    const effectiveShopId = newRole === 'vendor' ? (targetShopId || targetUser.shopId || 'rohit-vadewale') : null;
-
-    // Optimistic Update
-    setUsers(prev => prev.map(u => (u.id === userId || u.username === userId) ? { ...u, role: newRole, shopId: effectiveShopId } : u));
-
-    // Save to LocalStorage
-    try {
-      const stored = JSON.parse(localStorage.getItem('sgu_user_directory') || '[]');
-      const updatedUser = { ...targetUser, role: newRole, shopId: effectiveShopId };
-      const idx = stored.findIndex(u => u.id === userId || u.username === userId);
-      if (idx >= 0) stored[idx] = updatedUser;
-      else stored.push(updatedUser);
-      localStorage.setItem('sgu_user_directory', JSON.stringify(stored));
-    } catch (e) {}
+    const effectiveShopId = newRole === 'vendor' ? (targetShopId || targetUser.shopId || (stalls[0] && stalls[0].id)) : null;
+    if (newRole === 'vendor' && !effectiveShopId) { alert('Select a stall for the vendor role.'); return; }
+    if (!window.confirm(`Change role of ${targetUser.name || email} to ${newRole.toUpperCase()}?`)) return;
 
     try {
-      await adminApi.updateUserRole(userId, newRole, effectiveShopId).catch(() => {});
-      addAuditLog({
-        level: 'SECURITY',
-        category: 'RBAC',
-        message: `Role for '${targetUser.username || targetUser.name}' updated from ${oldRoleLabel} to ${newRoleLabel}`
-      });
-    } catch (err) {
-      console.warn('API role update notice:', err.message);
-    }
-
-    if (roleEditUser) {
+      await api.manageUser({ action: 'set-role', email, role: newRole, shopId: effectiveShopId });
+      addAuditLog({ level: 'SECURITY', category: 'RBAC', message: `Role for '${email}' set to ${newRole.toUpperCase()}` });
       setRoleEditUser(null);
+      await loadUsers();
+    } catch (err) {
+      alert('Failed to update role: ' + err.message);
     }
   }
 
-  async function handleToggleUserStatus(userId, currentStatus) {
-    const nextStatus = currentStatus === 'SUSPENDED' ? 'ACTIVE' : 'SUSPENDED';
-
-    // Optimistic Update
-    setUsers(prev => prev.map(u => u.id === userId ? { ...u, status: nextStatus } : u));
-
-    try {
-      await adminApi.updateUserStatus(userId, nextStatus);
-      addAuditLog({
-        level: 'SECURITY',
-        category: 'Auth',
-        message: `User account '${userId}' status set to ${nextStatus} by Super Admin`
-      });
-    } catch (err) {
-      alert('Failed to update user status: ' + err.message);
-      loadUsers();
-    }
-  }
-
-  async function handleResetSession(userId, username) {
-    const confirm = window.confirm(`Reset active authentication tokens and sessions for user ${username}?`);
-    if (!confirm) return;
+  async function handleToggleUserStatus(user) {
+    const email = (user.username || user.email || '').toLowerCase();
+    if (!email || !email.includes('@')) { alert('This account has no email and cannot be modified.'); return; }
+    const nextStatus = user.status === 'SUSPENDED' ? 'ACTIVE' : 'SUSPENDED';
+    if (!window.confirm(`${nextStatus === 'SUSPENDED' ? 'Suspend' : 'Reactivate'} ${email}?`)) return;
 
     try {
-      await adminApi.resetUserSession(userId);
-      addAuditLog({
-        level: 'SECURITY',
-        category: 'Auth',
-        message: `Authentication session reset for user '${username}'`
-      });
-      alert(`Authentication sessions for ${username} have been reset successfully.`);
+      await api.manageUser({ action: 'set-status', email, status: nextStatus });
+      addAuditLog({ level: 'SECURITY', category: 'Auth', message: `User '${email}' status set to ${nextStatus}` });
+      await loadUsers();
     } catch (err) {
-      alert('Session reset failed: ' + err.message);
+      alert('Failed to update status: ' + err.message);
     }
   }
 
@@ -207,7 +113,7 @@ export const UserDirectoryModule = () => {
     setRoleEditUser(user);
     setEditRoleData({
       role: user.role || 'student',
-      shopId: user.shopId || 'rohit-vadewale'
+      shopId: user.shopId || (stalls[0] && stalls[0].id) || ''
     });
   };
 
@@ -339,14 +245,7 @@ export const UserDirectoryModule = () => {
                           >
                             <UserCheck size={15} />
                           </button>
-                          <button 
-                            title="Reset Auth Session"
-                            style={{ width: 34, height: 34, borderRadius: 10, border: '1px solid #E2E8F0', background: '#FFFFFF', color: '#475569', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s ease' }}
-                            onClick={() => handleResetSession(user.id, user.username)}
-                          >
-                            <KeyRound size={15} />
-                          </button>
-                          <button 
+                          <button
                             title={isSuspended ? 'Reactivate User Account' : 'Suspend User Account'}
                             style={{ 
                               width: 34, height: 34, borderRadius: 10, 
@@ -355,7 +254,7 @@ export const UserDirectoryModule = () => {
                               color: isSuspended ? '#059669' : '#DC2626', 
                               cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s ease' 
                             }}
-                            onClick={() => handleToggleUserStatus(user.id, user.status)}
+                            onClick={() => handleToggleUserStatus(user)}
                           >
                             {isSuspended ? <UserCheck size={15} /> : <UserX size={15} />}
                           </button>
@@ -422,7 +321,7 @@ export const UserDirectoryModule = () => {
                     style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid #CBD5E1', fontSize: '0.85rem', fontWeight: 600 }}
                   >
                     <option value="">Select Food Court Stall...</option>
-                    {SHOPS.map(shop => (
+                    {stalls.map(shop => (
                       <option key={shop.id} value={shop.id}>{shop.name} ({shop.id})</option>
                     ))}
                   </select>
@@ -484,7 +383,7 @@ export const UserDirectoryModule = () => {
                     onChange={e => setEditRoleData({ ...editRoleData, shopId: e.target.value })}
                     style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid #CBD5E1', fontSize: '0.85rem', fontWeight: 600 }}
                   >
-                    {SHOPS.map(shop => (
+                    {stalls.map(shop => (
                       <option key={shop.id} value={shop.id}>{shop.name} ({shop.id})</option>
                     ))}
                   </select>
