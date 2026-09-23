@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   BarChart3, ShoppingBag, Users, Settings, ShieldAlert, 
   Menu, X, Search, LogOut, ChevronDown, Activity, 
-  LayoutDashboard, Store, AlertTriangle, Radio, Lock, ShieldCheck, Database, Cpu, CheckSquare
+  LayoutDashboard, Store, AlertTriangle, Radio, Lock, ShieldCheck, Database, Cpu, CheckSquare, Wallet
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import sguLogo from '../../assets/sgu-logo.jpg';
@@ -86,6 +86,7 @@ export const AdminShell = ({ activeModule, setActiveModule, user, children }) =>
     { id: 'orders', label: 'Orders & Shops', icon: ShoppingBag, badge: null },
     { id: 'vendors', label: 'Vendors', icon: Store, badge: null },
     { id: 'menu-approvals', label: 'Menu Approvals', icon: CheckSquare, badge: pendingMenuCount > 0 ? String(pendingMenuCount) : null },
+    { id: 'settlements', label: 'Settlements', icon: Wallet, badge: null },
     { id: 'security-logs', label: 'Security Logs', icon: ShieldAlert, badge: null },
     { id: 'backups', label: 'Backups & Export', icon: Database, badge: null },
     { id: 'system-health', label: 'System Health', icon: Cpu, badge: null },

@@ -814,10 +814,11 @@ export const api = {
     // trusted: the subtotal is computed from menu_items.price fetched here.
     const itemIds = items.map(it => it.id).filter(Boolean);
     const priceMap = new Map();
+    const itemFeeMap = new Map(); // id -> { enabled, fee } convenience-fee override
     if (itemIds.length > 0) {
       const { data: dbItems, error: checkErr } = await supabase
         .from('menu_items')
-        .select('id, name, is_available, price')
+        .select('id, name, is_available, price, convenience_fee_enabled, convenience_fee')
         .in('id', itemIds);
 
       if (checkErr) throw new Error('Could not verify item prices. Please try again.');
@@ -834,6 +835,10 @@ export const api = {
         const row = dbById.get(String(it.id));
         if (!row) throw new Error('Order failed: one or more items are no longer on the menu. Please refresh your cart.');
         priceMap.set(String(it.id), Number(row.price) || 0);
+        itemFeeMap.set(String(it.id), {
+          enabled: row.convenience_fee_enabled,
+          fee: row.convenience_fee == null ? null : Number(row.convenience_fee)
+        });
       }
     }
 
@@ -851,6 +856,54 @@ export const api = {
     const targetStallId = orderData.stallId || orderData.stall_id || first.stallId || first.stall_id || null;
     const targetStallName = orderData.stallName || orderData.stall_name || first.stallName || first.stall_name || null;
 
+    // ── Platform fees ─────────────────────────────────────────────────────────
+    // commission_amount: deducted from the vendor's earnings (platform revenue).
+    // convenience_fee:   added once to the customer's bill (platform revenue).
+    // Rates come from platform_config; the resolved amounts are snapshotted onto
+    // the order so settlement stays correct even if rates change later.
+    const round2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
+
+    const cType = String(cfg.commission_type || 'percent').toLowerCase();
+    const cPct = Number(cfg.commission_percent) || 0;
+    const cFlat = Number(cfg.commission_flat) || 0;
+    let commissionAmount;
+    if (cType === 'flat') commissionAmount = cFlat;
+    else if (cType === 'both') commissionAmount = subtotal * cPct / 100 + cFlat;
+    else commissionAmount = subtotal * cPct / 100; // percent
+    commissionAmount = Math.min(round2(commissionAmount), subtotal); // never exceed the sale
+
+    // Convenience fee — precedence: per-vendor override, else global; per-item
+    // overrides can only raise it, never silently remove the vendor/global fee.
+    let vendorFeeEnabled = null, vendorFee = null;
+    if (targetStallId) {
+      try {
+        const { data: v } = await supabase
+          .from('vendors')
+          .select('convenience_fee_enabled, convenience_fee')
+          .eq('stall_id', targetStallId)
+          .maybeSingle();
+        if (v) {
+          vendorFeeEnabled = v.convenience_fee_enabled;
+          vendorFee = v.convenience_fee == null ? null : Number(v.convenience_fee);
+        }
+      } catch (_e) {}
+    }
+    const globalFeeOn = cfg.convenience_fee_enabled === true;
+    const globalFee = Number(cfg.convenience_fee) || 0;
+
+    let baseFee;
+    if (vendorFeeEnabled === false) baseFee = 0;
+    else if (vendorFeeEnabled === true) baseFee = vendorFee != null ? vendorFee : globalFee;
+    else baseFee = globalFeeOn ? globalFee : 0;
+
+    const itemFees = [];
+    for (const it of items) {
+      const ov = it.id != null ? itemFeeMap.get(String(it.id)) : null;
+      if (ov && ov.enabled === true) itemFees.push(ov.fee != null ? ov.fee : globalFee);
+    }
+    const convenienceFee = round2(itemFees.length ? Math.max(baseFee, ...itemFees) : baseFee);
+    const orderTotal = round2(subtotal + convenienceFee);
+
     const orderRow = {
       id: orderId,
       order_number: orderId,
@@ -863,7 +916,9 @@ export const api = {
       payment_method: orderData.payment || 'Online UPI',
       payment_status: 'pending',
       subtotal,
-      total: subtotal,
+      convenience_fee: convenienceFee,
+      commission_amount: commissionAmount,
+      total: orderTotal,
       idempotency_key: orderData.idempotencyKey || `IDEM-${orderId}`,
       items: JSON.stringify(items.map(it => ({
         id: it.id,
@@ -1330,6 +1385,100 @@ export const api = {
       .maybeSingle();
     if (error) throw new Error(error.message);
     return data;
+  },
+
+  // ── Vendor settlements (payout-later model) ────────────────────────────────
+  // Aggregates PAID orders per stall into gross / commission / net-earned, minus
+  // what has already been paid out, to give the running balance owed. Orders are
+  // single-stall, so grouping by orders.stall_id is exact.
+  async getVendorSettlements({ from, to } = {}) {
+    let q = supabase.from('orders')
+      .select('stall_id, stall_name, subtotal, commission_amount, created_at')
+      .eq('payment_status', 'paid');
+    if (from) q = q.gte('created_at', from);
+    if (to) q = q.lte('created_at', to);
+    const { data: orders, error } = await q;
+    if (error) throw new Error(error.message);
+
+    const round2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
+    const byStall = new Map();
+    for (const o of (orders || [])) {
+      const key = o.stall_id || 'unknown';
+      const cur = byStall.get(key) || { stallId: o.stall_id, stallName: o.stall_name, gross: 0, commission: 0, orders: 0 };
+      cur.gross += Number(o.subtotal) || 0;
+      cur.commission += Number(o.commission_amount) || 0;
+      cur.orders += 1;
+      if (!cur.stallName && o.stall_name) cur.stallName = o.stall_name;
+      byStall.set(key, cur);
+    }
+
+    const { data: payouts } = await supabase.from('vendor_payouts').select('stall_id, amount');
+    const paidByStall = new Map();
+    for (const p of (payouts || [])) {
+      paidByStall.set(p.stall_id, (paidByStall.get(p.stall_id) || 0) + (Number(p.amount) || 0));
+    }
+
+    const { data: vendors } = await supabase.from('vendors')
+      .select('stall_id, business_name, owner_name, contact_email, account_holder, account_last4, ifsc, upi_id, payout_status');
+    const vByStall = new Map((vendors || []).map(v => [v.stall_id, v]));
+
+    const rows = [];
+    for (const [key, s] of byStall) {
+      const net = round2(s.gross - s.commission);
+      const paid = round2(paidByStall.get(key) || 0);
+      const v = vByStall.get(key) || {};
+      rows.push({
+        stallId: s.stallId,
+        stallName: s.stallName || v.business_name || key,
+        orders: s.orders,
+        gross: round2(s.gross),
+        commission: round2(s.commission),
+        netEarned: net,
+        paid,
+        balance: round2(net - paid),
+        vendor: {
+          name: v.owner_name || v.business_name || null,
+          email: v.contact_email || null,
+          accountHolder: v.account_holder || null,
+          accountLast4: v.account_last4 || null,
+          ifsc: v.ifsc || null,
+          upi: v.upi_id || null,
+          payoutStatus: v.payout_status || null
+        }
+      });
+    }
+    rows.sort((a, b) => b.balance - a.balance);
+    return rows;
+  },
+
+  // Record a payout to a stall (admin action). Writes one ledger row; the next
+  // settlement read subtracts it from the balance owed.
+  async recordVendorPayout({ stallId, amount, gross = 0, commission = 0, method = 'manual', reference = '', notes = '' }) {
+    if (!stallId) throw new Error('stallId is required.');
+    const amt = Number(amount);
+    if (!(amt > 0)) throw new Error('Payout amount must be greater than 0.');
+    const me = await currentUser();
+    const { data, error } = await supabase.from('vendor_payouts').insert({
+      stall_id: stallId,
+      amount: amt,
+      gross: Number(gross) || 0,
+      commission: Number(commission) || 0,
+      method,
+      reference: reference || null,
+      notes: notes || null,
+      status: 'paid',
+      created_by: (me?.email || 'admin')
+    }).select().maybeSingle();
+    if (error) throw new Error(error.message);
+    return data;
+  },
+
+  async getPayoutHistory(stallId) {
+    let q = supabase.from('vendor_payouts').select('*').order('created_at', { ascending: false });
+    if (stallId) q = q.eq('stall_id', stallId);
+    const { data, error } = await q;
+    if (error) throw new Error(error.message);
+    return data || [];
   },
 
   async getAdminUsers() {

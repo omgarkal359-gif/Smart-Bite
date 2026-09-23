@@ -9,6 +9,7 @@ import { BackupsModule } from '../components/admin/BackupsModule';
 import { SystemHealthModule } from '../components/admin/SystemHealthModule';
 import { UserDirectoryModule } from '../components/admin/UserDirectoryModule';
 import { MenuApprovalsModule } from '../components/admin/MenuApprovalsModule';
+import { SettlementsModule } from '../components/admin/SettlementsModule';
 import { ConfigEmergencyModule } from '../components/admin/ConfigEmergencyModule';
 import { getStoredUser, setStoredUser, clearStoredUser, checkAdminAccess } from '../utils/auth';
 import { supabase } from '../supabaseClient';
@@ -66,6 +67,7 @@ const AdminControlCenter = () => {
       {activeModule === 'orders' && <OrdersVendorsModule />}
       {activeModule === 'vendors' && <OnboardingModule />}
       {activeModule === 'menu-approvals' && <MenuApprovalsModule />}
+      {activeModule === 'settlements' && <SettlementsModule />}
       {activeModule === 'security-logs' && <SecurityLogsModule />}
       {activeModule === 'backups' && <BackupsModule />}
       {activeModule === 'system-health' && <SystemHealthModule />}
