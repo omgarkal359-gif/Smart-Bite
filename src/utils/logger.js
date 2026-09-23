@@ -1,123 +1,84 @@
 import { supabase } from '../supabaseClient';
 
-const STORAGE_KEY = 'sgu_system_audit_logs';
+// Audit logging is server-side (Supabase `audit_logs` table). Writes go through
+// the SECURITY DEFINER `log_event` RPC (actor stamped from the session); reads
+// are admin-only. A same-tab window event gives the admin log view an instant
+// optimistic row while the DB round-trips.
 
-export function getStoredLogs() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) return parsed;
-    }
-  } catch (e) {
-    console.error('Error reading stored logs:', e);
-  }
-  // No seed data — the audit log starts empty and fills from real events.
-  return [];
+function toEntry(r) {
+  return {
+    id: r.id,
+    level: r.level || 'INFO',
+    category: r.category || 'System',
+    message: r.message || '',
+    userEmail: r.actor_email || 'system',
+    timestamp: new Date(r.created_at || Date.now()).toLocaleTimeString([], { hour12: false }),
+    createdAt: r.created_at || new Date().toISOString(),
+    meta: r.meta || {}
+  };
 }
 
-function saveLogs(logs) {
-  try {
-    // Keep maximum 300 latest logs to prevent memory issues
-    const trimmed = logs.slice(0, 300);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(trimmed));
-  } catch (e) {
-    console.error('Error saving logs:', e);
-  }
-}
-
-// Active Supabase Realtime channel for audit log broadcasts
-let logChannel = null;
-
-function getLogChannel() {
-  if (!logChannel) {
-    logChannel = supabase.channel('system-audit-logs');
-    logChannel.subscribe((status) => {
-      if (status === 'SUBSCRIBED') {
-        // Connected to Supabase Realtime broadcast channel
-      }
-    });
-  }
-  return logChannel;
-}
-
+// Append an audit entry. Fire-and-forget DB write + instant same-tab event.
 export function addAuditLog({ level = 'INFO', category = 'System', message = '', userEmail = '' }) {
   if (!message) return null;
 
-  let email = userEmail;
-  if (!email) {
-    try {
-      const raw = sessionStorage.getItem('sgu_user') || localStorage.getItem('sgu_user');
-      if (raw) {
-        const u = JSON.parse(raw);
-        email = u?.username || u?.email || u?.id || '';
-      }
-    } catch (_e) {}
-  }
-  if (!email) email = 'system@sgu.edu';
-
-  const now = new Date();
-  const timeStr = now.toLocaleTimeString([], { hour12: false });
-  const logEntry = {
-    id: `log-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
-    level,
-    category,
-    message,
-    userEmail: email,
-    timestamp: timeStr,
-    createdAt: now.toISOString()
-  };
-
-  // 1. Update local storage
-  const currentLogs = getStoredLogs();
-  const updated = [logEntry, ...currentLogs];
-  saveLogs(updated);
-
-  // 2. Dispatch local DOM event for immediate UI update in current tab
-  window.dispatchEvent(new CustomEvent('sgu:new_audit_log', { detail: logEntry }));
-
-  // 3. Broadcast via Supabase Realtime to all other open tabs/windows
   try {
-    const channel = getLogChannel();
-    if (channel) {
-      channel.send({
-        type: 'broadcast',
-        event: 'new_log',
-        payload: logEntry
-      });
-    }
-  } catch (err) {
-    console.warn('Failed to broadcast log to Supabase realtime:', err);
-  }
+    supabase
+      .rpc('log_event', { p_category: category, p_level: level, p_message: message, p_meta: {} })
+      .then(() => {}, () => {});
+  } catch (_e) {}
 
-  return logEntry;
+  const entry = {
+    id: `log-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    level, category, message,
+    userEmail: userEmail || '',
+    timestamp: new Date().toLocaleTimeString([], { hour12: false }),
+    createdAt: new Date().toISOString(),
+    meta: {}
+  };
+  try { window.dispatchEvent(new CustomEvent('sgu:new_audit_log', { detail: entry })); } catch (_e) {}
+  return entry;
 }
 
-export function clearAuditLogs() {
-  saveLogs([]);
-  window.dispatchEvent(new CustomEvent('sgu:logs_cleared', { detail: [] }));
+// Fetch recent audit entries from the DB (admin-only via RLS).
+export async function fetchAuditLogs(limit = 200) {
+  try {
+    const { data, error } = await supabase
+      .from('audit_logs')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(limit);
+    if (error || !data) return [];
+    return data.map(toEntry);
+  } catch (_e) {
+    return [];
+  }
+}
+
+// Deprecated sync accessor (audit is now server-side). Kept so older callers
+// don't break; the log views should use fetchAuditLogs().
+export function getStoredLogs() {
   return [];
 }
 
-export function subscribeRealtimeLogs(onNewLog, onCleared) {
-  // Listen for local DOM events
-  const handleLocalLog = (e) => {
-    if (e.detail && onNewLog) onNewLog(e.detail);
-  };
-  const handleCleared = (e) => {
-    if (onCleared) onCleared(e.detail || []);
-  };
+// Admin: clear the audit trail.
+export async function clearAuditLogs() {
+  try { await supabase.from('audit_logs').delete().gte('id', 0); } catch (_e) {}
+  try { window.dispatchEvent(new CustomEvent('sgu:logs_cleared', { detail: [] })); } catch (_e) {}
+  return [];
+}
 
+// Subscribe to new audit rows (Supabase Realtime) + same-tab optimistic events.
+export function subscribeRealtimeLogs(onNewLog, onCleared) {
+  const handleLocalLog = (e) => { if (e.detail && onNewLog) onNewLog(e.detail); };
+  const handleCleared = (e) => { if (onCleared) onCleared(e.detail || []); };
   window.addEventListener('sgu:new_audit_log', handleLocalLog);
   window.addEventListener('sgu:logs_cleared', handleCleared);
 
-  // Listen for Supabase Realtime broadcast events
-  const channel = supabase.channel(`system-audit-logs-sub-${Date.now()}`);
-  channel
-    .on('broadcast', { event: 'new_log' }, (payload) => {
-      if (payload && payload.payload && onNewLog) {
-        onNewLog(payload.payload);
-      }
+  const channel = supabase
+    .channel(`audit-logs-${Date.now()}`)
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'audit_logs' }, (payload) => {
+      if (payload?.new && onNewLog) onNewLog(toEntry(payload.new));
     })
     .subscribe();
 
@@ -128,7 +89,7 @@ export function subscribeRealtimeLogs(onNewLog, onCleared) {
   };
 }
 
-// Operational telemetry stream generator (RPC / background fake logs removed as requested)
+// Deprecated no-op (fake telemetry generator removed).
 export function generateRandomTraceLog() {
   return null;
 }

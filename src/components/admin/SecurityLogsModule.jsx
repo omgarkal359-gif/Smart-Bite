@@ -4,14 +4,7 @@ import {
   Info, AlertTriangle, AlertCircle, ShieldCheck, Terminal,
   Play, Pause, Trash2, Eye
 } from 'lucide-react';
-import { 
-  getStoredLogs, 
-  subscribeRealtimeLogs, 
-  generateRandomTraceLog, 
-  clearAuditLogs,
-  addAuditLog 
-} from '../../utils/logger';
-import { adminApi } from '../../utils/adminApi';
+import { fetchAuditLogs, subscribeRealtimeLogs } from '../../utils/logger';
 
 export const SecurityLogsModule = () => {
   const [logs, setLogs] = useState([]);
@@ -21,7 +14,7 @@ export const SecurityLogsModule = () => {
   const [selectedLog, setSelectedLog] = useState(null);
 
   useEffect(() => {
-    setLogs(getStoredLogs());
+    fetchAuditLogs().then(setLogs).catch(() => {});
 
     const unsubscribe = subscribeRealtimeLogs(
       (newLog) => {
@@ -32,14 +25,6 @@ export const SecurityLogsModule = () => {
 
     return () => unsubscribe();
   }, []);
-
-  useEffect(() => {
-    if (!isStreaming) return;
-    const interval = setInterval(() => {
-      generateRandomTraceLog();
-    }, 5000);
-    return () => clearInterval(interval);
-  }, [isStreaming]);
 
   const handleExportJSON = () => {
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(logs, null, 2));
