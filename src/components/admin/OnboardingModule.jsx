@@ -210,7 +210,7 @@ export const OnboardingModule = () => {
     try {
       const vIdStr = String(v.id || '').trim();
       let vQuery = supabase.from('vendors')
-        .select('business_name, fssai, contact_email, details, account_holder, ifsc, upi_id, account_last4, payout_status');
+        .select('business_name, fssai, contact_email, details, account_holder, ifsc, upi_id, account_last4, payout_status, cashfree_vendor_id');
       if (isUUID(vIdStr)) {
         vQuery = vQuery.or(`id.eq.${vIdStr},stall_id.eq.${vIdStr},stall_id.ilike.${vIdStr}`);
       } else {
@@ -246,6 +246,7 @@ export const OnboardingModule = () => {
         _last4: data?.account_last4 || '',
         _payoutStatus: data?.payout_status || 'pending',
         ...detailsObj,
+        cashfree_vendor_id: data?.cashfree_vendor_id || '',
         email: resolvedEmail
       });
     } catch (_e) {}
@@ -254,7 +255,8 @@ export const OnboardingModule = () => {
   const saveEdit = async (id) => {
     setEditBusy(true); setError('');
     try {
-      const { name, category, email: vendorEmail, fssai, _last4, _payoutStatus, ...rest } = editData;
+      const { name, category, email: vendorEmail, fssai, _last4, _payoutStatus, cashfree_vendor_id, ...rest } = editData;
+      const cfVendorId = (cashfree_vendor_id || '').toString().trim() || null;
 
       // Bank fields go through the server (encrypted + payout registration).
       const bank = {};
@@ -295,6 +297,7 @@ export const OnboardingModule = () => {
           vendor_status: 'ACTIVE',
           fssai: fssai || null,
           details: updatedDetails,
+          cashfree_vendor_id: cfVendorId,
           updated_at: new Date().toISOString()
         }).eq('id', existingV.id);
         if (!idErr) saved = true;
@@ -307,6 +310,7 @@ export const OnboardingModule = () => {
           vendor_status: 'ACTIVE',
           fssai: fssai || null,
           details: updatedDetails,
+          cashfree_vendor_id: cfVendorId,
           updated_at: new Date().toISOString()
         }).ilike('stall_id', id);
         if (!stallErr) saved = true;
@@ -320,6 +324,7 @@ export const OnboardingModule = () => {
           vendor_status: 'ACTIVE',
           fssai: fssai || null,
           details: updatedDetails,
+          cashfree_vendor_id: cfVendorId,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         }).catch(() => null);
@@ -541,6 +546,7 @@ export const OnboardingModule = () => {
                         <div><label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569' }}>Category</label><input style={input} value={editData.category || ''} onChange={e => setEditData(d => ({ ...d, category: e.target.value }))} /></div>
                         <div><label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569' }}>Vendor Email (Login Account)</label><input type="email" style={input} value={editData.email || ''} onChange={e => setEditData(d => ({ ...d, email: e.target.value }))} placeholder="vendor@sgu.edu.in" /></div>
                         <div><label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569' }}>FSSAI License No.</label><input style={input} value={editData.fssai || ''} onChange={e => setEditData(d => ({ ...d, fssai: e.target.value }))} placeholder="FSSAI number" /></div>
+                        <div><label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569' }}>Cashfree Vendor ID <span style={{ fontWeight: 500, color: '#94A3B8' }}>(Easy Split)</span></label><input style={input} value={editData.cashfree_vendor_id || ''} onChange={e => setEditData(d => ({ ...d, cashfree_vendor_id: e.target.value.replace(/[^A-Za-z0-9_]/g, '') }))} placeholder="e.g. STALL_DOSA01 — from Cashfree" /></div>
                         {catalog.filter(f => f.key !== 'business_name' && f.key !== 'fssai' && f.key !== 'category').map(f => (
                           <div key={f.key}>
                             <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569' }}>{f.label}</label>

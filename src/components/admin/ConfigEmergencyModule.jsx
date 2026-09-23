@@ -30,7 +30,8 @@ export const ConfigEmergencyModule = () => {
           commission_percent: c.commission_percent ?? 10,
           commission_flat: c.commission_flat ?? 0,
           convenience_fee_enabled: c.convenience_fee_enabled ?? false,
-          convenience_fee: c.convenience_fee ?? 0
+          convenience_fee: c.convenience_fee ?? 0,
+          split_enabled: c.split_enabled ?? false
         });
       })
       .catch(() => { if (active) setError('Failed to load platform config.'); })
@@ -47,11 +48,12 @@ export const ConfigEmergencyModule = () => {
         commission_percent: Number(fees.commission_percent) || 0,
         commission_flat: Number(fees.commission_flat) || 0,
         convenience_fee_enabled: !!fees.convenience_fee_enabled,
-        convenience_fee: Number(fees.convenience_fee) || 0
+        convenience_fee: Number(fees.convenience_fee) || 0,
+        split_enabled: !!fees.split_enabled
       };
       const updated = await api.updatePlatformConfig(patch);
       if (updated) setConfig(updated);
-      addAuditLog({ level: 'SECURITY', category: 'System', message: `Platform fees updated (commission ${patch.commission_type} ${patch.commission_percent}% / ₹${patch.commission_flat}; convenience ${patch.convenience_fee_enabled ? '₹' + patch.convenience_fee : 'off'})` });
+      addAuditLog({ level: 'SECURITY', category: 'System', message: `Platform fees updated (commission ${patch.commission_type} ${patch.commission_percent}% / ₹${patch.commission_flat}; convenience ${patch.convenience_fee_enabled ? '₹' + patch.convenience_fee : 'off'}; auto-split ${patch.split_enabled ? 'ON' : 'off'})` });
       setFeeMsg('Saved. Applies to new orders.');
     } catch (e) {
       setFeeMsg(e.message || 'Failed to save fees.');
@@ -227,6 +229,22 @@ export const ConfigEmergencyModule = () => {
             </div>
             <p style={{ fontSize: '0.72rem', color: '#94A3B8', margin: '8px 0 0 0' }}>
               Per-vendor and per-item overrides take precedence over this global setting.
+            </p>
+          </div>
+
+          {/* Auto-split (Cashfree Easy Split) */}
+          <div style={{ marginBottom: 18, paddingTop: 14, borderTop: '1px dashed #E2E8F0' }}>
+            <div style={{ fontSize: '0.8rem', fontWeight: 800, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 8 }}>
+              Auto-split payments (Cashfree Easy Split)
+            </div>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.82rem', fontWeight: 700, color: '#334155' }}>
+              <input type="checkbox" checked={!!fees.split_enabled}
+                onChange={e => setFees({ ...fees, split_enabled: e.target.checked })}
+                style={{ width: 18, height: 18 }} />
+              Route each vendor’s share (subtotal − commission) directly to their Cashfree vendor at payment
+            </label>
+            <p style={{ fontSize: '0.72rem', color: '#94A3B8', margin: '8px 0 0 0' }}>
+              Requires Easy Split enabled on your Cashfree account and a Cashfree vendor ID set per stall (Vendors page). Stalls without a vendor ID fall back to manual payout.
             </p>
           </div>
 

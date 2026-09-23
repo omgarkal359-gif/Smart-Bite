@@ -70,7 +70,7 @@ Deno.serve(async (req) => {
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
   const { data: order, error: oErr } = await admin
     .from('orders')
-    .select('id, total, customer_id, customer_email, customer_name, payment_status')
+    .select('id, total, subtotal, commission_amount, stall_id, customer_id, customer_email, customer_name, payment_status')
     .eq('id', orderId)
     .maybeSingle();
 
@@ -83,6 +83,34 @@ Deno.serve(async (req) => {
 
   const amount = Number(order.total);
   if (!(amount > 0)) return json({ success: false, message: 'Invalid order amount.' }, 400);
+
+  // ── Easy Split: route the vendor's share directly to their Cashfree vendor ──
+  // Enabled only when platform_config.split_enabled is true AND the order's stall
+  // has a cashfree_vendor_id. Vendor share = subtotal - commission_amount; the
+  // remainder (commission + convenience fee) stays with the platform merchant.
+  let orderSplits: Array<{ vendor_id: string; amount: number }> | undefined;
+  let splitVendorId: string | null = null;
+  let vendorSplitAmount = 0;
+  try {
+    const { data: cfg } = await admin
+      .from('platform_config').select('split_enabled').eq('id', 1).maybeSingle();
+    if (cfg?.split_enabled && order.stall_id) {
+      const { data: vend } = await admin
+        .from('vendors').select('cashfree_vendor_id').eq('stall_id', order.stall_id).maybeSingle();
+      const vid = (vend?.cashfree_vendor_id || '').toString().trim();
+      if (vid) {
+        const subtotal = Number(order.subtotal) || 0;
+        const commission = Number(order.commission_amount) || 0;
+        const share = Math.round((subtotal - commission) * 100) / 100;
+        // Split must be positive and cannot exceed the captured amount.
+        if (share > 0 && share <= amount) {
+          orderSplits = [{ vendor_id: vid, amount: share }];
+          splitVendorId = vid;
+          vendorSplitAmount = share;
+        }
+      }
+    }
+  } catch (_e) { /* non-fatal: fall back to no split (collect-then-payout) */ }
 
   // Cashfree requires a customer phone. SmartBite does not collect one today, so
   // a sandbox-safe placeholder is used; replace with a real number when phone
@@ -103,7 +131,8 @@ Deno.serve(async (req) => {
     order_meta: {
       return_url: `${APP_URL || 'https://smartbite.local'}/student/order/${order.id}`,
       notify_url: `${SUPABASE_URL}/functions/v1/verify-payment-webhook`
-    }
+    },
+    ...(orderSplits ? { order_splits: orderSplits } : {})
   };
 
   let cfRes: Response;
@@ -126,6 +155,16 @@ Deno.serve(async (req) => {
   const cf = await cfRes.json().catch(() => ({}));
   if (!cfRes.ok || !cf?.payment_session_id) {
     return json({ success: false, message: cf?.message || 'Gateway order creation failed.' }, 502);
+  }
+
+  // Snapshot how the order will be settled so reporting can exclude auto-split
+  // orders from the manual-payout ledger (Cashfree pays those vendors directly).
+  if (splitVendorId) {
+    try {
+      await admin.from('orders')
+        .update({ settled_via: 'cashfree_split', vendor_split_amount: vendorSplitAmount })
+        .eq('id', order.id);
+    } catch (_e) { /* non-fatal */ }
   }
 
   // ── Record the payment attempt ────────────────────────────────────────────

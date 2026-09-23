@@ -1393,7 +1393,7 @@ export const api = {
   // single-stall, so grouping by orders.stall_id is exact.
   async getVendorSettlements({ from, to } = {}) {
     let q = supabase.from('orders')
-      .select('stall_id, stall_name, subtotal, commission_amount, created_at')
+      .select('stall_id, stall_name, subtotal, commission_amount, settled_via, created_at')
       .eq('payment_status', 'paid');
     if (from) q = q.gte('created_at', from);
     if (to) q = q.lte('created_at', to);
@@ -1403,6 +1403,8 @@ export const api = {
     const round2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
     const byStall = new Map();
     for (const o of (orders || [])) {
+      // Auto-split orders are settled to the vendor by Cashfree — not owed by us.
+      if (o.settled_via === 'cashfree_split') continue;
       const key = o.stall_id || 'unknown';
       const cur = byStall.get(key) || { stallId: o.stall_id, stallName: o.stall_name, gross: 0, commission: 0, orders: 0 };
       cur.gross += Number(o.subtotal) || 0;
