@@ -22,9 +22,11 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
 
-const CF_APP_ID = Deno.env.get('CASHFREE_APP_ID') || '';
-const CF_SECRET = Deno.env.get('CASHFREE_SECRET_KEY') || '';
-const CF_ENV = (Deno.env.get('CASHFREE_ENV') || 'sandbox').toLowerCase();
+// Trim to survive accidental whitespace/newlines when the secret was pasted —
+// an untrimmed 'production ' would silently fall back to the sandbox URL.
+const CF_APP_ID = (Deno.env.get('CASHFREE_APP_ID') || '').trim();
+const CF_SECRET = (Deno.env.get('CASHFREE_SECRET_KEY') || '').trim();
+const CF_ENV = (Deno.env.get('CASHFREE_ENV') || 'sandbox').trim().toLowerCase();
 const APP_URL = (Deno.env.get('APP_URL') || '').replace(/\/+$/, '');
 
 const CF_BASE = CF_ENV === 'production'
