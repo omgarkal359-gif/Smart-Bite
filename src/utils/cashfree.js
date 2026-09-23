@@ -8,14 +8,16 @@
 import { load } from '@cashfreepayments/cashfree-js';
 import { api } from '../api';
 
-// Sandbox by default; set VITE_CASHFREE_MODE=production for live payments.
-const MODE = (import.meta.env.VITE_CASHFREE_MODE || 'sandbox').toLowerCase();
-
-let _cashfree = null;
-async function getCashfree() {
-  if (_cashfree) return _cashfree;
-  _cashfree = await load({ mode: MODE === 'production' ? 'production' : 'sandbox' });
-  return _cashfree;
+// The SDK mode MUST match the environment the backend created the session in,
+// otherwise Cashfree's widget shows "Something went wrong". The backend returns
+// its environment as session.mode, so we always follow it (never a client env
+// var, which can drift out of sync with the Edge Function's CASHFREE_ENV).
+const _byMode = {};
+async function getCashfree(mode) {
+  const m = mode === 'production' ? 'production' : 'sandbox';
+  if (_byMode[m]) return _byMode[m];
+  _byMode[m] = await load({ mode: m });
+  return _byMode[m];
 }
 
 // Creates the gateway session for an existing order and opens the Drop-in modal.
@@ -23,7 +25,7 @@ async function getCashfree() {
 // outcome by polling the order's payment status afterwards.
 export async function openCashfreeCheckout(orderId) {
   const session = await api.createCashfreeSession(orderId);
-  const cashfree = await getCashfree();
+  const cashfree = await getCashfree((session.mode || '').toLowerCase());
   if (!cashfree) throw new Error('Payment SDK unavailable in this environment.');
 
   const result = await cashfree.checkout({
