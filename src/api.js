@@ -1037,27 +1037,50 @@ export const api = {
   },
 
 
-  // ── Payments (MOCK until the real gateway is wired) ──────────────────────
-  async getPaymentStatus(_paymentId) {
-    return { success: true, paymentStatus: 'success' };
+  // ── Payments (Cashfree PG) ───────────────────────────────────────────────
+  // Ask the server to create a Cashfree order for an existing SmartBite order.
+  // Returns { payment_session_id, cf_order_id, order_id, mode }. The App ID /
+  // Secret and the charge amount stay server-side (create-cashfree-order).
+  async createCashfreeSession(orderId) {
+    const { data, error } = await supabase.functions.invoke('create-cashfree-order', {
+      body: { orderId }
+    });
+    if (error || !data?.success) {
+      throw new Error(data?.message || error?.message || 'Could not start payment.');
+    }
+    return data;
   },
 
-  async simulatePayment(paymentId, action) {
-    const paid = action === 'success';
-    await supabase.from('orders')
-      .update({ payment_status: paid ? 'paid' : 'failed', updated_at: new Date().toISOString() })
-      .eq('id', paymentId);
-    return { success: true, paymentStatus: paid ? 'success' : 'failed' };
+  // Real payment status read from the DB. The webhook (verify-payment-webhook)
+  // is the source of truth and sets orders.payment_status to 'paid'/'failed'.
+  async getPaymentStatus(orderId) {
+    const { data } = await supabase
+      .from('orders')
+      .select('payment_status')
+      .eq('id', orderId)
+      .maybeSingle();
+    const ps = (data?.payment_status || 'pending').toLowerCase();
+    const paymentStatus = ps === 'paid' ? 'success' : (ps === 'failed' ? 'failed' : 'pending');
+    return { success: true, paymentStatus };
   },
 
   async verifyPayment(payload) {
-    if (payload?.paymentId) await this.simulatePayment(payload.paymentId, 'success');
     const order = payload?.orderId ? await this.getOrder(payload.orderId) : null;
     return { success: true, order };
   },
 
+  // Mark an abandoned order failed (user closed the gateway without paying).
+  // The webhook will still correct this if a late success arrives.
   async cancelPayment(payload) {
-    if (payload?.paymentId) await this.simulatePayment(payload.paymentId, 'cancel');
+    const id = payload?.orderId || payload?.paymentId;
+    if (id) {
+      try {
+        await supabase.from('orders')
+          .update({ payment_status: 'failed', updated_at: new Date().toISOString() })
+          .eq('id', id)
+          .eq('payment_status', 'pending');
+      } catch (_e) {}
+    }
     return { success: true };
   },
 

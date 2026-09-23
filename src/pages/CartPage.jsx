@@ -4,6 +4,7 @@ import { useCart } from '../context/CartContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trash2, Plus, Minus, ArrowRight, ShoppingBag, ChevronLeft, Loader2, Check, ExternalLink } from 'lucide-react';
 import { api } from '../api';
+import { openCashfreeCheckout } from '../utils/cashfree';
 import { getFoodItemImage } from '../utils/imageHelper';
 import { getStoredUser, isUserOrder, getLocalOrders, saveLocalOrder } from '../utils/auth';
 import './pages.css';
@@ -65,7 +66,7 @@ const CartPage = () => {
     };
   }, []);
 
-  const startPaymentPolling = (paymentId, orderId, actualOrder) => {
+  const startPaymentPolling = (orderId, actualOrder) => {
     if (window.pollInterval) clearInterval(window.pollInterval);
     let attempts = 0;
     const maxAttempts = 40; // 60 seconds timeout (40 * 1.5s)
@@ -77,11 +78,11 @@ const CartPage = () => {
         setIsCheckingOut(false);
         setShowQRModal(false);
         setUpiPaymentState('idle');
-        alert('Payment verification timed out. Please check your bank transaction status.');
+        alert('Payment not confirmed. If money was debited it will reflect shortly; otherwise please try again.');
         return;
       }
 
-      api.getPaymentStatus(paymentId)
+      api.getPaymentStatus(orderId)
         .then((res) => {
           if (res.paymentStatus === 'success') {
             clearInterval(window.pollInterval);
@@ -115,7 +116,6 @@ const CartPage = () => {
 
   const handleCheckout = () => {
     setIsCheckingOut(true);
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
     const orderId = `ORD-${Date.now()}`;
     const idempotencyKey = `IDEM-${orderId}-${Math.floor(Math.random() * 1000000)}`;
 
@@ -141,49 +141,28 @@ const CartPage = () => {
     };
 
     api.createOrder(orderPayload)
-      .then((response) => {
+      .then(async (response) => {
         const actualOrder = response.order || response;
-        const paymentId = response.paymentId || actualOrder.paymentId;
-        
-        setCurrentPaymentId(paymentId);
+        setCurrentPaymentId(orderId);
         setCurrentOrderId(orderId);
         setCurrentCreatedOrder(actualOrder);
 
-        // Open payment modal
-        setShowQRModal(true);
-        setUpiPaymentState('awaiting');
-
-        // Start backend polling for payment status
-        startPaymentPolling(paymentId, orderId, actualOrder);
-
-        const firstItem = cartItems[0] || {};
-        const shopVpa = firstItem.stallId ? `${firstItem.stallId.replace('-', '')}@bank` : 'sgu_foodcourt@bank';
-        const shopName = firstItem.stallName || 'SGU Food Court';
-        const upiLink = `upi://pay?pa=${shopVpa}&pn=${encodeURIComponent(shopName)}&am=${totalPrice}&cu=INR&tr=${paymentId}`;
-
-        if (isMobile) {
-          // Open UPI payment link
-          window.location.href = upiLink;
+        // Open the Cashfree Drop-in modal (real UPI / cards / netbanking).
+        try {
+          await openCashfreeCheckout(orderId);
+        } catch (err) {
+          console.error('Cashfree checkout error:', err);
+          setIsCheckingOut(false);
+          setShowQRModal(false);
+          setUpiPaymentState('idle');
+          alert('Payment could not be started: ' + err.message);
+          return;
         }
 
-        // Simulate scans and mock provider callback in dev/test environment
-        const verifyTimer = setTimeout(() => {
-          setUpiPaymentState('verifying');
-          
-          const successTimer = setTimeout(() => {
-            api.simulatePayment(paymentId, 'success')
-              .then(() => {
-                console.log('[SIMULATION] Payment success webhook simulated.');
-              })
-              .catch(err => {
-                console.error('[SIMULATION ERROR] Payment simulation failed:', err);
-              });
-          }, 2000);
-          
-          window.successTimer = successTimer;
-        }, 4500);
-        
-        window.verifyTimer = verifyTimer;
+        // Modal closed — confirm the real outcome via webhook-backed polling.
+        setShowQRModal(true);
+        setUpiPaymentState('verifying');
+        startPaymentPolling(orderId, actualOrder);
       })
       .catch((err) => {
         console.error('Checkout failed:', err);
@@ -199,12 +178,8 @@ const CartPage = () => {
     if (window.successTimer) clearTimeout(window.successTimer);
     if (window.pollInterval) clearInterval(window.pollInterval);
 
-    if (currentPaymentId) {
-      api.simulatePayment(currentPaymentId, 'cancel')
-        .then(() => {
-          console.log('[SIMULATION] Payment cancellation simulated.');
-        })
-        .catch(err => console.error(err));
+    if (currentOrderId) {
+      api.cancelPayment({ orderId: currentOrderId }).catch(err => console.error(err));
     }
 
     setIsCheckingOut(false);
@@ -447,50 +422,6 @@ const CartPage = () => {
               }}
               onClick={e => e.stopPropagation()}
             >
-              {upiPaymentState === 'awaiting' && (
-                <>
-                  <div className="bg-white p-4 rounded-3xl shadow-lg border border-solid border-slate-100 mb-4" style={{ display: 'inline-block', position: 'relative' }}>
-                    <img 
-                      src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
-                        `upi://pay?pa=${(cartItems[0]?.stallId || 'general').replace('-', '')}@bank&pn=${encodeURIComponent(cartItems[0]?.stallName || 'SGU Food Court')}&am=${totalPrice}&cu=INR&tr=${currentPaymentId || ''}`
-                      )}`} 
-                      alt="Payment QR" 
-                      style={{ width: 180, height: 180, display: 'block' }}
-                    />
-                    {/* Simulated laser scan bar animation */}
-                    <div style={{
-                      position: 'absolute',
-                      left: '16px',
-                      right: '16px',
-                      height: '2px',
-                      background: 'rgba(228, 0, 43, 0.75)',
-                      boxShadow: '0 0 8px #E4002B',
-                      animation: 'scan-laser 2.5s infinite ease-in-out',
-                      top: '16px',
-                    }} />
-                    <style>{`
-                      @keyframes scan-laser {
-                        0% { top: 16px; }
-                        50% { top: 196px; }
-                        100% { top: 16px; }
-                      }
-                    `}</style>
-                  </div>
-                  <h3 className="font-bold text-navy-900 text-lg mb-1">{cartItems[0]?.stallName || 'SGU Food Court'}</h3>
-                  <p className="text-xs text-slate-400 font-bold mb-4">UPI VPA: {(cartItems[0]?.stallId || 'general').replace('-', '')}@bank</p>
-                  
-                  <div className="bg-slate-50 p-3 rounded-2xl w-full flex justify-between items-center mb-4 border border-solid border-slate-100">
-                    <span className="text-xs text-slate-500 font-bold uppercase">Amount to Scan</span>
-                    <span className="text-xl font-black text-[#E4002B]">₹{totalPrice}</span>
-                  </div>
-                  
-                  <div className="flex items-center gap-2 mb-6" style={{ color: 'var(--primary-navy)', fontWeight: 700, fontSize: '0.85rem' }}>
-                    <Loader2 className="animate-spin" size={18} />
-                    <span>Awaiting scan from your mobile app...</span>
-                  </div>
-                </>
-              )}
-
               {upiPaymentState === 'verifying' && (
                 <div style={{ padding: '40px 0', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                   <div style={{
@@ -508,9 +439,9 @@ const CartPage = () => {
                       100% { transform: rotate(360deg); }
                     }
                   `}</style>
-                  <h3 className="font-bold text-navy-900 text-lg mb-2">Scan Detected!</h3>
+                  <h3 className="font-bold text-navy-900 text-lg mb-2">Confirming Payment…</h3>
                   <p className="text-sm text-slate-500 font-medium px-4">
-                    Verifying transaction with your bank. Please do not close this window.
+                    Verifying your transaction with Cashfree. Please do not close this window.
                   </p>
                 </div>
               )}

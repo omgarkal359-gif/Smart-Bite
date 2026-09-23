@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import { useCart } from '../../context/CartContext';
 import { api } from '../../api';
+import { openCashfreeCheckout } from '../../utils/cashfree';
 import { getStoredUser, saveLocalOrder } from '../../utils/auth';
 import './checkout.css';
 
@@ -90,7 +91,7 @@ export const CheckoutDrawer = ({ isOpen, onClose, cart, inventory, onComplete })
     frame();
   };
 
-  const startPaymentPolling = (paymentId, orderId, actualOrder) => {
+  const startPaymentPolling = (orderId, actualOrder) => {
     if (window.drawerPollInterval) clearInterval(window.drawerPollInterval);
     let attempts = 0;
     const maxAttempts = 40; // 60 seconds
@@ -101,11 +102,11 @@ export const CheckoutDrawer = ({ isOpen, onClose, cart, inventory, onComplete })
         clearInterval(window.drawerPollInterval);
         setIsProcessing(false);
         setStep(3); // Reset to payment options
-        alert('Payment verification timed out. Please check your bank transaction status.');
+        alert('Payment not confirmed. If money was debited it will reflect shortly; otherwise please try again.');
         return;
       }
 
-      api.getPaymentStatus(paymentId)
+      api.getPaymentStatus(orderId)
         .then((res) => {
           if (res.paymentStatus === 'success') {
             clearInterval(window.drawerPollInterval);
@@ -142,10 +143,8 @@ export const CheckoutDrawer = ({ isOpen, onClose, cart, inventory, onComplete })
     if (window.drawerSuccessTimer) clearTimeout(window.drawerSuccessTimer);
     if (window.drawerPollInterval) clearInterval(window.drawerPollInterval);
 
-    if (currentPaymentId) {
-      api.simulatePayment(currentPaymentId, 'cancel')
-        .then(() => console.log('[SIMULATION] Payment cancellation simulated.'))
-        .catch(err => console.error(err));
+    if (currentOrderId) {
+      api.cancelPayment({ orderId: currentOrderId }).catch(err => console.error(err));
     }
 
     setIsProcessing(false);
@@ -169,7 +168,6 @@ export const CheckoutDrawer = ({ isOpen, onClose, cart, inventory, onComplete })
 
     if (step === 3) {
       setIsProcessing(true);
-      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
       const orderId = `ORD-${Date.now()}`;
       const idempotencyKey = `IDEM-${orderId}-${Math.floor(Math.random() * 1000000)}`;
 
@@ -195,47 +193,25 @@ export const CheckoutDrawer = ({ isOpen, onClose, cart, inventory, onComplete })
       };
 
       api.createOrder(orderPayload)
-        .then((response) => {
+        .then(async (response) => {
           const actualOrder = response.order || response;
-          const paymentId = response.paymentId || actualOrder.paymentId;
-          
-          setCurrentPaymentId(paymentId);
+          setCurrentPaymentId(orderId);
           setCurrentOrderId(orderId);
           setCurrentCreatedOrder(actualOrder);
 
-          // Start status polling
-          startPaymentPolling(paymentId, orderId, actualOrder);
-
-          const firstItem = cartItems[0] || {};
-          const shopVpa = firstItem.stallId ? `${firstItem.stallId.replace('-', '')}@bank` : 'sgu_foodcourt@bank';
-          const shopName = firstItem.stallName || 'SGU Food Court';
-          const upiLink = `upi://pay?pa=${shopVpa}&pn=${encodeURIComponent(shopName)}&am=${totalCartValue}&cu=INR&tr=${paymentId}`;
-
-          if (isMobile) {
-            // Mobile flow: Redirect to deep link
-            const link = document.createElement('a');
-            link.href = upiLink;
-            link.target = '_blank';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-          } else {
-            // Laptop/Desktop flow: Show custom QR code
-            setStep(3.5);
+          // Open the Cashfree Drop-in modal (real UPI / cards / netbanking).
+          try {
+            await openCashfreeCheckout(orderId);
+          } catch (err) {
+            console.error('Cashfree checkout error:', err);
+            setIsProcessing(false);
+            setStep(3);
+            alert('Payment could not be started: ' + err.message);
+            return;
           }
 
-          // Simulate scanning and provider webhook callback in dev/test
-          const drawerVerifyTimer = setTimeout(() => {
-            const drawerSuccessTimer = setTimeout(() => {
-              api.simulatePayment(paymentId, 'success')
-                .then(() => console.log('[SIMULATION] Payment success webhook simulated.'))
-                .catch(err => console.error(err));
-            }, 2000);
-            
-            window.drawerSuccessTimer = drawerSuccessTimer;
-          }, 4500);
-          
-          window.drawerVerifyTimer = drawerVerifyTimer;
+          // Modal closed — confirm the real outcome via webhook-backed polling.
+          startPaymentPolling(orderId, actualOrder);
         })
         .catch((err) => {
           console.error('Checkout failed:', err);
@@ -260,7 +236,6 @@ export const CheckoutDrawer = ({ isOpen, onClose, cart, inventory, onComplete })
             {step === 1 && '1. Cart Summary'}
             {step === 2 && '2. Dining Mode'}
             {step === 3 && '3. Payment Options'}
-            {step === 3.5 && 'Scan QR to Pay'}
             {step === 4 && 'Order Confirmed!'}
           </h2>
           {!isProcessing && step < 4 && (
@@ -422,29 +397,6 @@ export const CheckoutDrawer = ({ isOpen, onClose, cart, inventory, onComplete })
               </motion.div>
             )}
 
-            {step === 3.5 && (
-              <motion.div key="step3_5" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="flex flex-col items-center text-center py-4">
-                <div className="bg-white p-4 rounded-3xl shadow-lg border border-solid border-slate-100 mb-4" style={{ display: 'inline-block' }}>
-                  <img 
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
-                      `upi://pay?pa=${(cartItems[0]?.stallId || 'general').replace('-', '')}@bank&pn=${encodeURIComponent(cartItems[0]?.stallName || 'SGU Food Court')}&am=${totalCartValue}&cu=INR&tr=${currentPaymentId || ''}`
-                    )}`} 
-                    alt="Payment QR" 
-                    style={{ width: 180, height: 180, display: 'block' }}
-                  />
-                </div>
-                <h3 className="font-bold text-navy-900 text-lg mb-1">{cartItems[0]?.stallName || 'SGU Food Court'}</h3>
-                <p className="text-xs text-slate-400 font-bold mb-4">UPI VPA: {(cartItems[0]?.stallId || 'general').replace('-', '')}@bank</p>
-                <div className="bg-slate-50 p-3 rounded-2xl w-full flex justify-between items-center mb-4 border border-solid border-slate-100">
-                  <span className="text-xs text-slate-500 font-bold uppercase">Amount to Scan</span>
-                  <span className="text-xl font-black text-[#E4002B]">₹{totalCartValue}</span>
-                </div>
-                <p className="text-[11px] text-slate-400 font-medium px-4">
-                  Please open any UPI app (GPay, PhonePe, Paytm) on your phone and scan the QR code above to complete your payment.
-                </p>
-              </motion.div>
-            )}
-
             {step === 4 && (
               <motion.div key="step4" initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="success-state shadow-lg py-8 flex flex-col gap-4 items-center">
                 <CheckCircle size={64} color="white" /> 
@@ -464,35 +416,20 @@ export const CheckoutDrawer = ({ isOpen, onClose, cart, inventory, onComplete })
           <AnimatePresence mode="wait">
             {step < 4 && (
               <div className="w-full flex flex-col gap-3">
-                {step !== 3.5 && (
-                  <motion.button 
-                    key="button"
-                    whileTap={!isProcessing ? { scale: 0.97 } : {}}
-                    className={`pay-btn-v20 shadow-lg ${isProcessing ? 'processing' : ''}`}
-                    onClick={handleCheckout}
-                    disabled={isProcessing}
-                  >
-                    {isProcessing ? 'Processing...' : (
-                      <>
-                        {step < 3 ? 'Continue' : `PAY ₹${totalCartValue}`} 
-                        <ArrowRight size={20} className="ml-2" />
-                      </>
-                    )}
-                  </motion.button>
-                )}
-                {step === 3.5 && (
-                  <button
-                    onClick={handleCancelPayment}
-                    style={{
-                      width: '100%', padding: '12px', borderRadius: '12px',
-                      border: '1px solid #E2E8F0', background: 'none',
-                      fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer',
-                      color: 'var(--text-muted)'
-                    }}
-                  >
-                    Cancel Payment
-                  </button>
-                )}
+                <motion.button
+                  key="button"
+                  whileTap={!isProcessing ? { scale: 0.97 } : {}}
+                  className={`pay-btn-v20 shadow-lg ${isProcessing ? 'processing' : ''}`}
+                  onClick={handleCheckout}
+                  disabled={isProcessing}
+                >
+                  {isProcessing ? 'Processing...' : (
+                    <>
+                      {step < 3 ? 'Continue' : `PAY ₹${totalCartValue}`}
+                      <ArrowRight size={20} className="ml-2" />
+                    </>
+                  )}
+                </motion.button>
               </div>
             )}
           </AnimatePresence>
