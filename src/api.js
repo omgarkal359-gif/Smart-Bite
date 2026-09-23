@@ -1,7 +1,6 @@
 import { supabase } from './supabaseClient';
 import { addAuditLog } from './utils/logger';
 import { isAdminEmail, saveLocalOrder } from './utils/auth';
-import { SHOPS } from './data/foodCourtDB';
 
 // =============================================================================
 // SINGLE SOURCE OF TRUTH: Supabase (PostgREST + Auth + Realtime).
@@ -435,7 +434,7 @@ export const api = {
 
     // Fallback: If 0 rows updated, try upserting with default stall metadata
     if (!error && (!data || data.length === 0)) {
-      const shopInfo = SHOPS.find(s => String(s.id) === cleanId) || { id: cleanId, name: cleanId, category: 'Food' };
+      const shopInfo = { id: cleanId, name: cleanId, category: 'Food' };
       const upsertRes = await supabase.from('stalls').upsert({
         id: cleanId,
         name: shopInfo.name || cleanId,

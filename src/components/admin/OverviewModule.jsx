@@ -6,7 +6,6 @@ import {
 } from 'lucide-react';
 import { api } from '../../api';
 import { supabase } from '../../supabaseClient';
-import { SHOPS } from '../../data/foodCourtDB';
 
 export const OverviewModule = ({ onNavigateModule }) => {
   const [metrics, setMetrics] = useState({
@@ -15,9 +14,10 @@ export const OverviewModule = ({ onNavigateModule }) => {
     activeOrders: 0,
     digitalSales: 0,
     cashSales: 0,
-    totalVendors: SHOPS.length,
-    healthScore: 99.8
+    totalVendors: 0,
+    onlineVendors: 0
   });
+  const [stalls, setStalls] = useState([]);
   const [timeRange, setTimeRange] = useState('24H');
   const [activityLogs, setActivityLogs] = useState([]);
   const [chartData, setChartData] = useState([]);
@@ -83,16 +83,17 @@ export const OverviewModule = ({ onNavigateModule }) => {
     const totalSalesSum = filteredOrders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
     const activeCount = filteredOrders.filter(o => ['placed', 'preparing', 'pending', 'pending_cash'].includes((o.status || '').toLowerCase())).length;
 
+    const onlineVendors = stalls.filter(s => s.online === 1 || s.online === true || s.is_online === true || s.status === 'ONLINE').length;
     setMetrics({
       totalSales: totalSalesSum,
       totalOrders: filteredOrders.length,
       activeOrders: activeCount,
       digitalSales: digital,
       cashSales: cash,
-      totalVendors: SHOPS.length,
-      healthScore: 99.8
+      totalVendors: stalls.length,
+      onlineVendors
     });
-  }, [allRawOrders, timeRange]);
+  }, [allRawOrders, timeRange, stalls]);
 
   async function handleResetRevenueData() {
     if (!window.confirm("Are you sure you want to permanently delete ALL orders and reset all counters to zero?")) return;
@@ -124,9 +125,10 @@ export const OverviewModule = ({ onNavigateModule }) => {
 
   async function loadOverviewData() {
     try {
-      const data = await api.getAdminMetrics();
+      const [data, stallList] = await Promise.all([api.getAdminMetrics(), api.getStalls()]);
       const allOrders = data.orders || [];
       setAllRawOrders(allOrders);
+      setStalls(Array.isArray(stallList) ? stallList : []);
 
       // Activity stream starts clean — only live Realtime events will appear
       // Do NOT seed from historical orders so stream reflects actual live activity
@@ -224,7 +226,7 @@ export const OverviewModule = ({ onNavigateModule }) => {
   }
 
   // Calculate per-shop aggregated daily & monthly revenue table dynamically from real orders
-  const shopRevenueStats = SHOPS.map(shop => {
+  const shopRevenueStats = stalls.map(shop => {
     const stallOrders = allRawOrders.filter(o => {
       const sId = (o.stallId || o.stall_id || o.shopId || o.shop_id || '').toString().toLowerCase();
       const sName = (o.stallName || o.stall_name || '').toString().toLowerCase();
@@ -284,7 +286,7 @@ export const OverviewModule = ({ onNavigateModule }) => {
   });
 
   const maxRevenue = Math.max(...chartData.map(d => d.revenue), 1);
-  const selectedShopObj = SHOPS.find(s => s.id === selectedStallId);
+  const selectedShopObj = stalls.find(s => s.id === selectedStallId);
 
   return (
     <div className="flex flex-col gap-6">
@@ -342,8 +344,7 @@ export const OverviewModule = ({ onNavigateModule }) => {
           </div>
           <div className="kpi-value">₹{metrics.totalSales.toLocaleString()}</div>
           <div className="flex items-center gap-2 mt-1">
-            <span className="kpi-trend up"><ArrowUpRight size={12} /> +18.4%</span>
-            <span className="text-xs text-slate-400 font-semibold">vs previous {timeRange}</span>
+            <span className="text-xs text-slate-400 font-semibold">in the last {timeRange}</span>
           </div>
         </div>
 
@@ -355,7 +356,7 @@ export const OverviewModule = ({ onNavigateModule }) => {
           <div className="kpi-value">{metrics.activeOrders}</div>
           <div className="flex items-center gap-2 mt-1">
             <span className="kpi-trend neutral"><Activity size={12} /> Live Queue</span>
-            <span className="text-xs text-slate-400 font-semibold">Realtime Socket sync</span>
+            <span className="text-xs text-slate-400 font-semibold">Realtime sync</span>
           </div>
         </div>
 
@@ -364,22 +365,21 @@ export const OverviewModule = ({ onNavigateModule }) => {
             <span className="kpi-title">Campus Vendors</span>
             <div className="kpi-icon-wrap" style={{ background: 'rgba(16,185,129,0.12)', color: '#10B981' }}><Store size={18} /></div>
           </div>
-          <div className="kpi-value">{metrics.totalVendors} / 6</div>
+          <div className="kpi-value">{metrics.totalVendors}</div>
           <div className="flex items-center gap-2 mt-1">
-            <span className="kpi-trend up"><ArrowUpRight size={12} /> 100% Online</span>
-            <span className="text-xs text-slate-400 font-semibold">All stalls active</span>
+            <span className="kpi-trend up"><Activity size={12} /> {metrics.onlineVendors} Online</span>
+            <span className="text-xs text-slate-400 font-semibold">{Math.max(0, metrics.totalVendors - metrics.onlineVendors)} offline</span>
           </div>
         </div>
 
         <div className="admin-card-v2 kpi-card" style={{ '--kpi-accent': '#FF3B5C' }}>
           <div className="kpi-top">
-            <span className="kpi-title">System Health & Uptime</span>
+            <span className="kpi-title">Stalls Online</span>
             <div className="kpi-icon-wrap" style={{ background: 'rgba(255,59,92,0.12)', color: '#FF3B5C' }}><ShieldCheck size={18} /></div>
           </div>
-          <div className="kpi-value">{metrics.healthScore}%</div>
+          <div className="kpi-value">{metrics.totalVendors > 0 ? Math.round((metrics.onlineVendors / metrics.totalVendors) * 100) : 0}%</div>
           <div className="flex items-center gap-2 mt-1">
-            <span className="kpi-trend up"><ArrowUpRight size={12} /> Optimal</span>
-            <span className="text-xs text-slate-400 font-semibold">Latency &lt; 25ms</span>
+            <span className="text-xs text-slate-400 font-semibold">{metrics.onlineVendors} of {metrics.totalVendors} stalls open</span>
           </div>
         </div>
       </div>
@@ -422,7 +422,7 @@ export const OverviewModule = ({ onNavigateModule }) => {
                 }}
               >
                 <option value="ALL">🏢 ALL CAMPUS STALLS</option>
-                {SHOPS.map(s => (
+                {stalls.map(s => (
                   <option key={s.id} value={s.id}>{s.logo || '🥘'} {s.name}</option>
                 ))}
               </select>

@@ -5,7 +5,6 @@ import { Button } from '../components/ui/Button';
 import { Clock, Volume2, Power, LogOut, CheckCircle, Banknote, Activity, Smartphone, Utensils, ShoppingBag, Settings, Menu, RefreshCw, X, TrendingUp, Hash, CreditCard, Star, History, User, Flame } from 'lucide-react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { MenuEditor } from '../components/vendor/MenuEditor';
-import { SHOPS } from '../data/foodCourtDB';
 import { api } from '../api';
 import { supabase } from '../supabaseClient';
 import { useCart } from '../context/CartContext';
@@ -65,11 +64,21 @@ const VendorDashboard = () => {
   const [user, setUser] = useState(null);
   const [showConfetti, setShowConfetti] = useState(false);
   const [waitTime, setWaitTime] = useState(10);
+  const [currentShop, setCurrentShop] = useState(null);
   const { showToast } = useCart();
 
   // Determine target shop ID (URL takes priority, then user profile)
   const targetShopId = cleanUrlShopId || user?.shopId || user?.shopid;
-  const currentShop = SHOPS.find(s => s.id === targetShopId);
+
+  // Resolve the stall record (name, etc.) from live Supabase data.
+  useEffect(() => {
+    if (!targetShopId) return;
+    let active = true;
+    api.getStalls()
+      .then(list => { if (active) setCurrentShop((list || []).find(s => String(s.id) === String(targetShopId)) || null); })
+      .catch(() => {});
+    return () => { active = false; };
+  }, [targetShopId]);
 
   // Sync with Backend Orders
   const loadOrders = useCallback(async () => {

@@ -5,7 +5,6 @@ import {
 } from 'lucide-react';
 import { api, getDeletedStallIds } from '../../api';
 import { supabase } from '../../supabaseClient';
-import { SHOPS } from '../../data/foodCourtDB';
 import { useCart } from '../../context/CartContext';
 
 export const OrdersVendorsModule = () => {
@@ -61,8 +60,8 @@ export const OrdersVendorsModule = () => {
           const newOrd = {
             ...payload.new,
             customerName: payload.new.customer_name || payload.new.customerName || 'Student',
-            customerId: payload.new.customer_id || payload.new.customerId || 'student@sgu.edu',
-            paymentStatus: payload.new.payment_status || payload.new.paymentStatus || 'success'
+            customerId: payload.new.customer_id || payload.new.customerId || null,
+            paymentStatus: payload.new.payment_status || payload.new.paymentStatus || 'pending'
           };
           setOrders(prev => [newOrd, ...prev.filter(o => o.id !== newOrd.id)]);
         } else if (payload.eventType === 'UPDATE') {
@@ -291,7 +290,7 @@ export const OrdersVendorsModule = () => {
                 }}
               >
                 <option value="ALL">ALL STALLS</option>
-                {SHOPS.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                {stalls.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
 
               {/* Status Filter */}

@@ -2,12 +2,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Search, ShoppingBag, Store, Users, Settings, ShieldAlert, ArrowRight, X, Command, LogOut } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '../../api';
-import { SHOPS } from '../../data/foodCourtDB';
 
 export const CmdKSearchModal = ({ isOpen, onClose, onNavigateModule, onLogout }) => {
   const [query, setQuery] = useState('');
   const [orders, setOrders] = useState([]);
   const [users, setUsers] = useState([]);
+  const [stalls, setStalls] = useState([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef(null);
 
@@ -23,10 +23,11 @@ export const CmdKSearchModal = ({ isOpen, onClose, onNavigateModule, onLogout })
 
   async function loadSearchData() {
     try {
-      const allOrders = await api.getAdminOrders();
+      const [allOrders, stallList] = await Promise.all([api.getAdminOrders(), api.getStalls()]);
       setOrders(allOrders || []);
+      setStalls(Array.isArray(stallList) ? stallList : []);
     } catch (e) {
-      console.warn('CmdK order load:', e);
+      console.warn('CmdK search load:', e);
     }
   }
 
@@ -45,8 +46,8 @@ export const CmdKSearchModal = ({ isOpen, onClose, onNavigateModule, onLogout })
   ].filter(a => !q || a.label.toLowerCase().includes(q) || (a.id === 'act-logout' && ('logout'.includes(q) || 'sign out'.includes(q))));
 
   // Stalls match
-  const matchedStalls = SHOPS.filter(s => !q || s.name.toLowerCase().includes(q) || s.id.toLowerCase().includes(q) || s.category.toLowerCase().includes(q))
-    .map(s => ({ type: 'stall', id: s.id, label: s.name, category: `Stall · ${s.category}`, icon: Store, stallId: s.id }));
+  const matchedStalls = stalls.filter(s => !q || (s.name || '').toLowerCase().includes(q) || String(s.id || '').toLowerCase().includes(q) || (s.category || '').toLowerCase().includes(q))
+    .map(s => ({ type: 'stall', id: s.id, label: s.name, category: `Stall · ${s.category || 'Food'}`, icon: Store, stallId: s.id }));
 
   // Orders match
   const matchedOrders = orders.filter(o => !q || (o.id && o.id.toString().toLowerCase().includes(q)) || (o.customerName && o.customerName.toLowerCase().includes(q)))
