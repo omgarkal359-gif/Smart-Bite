@@ -154,7 +154,10 @@ Deno.serve(async (req) => {
 
   const cf = await cfRes.json().catch(() => ({}));
   if (!cfRes.ok || !cf?.payment_session_id) {
-    return json({ success: false, message: cf?.message || 'Gateway order creation failed.' }, 502);
+    // Include the target environment so a key/environment mismatch is obvious
+    // (e.g. sandbox keys used against production, or vice versa).
+    const reason = cf?.message || cf?.error_description || `HTTP ${cfRes.status}`;
+    return json({ success: false, message: `[cashfree:${CF_ENV}] ${reason}` }, 502);
   }
 
   // Snapshot how the order will be settled so reporting can exclude auto-split
