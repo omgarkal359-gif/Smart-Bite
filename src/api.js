@@ -1101,7 +1101,13 @@ export const api = {
       body: { orderId }
     });
     if (error || !data?.success) {
-      throw new Error(data?.message || error?.message || 'Could not start payment.');
+      // supabase-js hides the Edge Function's JSON body on a non-2xx response;
+      // read it from the error context so the real reason reaches the user.
+      let serverMsg = data?.message;
+      if (!serverMsg && error?.context && typeof error.context.json === 'function') {
+        try { serverMsg = (await error.context.json())?.message; } catch (_e) {}
+      }
+      throw new Error(serverMsg || error?.message || 'Could not start payment.');
     }
     return data;
   },
