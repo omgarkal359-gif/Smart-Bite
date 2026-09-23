@@ -790,6 +790,14 @@ export const api = {
     const items = orderData.items || [];
     if (items.length === 0) throw new Error('Cart is empty.');
 
+    // Platform kill-switches (admin-controlled via platform_config).
+    const cfg = await this.getPlatformConfig();
+    if (cfg.maintenance_mode) throw new Error('The food court is under maintenance. Ordering is temporarily unavailable.');
+    if (cfg.pause_orders) throw new Error('New orders are paused right now. Please try again shortly.');
+    const _pm = String(orderData.payment || '').toLowerCase();
+    if (_pm.includes('cash') && cfg.allow_cash === false) throw new Error('Cash payment is currently disabled.');
+    if ((_pm.includes('upi') || _pm.includes('online')) && cfg.allow_online === false) throw new Error('Online payment is currently disabled.');
+
     // Identity is derived ONLY from the authenticated Supabase session — never
     // from client-supplied customerId/customerEmail. (orders RLS is currently
     // permissive, so the app layer must not trust caller-provided identity;
@@ -1278,6 +1286,27 @@ export const api = {
       },
       orders: list
     };
+  },
+
+  // ── Platform config (feature flags / kill-switches) ───────────────────────
+  async getPlatformConfig() {
+    try {
+      const { data } = await supabase.from('platform_config').select('*').eq('id', 1).maybeSingle();
+      if (data) return data;
+    } catch (_e) {}
+    // Safe defaults if the row/table is missing: nothing blocked.
+    return { id: 1, maintenance_mode: false, pause_orders: false, allow_cash: true, allow_online: true };
+  },
+
+  async updatePlatformConfig(patch) {
+    const { data, error } = await supabase
+      .from('platform_config')
+      .update({ ...patch, updated_at: new Date().toISOString() })
+      .eq('id', 1)
+      .select()
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    return data;
   },
 
   async getAdminUsers() {

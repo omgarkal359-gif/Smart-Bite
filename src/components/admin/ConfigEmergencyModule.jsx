@@ -1,211 +1,146 @@
-import React, { useState } from 'react';
-import { 
-  Settings, AlertTriangle, Power, ShieldAlert, 
-  Trash2, Radio, Server, CheckCircle2, Lock, Unlock, Database, Cpu, RefreshCw 
+import React, { useState, useEffect } from 'react';
+import {
+  AlertTriangle, Power, Lock, Banknote, Smartphone,
+  Trash2, RefreshCw, Loader2
 } from 'lucide-react';
+import { api } from '../../api';
+import { supabase } from '../../supabaseClient';
 import { clearStoredUser } from '../../utils/auth';
 import { addAuditLog } from '../../utils/logger';
 
-export const ConfigEmergencyModule = () => {
-  const [isMaintenanceMode, setIsMaintenanceMode] = useState(false);
-  const [isPauseOrders, setIsPauseOrders] = useState(false);
-  const [isCashPaymentEnabled, setIsCashPaymentEnabled] = useState(true);
-  const [isRealtimeEnabled, setIsRealtimeEnabled] = useState(true);
+const ACTIVE_STATUSES = ['placed', 'pending_cash', 'preparing', 'ready'];
 
-  const handleGlobalWipe = () => {
-    const confirm = window.confirm("CRITICAL WARNING: This will flush all active queues globally across all stalls. Continue?");
-    if (confirm) {
-      addAuditLog({
-        level: 'SECURITY',
-        category: 'System',
-        message: 'EMERGENCY OVERRIDE: Global order queue flushed by Super Admin'
-      });
-      alert("System queues flushed successfully.");
+export const ConfigEmergencyModule = () => {
+  const [config, setConfig] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [savingKey, setSavingKey] = useState(null);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    let active = true;
+    api.getPlatformConfig()
+      .then(c => { if (active) setConfig(c); })
+      .catch(() => { if (active) setError('Failed to load platform config.'); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, []);
+
+  const toggle = async (key, auditMsg) => {
+    if (!config) return;
+    const next = !config[key];
+    setSavingKey(key);
+    setError('');
+    try {
+      const updated = await api.updatePlatformConfig({ [key]: next });
+      setConfig(updated || { ...config, [key]: next });
+      addAuditLog({ level: 'SECURITY', category: 'System', message: auditMsg(next) });
+    } catch (e) {
+      setError(e.message || 'Failed to update config.');
+    } finally {
+      setSavingKey(null);
+    }
+  };
+
+  const handleGlobalCancel = async () => {
+    if (!window.confirm('Cancel ALL active orders (placed/preparing/ready) across every stall? This cannot be undone.')) return;
+    try {
+      const { error: e } = await supabase
+        .from('orders')
+        .update({ status: 'cancelled', updated_at: new Date().toISOString() })
+        .in('status', ACTIVE_STATUSES);
+      if (e) throw new Error(e.message);
+      addAuditLog({ level: 'SECURITY', category: 'Orders', message: 'EMERGENCY: all active orders cancelled by admin' });
+      alert('All active orders have been cancelled.');
+    } catch (e) {
+      setError(e.message || 'Failed to cancel active orders.');
     }
   };
 
   const handleSessionWipe = () => {
-    const confirm = window.confirm("Reset all corrupted user sessions across local storage?");
-    if (confirm) {
-      addAuditLog({
-        level: 'WARN',
-        category: 'Auth',
-        message: 'ADMIN ACTION: All user sessions and local storage tokens cleared'
-      });
-      clearStoredUser();
-      localStorage.removeItem('sgu_pending_name');
-      alert("Local session storage cleared.");
-    }
+    if (!window.confirm('Clear this device’s stored login session and local caches?')) return;
+    clearStoredUser();
+    try { localStorage.removeItem('sgu_pending_name'); } catch (_e) {}
+    addAuditLog({ level: 'WARN', category: 'Auth', message: 'Admin cleared local session storage on this device' });
+    alert('Local session storage cleared on this device.');
   };
 
-  const toggleMaintenance = () => {
-    const nextState = !isMaintenanceMode;
-    setIsMaintenanceMode(nextState);
-    addAuditLog({
-      level: 'SECURITY',
-      category: 'System',
-      message: `FEATURE FLAG: Global Maintenance Mode set to ${nextState ? 'ENABLED (BLOCKING)' : 'DISABLED'}`
-    });
-  };
+  if (loading) {
+    return <div className="flex items-center gap-2 text-slate-500 font-semibold p-6"><Loader2 className="animate-spin" size={18} /> Loading platform config…</div>;
+  }
 
-  const togglePauseOrders = () => {
-    const nextState = !isPauseOrders;
-    setIsPauseOrders(nextState);
-    addAuditLog({
-      level: 'WARN',
-      category: 'Orders',
-      message: `FEATURE FLAG: Student Order Checkout set to ${nextState ? 'PAUSED' : 'RESUMED'}`
-    });
-  };
+  const flags = [
+    { key: 'maintenance_mode', icon: Power, title: 'GLOBAL MAINTENANCE MODE', desc: 'Blocks new orders platform-wide while active.', onLabel: 'ACTIVE (BLOCKING)', offLabel: 'NORMAL', danger: true,
+      audit: (v) => `Maintenance Mode ${v ? 'ENABLED' : 'DISABLED'}` },
+    { key: 'pause_orders', icon: Lock, title: 'PAUSE NEW ORDERS', desc: 'Halts checkout for new orders; active orders still complete.', onLabel: 'PAUSED', offLabel: 'ACCEPTING', danger: true,
+      audit: (v) => `New orders ${v ? 'PAUSED' : 'RESUMED'}` },
+    { key: 'allow_cash', icon: Banknote, title: 'CASH PAYMENTS', desc: 'Allow students to choose cash at checkout.', onLabel: 'ENABLED', offLabel: 'DISABLED', invert: true,
+      audit: (v) => `Cash payments ${v ? 'ENABLED' : 'DISABLED'}` },
+    { key: 'allow_online', icon: Smartphone, title: 'ONLINE (UPI) PAYMENTS', desc: 'Allow students to choose online/UPI at checkout.', onLabel: 'ENABLED', offLabel: 'DISABLED', invert: true,
+      audit: (v) => `Online payments ${v ? 'ENABLED' : 'DISABLED'}` }
+  ];
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Title */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="heading-2 text-2xl text-slate-900" style={{ margin: 0 }}>PLATFORM CONFIG & EMERGENCY OVERRIDES</h1>
-          <p className="text-slate-500 text-sm font-medium">Feature flags, system kill-switches, emergency queue flushes and API integration status matrix.</p>
-        </div>
+      <div>
+        <h1 className="heading-2 text-2xl text-slate-900" style={{ margin: 0 }}>PLATFORM CONFIG & EMERGENCY OVERRIDES</h1>
+        <p className="text-slate-500 text-sm font-medium">Live feature flags stored in Supabase and enforced at checkout.</p>
       </div>
 
-      {/* Feature Flags Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20 }}>
-        {/* Maintenance Mode */}
-        <div className="admin-card-v2 flex flex-col justify-between" style={{ borderLeft: `6px solid ${isMaintenanceMode ? '#DC2626' : '#22C55E'}` }}>
-          <div>
-            <div className="flex justify-between items-start mb-2">
-              <h3 style={{ fontFamily: "'Oswald', sans-serif", fontSize: '1.2rem', fontWeight: 800, color: '#0F172A', margin: 0, display: 'flex', items: 'center', gap: 8 }}>
-                <Power size={20} color={isMaintenanceMode ? '#DC2626' : '#22C55E'} /> GLOBAL MAINTENANCE MODE
-              </h3>
-              <span className={`status-pill ${isMaintenanceMode ? 'cancelled' : 'ready'}`}>
-                {isMaintenanceMode ? 'ACTIVE (BLOCKING)' : 'NORMAL'}
-              </span>
-            </div>
-            <p style={{ fontSize: '0.8rem', color: '#64748B', margin: 0, fontWeight: 500 }}>
-              Puts the entire student food court platform into maintenance mode. Students will see a friendly offline banner.
-            </p>
-          </div>
-          <button
-            onClick={toggleMaintenance}
-            style={{
-              marginTop: 16, width: '100%', padding: '12px', borderRadius: 12, border: 'none', cursor: 'pointer',
-              fontFamily: "'Oswald', sans-serif", fontWeight: 800, fontSize: '0.85rem', textTransform: 'uppercase',
-              background: isMaintenanceMode ? '#DCFCE7' : '#FEE2E2',
-              color: isMaintenanceMode ? '#15803D' : '#DC2626',
-              transition: 'all 0.2s ease'
-            }}
-          >
-            {isMaintenanceMode ? 'DISABLE MAINTENANCE MODE' : 'ENABLE MAINTENANCE MODE'}
-          </button>
-        </div>
+      {error && <div className="status-pill cancelled" style={{ alignSelf: 'flex-start' }}>{error}</div>}
 
-        {/* Pause Orders */}
-        <div className="admin-card-v2 flex flex-col justify-between" style={{ borderLeft: `6px solid ${isPauseOrders ? '#F59E0B' : '#FF3B5C'}` }}>
-          <div>
-            <div className="flex justify-between items-start mb-2">
-              <h3 style={{ fontFamily: "'Oswald', sans-serif", fontSize: '1.2rem', fontWeight: 800, color: '#0F172A', margin: 0, display: 'flex', items: 'center', gap: 8 }}>
-                <Lock size={20} color={isPauseOrders ? '#F59E0B' : '#FF3B5C'} /> PAUSE NEW ORDERS
-              </h3>
-              <span className={`status-pill ${isPauseOrders ? 'preparing' : 'ready'}`}>
-                {isPauseOrders ? 'PAUSED' : 'ACCEPTING'}
-              </span>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20 }}>
+        {flags.map(f => {
+          const on = !!config[f.key];
+          // For "allow_*" flags, ON (enabled) is the healthy/green state; for
+          // maintenance/pause, ON is the blocking/red state.
+          const isHealthy = f.invert ? on : !on;
+          const accent = isHealthy ? '#22C55E' : (f.danger ? '#DC2626' : '#F59E0B');
+          const Icon = f.icon;
+          const saving = savingKey === f.key;
+          return (
+            <div key={f.key} className="admin-card-v2 flex flex-col justify-between" style={{ borderLeft: `6px solid ${accent}` }}>
+              <div>
+                <div className="flex justify-between items-start mb-2">
+                  <h3 style={{ fontFamily: "'Oswald', sans-serif", fontSize: '1.15rem', fontWeight: 800, color: '#0F172A', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Icon size={20} color={accent} /> {f.title}
+                  </h3>
+                  <span className={`status-pill ${isHealthy ? 'ready' : (f.danger ? 'cancelled' : 'preparing')}`}>
+                    {on ? f.onLabel : f.offLabel}
+                  </span>
+                </div>
+                <p style={{ fontSize: '0.8rem', color: '#64748B', margin: 0, fontWeight: 500 }}>{f.desc}</p>
+              </div>
+              <button
+                onClick={() => toggle(f.key, f.audit)}
+                disabled={saving}
+                style={{
+                  marginTop: 16, width: '100%', padding: '12px', borderRadius: 12, border: 'none',
+                  cursor: saving ? 'wait' : 'pointer', fontFamily: "'Oswald', sans-serif", fontWeight: 800,
+                  fontSize: '0.85rem', textTransform: 'uppercase', opacity: saving ? 0.6 : 1,
+                  background: isHealthy ? '#FEE2E2' : '#DCFCE7', color: isHealthy ? '#DC2626' : '#15803D'
+                }}
+              >
+                {saving ? 'Saving…' : (f.invert ? (on ? 'Disable' : 'Enable') : (on ? 'Turn off' : 'Turn on'))}
+              </button>
             </div>
-            <p style={{ fontSize: '0.8rem', color: '#64748B', margin: 0, fontWeight: 500 }}>
-              Temporarily halts checkout for new student orders while allowing active orders to be completed.
-            </p>
-          </div>
-          <button
-            onClick={togglePauseOrders}
-            style={{
-              marginTop: 16, width: '100%', padding: '12px', borderRadius: 12, border: 'none', cursor: 'pointer',
-              fontFamily: "'Oswald', sans-serif", fontWeight: 800, fontSize: '0.85rem', textTransform: 'uppercase',
-              background: isPauseOrders ? '#FF3B5C' : '#FEF3C7',
-              color: isPauseOrders ? 'white' : '#D97706',
-              transition: 'all 0.2s ease'
-            }}
-          >
-            {isPauseOrders ? 'RESUME STUDENT CHECKOUT' : 'PAUSE ALL NEW ORDERS'}
-          </button>
-        </div>
+          );
+        })}
       </div>
 
-      {/* Emergency Controls & System Matrix */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20 }}>
-        {/* Emergency Overrides */}
-        <div className="admin-card-v2" style={{ borderTop: '4px solid #FF3B5C' }}>
-          <h3 style={{ fontFamily: "'Oswald', sans-serif", fontSize: '1.2rem', fontWeight: 800, color: '#FF3B5C', margin: '0 0 12px 0', display: 'flex', items: 'center', gap: 8 }}>
-            <AlertTriangle size={20} color="#FF3B5C" /> EMERGENCY OVERRIDES
-          </h3>
-          <p style={{ fontSize: '0.8rem', color: '#64748B', margin: '0 0 16px 0', fontWeight: 500 }}>
-            Execute emergency actions in case of server outages or severe technical failures.
-          </p>
-
-          <div className="flex flex-col gap-3">
-            <button
-              onClick={handleGlobalWipe}
-              style={{
-                width: '100%', padding: '14px', borderRadius: 12, border: 'none', cursor: 'pointer',
-                fontFamily: "'Oswald', sans-serif", fontWeight: 800, fontSize: '0.9rem', textTransform: 'uppercase',
-                background: '#FF3B5C', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                boxShadow: '0 4px 14px rgba(255,59,92,0.3)'
-              }}
-            >
-              <Trash2 size={18} /> GLOBAL QUEUE WIPE
-            </button>
-
-            <button
-              onClick={handleSessionWipe}
-              style={{
-                width: '100%', padding: '14px', borderRadius: 12, border: '1px solid #E2E8F0', cursor: 'pointer',
-                fontFamily: "'Oswald', sans-serif", fontWeight: 800, fontSize: '0.85rem', textTransform: 'uppercase',
-                background: '#FFFFFF', color: '#0F172A', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8
-              }}
-            >
-              <RefreshCw size={16} /> CLEAR CORRUPTED SESSIONS
-            </button>
-          </div>
-        </div>
-
-        {/* Integration Status Matrix */}
-        <div className="admin-card-v2" style={{ borderTop: '4px solid #FF3B5C' }}>
-          <h3 style={{ fontFamily: "'Oswald', sans-serif", fontSize: '1.2rem', fontWeight: 800, color: '#FF3B5C', margin: '0 0 12px 0', display: 'flex', items: 'center', gap: 8 }}>
-            <Cpu size={20} color="#FF3B5C" /> API INTEGRATION STATUS MATRIX
-          </h3>
-
-          <div className="flex flex-col gap-3">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', background: '#F8FAFC', borderRadius: 12 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <Database size={18} color="#FF3B5C" />
-                <div>
-                  <div style={{ fontWeight: 800, fontSize: '0.85rem', color: '#0F172A' }}>Supabase PostgreSQL</div>
-                  <div style={{ fontSize: '0.7rem', color: '#64748B' }}>Primary Database Cluster</div>
-                </div>
-              </div>
-              <span className="status-pill ready"><CheckCircle2 size={12} /> OPERATIONAL</span>
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', background: '#F8FAFC', borderRadius: 12 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <Radio size={18} color="#22C55E" />
-                <div>
-                  <div style={{ fontWeight: 800, fontSize: '0.85rem', color: '#0F172A' }}>Socket.io Realtime Engine</div>
-                  <div style={{ fontSize: '0.7rem', color: '#64748B' }}>WebSocket Live Queue Broadcast</div>
-                </div>
-              </div>
-              <span className="status-pill ready"><CheckCircle2 size={12} /> ACTIVE</span>
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', background: '#F8FAFC', borderRadius: 12 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <Server size={18} color="#F59E0B" />
-                <div>
-                  <div style={{ fontWeight: 800, fontSize: '0.85rem', color: '#0F172A' }}>Vercel Edge Network</div>
-                  <div style={{ fontSize: '0.7rem', color: '#64748B' }}>Washington D.C. (iad1) · 18ms</div>
-                </div>
-              </div>
-              <span className="status-pill ready"><CheckCircle2 size={12} /> OPTIMAL</span>
-            </div>
-          </div>
+      {/* Emergency actions (real) */}
+      <div className="admin-card-v2" style={{ borderTop: '4px solid #FF3B5C', maxWidth: 480 }}>
+        <h3 style={{ fontFamily: "'Oswald', sans-serif", fontSize: '1.2rem', fontWeight: 800, color: '#FF3B5C', margin: '0 0 12px 0', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <AlertTriangle size={20} color="#FF3B5C" /> EMERGENCY OVERRIDES
+        </h3>
+        <div className="flex flex-col gap-3">
+          <button onClick={handleGlobalCancel}
+            style={{ width: '100%', padding: '14px', borderRadius: 12, border: 'none', cursor: 'pointer', fontFamily: "'Oswald', sans-serif", fontWeight: 800, fontSize: '0.9rem', textTransform: 'uppercase', background: '#FF3B5C', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+            <Trash2 size={18} /> Cancel all active orders
+          </button>
+          <button onClick={handleSessionWipe}
+            style={{ width: '100%', padding: '14px', borderRadius: 12, border: '1px solid #E2E8F0', cursor: 'pointer', fontFamily: "'Oswald', sans-serif", fontWeight: 800, fontSize: '0.85rem', textTransform: 'uppercase', background: '#FFFFFF', color: '#0F172A', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+            <RefreshCw size={16} /> Clear this device’s session
+          </button>
         </div>
       </div>
     </div>
