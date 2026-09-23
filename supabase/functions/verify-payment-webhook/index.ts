@@ -89,6 +89,17 @@ Deno.serve(async (req) => {
     .eq('id', orderId);
   if (ordErr) return json({ success: false, message: ordErr.message }, 500);
 
+  // Reveal the order to the vendor only now that payment cleared. Online orders
+  // are created as 'awaiting_payment'; flip to 'placed' on success (or mark
+  // 'payment_failed' on failure). Scope the transition to awaiting_payment so a
+  // later/duplicate webhook can't clobber an order the vendor already advanced.
+  try {
+    await admin.from('orders')
+      .update({ status: paid ? 'placed' : 'payment_failed', updated_at: now })
+      .eq('id', orderId)
+      .eq('status', 'awaiting_payment');
+  } catch (_e) { /* non-fatal */ }
+
   // Best-effort payment record update (webhook already authoritative for order).
   try {
     const method = pay?.payment_group || (pay?.payment_method ? Object.keys(pay.payment_method)[0] : null);

@@ -100,7 +100,8 @@ const VendorDashboard = () => {
       const allOrders = Array.from(orderMap.values());
       allOrders.sort((a, b) => new Date(b.timestamp || b.created_at || 0) - new Date(a.timestamp || a.created_at || 0));
       
-      const active = allOrders.filter(order => order.status !== 'completed' && order.status !== 'ready' && order.status !== 'cancelled').map(order => ({
+      const HIDDEN = ['awaiting_payment', 'payment_failed'];
+      const active = allOrders.filter(order => order.status !== 'completed' && order.status !== 'ready' && order.status !== 'cancelled' && !HIDDEN.includes(String(order.status || '').toLowerCase())).map(order => ({
         ...order,
         customerName: order.customerName || order.customer_name || 'Student',
         payment: order.payment || order.payment_method || 'Online UPI',
@@ -130,8 +131,13 @@ const VendorDashboard = () => {
     
     // Join room for this vendor
 
+    // Orders not cleared for the vendor: unpaid online (awaiting_payment) or failed.
+    const HIDDEN_STATUSES = ['awaiting_payment', 'payment_failed'];
+    const isHidden = (o) => HIDDEN_STATUSES.includes(String(o?.status || '').toLowerCase());
+
     const handleNewOrder = async (newOrder) => {
       if (!newOrder || !newOrder.id) return;
+      if (isHidden(newOrder)) return; // never surface an unpaid/failed order
       let fullOrder = newOrder;
       if (!fullOrder.items || (Array.isArray(fullOrder.items) && fullOrder.items.length === 0)) {
         try {
@@ -159,6 +165,12 @@ const VendorDashboard = () => {
       const targetId = updatedOrder?.id || updatedOrder?.orderId;
       const nextStatus = updatedOrder?.status;
       if (!targetId || !nextStatus) return;
+
+      // Still awaiting payment (or payment failed): keep it out of the vendor's list.
+      if (isHidden(updatedOrder)) {
+        setTickets(prev => prev.filter(t => String(t.id) !== String(targetId)));
+        return;
+      }
 
       if (nextStatus === 'completed' || nextStatus === 'ready' || nextStatus === 'cancelled') {
         setTickets(prev => prev.filter(t => String(t.id) !== String(targetId)));

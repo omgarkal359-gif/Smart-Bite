@@ -851,7 +851,10 @@ export const api = {
 
     const orderId = orderData.id || orderData.orderId || `ORD-${Date.now()}`;
     const first = items[0] || {};
-    const status = orderData.payment === 'Cash' ? 'pending_cash' : 'placed';
+    // Online orders start hidden ('awaiting_payment') and only become visible to
+    // the vendor once the payment webhook confirms success (status -> 'placed').
+    // Cash orders are paid at the counter, so they go straight to the vendor.
+    const status = orderData.payment === 'Cash' ? 'pending_cash' : 'awaiting_payment';
 
     const targetStallId = orderData.stallId || orderData.stall_id || first.stallId || first.stall_id || null;
     const targetStallName = orderData.stallName || orderData.stall_name || first.stallName || first.stall_name || null;
@@ -942,7 +945,7 @@ export const api = {
       stall_id: it.stallId || it.stall_id || targetStallId,
       stall_name: it.stallName || it.stall_name || targetStallName
     }));
-    await supabase.from('order_items').insert(itemRows).catch(() => null);
+    try { await supabase.from('order_items').insert(itemRows); } catch (_e) { /* non-fatal */ }
 
     // Record initial status history in order_status_history table
     try {
@@ -976,9 +979,12 @@ export const api = {
       id: orderId
     };
 
-    // Broadcast Realtime events to vendor, admin, and global channels
+    // Broadcast Realtime events to vendor, admin, and global channels.
+    // An unpaid online order must NOT reach the vendor — it is broadcast to them
+    // only once payment is confirmed (the webhook flips status to 'placed', which
+    // the vendor receives via the orders UPDATE subscription).
     try {
-      if (targetStallId) {
+      if (targetStallId && status !== 'awaiting_payment') {
         supabase.channel(`vendor_sync_${targetStallId}`).send({
           type: 'broadcast',
           event: 'order_new',
@@ -1248,8 +1254,11 @@ export const api = {
   },
 
   async getStallOrders(stallId) {
+    // Hide orders that have not cleared payment yet — vendors must never see an
+    // unpaid online order (awaiting_payment) or a failed one (payment_failed).
     const { data, error } = await supabase
       .from('orders').select('*, order_items(*)').eq('stall_id', stallId)
+      .not('status', 'in', '("awaiting_payment","payment_failed")')
       .order('created_at', { ascending: false });
     if (error || !data) return [];
     return data.map(mapOrder);
