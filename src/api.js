@@ -919,45 +919,41 @@ export const api = {
       convenience_fee: convenienceFee,
       commission_amount: commissionAmount,
       total: orderTotal,
-      idempotency_key: orderData.idempotencyKey || `IDEM-${orderId}`,
-      items: JSON.stringify(items.map(it => ({
-        id: it.id,
-        name: it.name,
-        price: Number(it.price) || 0,
-        quantity: it.quantity || 1
-      })))
+      idempotency_key: orderData.idempotencyKey || `IDEM-${orderId}`
+      // Line items are persisted separately in order_items (below); orders has
+      // no `items` column, so it must not be included here.
     };
 
-    try {
-      const { error: oErr } = await supabase.from('orders').insert(orderRow);
-      if (!oErr || String(oErr.message).includes('duplicate')) {
-        const itemRows = items.map(it => ({
-          order_id: orderId,
-          menu_item_id: typeof it.id === 'number' ? it.id : null,
-          name: it.name,
-          unit_price: Number(it.price) || 0,
-          quantity: it.quantity || 1,
-          stall_id: it.stallId || it.stall_id || targetStallId,
-          stall_name: it.stallName || it.stall_name || targetStallName
-        }));
-        await supabase.from('order_items').insert(itemRows).catch(() => null);
-
-        // Record initial status history in order_status_history table
-        try {
-          await supabase.from('order_status_history').insert({
-            order_id: orderId,
-            previous_status: null,
-            new_status: status,
-            changed_by: customerEmail || user?.email || 'student',
-            created_at: new Date().toISOString()
-          });
-        } catch (_hErr) {}
-      } else {
-        console.warn('Supabase order insert warning:', oErr.message);
-      }
-    } catch (insertErr) {
-      console.warn('Supabase order insert exception:', insertErr);
+    const oErrRes = await supabase.from('orders').insert(orderRow);
+    const oErr = oErrRes.error;
+    // The order MUST persist — otherwise payment starts against an order the
+    // gateway can't find ("Order not found"). A duplicate id means it already
+    // exists, which is fine; any other error is fatal and must surface.
+    if (oErr && !String(oErr.message).toLowerCase().includes('duplicate')) {
+      throw new Error(`Could not create your order: ${oErr.message}`);
     }
+
+    const itemRows = items.map(it => ({
+      order_id: orderId,
+      menu_item_id: typeof it.id === 'number' ? it.id : null,
+      name: it.name,
+      unit_price: Number(it.price) || 0,
+      quantity: it.quantity || 1,
+      stall_id: it.stallId || it.stall_id || targetStallId,
+      stall_name: it.stallName || it.stall_name || targetStallName
+    }));
+    await supabase.from('order_items').insert(itemRows).catch(() => null);
+
+    // Record initial status history in order_status_history table
+    try {
+      await supabase.from('order_status_history').insert({
+        order_id: orderId,
+        previous_status: null,
+        new_status: status,
+        changed_by: customerEmail || user?.email || 'student',
+        created_at: new Date().toISOString()
+      });
+    } catch (_hErr) {}
 
     const orderCustomerDisplayName = orderData.customerName || user?.name || customerEmail || 'Student';
     try { 
