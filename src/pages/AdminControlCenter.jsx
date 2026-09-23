@@ -5,13 +5,12 @@ import { OverviewModule } from '../components/admin/OverviewModule';
 import { OrdersVendorsModule } from '../components/admin/OrdersVendorsModule';
 import { OnboardingModule } from '../components/admin/OnboardingModule';
 import { SecurityLogsModule } from '../components/admin/SecurityLogsModule';
-import { DataRecoveryModule } from '../components/admin/DataRecoveryModule';
 import { BackupsModule } from '../components/admin/BackupsModule';
 import { SystemHealthModule } from '../components/admin/SystemHealthModule';
 import { UserDirectoryModule } from '../components/admin/UserDirectoryModule';
 import { MenuApprovalsModule } from '../components/admin/MenuApprovalsModule';
 import { ConfigEmergencyModule } from '../components/admin/ConfigEmergencyModule';
-import { getStoredUser, setStoredUser, clearStoredUser, isAdminEmail } from '../utils/auth';
+import { getStoredUser, setStoredUser, clearStoredUser, checkAdminAccess } from '../utils/auth';
 import { supabase } from '../supabaseClient';
 import '../components/admin/admin_dashboard.css';
 
@@ -28,7 +27,7 @@ const AdminControlCenter = () => {
           const { data } = await supabase.auth.getSession();
           if (data?.session?.user) {
             const email = (data.session.user.email || '').toLowerCase().trim();
-            if (isAdminEmail(email)) {
+            if (await checkAdminAccess(email)) {
               parsedUser = {
                 role: 'admin',
                 name: data.session.user.user_metadata?.full_name || data.session.user.user_metadata?.name || 'System Admin',
@@ -68,7 +67,6 @@ const AdminControlCenter = () => {
       {activeModule === 'vendors' && <OnboardingModule />}
       {activeModule === 'menu-approvals' && <MenuApprovalsModule />}
       {activeModule === 'security-logs' && <SecurityLogsModule />}
-      {activeModule === 'data-recovery' && <DataRecoveryModule />}
       {activeModule === 'backups' && <BackupsModule />}
       {activeModule === 'system-health' && <SystemHealthModule />}
       {activeModule === 'users' && <UserDirectoryModule />}

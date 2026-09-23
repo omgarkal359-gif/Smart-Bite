@@ -1,49 +1,38 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Database, RefreshCw, Download, CheckCircle2, ShieldCheck, HardDrive, Clock
-} from 'lucide-react';
-import { adminApi } from '../../utils/adminApi';
+import React, { useState } from 'react';
+import { Database, Download, ShieldCheck, Clock, ExternalLink } from 'lucide-react';
+import { api } from '../../api';
 import { addAuditLog } from '../../utils/logger';
 
 export const BackupsModule = () => {
-  const [backupInfo, setBackupInfo] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isTriggering, setIsTriggering] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [lastExport, setLastExport] = useState(null);
 
-  useEffect(() => {
-    loadBackups();
-  }, []);
-
-  async function loadBackups() {
-    setIsLoading(true);
+  async function handleExport() {
+    setIsExporting(true);
     try {
-      const res = await adminApi.getBackups();
-      setBackupInfo(res.backups || null);
-    } catch (err) {
-      console.error('Failed to load backup details:', err);
-    } finally {
-      setIsLoading(false);
-    }
-  }
+      const res = await api.exportData();
+      const blob = new Blob([JSON.stringify(res, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+      a.href = url;
+      a.download = `smartbite-export-${stamp}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
 
-  async function handleTriggerBackup() {
-    const confirm = window.confirm('Request manual database snapshot from backup provider?');
-    if (!confirm) return;
-
-    setIsTriggering(true);
-    try {
-      const res = await adminApi.triggerBackup();
+      const total = Object.values(res.counts || {}).reduce((s, n) => s + (Number(n) || 0), 0);
+      setLastExport({ at: res.generatedAt || new Date().toISOString(), counts: res.counts || {}, total });
       addAuditLog({
         level: 'SECURITY',
         category: 'System',
-        message: 'Manual database backup request triggered by Super Admin'
+        message: `Full data export downloaded by Super Admin (${total} rows across ${Object.keys(res.counts || {}).length} tables)`
       });
-      alert(res.message || 'Backup trigger queued successfully.');
-      loadBackups();
     } catch (err) {
-      alert('Failed to trigger backup: ' + err.message);
+      alert('Data export failed: ' + (err?.message || 'Unknown error'));
     } finally {
-      setIsTriggering(false);
+      setIsExporting(false);
     }
   }
 
@@ -52,97 +41,69 @@ export const BackupsModule = () => {
       {/* Header */}
       <div className="flex justify-between items-center flex-wrap gap-4">
         <div>
-          <h1 className="heading-2 text-2xl text-slate-900" style={{ margin: 0 }}>DATABASE BACKUP & SNAPSHOT MANAGEMENT</h1>
-          <p className="text-slate-500 text-sm font-medium">Automated snapshot schedule, retention policy, provider status, and manual backup triggers.</p>
+          <h1 className="heading-2 text-2xl text-slate-900" style={{ margin: 0 }}>BACKUPS & DATA EXPORT</h1>
+          <p className="text-slate-500 text-sm font-medium">
+            Point-in-time backups are handled by the Supabase platform. Use Data Export for an on-demand full snapshot.
+          </p>
         </div>
-        <div className="flex gap-2">
-          <button 
-            onClick={handleTriggerBackup} disabled={isTriggering}
-            className="btn-action-sm"
-            style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#1A5276', color: 'white', borderColor: '#1A5276', fontWeight: 800 }}
-          >
-            <Database size={14} /> {isTriggering ? 'QUEUING...' : 'TRIGGER BACKUP'}
-          </button>
-          <button 
-            onClick={loadBackups}
-            className="btn-action-sm"
-            style={{ display: 'flex', alignItems: 'center', gap: 6 }}
-          >
-            <RefreshCw size={14} /> Refresh
-          </button>
-        </div>
+        <button
+          onClick={handleExport}
+          disabled={isExporting}
+          className="btn-action-sm"
+          style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#1A5276', color: 'white', borderColor: '#1A5276', fontWeight: 800 }}
+        >
+          <Download size={14} /> {isExporting ? 'EXPORTING…' : 'EXPORT DATA (JSON)'}
+        </button>
       </div>
 
-      {/* Backup Status Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20 }}>
-        <div className="admin-card-v2" style={{ borderTop: '4px solid #1A5276' }}>
-          <div className="flex justify-between items-start mb-3">
-            <h3 style={{ fontFamily: "'Oswald', sans-serif", fontSize: '1.2rem', fontWeight: 800, color: '#0F172A', margin: 0 }}>
-              PROVIDER BACKUP STATUS
-            </h3>
-            <span className="status-pill ready">ACTIVE</span>
-          </div>
-          <p style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1E293B', margin: '0 0 8px 0' }}>
-            {backupInfo?.providerStatus || 'Managed Externally (Supabase Automated Daily Backups)'}
-          </p>
-          <p style={{ fontSize: '0.78rem', color: '#64748B', margin: 0 }}>
-            Retention Policy: <strong>{backupInfo?.retentionPolicy || '30 Days Rolling Retention'}</strong>
-          </p>
-        </div>
-
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20 }}>
+        {/* Managed platform backups (honest, not fabricated) */}
         <div className="admin-card-v2" style={{ borderTop: '4px solid #22C55E' }}>
           <div className="flex justify-between items-start mb-3">
-            <h3 style={{ fontFamily: "'Oswald', sans-serif", fontSize: '1.2rem', fontWeight: 800, color: '#0F172A', margin: 0 }}>
-              LAST SUCCESSFUL SNAPSHOT
+            <h3 style={{ fontFamily: "'Oswald', sans-serif", fontSize: '1.2rem', fontWeight: 800, color: '#0F172A', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <ShieldCheck size={20} color="#22C55E" /> MANAGED BACKUPS
             </h3>
-            <span className="status-pill ready">VERIFIED</span>
+            <span className="status-pill ready">PLATFORM</span>
           </div>
-          <p style={{ fontSize: '1.1rem', fontFamily: "'Oswald', sans-serif", fontWeight: 800, color: '#15803D', margin: '0 0 4px 0' }}>
-            {backupInfo?.lastBackupAt ? new Date(backupInfo.lastBackupAt).toLocaleString() : '6 Hours Ago'}
+          <p style={{ fontSize: '0.85rem', fontWeight: 600, color: '#1E293B', margin: '0 0 10px 0', lineHeight: 1.5 }}>
+            Automated database backups and Point-in-Time Recovery are managed by Supabase and are
+            configured &amp; restored from the Supabase project dashboard — not from this app.
           </p>
-          <p style={{ fontSize: '0.78rem', color: '#64748B', margin: 0 }}>
-            Checksum verification integrity check passed.
-          </p>
+          <a
+            href="https://supabase.com/dashboard/project/hmdewtmtxgfyunyypcon/database/backups"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.8rem', fontWeight: 800, color: '#1A5276', textDecoration: 'none' }}
+          >
+            Open Supabase Backups <ExternalLink size={14} />
+          </a>
         </div>
-      </div>
 
-      {/* Backup History Table */}
-      <div className="admin-card-v2 flex flex-col gap-4">
-        <h3 style={{ fontFamily: "'Oswald', sans-serif", fontSize: '1.2rem', fontWeight: 800, color: '#0F172A', margin: 0 }}>
-          BACKUP HISTORY LOG
-        </h3>
-        <div className="admin-table-container">
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th>Backup ID</th>
-                <th>Created At</th>
-                <th>Archive Size</th>
-                <th>Verification</th>
-                <th style={{ textAlign: 'right' }}>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(backupInfo?.history || [
-                { id: 'bak-101', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString(), size: '14.2 MB', status: 'COMPLETED', verified: true },
-                { id: 'bak-100', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 30).toISOString(), size: '13.9 MB', status: 'COMPLETED', verified: true }
-              ]).map(b => (
-                <tr key={b.id}>
-                  <td style={{ fontFamily: 'monospace', fontWeight: 800, color: '#1A5276' }}>{b.id}</td>
-                  <td style={{ fontSize: '0.82rem', color: '#475569' }}>{new Date(b.timestamp).toLocaleString()}</td>
-                  <td style={{ fontWeight: 700, color: '#0F172A' }}>{b.size}</td>
-                  <td>
-                    <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#15803D', background: '#DCFCE7', padding: '2px 8px', borderRadius: 6 }}>
-                      ✓ CHECKSUM VERIFIED
-                    </span>
-                  </td>
-                  <td style={{ textAlign: 'right' }}>
-                    <span className="status-pill ready">{b.status}</span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        {/* On-demand export */}
+        <div className="admin-card-v2" style={{ borderTop: '4px solid #1A5276' }}>
+          <div className="flex justify-between items-start mb-3">
+            <h3 style={{ fontFamily: "'Oswald', sans-serif", fontSize: '1.2rem', fontWeight: 800, color: '#0F172A', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Database size={20} color="#1A5276" /> ON-DEMAND EXPORT
+            </h3>
+          </div>
+          <p style={{ fontSize: '0.82rem', color: '#64748B', margin: '0 0 12px 0', lineHeight: 1.5 }}>
+            Downloads a full JSON snapshot of core tables (accounts, orders, order items, stalls,
+            menu items, vendors, audit logs) generated server-side with the service-role key.
+          </p>
+          {lastExport ? (
+            <div style={{ padding: 12, background: '#F0FDF4', borderRadius: 10, border: '1px solid #BBF7D0' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.75rem', color: '#15803D', fontWeight: 800 }}>
+                <Clock size={13} /> Last export: {new Date(lastExport.at).toLocaleString()}
+              </div>
+              <div style={{ fontSize: '0.8rem', color: '#166534', fontWeight: 700, marginTop: 4 }}>
+                {lastExport.total.toLocaleString()} rows exported
+              </div>
+            </div>
+          ) : (
+            <p style={{ fontSize: '0.78rem', color: '#94A3B8', margin: 0, fontStyle: 'italic' }}>
+              No export run in this session yet.
+            </p>
+          )}
         </div>
       </div>
     </div>

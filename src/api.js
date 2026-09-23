@@ -1325,6 +1325,47 @@ export const api = {
     return data;
   },
 
+  // ── System health (real measured metrics, no mock) ────────────────────────
+  // DB reachability + round-trip latency and live row counts. Realtime status is
+  // measured in the module itself (it needs a live channel subscription).
+  async getSystemHealth() {
+    const out = {
+      database: { status: 'DEGRADED', reachable: false, latencyMs: null },
+      counts: {},
+      timestamp: new Date().toISOString()
+    };
+    const t0 = (typeof performance !== 'undefined' ? performance.now() : Date.now());
+    const { error: dbErr } = await supabase.from('platform_config').select('id').limit(1);
+    const t1 = (typeof performance !== 'undefined' ? performance.now() : Date.now());
+    out.database = {
+      status: dbErr ? 'DEGRADED' : 'OPERATIONAL',
+      reachable: !dbErr,
+      latencyMs: Math.max(0, Math.round(t1 - t0))
+    };
+
+    const tables = ['accounts', 'orders', 'stalls', 'menu_items', 'audit_logs'];
+    await Promise.all(tables.map(async (t) => {
+      try {
+        const { count } = await supabase.from(t).select('*', { count: 'exact', head: true });
+        out.counts[t] = count ?? 0;
+      } catch (_e) {
+        out.counts[t] = null;
+      }
+    }));
+    return out;
+  },
+
+  // ── Data export (real DB dump via admin-gated Edge Function) ──────────────
+  // Returns { success, generatedAt, counts, tables:{ name:[rows] } } produced
+  // with the service-role key inside the export-data Edge Function.
+  async exportData() {
+    const { data, error } = await supabase.functions.invoke('export-data', { body: {} });
+    if (error || !data?.success) {
+      throw new Error(data?.message || error?.message || 'Data export failed.');
+    }
+    return data;
+  },
+
   // ── Vendor onboarding (Supabase-direct + Edge Functions; no Express) ───────
   // Reads/writes to vendor_invites go straight through PostgREST under admin RLS.
   // Anything needing the service-role key (auth-user provisioning, bank-number

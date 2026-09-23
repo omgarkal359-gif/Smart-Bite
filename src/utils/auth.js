@@ -1,16 +1,36 @@
-const envAdminEmails = import.meta.env.VITE_ADMIN_EMAILS
+import { supabase } from '../supabaseClient';
+
+// Admins are defined in the DB (admin_allowlist table + accounts.role='admin'),
+// never hard-coded. An optional VITE_ADMIN_EMAILS env list is honored as a
+// break-glass override for local/self-hosted setups; in production it is unset
+// and admin status is resolved entirely from the database (see checkAdminAccess).
+export const ADMIN_EMAILS = import.meta.env.VITE_ADMIN_EMAILS
   ? import.meta.env.VITE_ADMIN_EMAILS.split(',').map(e => e.trim().toLowerCase()).filter(Boolean)
-  : null;
+  : [];
 
-export const ADMIN_EMAILS = envAdminEmails || [
-  'omgarkal359@gmail.com',
-  'omgarkal357@gmail.com',
-  'admin@smartbite.in'
-];
-
+// Synchronous check against the env override only. Prefer checkAdminAccess() for
+// authoritative resolution — it also consults the database.
 export const isAdminEmail = (email) => {
   if (!email) return false;
   return ADMIN_EMAILS.includes(email.toLowerCase().trim());
+};
+
+// Authoritative admin check: env override, then admin_allowlist, then
+// accounts.role='admin'. RLS only lets a signed-in user read their OWN allowlist
+// row / account, so a non-admin can never resolve to true here.
+export const checkAdminAccess = async (email) => {
+  const clean = (email || '').toLowerCase().trim();
+  if (!clean) return false;
+  if (isAdminEmail(clean)) return true;
+  try {
+    const { data } = await supabase.from('admin_allowlist').select('email').eq('email', clean).maybeSingle();
+    if (data) return true;
+  } catch (_e) {}
+  try {
+    const { data } = await supabase.from('accounts').select('role').eq('email', clean).maybeSingle();
+    if (data?.role === 'admin') return true;
+  } catch (_e) {}
+  return false;
 };
 
 export const isInstitutionalEmail = (email) => {
