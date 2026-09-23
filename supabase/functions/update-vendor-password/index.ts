@@ -68,26 +68,60 @@ Deno.serve(async (req) => {
     return json({ success: false, message: 'Password must be at least 8 characters.' }, 400);
   }
 
-  // ── 3. Find the auth user and update the (hashed) password ──────────────────
+  // ── 3. Find the auth user; update password, or provision the login if the
+  //       vendor exists but was never given an auth account. ──────────────────
   try {
     const { data: listed } = await admin.auth.admin.listUsers({ perPage: 1000 });
     const existing = listed?.users?.find((u) => (u.email || '').toLowerCase() === email);
-    if (!existing) {
-      return json({ success: false, message: 'No auth user for that email. Provision the vendor first.' }, 404);
+
+    if (existing) {
+      const { error: uErr } = await admin.auth.admin.updateUserById(existing.id, {
+        password,
+        email_confirm: true
+      });
+      if (uErr) return json({ success: false, message: `Password update failed: ${uErr.message}` }, 500);
+
+      // Record the rotation time only (no plaintext password persisted).
+      await admin.from('vendors')
+        .update({ updated_at: new Date().toISOString() })
+        .ilike('contact_email', email);
+
+      return json({ success: true, message: 'Password updated.', provisioned: false });
     }
 
-    const { error: uErr } = await admin.auth.admin.updateUserById(existing.id, {
+    // No auth user yet. Only provision a login for an email that already exists
+    // as a vendor (a stall the admin created) — never invent a stall here.
+    const { data: vendor } = await admin.from('vendors')
+      .select('stall_id, business_name, owner_name')
+      .ilike('contact_email', email)
+      .maybeSingle();
+    if (!vendor?.stall_id) {
+      return json({ success: false, message: 'No vendor found for that email. Create the stall first.' }, 404);
+    }
+
+    const stallId = vendor.stall_id;
+    const fullName = vendor.owner_name || vendor.business_name || email.split('@')[0];
+
+    const { data: created, error: cErr } = await admin.auth.admin.createUser({
+      email,
       password,
-      email_confirm: true
+      email_confirm: true,
+      app_metadata: { role: 'vendor', shopId: stallId },
+      user_metadata: { full_name: fullName, role: 'vendor' }
     });
-    if (uErr) return json({ success: false, message: `Password update failed: ${uErr.message}` }, 500);
+    if (cErr) return json({ success: false, message: `Auth user creation failed: ${cErr.message}` }, 500);
+    const userId = created.user!.id;
 
-    // Record the rotation time only (no plaintext password persisted).
+    // accounts.id MUST equal the auth user id (login reads role by id).
+    await admin.from('accounts').upsert({
+      id: userId, email, full_name: fullName, role: 'vendor', shop_id: stallId, account_status: 'ACTIVE'
+    });
+    // Link the vendor row to the new login.
     await admin.from('vendors')
-      .update({ updated_at: new Date().toISOString() })
-      .ilike('contact_email', email);
+      .update({ user_id: userId, updated_at: new Date().toISOString() })
+      .eq('stall_id', stallId);
 
-    return json({ success: true, message: 'Password updated.' });
+    return json({ success: true, message: 'Login created and password set.', provisioned: true });
   } catch (e) {
     return json({ success: false, message: (e as Error).message || 'Update failed.' }, 500);
   }
