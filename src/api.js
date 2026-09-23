@@ -1507,7 +1507,14 @@ export const api = {
         body: { email: cleanEmail, password: pwd }
       });
       if (error || !data?.success) {
-        throw new Error(data?.message || error?.message || 'Failed to update vendor password.');
+        // supabase-js hides the function's JSON body on a non-2xx status (error
+        // is a FunctionsHttpError). Read it so the admin sees the real reason —
+        // e.g. Supabase's password policy ("password must contain a symbol").
+        let serverMsg = data?.message;
+        if (!serverMsg && error?.context && typeof error.context.json === 'function') {
+          try { serverMsg = (await error.context.json())?.message; } catch (_e) {}
+        }
+        throw new Error(serverMsg || error?.message || 'Failed to update vendor password.');
       }
       return { success: true, message: data.message || 'Vendor password updated.' };
     }
